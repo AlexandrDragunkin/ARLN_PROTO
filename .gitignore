@@ -2,6 +2,11 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.wpu
+*.wpr
+*.mdb
+*.dbf
+
 
 # C extensions
 *.so
