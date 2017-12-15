@@ -1,0 +1,112 @@
+Global ProtoPath;
+
+global DfLeg; // Последняя установленная
+
+defarr tm[6];
+defarr arr[10], arrin[15];
+
+res=IsvarDef("DfLeg");
+if (res==0) {
+   NULLOUT=getvarinst(2,"g_DfLeg",DfLeg,0);      //-- Умолчание на опоры
+}
+DefNoga=str(getyadsubst(42))+"#"+str(DfLeg) ;                    // Формируем строку умолчаний.
+//-- 42 - зашитая в коде подстановка для опор
+#ok_flag
+setvar
+"Установка опоры"
+""
+left
+"Выберите опору"
+done
+string auto button 6 default DefNoga //"67#578"
+     "Тип опоры:" NNoga
+done;
+if (ok_flag==0)
+{
+	exit;
+}
+splitbydelim(NNoga,"#",Arr);
+DfLeg=Arr[2];
+AccPlace=priceinfo(DfLeg,"AccPlace",0);
+if (AccPlace==0)
+{
+  //-- Запрашиваем тип установки
+
+  #ok_flag
+   alternative "Установка элемента"
+  msgbox picture 2 beep 2 text "Выберите тип установки:" done
+  "Отмена"
+  "Свободно"
+  "На панель"
+  "Под панель"
+  done;
+
+  if (ok_flag==0||ok_flag==1)
+  {
+	  exit;
+  }
+  if (ok_flag==2) { AccPlace=32 }
+  if (ok_flag==3) { AccPlace=257 }
+  if (ok_flag==4) { AccPlace=322 }
+}
+else
+{
+  ok_flag=2;
+  if (AccPlace==257)  { ok_flag=3 }
+  if (AccPlace==322)  { ok_flag=4 }
+}
+//---------------------------------------------------
+NULLOUT=GetSnap();
+flag4:
+macromode undo off;
+Macro ProtoPath+"SetAccPLace.mac"   AccPlace;
+Macro ProtoPath+"MakeLeg.mac" DfLeg 0   0 0 0 0 0 0;
+objident last 1 legg;
+onerror nend;
+
+if (ok_flag==2)
+{
+  move last 1 done prompt "Укажите вектор сдвига опоры или нажмите Esc" : ;
+  attrobj attach "AccPlace" done last 1 0+32 ;     // Тип размещения - Свободно
+  macromode undo on "AddLeg.mac" legg ;
+	goto flag4;
+}
+if (ok_flag==3)
+{
+  initarray(arrin,0);
+  arrin[1]=legg  // Объект
+  arrin[2]=0  // Флаг фасада
+  arrin[3]=45  // Угол
+  arrin[10]=0  // вектор, если нулевой, то 0 0 1
+  arrin[11]=0
+  arrin[12]=1
+
+  mbget "Укажите точку установки опоры или нажмите Esc" point arrin arr :
+  place legg ;
+  attrobj attach "AccPlace" done legg 0+1 ;     // Тип размещения - На панель, вертикально
+  macromode undo on "AddLeg.mac" legg ;
+	goto flag4;
+}
+if (ok_flag==4)
+{
+  initarray(arrin,0);
+  arrin[1]=legg  // Объект
+  arrin[2]=0  // Флаг фасада
+  arrin[3]=45  // Угол
+  arrin[10]=0  // вектор, если нулевой, то 0 0 1
+  arrin[11]=0
+  arrin[12]=1
+  mbget "Укажите точку установки опоры или нажмите Esc" point arrin arr back flip :
+  place legg ;
+  attrobj attach "AccPlace" done legg 0+2+64 ;     // Тип размещения - Под панель, вертикально, с переворотом
+  macromode undo on "AddLeg.mac" legg ;
+	goto flag4;	
+}
+finish:
+NULLOUT=ReSnap();
+macromode undo on ;
+offerror;
+exit;
+nend:
+delete legg done;
+goto finish;

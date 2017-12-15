@@ -1,0 +1,7 @@
+//-- Задание пристенного угла для угловых элементов
+//-- Входные параметры:
+//-- WallAngle - пристенный угол
+
+getpar WallAngle;
+NULLOUT=setvarinst(1,"WallAngle",WallAngle);
+exit;

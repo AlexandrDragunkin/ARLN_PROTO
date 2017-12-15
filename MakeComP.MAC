@@ -1,0 +1,80 @@
+//-- Создание выдвижной полки
+
+defarr xm[6] BandPan[4];
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));   //-- Путь к папке с макропрограммами
+NULLOUT=GetVarInst(2,"MacroSw",MacroSw,0);                          //-- Способ построения
+NULLOUT=getvarinst(2,"CompColor",col,159);                          //-- Цвет выдвижных полок
+NULLOUT=getvarinst(2,"IsColorUse",icu,1);                           //-- Использовать ли цвета
+
+getpar x y z w s; //-- Координаты правого нижнего дальнего угла, длина, глубина
+
+//---------------------------------------------------------------
+position=40;  //-- Номер прототипа выдвижной полки
+FurnType="320000";
+Namescr="ProtoParams";
+NULLOUT=pushinst(1);
+NULLOUT=getsnap();
+NULLOUT=getvarinst(1,"ElemName",ElemName," ");    //-- Имя элемента
+NULLOUT=getvarinst(1,"PanMater",PanMater,0);    //-- Материал
+NULLOUT=getvarinst(2,"g_CompShelf",CompSh,0);  //-- Тип выдвижной полки
+NULLOUT=getvarinst(1,"CompShelfType",CompShelf,CompSh);  //-- Тип выдвижной полки
+NULLOUT=getarrinst(1,"g_BandPan",BandPan);  //-- Тип кромки
+NULLOUT=setvarinst(1,"FurnType",FurnType);    //-- FurnType
+
+if (ElemName==""||ElemName==" ")
+{
+  ElemName="Выдвижная полка";
+}
+D=priceinfo(PanMater,"Thickness",16); //-- Толщина
+//---------------------------------------------------------------
+if (icu==1)
+{
+  curcol=sysvar(40);
+  color col;
+}
+gosub Panells ;
+if (icu==1)
+{
+  color curcol;
+}
+NULLOUT=popinst(1);
+NULLOUT=resnap();
+exit;
+//-----------------------------------------------------
+Panells:
+BendPan=0;
+Vpol_mac=PriceInfo(CompShelf,"MacroFile","",2);
+object_1=sysvar(60);
+objDo=sysvar(60);
+if (Len(Vpol_mac)==0)
+{
+   h_dsp=DbVar("HDSP",16);
+   box x y z x+w y+s z+h_dsp;
+}
+else
+{
+	macro Protopath+Vpol_mac w s PanMater 0 BandPan 0;
+}
+object_2=sysvar(60)-object_1;
+objPosle=sysvar(60);
+macro ProtoPath+"SetCinema.mac" objDo objPosle "0, 1, 1, 0, "+str(s-150)+", 0 ";
+move last object_2 done x y z nocopy ;
+setucs move x,y,z;
+#shelf group last object_2 done;
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"x",w);
+err=AddScratch(ScrMod,FurnType,"y",s);
+err=AddScratch(ScrMod,FurnType,"PrMater",PanMater);
+err=AddScratch(ScrMod,FurnType,"BxType",CompShelf);
+err=AddScratch(ScrMod,FurnType,"Band_E",BandPan[3]);
+err=AddScratch(ScrMod,FurnType,"Band_D",BandPan[1]);
+err=AddScratch(ScrMod,FurnType,"Band_B",BandPan[4]);
+err=AddScratch(ScrMod,FurnType,"Band_C",BandPan[2]);
+err=AddScratch(ScrMod,FurnType,"Ff_E",BendPan);
+NULLOUT=writescratch(ScrMod,Namescr,shelf);
+NULLOUT=TermScratch(ScrMod);
+NULLOUT=addattrpi(shelf,1,position);
+//-- Присваиваем атрибуты
+macro ProtoPath+"EndComp.mac" shelf position w s D CompShelf "";
+return;

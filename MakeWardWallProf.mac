@@ -1,0 +1,26 @@
+//--Макро создания стойки с двумя винтами для трубчатой системы Komandor.
+global ProtoPath;
+getpar
+TypeStWard	//-- IDGoods профиля
+X Y Z		//-- Координаты установки
+W			//-- Высота стойки
+nwallspot	//-- Кол-во креплений
+dwall		//-- Отступ от стены
+;
+
+if nwallspot>0
+{
+	IDProf=PriceInfo(TypeStWard,"NomID1",1,2);		//-- профиль
+	IDFixProf=PriceInfo(TypeStWard,"NomID6",1,2);
+	ProfX=priceinfo(IDProf,"ProfX",0.1,1);		//-- Ширина профиля
+	ProfY=priceinfo(IDProf,"ProfY",0.1,1);
+	FixWall=PriceInfo(IDFixProf,"GoodID1",2420,2); // Крепление без винта
+	FixProf=PriceInfo(IDFixProf,"GoodID2",2429,2); // Крепление профиля
+	step=(W-(ProfX/2*(nwallspot-1)))/(nwallspot+1)
+	Z=step;
+	macro ProtoPath+"SetProfWFix.mac" FixWall 0 0 FixProf 0 90;
+	macro ProtoPath+"SetProfWard.mac" IDProf 0 0 -90 0 0 0;
+	macro ProtoPath+"MakeProfWard.mac" X Y Z X Y+dwall+ProfY/2 Z;
+	move last 1 done 0 0 step+(ProfX/2) copy nwallspot-1
+}
+exit;

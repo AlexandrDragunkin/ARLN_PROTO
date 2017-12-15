@@ -1,0 +1,155 @@
+//-- Установка профиля с крепежем по двум профилям
+global ProtoPath;
+
+defarr first[3] second[3], dir[3];
+defarr arr[15], arr1[6], arr2[6], arrin[28];
+
+NULLOUT=getvarinst(2,"WardProfMat",WrProf,0);  //-- ID текущего гардеробного профиля
+NULLOUT=getvarinst(2,"WardProfFixB",FixB,0);   //-- ID текущего начального крепежа профиля
+NULLOUT=getvarinst(2,"WardProfFixE",FixE,0);   //-- ID текущего конечного крепежа профиля
+if (WrProf==0||FixB==0||FixE==0)
+{
+ if (WrProf==0)
+ {
+  putmsg("Не установлено умолчание на тип гардеробного профиля",0);
+  putmsg("Установите его с помощью меню Заказ->Умолчания на материалы",0);
+ }
+ if (FixB==0||FixE==0)
+ {
+  putmsg("Не установлено умолчание на тип крепежа профиля",0);
+  putmsg("Установите его с помощью меню Заказ->Умолчания на материалы",0);
+ }
+ cancel;
+}
+
+FixB=2435;
+FixE=2435;
+
+x1=0;
+y1=0;
+z1=0;
+NULLOUT=InitArray(arrin,0);
+onerror final1;
+newprof1:   //========================================
+switch autosingle on;
+selbyattr "(Left(FurnType,2)==\"02\")"
+prompt "Укажите первый профиль:" partly : ;
+switch autosingle off;
+if (sysvar(61)==0)
+{
+  exit;
+}
+point1=getselnum(1);
+NULLOUT=InitArray(arr,0);
+arr[1]=point1;
+err=GetProf6Par(1,arr);    //-- Настраиваемся на профиль
+if (err!=1) {    // Не профиль
+  :
+  goto newprof1;
+}
+err=GetProf6Par(2,arr);    //-- Узнаем материал
+ID1=arr[1];  //  профиль
+IDCol1=arr[2];  //  цвет
+
+FixE=PriceInfo(ID1,"GoodID1",0,1);
+AngleE=PriceInfo(ID1,"AngleSetX1",0,1);
+
+err=GetProf6Par(5,arr1);    //-- Узнаем форму
+if (arr1[1]!=0) {     // Не линейный
+  goto newprof1;
+}
+onerror final;
+NULLOUT=getsnap();
+setucs lcs partly Point1 ;
+ptranscs(2,3,0.,0.,0.,arrin[13],arrin[14],arrin[15]);
+ptranscs(2,3,0.,0.,arr1[2],arrin[16],arrin[17],arrin[18]);
+
+NULLOUT=resnap();
+newprof2:   //========================================
+switch autosingle on;
+selbyattr "(Left(FurnType,2)==\"02\")"
+  prompt "Укажите второй профиль:" partly : ;
+switch autosingle off;
+if (sysvar(61)==0)
+{
+  select point 1 done;
+  exit;
+}
+point2=getselnum(1);
+NULLOUT=InitArray(arr,0);
+arr[1]=point2;
+err=GetProf6Par(1,arr);	//-- Настраиваемся на профиль
+if (err!=1) {		// Не профиль
+  goto newprof1;
+}
+err=GetProf6Par(2,arr);	//-- Узнаем материал
+ID2=arr[1];		//  профиль
+IDCol2=arr[2];		//  цвет
+
+err=GetProf6Par(5,arr2);//-- Узнаем форму
+if (arr2[1]!=0) {	// Не линейный
+  goto newprof2;
+}
+onerror final;
+FixB=PriceInfo(ID2,"GoodID1",0,1);
+Angle=PriceInfo(ID2,"AngleSetX1",0,1);
+
+NULLOUT=getsnap();
+setucs lcs partly Point2 ;
+ptranscs(2,3,0.,0.,0.,arrin[19],arrin[20],arrin[21]);
+ptranscs(2,3,0.,0.,arr2[2],arrin[22],arrin[23],arrin[24]);
+NULLOUT=resnap();
+newprof3:   //========================================
+  arrin[1]=WrProf  //  ID текущего профиля
+  arrin[2]=10  // Шаг
+  arrin[3]=90  // Угол
+  arrin[10]=Point1   // hObj 1 профиля
+  arrin[11]=Point2  // hObj 2 профиля
+  arrin[12]=1   // режим установки по умолчанию
+  arrin[26]=1   //  Вектор нормали к плоскости параллальности (для режима 2)
+  arrin[27]=1   //
+  arrin[28]=1   //
+
+NicheId=getprotoid("Shkaf","Профиль гардеробный","ProtoMacro","Prof_WardP");  //-- ID прототипа
+NULLOUT=getsnap();
+// putmsg(FixB)
+if Angle>0
+{
+	mbget "Укажите положение:" 2segment arrin arr rotate :
+}
+else
+{
+	if FixB==FixE
+	{
+		// putmsg("180 rotate")
+		mbget "Укажите положение:" 2segment arrin arr rotate rotate :
+	}
+	else
+	{
+		mbget "Укажите положение:" 2segment arrin arr :
+	}
+}
+
+KarkNumb=GetCarcNumb();
+
+protoobj create "Shkaf.ptl" NicheId
+    "Шир"	arr[1]
+    "PrProf"	WrProf
+    "КрепежНач"	FixB
+    "КрепежКон" FixE
+    done
+    0 0 0;
+	
+// rotate last 1 done 2points 0 0 0 arr[1] 0 0 -90 nocopy;
+NULLOUT=ReSnap();
+attrobj attach "KarkasNumb" done last 1 KarkNumb;
+
+switch autosingle off;
+exit;
+final:
+offerror;
+NULLOUT=ReSnap();
+final1:
+switch autosingle off;
+offerror;
+exit;

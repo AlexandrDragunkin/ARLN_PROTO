@@ -1,0 +1,77 @@
+//-- Подпрограмма создания поворотной дверки
+//-- Входные параметры:
+//-- xn,yn,zn - координаты правого нижнего дальнего угла установки двери
+//-- dx,dz - размеры двери по ширине и по высоте
+//-- R_Fas,L_Fas,U_Fas,D_Fas - увеличение фасада спарва, слева, сверху, снизу
+//-- Variant - сторона открывания двери
+
+global ProtoPath;
+global FindMatID;
+global DoorMater;  //-- Материал панелей двери
+global g_FurnType;
+global DoorHinge;  // Петля тип
+global DoorKonst; // Тип конструкции двери
+defarr Arr[3];
+
+getpar xn,yn,zn,dx,dz,
+R_Fas L_Fas U_Fas D_Fas
+Variant;
+//NULLOUT=getvarinst(2,"DoorType",DoorType,0);    //-- Текущий Тип открывания двери
+
+kray=30;  //-- Отступ от края двери до повортотных петель
+//DoorHinge=PriceInfo(DoorKonst,"HingeID",0,2);    // Петля ID
+NumHinge=0
+NumHinge=PriceInfo(DoorKonst,"HingeSet",0,2,"Sethin");    // Набор допустимых петель
+
+rez=findinarray(Sethin,DoorHinge)
+
+if (rez==0) {
+  DoorHinge=Sethin[1];
+}
+zash=PriceInfo(DoorKonst,"ClipID",0,2);    // Магнитная защелка ID
+
+macro ProtoPath+"SetFasdV.mac" Variant;
+macro ProtoPath+"MakeFas.mac"	xn yn zn dx dz;
+h_fas=PriceInfo(DoorMater,"Thickness",4);
+if (variant>0)
+{
+  macro Protopath+"DoorHin2.Mac"	xn yn+h_fas-10 zn dx  dz
+		R_Fas L_Fas U_Fas D_Fas abs(Variant) ;
+
+
+  object_11=sysvar(60);
+  macro ProtoPath+"SetEnam.mac" "Магнитная защелка" ;
+  Macro ProtoPath+"SetAccPLace.mac"   PriceInfo(zash,"AccPlace",0);
+  macro ProtoPath+"MakeAcce.mac" zash "041300" 0 yn 0 0 0 0;
+  object_22=sysvar(60)-object_11;
+  if (object_22<=0) { goto Mend; }
+  objident last 1 kom;
+  objgab(kom,Arr);
+}
+if (variant==1)
+{
+  move last object_22 done xn+dx-R_Fas-kray 0 dz-U_Fas+zn nocopy ;
+  rotate last object_22 done 2points xn+dx-R_Fas-kray,yn,dz-U_Fas+zn xn+dx-R_Fas-kray,yn+10,dz-U_Fas+zn 180 copy 1 ;
+  move last object_22 done 0,0,-dz+U_Fas+D_Fas nocopy ;
+}
+if (variant==2)
+{
+  move last object_22 done xn+L_Fas+kray 0 dz+zn-U_Fas nocopy ;
+  rotate last object_22 done 2points xn+R_Fas+kray,yn,dz+zn-U_Fas xn+R_Fas+kray,yn+10,dz+zn-U_Fas 180 copy 1 ;
+  move last object_22 done 0,0,-dz+U_Fas+D_Fas nocopy ;
+}
+if (variant==3)
+{
+  rotate last object_22 done 2points Arr[1]/2 yn Arr[3]/2 Arr[1]/2 yn-Arr[2]/2 Arr[3]/2 -90 nocopy;
+  move last object_22 done dx h_fas zn+dz-U_Fas-kray-Arr[1] nocopy;
+  mirror last object_22 done 3points xn+dx/2,yn+h_fas/2,zn xn+dx/2,yn,dz+zn-U_Fas xn+dx/2,yn+h_fas/2,dz+zn-U_Fas copy 1;
+}
+if (variant==4)
+{
+  rotate last object_22 done 2points Arr[1]/2 yn Arr[3]/2 Arr[1]/2 yn-Arr[2]/2 Arr[3]/2 -90 nocopy;
+  move last object_22 done dx h_fas zn+kray+D_Fas nocopy;
+  mirror last object_22 done 3points xn+dx/2,yn+h_fas/2,zn xn+dx/2,yn,dz+zn-U_Fas xn+dx/2,yn+h_fas/2,dz+zn-U_Fas copy 1;
+}
+Mend:
+g_FurnType="230200";
+exit;

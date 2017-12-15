@@ -1,0 +1,31 @@
+// Разбор объекта - ящик
+global MacroSw  ; // Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+MacroSw=1
+
+WMFPath=DbVar("WMFPath","")
+
+ProtoPath=GetProtoMac("Shkaf.ptl")
+macro ProtoPath+"global_s.mac" ;
+F2000=DbVar("F2000",0)
+w=DbVar("w",330)   //ширина ниши
+d=DbVar("D",320)   //глубина фасада
+h=DbVar("H",822)   //высота ниши
+
+macro ProtoPath+"boxGR.mac" ;
+
+	LDim 3DDim 0 d 0
+		 w d 0
+	Horizontal 0 d -150
+
+	LDim 3DDim w 0 H
+		w 0 0
+	Vertical	 w+150 0 0
+
+View None Gcs .33 .87 .38;
+Zoom all
+Hide
+
+If F2000 { Exp2d Wmf Yes WMFPath+"1.WMF" [ overwrite ] }
+Else     { Exp2d Wmf No WMFPath+"1.WMF" [ overwrite ] }
+
+exit

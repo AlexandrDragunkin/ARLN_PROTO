@@ -1,0 +1,127 @@
+//-- Постобработка нового проекта
+//-- Пользователь может сюда добавить свои настройки старта
+global ProtoPath;
+putmsg("AfterOpenOrderProc.mac")
+
+fullname=sysvar(2) // ard
+pname=getfilepath(fullname); // ard
+macro ProtoPath+"addFolderToSysPath.py" ;
+if (fullname!=pname) {
+	gosub addImporter;
+}
+
+IsBandInside=1; // Кромка включена в габариты панели
+nullout=setvarinst(2,"IsBandInside",IsBandInside);
+nullout=udSetEntity("IsBandInside",IsBandInside);
+
+IsBandCut=1; // Кромку можно резать
+nullout=setvarinst(2,"IsBandCut",IsBandCut);
+nullout=udSetEntity("IsBandCut",IsBandCut);
+
+macro ProtoPath+"SetBandMask.mac" IsBandCut+IsBandInside*8;
+
+// 1 - "K3-Раскрой";
+nullout=setvarinst(2,"CuttingType",CuttingType);
+nullout=udSetEntity("CuttingType",1);
+
+// ShowEdging=0; // Показывать кромку
+// nullout=setvarinst(2,"LL_ShowEdging",ShowEdging);
+// nullout=udSetEntity("LL_ShowEdging",ShowEdging);
+
+DopW=1; // Допуск по ширине пропила
+nullout=setvarinst(2,"DopW",DopW);
+nullout=udSetEntity("DopW",DopW);
+
+DopP=1; // Допуск по глубине пропила
+nullout=setvarinst(2,"DopP",DopP);
+nullout=udSetEntity("DopP",DopP);
+
+bThrough=1; //Cтроить сквозные пропилы
+nullout=setvarinst(2,"bThrough",bThrough);
+nullout=udSetEntity("bThrough",bThrough);
+
+=udLoadSave(1);
+// MbPanel Band off;
+
+// // Распашные двери накладные
+// DNUp=14.5;
+// DNDown=14.5;
+// DNLeft=14.5;
+// DNRight=14.5;
+// Door_Zw=3;
+
+// NULLOUT=setvarinst(2,"DNUp",DNUp);
+// NULLOUT=setvarinst(2,"DNDown",DNDown);
+// NULLOUT=setvarinst(2,"DNLeft",DNLeft);
+// NULLOUT=setvarinst(2,"DNRight",DNRight);
+// NULLOUT=setvarinst(2,"Door_Zw",Door_Zw);
+// NULLOUT=udSetEntity("DNUp",DNUp);
+// NULLOUT=udSetEntity("DNDown",DNDown);
+// NULLOUT=udSetEntity("DNLeft",DNLeft);
+// NULLOUT=udSetEntity("DNRight",DNRight);
+// NULLOUT=udSetEntity("Door_Zw",Door_Zw);
+
+// // Фасады ящиков накладные
+// BNUp=14.5;
+// BNDown=14.5;
+// BNLeft=14.5;
+// BNRight=14.5;
+// B_Zbox=3;
+
+// NULLOUT=setvarinst(2,"BNUp",BNUp);
+// NULLOUT=setvarinst(2,"BNDown",BNDown);
+// NULLOUT=setvarinst(2,"BNLeft",BNLeft);
+// NULLOUT=setvarinst(2,"BNRight",BNRight);
+// NULLOUT=setvarinst(2,"B_Zbox",B_Zbox);
+// NULLOUT=udSetEntity("BNUp",BNUp);
+// NULLOUT=udSetEntity("BNDown",BNDown);
+// NULLOUT=udSetEntity("BNLeft",BNLeft);
+// NULLOUT=udSetEntity("BNRight",BNRight);
+// NULLOUT=udSetEntity("B_Zbox",B_Zbox);
+
+// // Распашные двери вкладные
+// DUUp=1.5;
+// DUDown=1.5;
+// DULeft=1.5;
+// DURight=1.5;
+
+// NULLOUT=setvarinst(2,"DUUp",DUUp);
+// NULLOUT=setvarinst(2,"DUDown",DUDown);
+// NULLOUT=setvarinst(2,"DULeft",DULeft);
+// NULLOUT=setvarinst(2,"DURight",DURight);
+// NULLOUT=udSetEntity("DUUp",DUUp);
+// NULLOUT=udSetEntity("DUDown",DUDown);
+// NULLOUT=udSetEntity("DULeft",DULeft);
+// NULLOUT=udSetEntity("DURight",DURight);
+
+// // Фасады ящиков вкладные
+// BUUp=1.5;
+// BUDown=1.5;
+// BULeft=1.5;
+// BURight=1.5;
+
+// NULLOUT=setvarinst(2,"BUUp",BUUp);
+// NULLOUT=setvarinst(2,"BUDown",BUDown);
+// NULLOUT=setvarinst(2,"BULeft",BULeft);
+// NULLOUT=setvarinst(2,"BURight",BURight);
+// NULLOUT=udSetEntity("BUUp",BUUp);
+// NULLOUT=udSetEntity("BUDown",BUDown);
+// NULLOUT=udSetEntity("BULeft",BULeft);
+// NULLOUT=udSetEntity("BURight",BURight);
+
+exit;
+//***************************************************************************************************************************
+//***************************************************************************************************************************
+//***************************************************************************************************************************
+//***************************************************************************************************************************
+
+
+addImporter:
+<?python
+import k3
+import sys
+import py_cmd.importer as importer
+protopath=k3.GlobalVar('protoPath')
+sys.meta_path.append(importer.starter(os.path.join(protopath.value,"AReports")))
+?>
+return;

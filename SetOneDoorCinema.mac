@@ -1,0 +1,46 @@
+global ProtoPath ;
+//*********************************************
+// присвоение атрибута Синема объектам Двери с objDo до objPosle
+//              МСВ
+//              ГеоС 2012 г.
+//*********************************************
+getpar
+objDo		//К-во старых объектов
+objPosle	//К-во Общее
+x1, y1, z1,	// Точка ниши
+W1, H1		// Размер ниши
+h_fas		// Толщина фасада
+Rplace		// Вариант открывания
+Furnt		// Четыре знака Funtype
+Master		// 2 - мастер, 0 - самостоятельный
+LocalKey	// Ключ
+;
+
+
+	if (Rplace<1) {	// Нет
+     //-- Если дверь не имеет стороны окткрывания, ее не открываем
+		goto final;
+	}
+	macro ProtoPath+"SetCinMain.mac" ByRef scarr, Master, 0, 10;
+//	macro ProtoPath+"SetCinMove.mac" scarr,0,0,H1/2, 0, 3, 0;
+      if (Rplace==1)
+      {
+	macro ProtoPath+"SetCinRotate.mac" scarr,x1,y1,0 , x1,y1,10, 90, 0, 10, LocalKey;
+      }
+      if (Rplace==2)
+      {
+	macro ProtoPath+"SetCinRotate.mac" scarr,x1+W1,y1,0 , x1+W1,y1,10, -90, 0, 10, LocalKey;
+      }
+      if (Rplace==3)
+      {
+ 	macro ProtoPath+"SetCinRotate.mac" scarr,x1,y1,z1, x1+1,y1,z1, -90, 0, 10, LocalKey;
+     }
+      if (Rplace==4)
+      {
+ 	macro ProtoPath+"SetCinRotate.mac" scarr,x1,y1,z1+H1, x1+1,y1,z1+H1, 90, 0, 10, LocalKey;
+      }
+	macro ProtoPath+"SetCinemaByType.mac" objDo objPosle scarr Furnt;
+	kol=CinemaScr(99,scarr);
+
+final:
+exit;

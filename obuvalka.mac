@@ -1,0 +1,59 @@
+//-- Макропрограмма устанавливает обувную полку
+global ProtoPath;
+global MacroSw;
+defarr first[3] second[3] q[3] g[6] snap[3];
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами
+NULLOUT=getvarinst(2,"g_ShShelf",ShShelf,0);          //-- Тип cотовой полки
+NULLOUT=getvarinst(2,"NClypseSot",NClypseSot,0);    //-- Количество клипс для сотовой полки
+
+NULLOUT=getmplsubst(53,"ShShelf_ID","ShShelf_typs");
+if findinarray(ShShelf_ID,ShShelf)==0
+{
+	ShShelf=ShShelf_ID[1];
+	nullout=setvarinst(2,"g_ShShelf",ShShelf);
+	nullout=udSetEntity("g_ShShelf",ShShelf);
+}
+
+defarr basep[3];
+NULLOUT=getsnap();
+
+//dn=priceinfo(ShShelf,"NAME","Обувная полка",2);   // Запись в спр.изд.
+dn="Обувная полка";   // Запись в спр.изд.  слишком конкретная
+macro ProtoPath+"SetEnam.mac" dn;
+
+defarr arrin[3], arrout[14];
+arrin[1]=170;  // Высота резиновой панели
+mbget "Укажите положение обувной полки" shell arrin arrout :
+basep[1]=arrout[1];
+basep[2]=arrout[2];
+basep[3]=arrout[3];
+xgab=arrout[4];
+ygab=arrout[5];
+Numb=arrout[6];
+Shift=arrout[7];
+//mbget "Укажите точку установки полки" shell
+//  basep[1] basep[2] basep[3] xgab ygab Numb Shift :
+//------------------------------------------------
+newvar:
+MacroSw=1;
+  protoobj create "Shkaf.ptl" 154
+  "x" xgab
+  "y" basep[2]
+  "z" basep[3]
+  "width"  ShShelf
+  "N_clypse" 3
+  "N_Kron" 3
+  done
+  basep[1] 0 0;
+MacroSw=0;
+//delete pp1 done;
+  objident last 1  polka;
+move last 1 done 0 0 arrin[1] nocopy;
+if (Numb>1)
+{
+  move multicopy Numb-1 polka done 0 0 shift;
+}
+
+NULLOUT=ReSnap();
+exit;

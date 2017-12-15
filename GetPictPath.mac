@@ -1,0 +1,1651 @@
+//-- Сформировать узор для дверки
+global ProtoPath;
+global FasVaria;
+getpar xn,yn,zn,dx,dz,
+       Picture    // Номер рисунка
+       PictPar    // Массив дополнительных параметров для рисунка (к-во зависит от рисунка)
+       PictNum    // К-во контуров
+       PicArr;    // Массив ссылок на hobj контуров
+;
+PictNum=0;
+prov1=dx;
+prov2=dz;
+//======================== Крышка двойная ===========
+if (Picture==3)
+{
+  dx1=40; //-- Отступ узора по ширине
+  dz1=50; //-- Отступ узора по высоте
+// Малый фасад
+  if (dx<PictPar[1]*2+PictPar[3]*2+186)||(dz<PictPar[2]*2+PictPar[3]*2+76)
+  {
+	  xn=xn+PictPar[1]
+	  zn=zn+PictPar[2]
+	  dx=dx-PictPar[1]*2
+	  dz=dz-PictPar[2]*2
+	  if (dx<204)||(dz<94)		// Без рисунка фасада
+	{
+	putmsg("Текущие габариты фасада "+str(prov1)+"x"+str(prov2)+" меньше допустимых"+str((PictPar[1]*2)+206)+"x"+str((PictPar[2]*2)+94),0);
+	putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+	exit;
+	}
+	  line xn+dx1 yn zn+dz-dz1
+			 xn yn zn+dz-dz1
+			 xn yn zn
+			 xn+dx yn zn
+			 xn+dx yn zn+dz-dz1
+			 xn+dx-dx1 yn zn+dz-dz1;
+
+	   arc xn+dx-dx1 yn zn+dz-dz1
+			Internal xn+dx/2 yn  zn+dz
+			xn+dx1 yn zn+dz-dz1;
+	  #Pat path select last 6 done last 6 create;
+	  PicArr[1]=Pat;
+	  PictNum=1;
+	  exit;
+}
+// Обычный фасад
+  xn=xn+PictPar[1]
+  zn=zn+PictPar[2]
+  dx=dx-PictPar[1]*2
+  dz=dz-PictPar[2]*2
+
+
+  line           xn+dx1 yn zn+dz-dz1
+		 xn yn zn+dz-dz1
+		 xn yn zn
+		 xn+dx yn zn
+		 xn+dx yn zn+dz-dz1
+		 xn+dx-dx1 yn zn+dz-dz1;
+
+   arc xn+dx-dx1 yn zn+dz-dz1
+		Internal xn+dx/2 yn  zn+dz
+		xn+dx1 yn zn+dz-dz1;
+  #Pat path select last 6 done last 6 create;
+  PicArr[1]=Pat;
+  PictNum=1;
+  xn=xn+PictPar[3]
+  zn=zn+PictPar[3]
+  dx=dx-PictPar[3]*2
+  dz=dz-PictPar[3]*2
+  line xn+dx1 yn zn+dz-dz1
+		 xn yn zn+dz-dz1
+		 xn yn zn
+		 xn+dx yn zn
+		 xn+dx yn zn+dz-dz1
+		 xn+dx-dx1 yn zn+dz-dz1;
+
+   arc xn+dx-dx1 yn zn+dz-dz1
+		Internal xn+dx/2 yn  zn+dz
+		xn+dx1 yn zn+dz-dz1;
+  #Pat path select last 6 done last 6 create;
+  PicArr[2]=Pat;
+  PictNum=2;
+  exit;
+}
+//========================= Н-образный ===========================
+if (Picture==2) {
+
+  //-- Горизонтальные линии
+  d1=PictPar[1];
+  if (dx<d1*2+96)||(dz<d1*2+66)
+{
+	if (dx<d1*2+96)||(dz<116)
+	{
+	putmsg("Текущие габариты фасада "+str(prov1)+"x"+str(prov2)+" меньше допустимых "+str(d1*2+96)+"х116",0);
+	putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+	 exit;
+	}
+
+ line xn+d1,yn,zn-50              // 50 - это размер "обхода" фасада
+     xn+d1,yn,zn+dz+50
+     xn+dx-d1,yn,zn+dz+50
+     xn+dx-d1,yn,zn-50
+     close
+     done;
+  #Pat path select last 4 done last 1 create;
+  PicArr[1]=Pat;
+  PictNum=1;
+  exit;
+}
+  line xn+d1,yn,zn+d1
+     xn+dx-d1,yn,zn+d1
+     xn+dx-d1,yn,zn+dz-d1
+     xn+d1,yn,zn+dz-d1
+     close
+     done;
+  #Pat path select last 5 done last 1 create;
+  PicArr[1]=Pat;
+  PictNum=1;
+  //-- Вертикальные линии
+  line xn+d1,yn,zn-50              // 50 - это размер "обхода" фасада
+     xn+d1,yn,zn+dz+50
+     xn+dx-d1,yn,zn+dz+50
+     xn+dx-d1,yn,zn-50
+     close
+     done;
+  #Pat path select last 5 done last 1 create;
+  PicArr[2]=Pat;
+  PictNum=2;
+  exit;
+}
+//============================= Крышка одинарная =======================
+if (Picture==1) {
+  xn=xn+PictPar[1]
+  zn=zn+PictPar[2]
+  dx=dx-PictPar[1]*2
+  dz=dz-PictPar[2]*2
+  dx1=30; //-- Отступ узора по ширине
+  dz1=50; //-- Отступ узора по высоте
+if (dx<186)||(dz<86)		// Без рисунка фасада
+{
+	putmsg("Текущие габариты фасада "+str(prov1)+"x"+str(prov2)+" меньше допустимых"+str((PictPar[1]*2)+186)+"x"+str((PictPar[2]*2)+86),0);
+	putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+	exit;
+}
+  line xn+dx1 yn zn+dz-dz1
+		 xn yn zn+dz-dz1
+		 xn yn zn
+		 xn+dx yn zn
+		 xn+dx yn zn+dz-dz1
+		 xn+dx-dx1 yn zn+dz-dz1;
+
+   arc xn+dx-dx1 yn zn+dz-dz1
+		Internal xn+dx/2 yn  zn+dz
+		xn+dx1 yn zn+dz-dz1;
+  #Pat path select last 6 done last 6 create;
+  PicArr[1]=Pat;
+  PictNum=1;
+  exit;
+}
+//============================== Лабиринт ======================
+if (Picture==4)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине
+  dz1=PictPar[2]; //-- Отступ узора по высоте
+  d2=PictPar[3]; //-- Отступ между узорами
+  if (dz<=(dz1+d2+d2+10)*2) {  // Малый фасад
+    if (dx<(dx1*2)+(d2*2)+26)||(dz<(dz1*2)+24)
+    {
+    	putmsg("Текущие габариты фасада "+str(prov1)+"x"+str(prov2)+" меньше допустимых"+str((dx1*2)+(d2*2)+26)+"x"+str((dz1*2)+24),0);
+	putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+    exit;
+    } // Без рисунка фасад
+     line           xn+dx1+d2    yn zn+dz-dz1
+		 xn+dx-dx1-d2 yn zn+dz-dz1
+		 xn+dx-dx1-d2 yn zn+dz1
+		 xn+dx1+d2    yn zn+dz1
+		 close;
+    #Pat path select last 4 done last 1 create;
+    PicArr[1]=Pat;
+    PictNum=1;
+    line         xn+dx1       yn zn-dz1
+		 xn+dx-dx1    yn zn-dz1
+		 xn+dx-dx1    yn zn+dz+dz1
+		 xn+dx1       yn zn+dz+dz1
+		 close;
+    #Pat path select last 12 done last 1 create;
+    PicArr[2]=Pat;
+    PictNum=2;
+
+  }
+  else { // Обычный фасад
+    line           xn+dx1+d2    yn zn+dz-dz1-d2
+		 xn+dx-dx1-d2 yn zn+dz-dz1-d2
+		 xn+dx-dx1-d2 yn zn+dz1+d2
+		 xn+dx1+d2    yn zn+dz1+d2
+		 close;
+    #Pat path select last 4 done last 1 create;
+    PicArr[1]=Pat;
+    PictNum=1;
+    line           xn+dx1+d2+d2    yn zn+dz-dz1
+		 xn+dx-dx1-d2-d2 yn zn+dz-dz1
+		 xn+dx-dx1-d2-d2 yn zn+dz-dz1-d2-d2
+		 xn+dx-dx1       yn zn+dz-dz1-d2-d2
+		 xn+dx-dx1       yn zn+dz1+d2+d2
+		 xn+dx-dx1-d2-d2 yn zn+dz1+d2+d2
+		 xn+dx-dx1-d2-d2 yn zn+dz1
+		 xn+dx1+d2+d2    yn zn+dz1
+		 xn+dx1+d2+d2    yn zn+dz1+d2+d2
+		 xn+dx1          yn zn+dz1+d2+d2
+		 xn+dx1          yn zn+dz-dz1-d2-d2
+		 xn+dx1+d2+d2    yn zn+dz-dz1-d2-d2
+		 close;
+    #Pat path select last 12 done last 1 create;
+    PicArr[2]=Pat;
+    PictNum=2;
+  }
+  exit;
+}
+  //============================== Пирамида ======================
+if (Picture==5)
+{
+
+  dx1=PictPar[1]; //-- Отступ узора по ширине
+  dz1=PictPar[2]; //-- Отступ узора по высоте
+  d2=PictPar[3]; //-- Отступ между узорами 25 мм
+
+  if (dz<=(dz1*3+d2*8))||(dx<=(dx1*3+d2*8))
+  {  // Малый фасад
+    if (dz<=(dz1+d2*2)*2)||(dx<=(dx1+d2*2)*2)
+    {
+	putmsg("Текущие габариты фасада "+str(prov1)+"x"+str(prov2)+" меньше допустимых"+str((dx1+d2*2)*2+4)+"x"+str((dz1+d2*2)*2+4),0);
+	putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+	exit;
+    } // Без рисунка фасад
+    line         xn+dx1    yn zn+dz-dz1
+		 xn+dx-dx1 yn zn+dz-dz1
+		 xn+dx-dx1 yn zn+dz1
+		 xn+dx1    yn zn+dz1
+		 close;
+    #Pat path select last 4 done last 1 create;
+    PicArr[1]=Pat;
+    PictNum=1;
+    line         xn+dx1+d2    yn zn+dz-dz1-d2
+		 xn+dx-dx1-d2 yn zn+dz-dz1-d2
+		 xn+dx-dx1-d2 yn zn+dz1+d2
+		 xn+dx1+d2    yn zn+dz1+d2
+		 close;
+    #Pat path select last 4 done last 1 create;
+    PicArr[2]=Pat;
+    PictNum=2;
+  }
+
+else
+  { // Обычный фасад
+  i=0;
+  loopyt:
+  i=i+1;
+    line         xn+dx1+d2*(i-1)    yn zn+dz-dz1-d2*(i-1)
+		 xn+dx-dx1-d2*(i-1) yn zn+dz-dz1-d2*(i-1)
+		 xn+dx-dx1-d2*(i-1) yn zn+dz1+d2*(i-1)
+		 xn+dx1+d2*(i-1)    yn zn+dz1+d2*(i-1)
+		 close;
+    #Pat path select last 4 done last 1 create;
+    PicArr[i]=Pat;
+    PictNum=i;
+    if (i<5) {goto loopyt;}
+  }
+  exit;
+}
+  //=============================== Дуэт =====================
+if (Picture==6)
+{
+
+  dx1=PictPar[1]; //-- Отступ узора по ширине
+  dz1=PictPar[2]; //-- Отступ узора по высоте
+  d2=PictPar[3]; //-- Отступ между узорами 40 мм
+  if (dz<=(4*dz1+2*d2))
+  {  // Малый фасад
+    if (dz<116)||(dx<(dx1)*4+4)
+    {
+	putmsg("Текущие габариты фасада "+str(prov1)+"x"+str(prov2)+" меньше допустимых"+str((dx1)*4+4)+"x116",0);
+	putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+	exit;
+    } // Без рисунка фасад
+    line         xn-dx    yn zn-dz1
+		 xn+dx1   yn zn-dz1
+		 xn+dx1   yn zn+dz+dz1
+		 xn-dx    yn zn+dz+dz1
+		 close;
+    if (FasVaria==2)
+    {
+     move last 4 done xn+dx/2 0 zn+dz/2 xn+dx/2 yn zn+dz/2  180 nocopy;
+    }
+    #Pat path select last 4 done last 1 create;
+    PicArr[1]=Pat;
+    PictNum=1;
+    #Pat move copy last done d2 0 0;
+    PicArr[2]=Pat;
+    PictNum=2;
+    #Pat move copy last done d2 0 0;
+    PicArr[3]=Pat;
+    PictNum=3;
+  }
+  else
+  { // Обычный фасад
+    line         xn-dx    yn zn-dz1
+		 xn+dx1   yn zn-dz1
+		 xn+dx1   yn zn+dz+dz1
+		 xn-dx    yn zn+dz+dz1
+		 close;
+    if (FasVaria==2)
+    {
+     move last 4 done (dx-dx1)+dx 0 0 nocopy;
+     d2=-d2;
+    }
+    #Pat path select last 4 done last 1 create;
+    PicArr[1]=Pat;
+    PictNum=1;
+    #Pat move copy last done d2 0 0;
+    PicArr[2]=Pat;
+    PictNum=2;
+    #Pat move copy last done d2 0 0;
+    PicArr[3]=Pat;
+    PictNum=3;
+    if (FasVaria==2)
+    {
+     d2=d2*(-1);
+    }
+    line         xn-dx1      yn zn+dz1
+		 xn+dx+dx1   yn zn+dz1
+		 xn+dx+dx1   yn zn-dz
+		 xn-dx1      yn zn-dz
+		 close;
+    #Pat path select last 4 done last 1 create;
+    PicArr[4]=Pat;
+    PictNum=4;
+    #Pat move copy last done 0 0 d2;
+    PicArr[5]=Pat;
+    PictNum=5;
+    #Pat move copy last done 0 0 d2;
+    PicArr[6]=Pat;
+    PictNum=6;
+    }
+  exit;
+}
+  //================================ Волна ====================
+if (Picture==7)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50мм
+  d2=PictPar[3];    //-- Прогиб малого фасада 40мм
+  if (dx<2*dx1+156)||(dz<2*dz1+256)
+  {  // Малый фасад
+    if (dz<3*d2)||(dx<200)
+    {
+	putmsg("Текущие габариты фасада "+str(prov1)+"x"+str(prov2)+" меньше допустимых 200x"+str(3*d2),0);
+	putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+	exit;
+    } // Без рисунка фасад
+    arc          xn-1 yn zn+dz/2
+	internal xn+dx/4 yn zn+dz/2+d2
+		 xn+dx/3 yn zn+dz/2
+		 ;
+    arc          xn+dx/3 yn zn+dz/2
+	internal xn+dx/2 yn zn+dz/2-d2
+		 xn+dx-dx/3 yn zn+dz/2
+		 ;
+    arc          xn+dx-dx/3 yn zn+dz/2
+	internal xn+dx-dx/4 yn zn+dz/2+d2
+		 xn+dx+1    yn zn+dz/2
+		 ;
+    line         xn+dx+1    yn zn+dz/2
+		 xn+dx+1    yn zn-5
+		 done;
+    line         xn+dx+1    yn zn-5
+		 xn-1       yn zn-5
+		 done;
+    line         xn-1       yn zn-5
+		 xn-1 yn zn+dz/2
+		 done;
+    #Pat path select last 6 done last 1 create;
+    PicArr[1]=Pat;
+    PictNum=1;
+
+  }
+  else
+    { // Обычный фасад
+    ras=sqrt(((xn+dx-3*dx1)-(xn+dx-2.5*dx1))*((xn+dx-3*dx1)-(xn+dx-2.5*dx1))+((zn+dz-dz1)-(zn+dz-dz/2)));
+    cq=ras/1.4;
+    if (FasVaria==1)
+    {
+     line         xn+dx1    yn zn+dz-dz1
+		  xn+dx-3*dx1 yn zn+dz-dz1
+		  done;
+     arc          xn+dx-3*dx1 yn zn+dz-dz1
+	 internal xn+dx-3*dx1-cq yn zn+dz-dz/4
+		  xn+dx-2.5*dx1 yn zn+dz-dz/2
+		  ;
+     arc          xn+dx-2.5*dx1 yn zn+dz-dz/2
+	 internal xn+dx-dx1 yn zn+dz/4+dz1
+		  xn+dx-dx1 yn zn+dz1
+		  ;
+     line	  xn+dx-dx1 yn zn+dz1
+		  xn+dx1 yn zn+dz1
+		  done;
+     line         xn+dx1 yn zn+dz1
+		  xn+dx1    yn zn+dz-dz1
+		  done;
+    }
+    if (FasVaria==2)
+    {
+     line         xn-dx1+dx    yn zn+dz-dz1
+		  xn+3*dx1 yn zn+dz-dz1
+		  done;
+     arc          xn+3*dx1 yn zn+dz-dz1
+	 internal xn+3*dx1+cq yn zn+dz-dz/4
+		  xn+2.5*dx1 yn zn+dz-dz/2
+		  ;
+     arc          xn+2.5*dx1 yn zn+dz-dz/2
+	 internal xn+dx1 yn zn+dz/4+dz1
+		  xn+dx1 yn zn+dz1
+		  ;
+     line	  xn+dx-dx1 yn zn+dz1
+		  xn+dx1 yn zn+dz1
+		  done;
+     line         xn-dx1+dx yn zn+dz1
+		  xn-dx1+dx yn zn+dz-dz1
+		  done;     
+    }
+    #Pat path select last 5 done last 1 create;
+    PicArr[1]=Pat;
+    PictNum=1;
+  }
+  exit;
+}
+//================================ Танго ====================
+if (Picture==8)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 40мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 40мм
+  rs=PictPar[4]; //-- Отступ до скругления углов. 60мм
+  rst=1.4*rs; // -- Прогиб дуги
+  d2=0;  // -- Отступ до узора. Здесь можно обнулить
+  if (dz<=(dz1+rs+10)*2)||(dx<=(dx1+rs+10)*2) //Малый фасад
+   {
+        dz1=20; //-- Отступ узора по высоте
+	rs=30;
+	rst=46;
+        if (dz<(dz1+rs+11)*2)||(dx<(dx1+rs+11)*2)
+	{
+	putmsg("Текущие габариты фасада "+str(prov1)+"x"+str(prov2)+" меньше допустимых "+str((dx1+rs+11)*2)+"x"+str((dz1+rs+11)*2),0);
+	putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+	exit;
+	} // Без рисунка фасад
+	  arc            xn+dx1+d2    yn zn+dz-dz1-rs-d2
+	      internal	 xn+dx1+rs-rst/4+d2 yn zn+dz-dz1-(rs-rst/4)-d2
+			 xn+dx1+rs+d2 yn zn+dz-dz1-d2
+			 ;
+	  line		 xn+dx1+rs+d2 yn zn+dz-dz1-d2
+			 xn+dx-dx1-rs-d2 yn zn+dz-dz1-d2
+			 done;
+	  arc            xn+dx-dx1-rs-d2 yn zn+dz-dz1-d2
+	      internal	 xn+dx-dx1-(rs-rst/4)-d2 yn zn+dz-dz1-(rs-rst/4)-d2
+			 xn+dx-dx1-d2 yn zn+dz-dz1-rs-d2
+			 ;
+	  line		 xn+dx-dx1-d2 yn zn+dz-dz1-rs-d2
+			 xn+dx-dx1-d2 yn zn+dz1+rs+d2
+			 done;
+	  arc            xn+dx-dx1-d2 yn zn+dz1+rs+d2
+	      internal	 xn+dx-dx1-(rs-rst/4)-d2 yn zn+dz1+(rs-rst/4)+d2
+			 xn+dx-dx1-rs-d2 yn zn+dz1+d2
+			 ;
+	  line		 xn+dx-dx1-rs-d2 yn zn+dz1+d2
+			 xn+dx1+rs+d2 yn zn+dz1+d2
+			 done;
+	  arc            xn+dx1+rs+d2 yn zn+dz1+d2
+	      internal	 xn+dx1+(rs-rst/4)+d2 yn zn+dz1+(rs-rst/4)+d2
+			 xn+dx1+d2 yn zn+dz1+rs+d2
+			 ;
+	  line		 xn+dx1+d2 yn zn+dz1+rs+d2
+			 xn+dx1+d2    yn zn+dz-dz1-rs-d2
+			 done;
+  #Pat path select last 8 done last 1 create;
+  PicArr[1]=Pat;
+  PictNum=1;
+  exit;
+   }
+  else
+  { //Обычный фасад
+  arc            xn+dx1+d2    yn zn+dz-dz1-rs-d2
+      internal	 xn+dx1+(rs-rst/4)+d2 yn zn+dz-dz1-(rs-rst/4)-d2
+	         xn+dx1+rs+d2 yn zn+dz-dz1-d2
+		 ;
+  line		 xn+dx1+rs+d2 yn zn+dz-dz1-d2
+		 xn+dx-dx1-rs-d2 yn zn+dz-dz1-d2
+		 done;
+  arc            xn+dx-dx1-rs-d2 yn zn+dz-dz1-d2
+      internal	 xn+dx-dx1-(rs-rst/4)-d2 yn zn+dz-dz1-(rs-rst/4)-d2
+	         xn+dx-dx1-d2 yn zn+dz-dz1-rs-d2
+		 ;
+  line		 xn+dx-dx1-d2 yn zn+dz-dz1-rs-d2
+		 xn+dx-dx1-d2 yn zn+dz1+rs+d2
+		 done;
+  arc            xn+dx-dx1-d2 yn zn+dz1+rs+d2
+      internal	 xn+dx-dx1-(rs-rst/4)-d2 yn zn+dz1+(rs-rst/4)+d2
+	         xn+dx-dx1-rs-d2 yn zn+dz1+d2
+		 ;
+  line		 xn+dx-dx1-rs-d2 yn zn+dz1+d2
+		 xn+dx1+rs+d2 yn zn+dz1+d2
+		 done;
+  arc            xn+dx1+rs+d2 yn zn+dz1+d2
+      internal	 xn+dx1+(rs-rst/4)+d2 yn zn+dz1+(rs-rst/4)+d2
+	         xn+dx1+d2 yn zn+dz1+rs+d2
+		 ;
+  line		 xn+dx1+d2 yn zn+dz1+rs+d2
+		 xn+dx1+d2    yn zn+dz-dz1-rs-d2
+		 done;
+  #Pat path select last 8 done last 1 create;
+  PicArr[1]=Pat;
+  PictNum=1;
+  }
+  exit;
+}
+//============================= Танго с кантом =======================
+if (Picture==9)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 60мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 60мм
+  rs=PictPar[4]; //-- Отступ до скругления углов. 60мм
+  rst=1.4*rs; // -- Прогиб дуги
+PictPar[3]=50;
+  d2=PictPar[3];  // --- Отступ до узора 50мм
+  if (dz<=(dz1+rs+30)*2)||(dx<=(dx1+rs+30)*2) //Малый фасад
+   {
+        dz1=20; //-- Отступ узора по высоте
+	rs=30;
+	rst=46;
+        if (dz<=(dz1+rs+rst+10)*2)||(dx<=(dx1+rs+rst+10)*2)
+	{
+	putmsg("Текущие габариты фасада "+str(prov1)+"x"+str(prov2)+" меньше допустимых "+str((dx1+rs+rst+10)*2+2)+"x"+str((dz1+rs+rst+10)*2+2),0);
+	putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+	exit;
+	} // Без рисунка фасад
+	  arc            xn+dx1+d2    yn zn+dz-dz1-rs-d2
+	      internal	 xn+dx1+rs-rst/4+d2 yn zn+dz-dz1-(rs-rst/4)-d2
+			 xn+dx1+rs+d2 yn zn+dz-dz1-d2
+			 ;
+	  line		 xn+dx1+rs+d2 yn zn+dz-dz1-d2
+			 xn+dx-dx1-rs-d2 yn zn+dz-dz1-d2
+			 done;
+	  arc            xn+dx-dx1-rs-d2 yn zn+dz-dz1-d2
+	      internal	 xn+dx-dx1-(rs-rst/4)-d2 yn zn+dz-dz1-(rs-rst/4)-d2
+			 xn+dx-dx1-d2 yn zn+dz-dz1-rs-d2
+			 ;
+	  line		 xn+dx-dx1-d2 yn zn+dz-dz1-rs-d2
+			 xn+dx-dx1-d2 yn zn+dz1+rs+d2
+			 done;
+	  arc            xn+dx-dx1-d2 yn zn+dz1+rs+d2
+	      internal	 xn+dx-dx1-(rs-rst/4)-d2 yn zn+dz1+(rs-rst/4)+d2
+			 xn+dx-dx1-rs-d2 yn zn+dz1+d2
+			 ;
+	  line		 xn+dx-dx1-rs-d2 yn zn+dz1+d2
+			 xn+dx1+rs+d2 yn zn+dz1+d2
+			 done;
+	  arc            xn+dx1+rs+d2 yn zn+dz1+d2
+	      internal	 xn+dx1+(rs-rst/4)+d2 yn zn+dz1+(rs-rst/4)+d2
+			 xn+dx1+d2 yn zn+dz1+rs+d2
+			 ;
+	  line		 xn+dx1+d2 yn zn+dz1+rs+d2
+			 xn+dx1+d2    yn zn+dz-dz1-rs-d2
+			 done;
+  #Pat path select last 8 done last 1 create;
+  PicArr[1]=Pat;
+  PictNum=1;
+  	  arc            xn+dx1    yn zn+dz-dz1-rs
+	      internal	 xn+dx1+rs-rst/4 yn zn+dz-dz1-(rs-rst/4)
+			 xn+dx1+rs yn zn+dz-dz1
+			 ;
+	  line		 xn+dx1+rs yn zn+dz-dz1
+			 xn+dx-dx1-rs yn zn+dz-dz1
+			 done;
+	  arc            xn+dx-dx1-rs yn zn+dz-dz1
+	      internal	 xn+dx-dx1-(rs-rst/4) yn zn+dz-dz1-(rs-rst/4)
+			 xn+dx-dx1 yn zn+dz-dz1-rs
+			 ;
+	  line		 xn+dx-dx1 yn zn+dz-dz1-rs
+			 xn+dx-dx1 yn zn+dz1+rs
+			 done;
+	  arc            xn+dx-dx1 yn zn+dz1+rs
+	      internal	 xn+dx-dx1-(rs-rst/4) yn zn+dz1+(rs-rst/4)
+			 xn+dx-dx1-rs yn zn+dz1
+			 ;
+	  line		 xn+dx-dx1-rs yn zn+dz1
+			 xn+dx1+rs yn zn+dz1
+			 done;
+	  arc            xn+dx1+rs yn zn+dz1
+	      internal	 xn+dx1+(rs-rst/4) yn zn+dz1+(rs-rst/4)
+			 xn+dx1 yn zn+dz1+rs
+			 ;
+	  line		 xn+dx1 yn zn+dz1+rs
+			 xn+dx1    yn zn+dz-dz1-rs
+			 done;
+  #Pat path select last 8 done last 1 create;
+  PicArr[2]=Pat;
+  PictNum=2;
+  exit;
+   }
+  else
+  { //Обычный фасад
+  arc            xn+dx1+d2    yn zn+dz-dz1-rs-d2
+      internal	 xn+dx1+rs-rst/4+d2 yn zn+dz-dz1-(rs-rst/4)-d2
+	         xn+dx1+rs+d2 yn zn+dz-dz1-d2
+		 ;
+  line		 xn+dx1+rs+d2 yn zn+dz-dz1-d2
+		 xn+dx-dx1-rs-d2 yn zn+dz-dz1-d2
+		 done;
+  arc            xn+dx-dx1-rs-d2 yn zn+dz-dz1-d2
+      internal	 xn+dx-dx1-(rs-rst/4)-d2 yn zn+dz-dz1-(rs-rst/4)-d2
+	         xn+dx-dx1-d2 yn zn+dz-dz1-rs-d2
+		 ;
+  line		 xn+dx-dx1-d2 yn zn+dz-dz1-rs-d2
+		 xn+dx-dx1-d2 yn zn+dz1+rs+d2
+		 done;
+  arc            xn+dx-dx1-d2 yn zn+dz1+rs+d2
+      internal	 xn+dx-dx1-(rs-rst/4)-d2 yn zn+dz1+(rs-rst/4)+d2
+	         xn+dx-dx1-rs-d2 yn zn+dz1+d2
+		 ;
+  line		 xn+dx-dx1-rs-d2 yn zn+dz1+d2
+		 xn+dx1+rs+d2 yn zn+dz1+d2
+		 done;
+  arc            xn+dx1+rs+d2 yn zn+dz1+d2
+      internal	 xn+dx1+(rs-rst/4)+d2 yn zn+dz1+(rs-rst/4)+d2
+	         xn+dx1+d2 yn zn+dz1+rs+d2
+		 ;
+  line		 xn+dx1+d2 yn zn+dz1+rs+d2
+		 xn+dx1+d2    yn zn+dz-dz1-rs-d2
+		 done;
+  #Pat path select last 8 done last 1 create;
+  PicArr[1]=Pat;
+  PictNum=1;
+  q1=1.5*rs/4;
+//============================================================
+  arc            xn+dx1    yn zn+dz-dz1-rs-q1
+      internal	 xn+dx1+q1/2 yn zn+dz-dz1-rs-q1/4
+	         xn+dx1+q1 yn zn+dz-dz1-rs-q1/4
+		 ;
+  arc            xn+dx1+q1    yn zn+dz-dz1-rs-q1/4
+      internal	 xn+dx1+2.8*q1    yn zn+dz-dz1-2.8*q1
+	         xn+dx1+rs+q1/4 yn zn+dz-dz1-q1
+		 ;
+  arc            xn+dx1+rs+q1/4 yn zn+dz-dz1-q1
+      internal	 xn+dx1+rs+q1/4 yn zn+dz-dz1-q1/2
+	         xn+dx1+rs+q1 yn zn+dz-dz1
+		 ;
+//----------------------------------------------------------------
+  arc            xn+dx-dx1    yn zn+dz-dz1-rs-q1
+      internal	 xn+dx-dx1-q1/2 yn zn+dz-dz1-rs-q1/4
+	         xn+dx-dx1-q1 yn zn+dz-dz1-rs-q1/4
+		 ;
+  arc            xn+dx-dx1-q1    yn zn+dz-dz1-rs-q1/4
+      internal	 xn+dx-dx1-2.8*q1    yn zn+dz-dz1-2.8*q1
+	         xn+dx-dx1-rs-q1/4 yn zn+dz-dz1-q1
+		 ;
+  arc            xn+dx-dx1-rs-q1/4 yn zn+dz-dz1-q1
+      internal	 xn+dx-dx1-rs-q1/4 yn zn+dz-dz1-q1/2
+	         xn+dx-dx1-rs-q1 yn zn+dz-dz1
+		 ;
+//----------------------------------------------------------------
+  arc            xn+dx1    yn zn+dz1+rs+q1
+      internal	 xn+dx1+q1/2 yn zn+dz1+rs+q1/4
+	         xn+dx1+q1 yn zn+dz1+rs+q1/4
+		 ;
+  arc            xn+dx1+q1    yn zn+dz1+rs+q1/4
+      internal	 xn+dx1+2.8*q1    yn zn+dz1+2.8*q1
+	         xn+dx1+rs+q1/4 yn zn+dz1+q1
+		 ;
+  arc            xn+dx1+rs+q1/4 yn zn+dz1+q1
+      internal	 xn+dx1+rs+q1/4 yn zn+dz1+q1/2
+	         xn+dx1+rs+q1 yn zn+dz1
+		 ;
+//----------------------------------------------------------------
+  arc            xn+dx-dx1    yn zn+dz1+rs+q1
+      internal	 xn+dx-dx1-q1/2 yn zn+dz1+rs+q1/4
+	         xn+dx-dx1-q1 yn zn+dz1+rs+q1/4
+		 ;
+  arc            xn+dx-dx1-q1    yn zn+dz1+rs+q1/4
+      internal	 xn+dx-dx1-2.8*q1    yn zn+dz1+2.8*q1
+	         xn+dx-dx1-rs-q1/4 yn zn+dz1+q1
+		 ;
+  arc            xn+dx-dx1-rs-q1/4 yn zn+dz1+q1
+      internal	 xn+dx-dx1-rs-q1/4 yn zn+dz1+q1/2
+	         xn+dx-dx1-rs-q1 yn zn+dz1
+		 ;
+//----------------------------------------------------------------
+  line		 xn+dx1+rs+q1 yn zn+dz-dz1
+		 xn+dx-dx1-rs-q1 yn zn+dz-dz1
+		 done;
+  line		 xn+dx-dx1 yn zn+dz-dz1-rs-q1
+		 xn+dx-dx1 yn zn+dz1+rs+q1
+		 done;
+  line		 xn+dx-dx1-rs-q1 yn zn+dz1
+		 xn+dx1+rs+q1 yn zn+dz1
+		 done;
+  line		 xn+dx1 yn zn+dz1+rs+q1
+		 xn+dx1    yn zn+dz-dz1-rs-q1
+		 done;
+  #Pat path select last 16 done last 1 create;
+  PicArr[2]=Pat;
+  PictNum=2;
+  }
+  exit;
+
+}
+//================================ Лилия ====================
+if (Picture==10)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50мм
+  d1=PictPar[5];  //-- Прогиб дуги горизонтальной 35мм
+  d2=PictPar[6];  //-- Прогиб дуги вертикальной 35мм
+  ot=10; //--Отступ от центра фасада
+if (dx<d2*10)||(dz<d1*10) //Малый фасад
+{
+ d1=20;
+ d2=20;
+  if (dz<(dz1*2)+d2+(ot*2))||(dx<(dx1*2)+164+(ot*2))
+  {
+	putmsg("Текущие габариты фасада "+str(prov1)+"x"+str(prov2)+" меньше допустимых "+str((dx1*2)+164+(ot*2))+"x"+str((dz1*2)+d2+(ot*2)),0);
+	putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+	exit;
+  } // Без рисунка фасад
+}
+   dz1=dz1/3;
+   arc		xn+dx1 yn zn+dz/2
+   Internal	xn+dx/4+dx1 yn  zn+dz/2+d1
+		xn+dx/2-ot yn zn+dz/2
+		;
+   arc		xn+dx/2-ot yn zn+dz/2
+   Internal	xn+dx/4+dx1 yn  zn+dz/2-d1
+		xn+dx1 yn zn+dz/2
+		;
+ #Pat path select last 2 done last 1 create;
+ PicArr[1]=Pat;
+ PictNum=1;
+   arc		xn+dx/2+ot yn zn+dz/2
+   Internal	xn+dx-dx/4-dx1 yn  zn+dz/2+d1
+		xn+dx-dx1 yn zn+dz/2
+		;
+   arc		xn+dx-dx1 yn zn+dz/2
+   Internal	xn+dx-dx/4-dx1 yn  zn+dz/2-d1
+		xn+dx/2+ot yn zn+dz/2
+		;
+ #Pat path select last 2 done last 1 create;
+ PicArr[2]=Pat;
+ PictNum=2;
+   arc		xn+dx/2 yn zn+dz/2+ot
+   Internal	xn+dx/2-d2 yn  zn+dz-dz/4-dz1
+		xn+dx/2 yn zn+dz-dz1
+		;
+   arc		xn+dx/2 yn zn+dz-dz1
+   Internal	xn+dx/2+d2 yn  zn+dz-dz/4-dz1
+		xn+dx/2 yn zn+dz/2+ot
+		;
+  #Pat path select last 2 done last 1 create;
+  PicArr[3]=Pat;
+  PictNum=3;
+   arc		xn+dx/2 yn zn+dz1
+   Internal	xn+dx/2-d2 yn  zn+dz/4+dz1
+		xn+dx/2 yn zn+dz/2-ot
+		;
+   arc		xn+dx/2 yn zn+dz/2-ot
+   Internal	xn+dx/2+d2 yn  zn+dz/4+dz1
+		xn+dx/2 yn zn+dz1
+		;
+  #Pat path select last 2 done last 1 create;
+  PicArr[4]=Pat;
+  PictNum=4;
+  exit;
+}
+//================================ Дуга ====================
+if (Picture==11)  //-- Номер рисунка (свойство Tracery типа фасада)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  d1=PictPar[5];  //-- Прогиб дуги 50 мм
+  if (dx<dx1*3)||(dz<(dz1*2+d1)) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    if ((dz<dz1*2+d1)||(dx<dx1*2)) //-- Проверка на возможность создания фасада
+    {
+      putmsg("Текущие габариты фасада "+str(dx)+"x"+str(dz)+" меньше допустимых "+str(dx1*2)+"x"+str(dz1*2+d1),0);
+      putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+      exit;
+    }
+    exit;
+  }
+  arc   xn+dx1,yn,zn+dz-dz1-d1
+        xn+dx-dx1,yn,zn+dz-dz1-d1
+        xn+dx/2,yn,zn+dz-dz1;
+  line  xn+dx-dx1,yn,zn+dz-dz1-d1
+        xn+dx-dx1,yn,zn+dz1
+        xn+dx1,yn,zn+dz1
+        xn+dx1,yn,zn+dz-dz1-d1;
+  #Pat path select last 4 done last 1 create;
+  PicArr[1]=Pat;
+  PictNum=1;
+  exit;
+}
+//================================ Две дуги ====================
+if (Picture==12)  //-- Номер рисунка (свойство Tracery типа фасада)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  d1=PictPar[5];  //-- Прогиб дуги 25 мм
+  if (dx<dx1*3)||(dz<(dz1+d1*2)) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    if ((dz<dz1*2+d1*2)||(dx<dx1*2)) //-- Проверка на возможность создания фасада
+    {
+      putmsg("Текущие габариты фасада "+str(dx)+"x"+str(dz)+" меньше допустимых "+str(dx1*2)+"x"+str(dz1*2+d1*2),0);
+      putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+      exit;
+    }
+    exit;
+  }
+  arc   xn+dx1,yn,zn+dz-dz1-d1
+        xn+dx-dx1,yn,zn+dz-dz1-d1
+        xn+dx/2,yn,zn+dz-dz1;
+  line  xn+dx-dx1,yn,zn+dz-dz1-d1
+        xn+dx-dx1,yn,zn+dz1+d1;
+  arc   xn+dx-dx1,yn,zn+dz1+d1
+        xn+dx1,yn,zn+dz1+d1
+        xn+dx/2,yn,zn+dz1;
+  line  xn+dx1,yn,zn+dz1+d1
+        xn+dx1,yn,zn+dz-dz1-d1;
+  #Pat path select last 4 done last 1 create;
+  PicArr[1]=Pat;
+  PictNum=1;
+  exit;
+}
+//================================ Биссектриса ====================
+if (Picture==13)  //-- Номер рисунка (свойство Tracery типа фасада)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  if (dx<dx1*2)||(dz<dz1*2) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    if (dz<dz1||dx<dx1) //-- Проверка на возможность создания фасада
+    {
+      putmsg("Текущие габариты фасада "+str(dx)+"x"+str(dz)+" меньше допустимых "+str(dx1)+"x"+str(dz1),0);
+      putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+      exit;
+    }
+    line xn,yn,zn xn+dx/2,yn,zn+dz/2 xn+dx,yn,zn;
+    #Pat path select last 2 done last 1 create;
+    PicArr[1]=Pat;
+    line xn,yn,zn+dz xn+dx/2,yn,zn+dz/2 xn+dx,yn,zn+dz;
+    #Pat path select last 2 done last 1 create;
+    PicArr[2]=Pat;
+    PictNum=2;
+    exit;
+  }
+  line  xn,yn,zn
+        xn+dx1,yn,zn+dz1
+        xn+dx1,yn,zn+dz-dz1;
+  #Pat path select last 2 done last 1 create;
+  PicArr[1]=Pat;
+  line  xn,yn,zn+dz
+        xn+dx1,yn,zn+dz-dz1
+        xn+dx-dx1,yn,zn+dz-dz1;
+  #Pat path select last 2 done last 1 create;
+  PicArr[2]=Pat;
+  line  xn+dx,yn,zn+dz
+        xn+dx-dx1,yn,zn+dz-dz1
+        xn+dx-dx1,yn,zn+dz1;
+  #Pat path select last 2 done last 1 create;
+  PicArr[3]=Pat;
+  line  xn+dx,yn,zn
+        xn+dx-dx1,yn,zn+dz1
+        xn+dx1,yn,zn+dz1;
+  #Pat path select last 2 done last 1 create;
+  PicArr[4]=Pat;
+  PictNum=4;
+  exit;
+}
+//================================ Санта-Барбара ====================
+if (Picture==14)  //-- Номер рисунка (свойство Tracery типа фасада)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  zz=PictPar[1];  //-- Расстояние между контурами фрезеровки
+  if (dx<dx1*2)||(dz<dz1+(dx-2*dx1)/2) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    if (dz<dz1||dx<dx1) //-- Проверка на возможность создания фасада
+    {
+      putmsg("Текущие габариты фасада "+str(dx)+"x"+str(dz)+" меньше допустимых "+str(dx1)+"x"+str(dz1),0);
+      putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+      exit;
+    }
+    line  xn+dx1,yn,zn
+          xn+dx1,yn,zn+dz-dz1
+          xn+dx-dx1,yn,zn+dz-dz1
+          xn+dx-dx1,yn,zn;
+    #Pat path select last 3 done last 1 create;
+    PicArr[1]=Pat;
+    line  xn+dx1+zz,yn,zn
+          xn+dx1+zz,yn,zn+dz-dz1-zz
+          xn+dx-dx1-zz,yn,zn+dz-dz1-zz
+          xn+dx-dx1-zz,yn,zn;
+    #Pat path select last 3 done last 1 create;
+    PicArr[2]=Pat;
+    line  xn+dx1+2*zz,yn,zn
+          xn+dx1+2*zz,yn,zn+dz-dz1-2*zz
+          xn+dx-dx1-2*zz,yn,zn+dz-dz1-2*zz
+          xn+dx-dx1-2*zz,yn,zn;
+    #Pat path select last 3 done last 1 create;
+    PicArr[3]=Pat;
+    PictNum=3;
+    exit;
+  }
+  line  xn+dx1,yn,zn
+        xn+dx1,yn,zn+dz-(dx-2*dx1)/2;
+  arc   xn+dx1,yn,zn+dz-(dx-2*dx1)/2
+        xn+dx-dx1,yn,zn+dz-(dx-2*dx1)/2
+        xn+dx/2,yn,zn+dz-dz1;
+  line  xn+dx-dx1,yn,zn+dz-(dx-2*dx1)/2
+        xn+dx-dx1,yn,zn;
+  #Pat path select last 3 done last 1 create;
+  PicArr[1]=Pat;
+  line  xn+dx1+zz,yn,zn
+        xn+dx1+zz,yn,zn+dz-(dx-2*dx1)/2;
+  arc   xn+dx1+zz,yn,zn+dz-(dx-2*dx1)/2
+        xn+dx-dx1-zz,yn,zn+dz-(dx-2*dx1)/2
+        xn+dx/2,yn,zn+dz-dz1-zz;
+  line  xn+dx-dx1-zz,yn,zn+dz-(dx-2*dx1)/2
+        xn+dx-dx1-zz,yn,zn;
+  #Pat path select last 3 done last 1 create;
+  PicArr[2]=Pat;
+  line  xn+dx1+2*zz,yn,zn
+        xn+dx1+2*zz,yn,zn+dz-(dx-2*dx1)/2;
+  arc   xn+dx1+2*zz,yn,zn+dz-(dx-2*dx1)/2
+        xn+dx-dx1-2*zz,yn,zn+dz-(dx-2*dx1)/2
+        xn+dx/2,yn,zn+dz-dz1-2*zz;
+  line  xn+dx-dx1-2*zz,yn,zn+dz-(dx-2*dx1)/2
+        xn+dx-dx1-2*zz,yn,zn;
+  #Pat path select last 3 done last 1 create;
+  PicArr[3]=Pat;
+  PictNum=3;
+  exit;
+}
+//================================ Прямоугольник ====================
+if (Picture==15)  //-- Номер рисунка (свойство Tracery типа фасада)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  if (dx<dx1*2)||(dz<dz1*2) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    if (dz<dz1||dx<dx1) //-- Проверка на возможность создания фасада
+    {
+      putmsg("Текущие габариты фасада "+str(dx)+"x"+str(dz)+" меньше допустимых "+str(dx1)+"x"+str(dz1),0);
+      putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+      exit;
+    }
+    exit;
+  }
+  line  xn+dx1,yn,zn+dz1
+        xn+dx1,yn,zn+dz-dz1
+        xn+dx-dx1,yn,zn+dz-dz1
+        xn+dx-dx1,yn,zn+dz1
+        xn+dx1,yn,zn+dz1;
+  #Pat path select last 4 done last 1 create;
+  PicArr[1]=Pat;
+  PictNum=1;
+  exit;
+}
+//================================ Полосы ====================
+if (Picture==16)  //-- Номер рисунка (свойство Tracery типа фасада)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  zz=PictPar[1];  //-- Сдвиг между полосами
+  if (dx<(dx1+zz)*2) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    if (dx<dx1) //-- Проверка на возможность создания фасада
+    {
+      putmsg("Текущая ширина фасада "+str(dx)+" меньше допустимой "+str(dx1),0);
+      putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+      exit;
+    }
+    exit;
+  }
+  line  xn+dx1,yn,zn
+        xn+dx1,yn,zn+dz+dx1
+        xn+dx1+zz,yn,zn+dz+dx1
+        xn+dx1+zz,yn,zn;
+  #Pat path select last 3 done last 1 create;
+  PicArr[1]=Pat;
+  line  xn+dx-dx1,yn,zn
+        xn+dx-dx1,yn,zn+dz+dx1
+        xn+dx-dx1-zz,yn,zn+dz+dx1
+        xn+dx-dx1-zz,yn,zn;
+  #Pat path select last 3 done last 1 create;
+  PicArr[2]=Pat;
+  PictNum=2;
+  exit;
+}
+//================================ Призрак ====================
+if (Picture==17)  //-- Номер рисунка (свойство Tracery типа фасада)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  if (dx<dx1*4)||(dz<dz1*4) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    if (dz<dz1||dx<dx1) //-- Проверка на возможность создания фасада
+    {
+      putmsg("Текущие габариты фасада "+str(dx)+"x"+str(dz)+" меньше допустимых "+str(dx1)+"x"+str(dz1),0);
+      putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+      exit;
+    }
+    exit;
+  }
+  line  xn+dx1,yn,zn+dz1*2
+        xn+dx1,yn,zn+dz-dz1
+        xn+dx-dx1*2,yn,zn+dz-dz1
+        xn+dx-dx1*2,yn,zn+dz1*2
+        xn+dx1,yn,zn+dz1*2;
+  #Pat path select last 4 done last 1 create;
+  PicArr[1]=Pat;
+  line  xn+dx1*2,yn,zn+dz1
+        xn+dx1*2,yn,zn+dz-dz1*2
+        xn+dx-dx1,yn,zn+dz-dz1*2
+        xn+dx-dx1,yn,zn+dz1
+        xn+dx1*2,yn,zn+dz1;
+  #Pat path select last 4 done last 1 create;
+  PicArr[2]=Pat;
+  PictNum=2;
+  exit;
+}
+//================================ Риман ====================
+if (Picture==18)  //-- Номер рисунка (свойство Tracery типа фасада)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  d1=PictPar[5];  //-- Прогиб дуги 50 мм
+  al=atan((dz1+d1)/dx1);  //-- Нужно для расчетов
+  dzz=d1*sin(al);
+  dxx=d1*cos(al);
+  if (dx<dx1*3)||(dz<(dz1+d1*2)*3) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    if (dz<dz1||dx<dx1) //-- Проверка на возможность создания фасада
+    {
+      putmsg("Текущие габариты фасада "+str(dx)+"x"+str(dz)+" меньше допустимых "+str(dx1)+"x"+str(dz1),0);
+      putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+      exit;
+    }
+    line  xn,yn,zn
+          xn+dx1,yn,zn+dz1
+          xn+dx1,yn,zn+dz-dz1;
+    #Pat path select last 2 done last 1 create;
+    PicArr[1]=Pat;
+    line  xn,yn,zn+dz
+          xn+dx1,yn,zn+dz-dz1
+          xn+dx-dx1,yn,zn+dz-dz1;
+    #Pat path select last 2 done last 1 create;
+    PicArr[2]=Pat;
+    line  xn+dx,yn,zn+dz
+          xn+dx-dx1,yn,zn+dz-dz1
+          xn+dx-dx1,yn,zn+dz1;
+    #Pat path select last 2 done last 1 create;
+    PicArr[3]=Pat;
+    line  xn+dx,yn,zn
+          xn+dx-dx1,yn,zn+dz1
+          xn+dx1,yn,zn+dz1;
+    #Pat path select last 2 done last 1 create;
+    PicArr[4]=Pat;
+    PictNum=4;
+    exit;
+  }
+  arc   xn,yn,zn,
+        xn+dx1,yn,zn+dz1+d1,
+        xn+dx1/2+dxx,yn,zn+(dz1+d1)/2-dzz;
+  line  xn+dx1,yn,zn+dz1+d1
+        xn+dx1,yn,zn+dz-dz1-d1;
+  #Pat path select last 2 done last 1 create;
+  PicArr[1]=Pat;
+  arc   xn,yn,zn+dz,
+        xn+dx1,yn,zn+dz-dz1-d1,
+        xn+dx1/2+dxx,yn,zn+dz-(dz1+d1)/2+dzz;
+  arc   xn+dx1,yn,zn+dz-dz1-d1,
+        xn+dx-dx1,yn,zn+dz-dz1-d1,
+        xn+dx/2,yn,zn+dz-dz1;
+  #Pat path select last 2 done last 1 create;
+  PicArr[2]=Pat;
+  arc   xn+dx,yn,zn+dz,
+        xn+dx-dx1,yn,zn+dz-dz1-d1,
+        xn+dx-dx1/2-dxx,yn,zn+dz-(dz1+d1)/2+dzz;
+  line  xn+dx-dx1,yn,zn+dz-dz1-d1
+        xn+dx-dx1,yn,zn+dz1+d1;
+  #Pat path select last 2 done last 1 create;
+  PicArr[3]=Pat;
+  arc   xn+dx,yn,zn,
+        xn+dx-dx1,yn,zn+dz1+d1,
+        xn+dx-dx1/2-dxx,yn,zn+(dz1+d1)/2-dzz;
+  arc   xn+dx-dx1,yn,zn+dz1+d1,
+        xn+dx1,yn,zn+dz1+d1,
+        xn+dx/2,yn,zn+dz1;
+  #Pat path select last 2 done last 1 create;
+  PicArr[4]=Pat;
+  PictNum=4;
+  exit;
+}
+//================================ Ариадна ====================
+if (Picture==19)  //-- Номер рисунка (свойство Tracery типа фасада)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  d1=PictPar[5];  //-- Прогиб дуги 50 мм
+  if (dx<(dx1+d1*2)*2)||(dz<(dz1+d1*2)*2) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    if ((dz<dz1)||(dx<dx1)) //-- Проверка на возможность создания фасада
+    {
+      putmsg("Текущие габариты фасада "+str(dx)+"x"+str(dz)+" меньше допустимых "+str(dx1)+"x"+str(dz1),0);
+      putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+      exit;
+    }
+    line  xn+dx1,yn,zn+dz1
+          xn+dx1,yn,zn+dz-dz1
+          xn+dx-dx1,yn,zn+dz-dz1
+          xn+dx-dx1,yn,zn+dz1
+          xn+dx1,yn,zn+dz1;
+    #Pat path select last 4 done last 1 create;
+    PicArr[1]=Pat;
+    PictNum=1;
+    exit;
+  }
+  line  xn+dx1,yn,zn+dz1,
+        xn+dx1+d1,yn,zn+dz1
+        xn+dx1+d1,yn,zn+dz1+d1
+        xn+dx1,yn,zn+dz1+d1
+        xn+dx1,yn,zn+dz1;
+  #Pat path select last 4 done last 1 create;
+  PicArr[1]=Pat;
+  line  xn+dx1,yn,zn+dz-dz1,
+        xn+dx1+d1,yn,zn+dz-dz1
+        xn+dx1+d1,yn,zn+dz-dz1-d1
+        xn+dx1,yn,zn+dz-dz1-d1
+        xn+dx1,yn,zn+dz-dz1;
+  #Pat path select last 4 done last 1 create;
+  PicArr[2]=Pat;
+  line  xn+dx-dx1,yn,zn+dz1,
+        xn+dx-dx1-d1,yn,zn+dz1
+        xn+dx-dx1-d1,yn,zn+dz1+d1
+        xn+dx-dx1,yn,zn+dz1+d1
+        xn+dx-dx1,yn,zn+dz1;
+  #Pat path select last 4 done last 1 create;
+  PicArr[3]=Pat;
+  line  xn+dx-dx1,yn,zn+dz-dz1,
+        xn+dx-dx1-d1,yn,zn+dz-dz1
+        xn+dx-dx1-d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1,yn,zn+dz-dz1-d1
+        xn+dx-dx1,yn,zn+dz-dz1;
+  #Pat path select last 4 done last 1 create;
+  PicArr[4]=Pat;
+  line  xn+dx1+d1,yn,zn+dz1+d1
+        xn+dx1+d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1-d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1-d1,yn,zn+dz1+d1
+        xn+dx1+d1,yn,zn+dz1+d1;
+  #Pat path select last 4 done last 1 create;
+  PicArr[5]=Pat;
+  PictNum=5;
+  exit;
+}
+//================================ Квартет ====================
+if (Picture==20)  //-- Номер рисунка (свойство Tracery типа фасада)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  zz=PictPar[3];  //-- Сдвиг между полосами
+  if (dx<(dx1+zz)*4)||(dz<(dz1+zz)*4) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    if ((dz<dz1)||(dx<dx1)) //-- Проверка на возможность создания фасада
+    {
+      putmsg("Текущие габариты фасада "+str(dx)+"x"+str(dz)+" меньше допустимых "+str(dx1)+"x"+str(dz1),0);
+      putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+      exit;
+    }
+    line  xn+dx1,yn,zn+dz1
+          xn+dx1,yn,zn+dz-dz1
+          xn+dx-dx1,yn,zn+dz-dz1
+          xn+dx-dx1,yn,zn+dz1
+          xn+dx1,yn,zn+dz1;
+    #Pat path select last 4 done last 1 create;
+    PicArr[1]=Pat;
+    PictNum=1;
+    exit;
+  }
+  line  xn+dx1*2,yn,zn+dz1
+        xn+dx1*2,yn,zn+2*dz1
+        xn+dx1,yn,zn+2*dz1;
+  #Pat path select last 2 done last 1 create;
+  PicArr[1]=Pat;
+  line  xn+dx*2/3,yn,zn+2*dz1
+        xn+dx1*2,yn,zn+2*dz1
+        xn+dx1*2,yn,zn+dz*2/3;
+  #Pat path select last 2 done last 1 create;
+  PicArr[2]=Pat;
+  line  xn+dx1*2+zz,yn,zn+dz1+zz
+        xn+dx1*2+zz,yn,zn+2*dz1+zz
+        xn+dx1+zz,yn,zn+2*dz1+zz;
+  #Pat path select last 2 done last 1 create;
+  PicArr[3]=Pat;
+  line  xn+dx*2/3-zz,yn,zn+2*dz1+zz
+        xn+dx1*2+zz,yn,zn+2*dz1+zz
+        xn+dx1*2+zz,yn,zn+dz*2/3-zz;
+  #Pat path select last 2 done last 1 create;
+  PicArr[4]=Pat;
+  line  xn+dx-dx1*2,yn,zn+dz-dz1
+        xn+dx-dx1*2,yn,zn+dz-2*dz1
+        xn+dx-dx1,yn,zn+dz-2*dz1;
+  #Pat path select last 2 done last 1 create;
+  PicArr[5]=Pat;
+  line  xn+dx/3,yn,zn+dz-2*dz1
+        xn+dx-dx1*2,yn,zn+dz-2*dz1
+        xn+dx-dx1*2,yn,zn+dz/3;
+  #Pat path select last 2 done last 1 create;
+  PicArr[6]=Pat;
+  line  xn+dx-dx1*2-zz,yn,zn+dz-dz1-zz
+        xn+dx-dx1*2-zz,yn,zn+dz-2*dz1-zz
+        xn+dx-dx1-zz,yn,zn+dz-2*dz1-zz;
+  #Pat path select last 2 done last 1 create;
+  PicArr[7]=Pat;
+  line  xn+dx/3+zz,yn,zn+dz-2*dz1-zz
+        xn+dx-dx1*2-zz,yn,zn+dz-2*dz1-zz
+        xn+dx-dx1*2-zz,yn,zn+dz/3+zz;
+  #Pat path select last 2 done last 1 create;
+  PicArr[8]=Pat;
+  PictNum=8;
+  exit;
+}
+//================================ Ариадна с кантом ====================
+if (Picture==21)  //-- Номер рисунка (свойство Tracery типа фасада)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  d1=PictPar[5];  //-- Прогиб дуги 50 мм
+  if (dx<(dx1+d1*2)*2)||(dz<(dz1+d1*2)*2) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    if ((dz<dz1)||(dx<dx1)) //-- Проверка на возможность создания фасада
+    {
+      putmsg("Текущие габариты фасада "+str(dx)+"x"+str(dz)+" меньше допустимых "+str(dx1)+"x"+str(dz1),0);
+      putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+      exit;
+    }
+    line  xn+dx1,yn,zn+dz1
+          xn+dx1,yn,zn+dz-dz1
+          xn+dx-dx1,yn,zn+dz-dz1
+          xn+dx-dx1,yn,zn+dz1
+          xn+dx1,yn,zn+dz1;
+    #Pat path select last 4 done last 1 create;
+    PicArr[1]=Pat;
+    PictNum=1;
+    exit;
+  }
+  line  xn+dx1,yn,zn+dz1,
+        xn+dx1+d1,yn,zn+dz1
+        xn+dx1+d1,yn,zn+dz1+d1
+        xn+dx1,yn,zn+dz1+d1
+        xn+dx1,yn,zn+dz1;
+  #Pat path select last 4 done last 1 create;
+  PicArr[1]=Pat;
+  line  xn+dx1,yn,zn+dz-dz1,
+        xn+dx1+d1,yn,zn+dz-dz1
+        xn+dx1+d1,yn,zn+dz-dz1-d1
+        xn+dx1,yn,zn+dz-dz1-d1
+        xn+dx1,yn,zn+dz-dz1;
+  #Pat path select last 4 done last 1 create;
+  PicArr[2]=Pat;
+  line  xn+dx-dx1,yn,zn+dz1,
+        xn+dx-dx1-d1,yn,zn+dz1
+        xn+dx-dx1-d1,yn,zn+dz1+d1
+        xn+dx-dx1,yn,zn+dz1+d1
+        xn+dx-dx1,yn,zn+dz1;
+  #Pat path select last 4 done last 1 create;
+  PicArr[3]=Pat;
+  line  xn+dx-dx1,yn,zn+dz-dz1,
+        xn+dx-dx1-d1,yn,zn+dz-dz1
+        xn+dx-dx1-d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1,yn,zn+dz-dz1-d1
+        xn+dx-dx1,yn,zn+dz-dz1;
+  #Pat path select last 4 done last 1 create;
+  PicArr[4]=Pat;
+  line  xn+dx1+d1,yn,zn+dz1+d1
+        xn+dx1+d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1-d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1-d1,yn,zn+dz1+d1
+        xn+dx1+d1,yn,zn+dz1+d1;
+  #Pat path select last 4 done last 1 create;
+  PicArr[5]=Pat;
+  line  xn+dx1,yn,zn+dz1+d1*2
+        xn+dx1,yn,zn+dz-dz1-d1*2;
+  arc   xn+dx1,yn,zn+dz-dz1-d1*2
+        xn+dx1+d1*2,yn,zn+dz-dz1
+        xn+dx1+d1*sqrt(2),yn,zn+dz-dz1-d1*sqrt(2)
+  line  xn+dx1+d1*2,yn,zn+dz-dz1
+        xn+dx-dx1-d1*2,yn,zn+dz-dz1;
+  arc   xn+dx-dx1-d1*2,yn,zn+dz-dz1
+        xn+dx-dx1,yn,zn+dz-dz1-2*d1
+        xn+dx-dx1-d1*sqrt(2),yn,zn+dz-dz1-d1*sqrt(2);
+  line  xn+dx-dx1,yn,zn+dz-dz1-2*d1
+        xn+dx-dx1,yn,zn+dz1+2*d1;
+  arc   xn+dx-dx1,yn,zn+dz1+2*d1
+        xn+dx-dx1-2*d1,yn,zn+dz1
+        xn+dx-dx1-d1*sqrt(2),yn,zn+dz1+d1*sqrt(2);
+  line  xn+dx-dx1-2*d1,yn,zn+dz1
+        xn+dx1+2*d1,yn,zn+dz1;
+  arc   xn+dx1+2*d1,yn,zn+dz1
+        xn+dx1,yn,zn+dz1+d1*2
+        xn+dx1+d1*sqrt(2),yn,zn+dz1+d1*sqrt(2);
+  #Pat path select last 8 done last 1 create;
+  PicArr[6]=Pat;
+  PictNum=6;
+  exit;
+}
+//================================ Призон ====================
+if (Picture==22)  //-- Номер рисунка (свойство Tracery типа фасада)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  zz=PictPar[3];  //-- Перехлест крестов
+  if (dx<dx1*2)||(dz<dz1*2) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    if (dz<dz1||dx<dx1) //-- Проверка на возможность создания фасада
+    {
+      putmsg("Текущие габариты фасада "+str(dx)+"x"+str(dz)+" меньше допустимых "+str(dx1)+"x"+str(dz1),0);
+      putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+      exit;
+    }
+    exit;
+  }
+  line  xn+dx1+zz,yn,zn+dz1+zz
+        xn+dx1+zz,yn,zn+dz-dz1-zz
+        xn+dx-dx1-zz,yn,zn+dz-dz1-zz
+        xn+dx-dx1-zz,yn,zn+dz1+zz
+        xn+dx1+zz,yn,zn+dz1+zz;
+  #Pat path select last 4 done last 1 create;
+  PicArr[1]=Pat;
+  line  xn+dx1,yn,zn+dz1+zz
+        xn+dx1+zz,yn,zn+dz1+zz
+        xn+dx1+zz,yn,zn+dz1;
+  #Pat path select last 2 done last 1 create;
+  PicArr[2]=Pat;
+  line  xn+dx-dx1,yn,zn+dz1+zz
+        xn+dx-dx1-zz,yn,zn+dz1+zz
+        xn+dx-dx1-zz,yn,zn+dz1;
+  #Pat path select last 2 done last 1 create;
+  PicArr[3]=Pat;
+  line  xn+dx1,yn,zn+dz-dz1-zz
+        xn+dx1+zz,yn,zn+dz-dz1-zz
+        xn+dx1+zz,yn,zn+dz-dz1;
+  #Pat path select last 2 done last 1 create;
+  PicArr[4]=Pat;
+  line  xn+dx-dx1,yn,zn+dz-dz1-zz
+        xn+dx-dx1-zz,yn,zn+dz-dz1-zz
+        xn+dx-dx1-zz,yn,zn+dz-dz1;
+  #Pat path select last 2 done last 1 create;
+  PicArr[5]=Pat;
+  PictNum=5;
+  exit;
+}
+//================================ Плетень с кантом ====================
+if (Picture==23)  //-- Номер рисунка (свойство Tracery типа фасада)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  d1=PictPar[5];  //-- Прогиб дуги 50 мм
+  if (dx<(dx1+d1*2)*2)||(dz<(dz1+d1*2)*2) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    if ((dz<dz1)||(dx<dx1)) //-- Проверка на возможность создания фасада
+    {
+      putmsg("Текущие габариты фасада "+str(dx)+"x"+str(dz)+" меньше допустимых "+str(dx1)+"x"+str(dz1),0);
+      putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+      exit;
+    }
+    line  xn+dx1,yn,zn+dz1
+          xn+dx1,yn,zn+dz-dz1
+          xn+dx-dx1,yn,zn+dz-dz1
+          xn+dx-dx1,yn,zn+dz1
+          xn+dx1,yn,zn+dz1;
+    #Pat path select last 4 done last 1 create;
+    PicArr[1]=Pat;
+    PictNum=1;
+    exit;
+  }
+  line  xn+dx1,yn,zn+dz1+d1*2
+        xn+dx1,yn,zn+dz-dz1-d1*2;
+  arc   xn+dx1,yn,zn+dz-dz1-d1*2
+        xn+dx1+d1*2,yn,zn+dz-dz1
+        xn+dx1+d1*sqrt(2),yn,zn+dz-dz1-d1*sqrt(2)
+  line  xn+dx1+d1*2,yn,zn+dz-dz1
+        xn+dx-dx1-d1*2,yn,zn+dz-dz1;
+  arc   xn+dx-dx1-d1*2,yn,zn+dz-dz1
+        xn+dx-dx1,yn,zn+dz-dz1-2*d1
+        xn+dx-dx1-d1*sqrt(2),yn,zn+dz-dz1-d1*sqrt(2);
+  line  xn+dx-dx1,yn,zn+dz-dz1-2*d1
+        xn+dx-dx1,yn,zn+dz1+2*d1;
+  arc   xn+dx-dx1,yn,zn+dz1+2*d1
+        xn+dx-dx1-2*d1,yn,zn+dz1
+        xn+dx-dx1-d1*sqrt(2),yn,zn+dz1+d1*sqrt(2);
+  line  xn+dx-dx1-2*d1,yn,zn+dz1
+        xn+dx1+2*d1,yn,zn+dz1;
+  arc   xn+dx1+2*d1,yn,zn+dz1
+        xn+dx1,yn,zn+dz1+d1*2
+        xn+dx1+d1*sqrt(2),yn,zn+dz1+d1*sqrt(2);
+  #Pat path select last 8 done last 1 create;
+  PicArr[1]=Pat;
+  line  xn+dx1+d1,yn,zn+dz1+d1*3
+        xn+dx1+d1,yn,zn+dz-dz1-d1*3;
+  arc   xn+dx1+d1,yn,zn+dz-dz1-d1*3
+        xn+dx1+d1*3,yn,zn+dz-dz1-d1
+        xn+dx1+d1+d1*sqrt(2),yn,zn+dz-dz1-d1-d1*sqrt(2)
+  line  xn+dx1+d1*3,yn,zn+dz-dz1-d1
+        xn+dx-dx1-d1*3,yn,zn+dz-dz1-d1;
+  arc   xn+dx-dx1-d1*3,yn,zn+dz-dz1-d1
+        xn+dx-dx1-d1,yn,zn+dz-dz1-3*d1
+        xn+dx-dx1-d1-d1*sqrt(2),yn,zn+dz-dz1-d1-d1*sqrt(2);
+  line  xn+dx-dx1-d1,yn,zn+dz-dz1-3*d1
+        xn+dx-dx1-d1,yn,zn+dz1+3*d1;
+  arc   xn+dx-dx1-d1,yn,zn+dz1+3*d1
+        xn+dx-dx1-3*d1,yn,zn+dz1+d1
+        xn+dx-dx1-d1-d1*sqrt(2),yn,zn+dz1+d1+d1*sqrt(2);
+  line  xn+dx-dx1-3*d1,yn,zn+dz1+d1
+        xn+dx1+3*d1,yn,zn+dz1+d1;
+  arc   xn+dx1+3*d1,yn,zn+dz1+d1
+        xn+dx1+d1,yn,zn+dz1+d1*3
+        xn+dx1+d1+d1*sqrt(2),yn,zn+dz1+d1+d1*sqrt(2);
+  #Pat path select last 8 done last 1 create;
+  PicArr[2]=Pat;
+  line  xn+dx1+d1/2,yn,zn+dz1+d1/2
+        xn+dx1+d1/2,yn,zn+dz-dz1-d1/2
+        xn+dx-dx1-d1/2,yn,zn+dz-dz1-d1/2
+        xn+dx-dx1-d1/2,yn,zn+dz1+d1/2
+        xn+dx1+d1/2,yn,zn+dz1+d1/2;
+  #Pat path select last 4 done last 1 create;
+  PicArr[3]=Pat;
+  PictNum=3;
+  exit;
+}
+//================================ Ларец ====================
+if (Picture==24)  //-- Номер рисунка (свойство Tracery типа фасада)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  d1=PictPar[5];  //-- Прогиб дуги 50 мм
+  if (dx<dx1*2)||(dz<(dz1+2*d1)*2) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    if ((dz<dz1*2+d1)||(dx<dx1*2)) //-- Проверка на возможность создания фасада
+    {
+      putmsg("Текущие габариты фасада "+str(dx)+"x"+str(dz)+" меньше допустимых "+str(dx1*2)+"x"+str(dz1*2+d1),0);
+      putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+      exit;
+    }
+    exit;
+  }
+  arc   xn+dx1+d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1-d1,yn,zn+dz-dz1-d1
+        xn+dx/2,yn,zn+dz-dz1;
+  line  xn+dx-dx1-d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1,yn,zn+dz-dz1-d1
+        xn+dx-dx1,yn,zn+dz1
+        xn+dx1,yn,zn+dz1
+        xn+dx1,yn,zn+dz-dz1-d1
+        xn+dx1+d1,yn,zn+dz-dz1-d1;
+  #Pat path select last 6 done last 1 create;
+  PicArr[1]=Pat;
+  line  xn+dx1+d1,yn,zn+dz-dz1-2*d1
+        xn+dx1,yn,zn+dz-dz1-2*d1;
+  arc   xn+dx1+d1,yn,zn+dz-dz1-2*d1
+        xn+dx-dx1-d1,yn,zn+dz-dz1-2*d1
+        xn+dx/2,yn,zn+dz-dz1-3*d1;
+  line  xn+dx-dx1-d1,yn,zn+dz-dz1-2*d1
+        xn+dx-dx1,yn,zn+dz-dz1-2*d1;
+  #Pat path select last 3 done last 1 create;
+  PicArr[2]=Pat;
+  PictNum=2;
+  exit;
+}
+//================================ Четыре крышки ====================
+if (Picture==25)  //-- Номер рисунка (свойство Tracery типа фасада)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  d1=PictPar[5];  //-- Прогиб дуги 50 мм
+  if (dx<dx1*3)||(dz<(dz1+d1)*3) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    if ((dz<dz1*2+d1)||(dx<dx1*2)) //-- Проверка на возможность создания фасада
+    {
+      putmsg("Текущие габариты фасада "+str(dx)+"x"+str(dz)+" меньше допустимых "+str(dx1*2)+"x"+str(dz1*2+d1),0);
+      putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+      exit;
+    }
+    line  xn+dx1,yn,zn+dz1
+          xn+dx1,yn,zn+dz-dz1
+          xn+dx-dx1,yn,zn+dz-dz1
+          xn+dx-dx1,yn,zn+dz1
+          xn+dx1,yn,zn+dz1;
+    #Pat path select last 4 done last 1 create;
+    PicArr[1]=Pat;
+    PictNum=1;
+    exit;
+  }
+  arc   xn+dx1+2*d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1-2*d1,yn,zn+dz-dz1-d1
+        xn+dx/2,yn,zn+dz-dz1;
+  line  xn+dx-dx1-2*d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1-d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1-d1,yn,zn+dz-dz1-2*d1;
+  arc   xn+dx-dx1-d1,yn,zn+dz-dz1-2*d1
+        xn+dx-dx1-d1,yn,zn+dz1+2*d1
+        xn+dx-dx1,yn,zn+dz/2;
+  line  xn+dx-dx1-d1,yn,zn+dz1+2*d1
+        xn+dx-dx1-d1,yn,zn+dz1+d1
+        xn+dx-dx1-2*d1,yn,zn+dz1+d1;
+  arc   xn+dx-dx1-2*d1,yn,zn+dz1+d1
+        xn+dx1+2*d1,yn,zn+dz1+d1
+        xn+dx/2,yn,zn+dz1;
+  line  xn+dx1+2*d1,yn,zn+dz1+d1
+        xn+dx1+d1,yn,zn+dz1+d1
+        xn+dx1+d1,yn,zn+dz1+2*d1;
+  arc   xn+dx1+d1,yn,zn+dz1+2*d1
+        xn+dx1+d1,yn,zn+dz-dz1-2*d1
+        xn+dx1,yn,zn+dz/2;
+  line  xn+dx1+d1,yn,zn+dz-dz1-2*d1
+        xn+dx1+d1,yn,zn+dz-dz1-d1
+        xn+dx1+2*d1,yn,zn+dz-dz1-d1;
+  #Pat path select last 12 done last 1 create;
+  PicArr[1]=Pat;
+  PictNum=1;
+  exit;
+}
+//================================ Крышка ====================
+if (Picture==26)  //-- Номер рисунка (свойство Tracery типа фасада)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  d1=PictPar[5];  //-- Прогиб дуги 50 мм
+  if (dx<dx1*3)||(dz<(dz1+d1)*3) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    if ((dz<dz1*2+d1)||(dx<dx1*2)) //-- Проверка на возможность создания фасада
+    {
+      putmsg("Текущие габариты фасада "+str(dx)+"x"+str(dz)+" меньше допустимых "+str(dx1*2)+"x"+str(dz1*2+d1),0);
+      putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+      exit;
+    }
+    exit;
+  }
+  arc   xn+dx1+d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1-d1,yn,zn+dz-dz1-d1
+        xn+dx/2,yn,zn+dz-dz1;
+  line  xn+dx-dx1-d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1,yn,zn+dz-dz1-d1
+        xn+dx-dx1,yn,zn+dz1
+        xn+dx1,yn,zn+dz1
+        xn+dx1,yn,zn+dz-dz1-d1
+        xn+dx1+d1,yn,zn+dz-dz1-d1;
+  #Pat path select last 6 done last 1 create;
+  PicArr[1]=Pat;
+  PictNum=1;
+  exit;
+}
+//================================ Две крышки ====================
+if (Picture==27)  //-- Номер рисунка (свойство Tracery типа фасада)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  d1=PictPar[5];  //-- Прогиб дуги 50 мм
+  if (dx<dx1*3)||(dz<(dz1+d1)*3) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    if ((dz<dz1*2+d1)||(dx<dx1*2)) //-- Проверка на возможность создания фасада
+    {
+      putmsg("Текущие габариты фасада "+str(dx)+"x"+str(dz)+" меньше допустимых "+str(dx1*2)+"x"+str(dz1*2+d1),0);
+      putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+      exit;
+    }
+    exit;
+  }
+  arc   xn+dx1+d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1-d1,yn,zn+dz-dz1-d1
+        xn+dx/2,yn,zn+dz-dz1;
+  line  xn+dx-dx1-d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1,yn,zn+dz-dz1-d1
+        xn+dx-dx1,yn,zn+dz1+d1
+        xn+dx-dx1-d1,yn,zn+dz1+d1;
+  arc   xn+dx-dx1-d1,yn,zn+dz1+d1
+        xn+dx1+d1,yn,zn+dz1+d1
+        xn+dx/2,yn,zn+dz1;
+  line  xn+dx1+d1,yn,zn+dz1+d1
+        xn+dx1,yn,zn+dz1+d1
+        xn+dx1,yn,zn+dz-dz1-d1
+        xn+dx1+d1,yn,zn+dz-dz1-d1;
+  #Pat path select last 8 done last 1 create;
+  PicArr[1]=Pat;
+  PictNum=1;
+  exit;
+}
+//================================ Уголки ====================
+if (Picture==28)  //-- Номер рисунка (свойство Tracery типа фасада)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  d1=PictPar[5];  //-- Расстояние между уголками
+  if (dx<dx1*3)||(dz<(dz1+d1)*3) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    if ((dz<dz1*2+d1)||(dx<dx1*2)) //-- Проверка на возможность создания фасада
+    {
+      putmsg("Текущие габариты фасада "+str(dx)+"x"+str(dz)+" меньше допустимых "+str(dx1*2)+"x"+str(dz1*2+d1),0);
+      putmsg("Поменяйте текущий размер фасада или выберите другой тип фасада.",0);
+      exit;
+    }
+    line  xn+dx1,yn,zn+dz1
+          xn+dx1,yn,zn+dz-dz1
+          xn+dx-dx1,yn,zn+dz-dz1
+          xn+dx-dx1,yn,zn+dz1
+          xn+dx1,yn,zn+dz1;
+    #Pat path select last 4 done last 1 create;
+    PicArr[1]=Pat;
+    PictNum=1;
+    exit;
+  }
+  line  xn+2*dx1+d1*sqrt(2),yn,zn+dz1
+        xn+dx-dx1,yn,zn+dz1
+        xn+dx-dx1,yn,zn+dz-2*dz1-d1*sqrt(2)
+        xn+dx-2*dx1-d1*sqrt(2),yn,zn+dz-dz1
+        xn+dx1,yn,zn+dz-dz1
+        xn+dx1,yn,zn+2*dz1+d1*sqrt(2)
+        xn+2*dx1+d1*sqrt(2),yn,zn+dz1;
+  #Pat path select last 6 done last 1 create;
+  PicArr[1]=Pat;
+  line  xn+dx1,yn,zn+dz1
+        xn+2*dx1,yn,zn+dz1
+        xn+dx1,yn,zn+2*dz1
+        xn+dx1,yn,zn+dz1;
+  #Pat path select last 3 done last 1 create;
+  PicArr[2]=Pat;
+  line  xn+dx-dx1,yn,zn+dz-dz1
+        xn+dx-2*dx1,yn,zn+dz-dz1
+        xn+dx-dx1,yn,zn+dz-2*dz1
+        xn+dx-dx1,yn,zn+dz-dz1;
+  #Pat path select last 3 done last 1 create;
+  PicArr[3]=Pat;
+  PictNum=3;
+  exit;
+}
+exit;

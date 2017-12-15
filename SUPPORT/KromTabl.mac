@@ -1,0 +1,71 @@
+//Формируем таблицу по кромке
+global CBDpath ;
+
+global
+IdKrom
+Ukas
+ElUkas
+CurentNum //текущий номер обрабатываемой столешницы
+CurentMat
+;
+
+
+select attribute "krom" ;
+objects=sysvar(61) ;
+
+if 0==objects { :   ; exit }
+defarr obj[objects] ;
+
+
+
+fnk=CBDpath+"KromDb.dbf"
+if GetCount(fnk) {  DbOpen rcdCBD,fnk; } // ищем, есть ли такая база?
+DbFilter rcdCBD,"" ;
+err=DbRecCount(rcdcbd) ;//ОПРЕДЕЛИЛИ ЧИСЛО ЗАПИСЕЙ В ОТКРЫТОМ НАБОРЕ
+if err>0 {
+   DBMoveLast rcdCBD ;
+   counter=DbGetValue(rcdcbd,1,0)  ;  //счетчик
+   }
+else { counter=0 ; }
+
+
+
+i=0
+met1:
+if i<objects {
+   i=i+1
+   obj[i]=getselnum(i) ;
+   //Читаем атрибуты кромки
+   Krom=GetAttr(obj[i],"krom",-999);
+   PriceID=GetAttr(obj[i],"PriceID",-999);
+   Length=GetAttr(obj[i],"Length",-999);
+   Kromznak=GetAttr(obj[i],"Kromznak",-999);
+   =Kromznak
+   //:
+   //name=GetLngMatN(CurentMat);
+
+   name=PriceInfo(PriceID,"Matname",0)
+   Wd_Krom=PriceInfo(PriceID,"N1",0)
+
+   //Формируем запись в dbf файл
+   DbAddNew rcdcbd ;
+   DbSetValue rcdcbd,"NUM",CurentNum ;
+   DbSetValue rcdcbd,"PRICEID",CurentMat ;
+   DbSetValue rcdcbd,"NUMKROM",krom ;
+   DbSetValue rcdcbd,"PRICEIDK",PriceID ;
+   DbSetValue rcdcbd,"LENGTHKR",Length ;
+   DbSetValue rcdcbd,"ZNAK",Kromznak ;
+   DbSetValue rcdcbd,"PRIZ",0 ;
+   DbSetValue rcdcbd,"WDKROM",Wd_Krom ;
+   DbUpdate rcdcbd ;
+   DbMoveNext rcdcbd ;
+   goto met1 ;
+}
+DbClose rcdcbd;
+exit;
+
+
+//**************
+
+
+

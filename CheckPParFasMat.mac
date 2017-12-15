@@ -1,0 +1,39 @@
+
+global ProtoPath;
+
+getpar FasadType, FsMater;
+
+
+nullout=getvarinst(1,"FasadCompact",FasadCompact,4000);
+nullout=NPGetByWhere(1,"ID>0","ArrIDName1",344);
+res1=findinarray(ArrIDName1,FsMater);
+
+// nullout=getvarinst(1,"FasadAGT",FasadAGT,2269);
+// nullout=NPGetByWhere(1,"ID>0","ArrIDName2",209);
+// res2=findinarray(ArrIDName2,FsMater);
+
+if FasadType==FasadCompact
+{
+	if res1==0
+	{
+		alternative "Предупреждение"
+		msgbox text center "Выбранный материал не соответствует"
+		" фасаду Compact!"
+		done "ОК" done	
+		cancel;
+	}
+}
+
+// if FasadType==FasadAGT
+// {
+	// if res2==0
+	// {
+		// alternative "Предупреждение"
+		// msgbox text center "Выбранный материал не соответствует"
+		// " фасаду AGT!"
+		// done "ОК" done	
+		// cancel;
+	// }
+// }
+
+exit;

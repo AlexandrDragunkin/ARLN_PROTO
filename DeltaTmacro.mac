@@ -1,0 +1,33 @@
+//*********************************************
+//     Отчет о времени работы макро
+//
+//              Драгункин А.Р.
+//              ГеоС 2008 г.
+//*********************************************
+
+defarr tim[8] ;
+global G_TmacSt ;
+if IsVarDef("G_TmacSt")==0 {
+   G_TmacSt=sysarr(81,tim) ;
+}
+else {
+   //global G_TmacSt ;
+}
+Getpar Typ ; // 0-в начале макроса 1-перед exit
+
+if Typ==0 { //Расчет стартового времени
+   G_TmacSt=sysarr(81,tim) ;
+   getpar name ;
+   ErrMsg=MsgLevel(2)
+   PutMsg("Обработка режима "+name,1)
+   ErrMsg=MsgLevel(1)
+}
+else {       //Расчет времени работы
+   G_TmacSt=sysarr(81,tim)-G_TmacSt ;   // работы в секундах
+   Minut=Int(G_TmacSt/60) ;  // Полных минут
+   Secund=G_TmacSt-Minut*60
+   ErrMsg=MsgLevel(2)
+   PutMsg("Время работы процедуры "+Str(minut)+" мин."+Str(Secund)+" сек.",1)
+  // ErrMsg=MsgLevel(1)
+}
+exit ;

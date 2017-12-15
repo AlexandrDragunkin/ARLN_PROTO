@@ -1,0 +1,12 @@
+//-- Программа создания трубы штанги-вешалки
+global ProtoPath;
+getpar xbase,ybase,zbase,xsec,D1,Hor_Gap,RackID;
+
+NULLOUT=pushinst(1);
+ProfID=priceinfo(RackID,"MatID",0,2);
+macro ProtoPath+"SetEnam.mac" "Штанга для вешалок" ;
+macro ProtoPath+"SetProfP.mac" ProfID 0 0 0 0 0 0 0 ;
+macro ProtoPath+"MakeProf.mac" xbase+Hor_Gap ybase+D1-25	zbase-15
+                               xbase+xsec-Hor_Gap	ybase+D1-25	zbase-15 ;
+NULLOUT=popinst(1);
+exit;

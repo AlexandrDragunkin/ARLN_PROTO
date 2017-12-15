@@ -1,0 +1,27 @@
+//CutXY.mac
+//
+//
+//
+//============================================
+// (c) Драгункин Александр г.Дубна 2004 г.
+//============================================
+//
+//Создание сечения параллельно XY
+
+
+defarr stg1[6] xm3[6];
+//objident : pnt ;
+getpar
+pnt ;
+=objgab3(pnt,stg1) ;
+cut pnt done 3points stg1[4] stg1[2] stg1[3]+(stg1[6]-stg1[3])/2 @1000 0 0 @0 1000 0 ;
+objident last 1 sec ;
+setucs gcs ;
+=ObjGab3(sec,xm3) ;
+mv1=0
+mv2=0
+mv3=0
+PTransCS(2,3,xm3[1],xm3[2],xm3[3],mv1,mv2,mv3) ;
+move sec done 0 0 -mv3 nocopy ;
+setucs previous ;
+exit ;

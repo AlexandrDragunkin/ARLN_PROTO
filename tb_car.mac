@@ -1,0 +1,69 @@
+//-- Программа построения каркаса стола
+//-- Входные параметры:
+//-- x, y, z - габариты стола по соответствующим осям
+//-- n - количество столешниц
+//-- svx, svy - свесы столешницы по ширине и глубине соответственно
+//-- x1st - ширина правой тумбы (если 0 - нет тумбы)
+//-- x2st - ширина левой тумбы  (если 0 - нет тумбы)
+//-- PrMater - материал корпуса
+//-- DeMater - материал столешницы
+//-- Col_Kro - цвет кромки
+//-- Band - тип кромки
+//-- Krep1 - тип крепежа столешницы
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами
+getpar x,y,z,n,svx,svy,x1st,x2st,PrMater,DeMater,Col_Kro,Band,Krep1;
+
+h_dsp=PriceInfo(PrMater,"Thickness",16);
+h_dspDe=PriceInfo(DeMater,"Thickness",16);
+yt=y-2*svy;
+zt=z-(n*h_dspDe);
+
+macro ProtoPath+"SetConstrInit.mac" ;
+macro ProtoPath+"SetMat.mac" PrMater;
+macro ProtoPath+"SetKrom.mac" Col_Kro Band 0 Band Band;
+macro ProtoPath+"SetFix.mac"  0 Krep1 0 0;
+macro ProtoPath+"SetOneFixMask.mac" 2 2;
+macro ProtoPath+"SetEnam.mac" "Стойка";
+macro ProtoPath+"SetECod.mac" "1101";
+macro ProtoPath+"MakePan.mac" svx svy 0 zt yt 11;
+macro ProtoPath+"SetOneFixMask.mac" 2 0;
+macro ProtoPath+"SetEnam.mac" "Стойка";
+macro ProtoPath+"SetECod.mac" "1102";
+macro ProtoPath+"MakePan.mac" svx+x-2*svx-h_dsp svy 0 zt yt 11;
+
+if (x1st>0) //-- Есть правая тумба
+{
+	macro ProtoPath+"SetEnam.mac" "Стойка";
+	macro ProtoPath+"SetECod.mac" "1103";
+	macro ProtoPath+"MakePan.mac" svx+x1st-h_dsp svy 0 zt yt 11;
+}
+if (x2st>0) //-- Есть левая тумба
+{
+	macro ProtoPath+"SetEnam.mac" "Стойка";
+	macro ProtoPath+"SetECod.mac" "1104";
+	macro ProtoPath+"MakePan.mac" svx+x-2*svx-x2st svy 0 zt yt 11;
+}
+//-- Столешница декоративная
+macro ProtoPath+"SetMat.mac" DeMater;
+macro ProtoPath+"SetKrom.mac" Col_Kro Band Band Band Band;
+macro ProtoPath+"SetFix.mac"  0 0 0 0;
+macro ProtoPath+"SetEnam.mac" "Крышка стола";
+macro ProtoPath+"SetECod.mac" "1401";
+if (h_dspDe==h_dsp)
+{
+  macro ProtoPath+"SetECod.mac" "1104";
+}
+macro ProtoPath+"MakePan.mac" 0 0 z-h_dspDe x y 12;
+if (n==2) //-- Есть вторая столешница
+{
+	macro ProtoPath+"SetMat.mac" DeMater;
+	macro ProtoPath+"SetEnam.mac" "Крышка стола";
+	macro ProtoPath+"SetECod.mac" "1402";
+  if (h_dspDe==h_dsp)
+  {
+    macro ProtoPath+"SetECod.mac" "1105";
+  }
+  macro ProtoPath+"MakePan.mac" 0 0 z-2*h_dspDe x y 12;
+}
+exit;

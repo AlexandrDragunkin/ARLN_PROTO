@@ -1,0 +1,182 @@
+//-- Создание фасада
+global ProtoPath;
+global MacroSw;     //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global g_FurnType;  //-- Тип мебельного объекта
+global ElemName;    //-- Имя мебельного элемента
+
+global FasVaria;  //-- Вариант фасада
+global PanDir;    //-- Направление шпона
+global
+PropN,   //-- Количество пропилов
+PazAM    //--     Пропил - сторона
+PazBM    //--     Пропил - параллельно
+PazRM    //--     Пропил - расстояние от стороны
+PazWM    //--     Пропил - ширина паза
+PazDM    //--     Пропил - глубина паза
+PazSM    //--     Пропил - отступа паза
+PazLM;   //--     Пропил - длина паза
+
+global
+DoorMater,  //-- Материал фасада
+DoorPict,   //-- Рисунок фасада
+DoorBCol,   //-- Цвет кромки фасада
+DoorBand,   //-- Тип кромки фасада
+DoorMatVS1, //-- Материал первой вставки фасада
+DoorMatVS2; //-- Материал второй вставки фасада
+
+global g_FasPlas;  // массив со значениями текущих +ов по сторонам фасада
+
+getpar
+x y z		//-- Правый нижний дальний угол	фасада
+w h; 	  //-- Размер по ширине и высоте
+// putmsg("MakeFas_DoorMater="+str(DoorMater))
+//---------------------------------------------------------------
+hdsp=priceinfo(DoorMater,"Thickness",16);
+
+position=52;  //-- Номер прототипа фасада
+tDoorPict=DoorPict;
+
+w=w+g_FasPlas[1]+g_FasPlas[2];
+h=h+g_FasPlas[3]+g_FasPlas[4];
+x=x-g_FasPlas[1];
+z=z-g_FasPlas[4];
+
+Namescr="ProtoParams";
+FurnType="500000";
+<?python
+import k3
+DoorPict=k3.GlobalVar('DoorPict')
+w=k3.Var('w')
+h=k3.Var('h')
+FasSizeMin=k3.priceinfo(DoorPict.value,"FasSizeMin",min(w.value,h.value),2)
+i=0
+while (min(w.value,h.value)-FasSizeMin<-1.) and i<10:
+    DoorPict.value=k3.priceinfo(DoorPict.value,"FasTypeIsMin",DoorPict.value,2)
+    FasSizeMin=k3.priceinfo(DoorPict.value,"FasSizeMin",min(w.value,h.value),2)
+    i += 1
+?>
+ElemFasName=priceinfo(DoorPict,"NAME"," ",2); //-- Имя фасада из прайс-листа
+if (ElemFasName!=" ")
+{
+  ElemFasName="Фасад "+ElemFasName;
+}
+
+NULLOUT=getsnap();
+if (MacroSw==0)
+{
+  gosub SimpleFas;
+}
+else
+{
+  PropNT=0;
+  if (PropN!=0)
+  {
+    PropNT=PropN;
+  }
+  protoobj create "Shkaf.ptl" 52
+    "W" w
+    "H" h
+    "PrMater"  DoorMater
+    "Face_col" DoorBCol
+    "FasrType" DoorPict
+    "PrMatVs1" DoorMatVS1
+    "PrMatVs2" DoorMatVS2
+    "Band" 	   DoorBand
+    "Nshp"     PanDir
+    "Variant"  FasVaria
+  done
+  x y z;
+  MacroSw=1;
+  if (PropNT==0)
+  {
+    goto NPAZ;
+  }
+  objident last 1 Pan;
+  i=1;
+  LPaz:
+  macro ProtoPath+"PropSN.mac" PazBM[i] PazAM[i]
+	      PazRM[i] PazWM[i] PazDM[i] PazSM[i] PazLM[i] Pan;
+  i=i+1;
+  if (i<PropNT+1)
+  {
+    goto LPaz;
+  }
+  PropN=0;
+  NPAZ:
+}
+
+NULLOUT=resnap();
+ElemName=ElemFasName;
+FurnType=g_FurnType;
+//-- Присваиваем атрибуты
+attrobj attach "Posit" done last 1 position;
+attrobj attach "FurnType" done last 1 FurnType ;
+attrobj attach "Assembly" done last 1 1;      //-- Добавим атрибут сборочной единицы
+
+if (ElemName!=" ")
+{
+  attrobj attach "ElemName" done last 1 ElemName ;
+}
+else
+{
+  attrobj attach "ElemName" done last 1 "Фасад" ;
+}
+
+macro ProtoPath+"EndFas.mac" DoorPict w h hdsp;
+
+// // Исключаем фасад, если стандартный ящик
+// nullout=getvarinst(1,"KeyFasBox",KeyFasBox,0);
+// if KeyFasBox==1
+// {
+	// attrobj attach "ExcSumCost" done last 1 1;
+// }
+
+DoorPict=tDoorPict;
+exit;
+//==================================================
+SimpleFas:
+Fastype=DoorPict;
+FsMaterl=DoorMater;
+
+PrMatVs1=DoorMatVS1;
+PrMatVs2=DoorMatVS2;
+object_1=sysvar(60);
+macro ProtoPath+"SetFasdN.mac" FsMaterl Fastype DoorBCol DoorBand PrMatVs1 PrMatVs2 ;
+macro ProtoPath+"SetDir.mac" PanDir;
+Fas_mac=PriceInfo(Fastype,"MacroFile","doorspl.mac",2);
+
+
+if (Len(Fas_Mac)==0)
+{
+  point 0 0 0;
+}
+else
+{
+    onerror end1;
+    macro Protopath+Fas_Mac 0, 0, 0, W, H;
+
+}
+end1:
+offerror;
+g_FurnType=iif(left(g_FurnType,2)!="50",FurnType,g_FurnType);
+object_2=sysvar(60)-object_1;
+move last object_2 done x y z nocopy;
+setucs move x y z;
+#fas group last object_2 done;
+//-------------------------------------------------------------
+FurnType=g_FurnType;
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"W",w);
+err=AddScratch(ScrMod,FurnType,"H",h);
+err=AddScratch(ScrMod,FurnType,"Fasrtype",DoorPict);
+err=AddScratch(ScrMod,FurnType,"PrMater",DoorMater);
+err=AddScratch(ScrMod,FurnType,"PrMatVs1",DoorMatVS1);
+err=AddScratch(ScrMod,FurnType,"PrMatVs2",DoorMatVS2);
+err=AddScratch(ScrMod,FurnType,"Face_col",DoorBCol);
+err=AddScratch(ScrMod,FurnType,"Nshp",PanDir);
+err=AddScratch(ScrMod,FurnType,"BAND",DoorBand);
+err=AddScratch(ScrMod,FurnType,"Variant",FasVaria);
+NULLOUT=writescratch(ScrMod,Namescr,fas);
+NULLOUT=TermScratch(ScrMod);
+NULLOUT=addattrpi(fas,1,52);
+return;

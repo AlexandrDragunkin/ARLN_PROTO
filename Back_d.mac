@@ -1,0 +1,90 @@
+//-- Программа рисует "умную" врезную заднюю стенку
+//-- Запрашивает у пользователя сначала полки, а затем стойки
+//-- (НЕ НАОБОРОТ!!!!)
+
+global ProtoPath;
+defarr arr[24];
+NULLOUT=getvarinst(2,"BPMater",BPMater,4);
+NULLOUT=getsnap();
+//macro Protopath+"Niche.mac";
+
+defarr Nisha[18];
+
+mbget "Задайте нишу:" backwall  Nisha : ;
+
+// Развернем систему кординат, поскольку она ориентирована для дверей
+setucs rotate  2points 0 0 0 0 0 100 180;
+setucs move  -Nisha[15] 0 0 ;
+
+g_x1=Nisha[15];
+g_xb=0;
+g_y1=Nisha[16];
+g_yb=0;
+g_z1=Nisha[17];
+g_zb=0;
+g_dir=0;
+
+if (!isvardef("ZZAOtst"))  { ZZAOtst=0 }
+if (!isvardef("ZZAZagl"))  { ZZAZagl=0 }
+h_dsp=priceinfo(BPMater,"Thickness",16);
+#ok_flag
+setvar
+"Стенки врезные"
+""
+"Введите параметры врезной стенки" done
+real default  ZZAOtst  "Отступ сзади"  ZZAOtst
+real default  ZZAZagl   "Заглубление в панели"  ZZAZagl
+done ;
+
+if (ok_flag==0) { goto fin; }
+
+// Допуск по ширине пропила
+if (udgetentity("DopW",ValType,DopW,sVal)==0)
+{
+	nullout=getvarinst(2,"DopW",DopW,1);
+}
+// putmsg(DopW)
+// Допуск по глубине пропила
+if (udgetentity("DopP",ValType,DopP,sVal)==0)
+{
+	nullout=getvarinst(2,"DopP",DopP,1);
+}
+// putmsg(DopP)
+
+macromode undo off;
+
+macro ProtoPath+"SetMat.mac" BPMater ;
+macro ProtoPath+"SetBand.mac" 0 0 0 0 ;
+macro ProtoPath+"SetFix.mac"  0 0 0 0 ;
+macro ProtoPath+"SetCuts.mac" 0 0 0 0;
+macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+macro ProtoPath+"SetFixOver.mac" 0 ;
+macro ProtoPath+"SetBend.mac" 0 0 0 0 0 0 0 0 ;
+macro ProtoPath+"SetDir.mac" 1 ;
+macro ProtoPath+"SetPropM.mac" " " " " 0 0 0 0 0;
+macro ProtoPath+"SetTrNull.mac" ;
+macro ProtoPath+"MakePan.mac" g_xb-ZZAZagl 0+ZZAOtst+DopW/2 g_zb-ZZAZagl  //0-ZZAOtst-h_dsp Исп. Митин 23.11.12
+                              g_z1+ZZAZagl*2 g_x1+ZZAZagl*2 14;              //стенка
+
+// Добавить изменение типа панели (врезная)
+objident last 1 Panel;
+arr[1]=Panel;
+err=GetPan6Par(1,arr);
+arr[1]=0;
+arr[2]=1;   // врезная панель или нет ? 0 – не врезная, иначе – врезная
+g_OutPar=SetPan6Par(22,arr);  //-- Добавить признак врезной панели
+//-- Перестроим панель
+MBPanel execute  Panel ;
+//if (ZZAZagl>0) {
+//  ObjIdent last 1 pnt;
+//  macro ProtoPath+"PropAddp.mac" pnt ;
+//}
+objident last 1 Panel;
+macromode undo on "Врезная стенка.mac" Panel ;
+
+
+InciseSlots Create ;
+
+fin:
+NULLOUT=resnap();
+exit;

@@ -1,0 +1,9 @@
+//-- Макропрограмма формирования Н-образного узора для фасада
+getpar xn,yn,zn,dx,dz,d1;
+//-- Вертикальные линии
+line xn+d1,yn,zn xn+d1,yn,zn+dz done;
+line xn+dx-d1,yn,zn	xn+dx-d1,yn,zn+dz done;
+//-- Горизонтальные линии
+line xn+d1,yn,zn+d1	xn+dx-d1,yn,zn+d1 done;
+line xn+d1,yn,zn+dz-d1 xn+dx-d1,yn,zn+dz-d1 done;
+exit;

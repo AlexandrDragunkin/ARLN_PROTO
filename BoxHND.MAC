@@ -1,0 +1,70 @@
+// Установка ручки на Ящик
+global ProtoPath;
+
+global		// Для ручек
+HandleType, 	// Тип ручки
+HandleX,    	// Сдвиг ручки по x
+HandleZ,    	// Сдвиг ручки по z
+HandleA,    	// Поворот ручки
+HandleD,	// Двойная или одиночная ручка
+HandleR	;	// Тип положения ручки 0-своб 1-центр 3-сверх 4-сниз
+
+getpar
+dx	G	dz	// Базовый угол двери (на фасаде)
+dwx,	dwz		// Размеры
+Rplace Handle	// Способ открывания и тип ручки из прайса
+ARMX	ARMZ	ARMA	// Сдвиги и угол поворота
+;
+//==============
+DOUb_r=HandleD
+Rpl_r=HandleR
+
+//=========================
+
+dRucUp=PriceInfo(HandleType,"Height",50)
+dRucR=PriceInfo(HandleType,"Length",0)
+HandleAT=HandleA
+
+Xh=dx+HandleX ; Zh=dz+HandleZ
+  if (Rpl_r==0) { goto SHAN; }                // Свободно
+
+  if (Rplace==0) { Xh=dx+dwx/2 HandleAT=HandleA+90 }           // Для ящиков (Нет)
+
+  DZn=dRucUp/2				//смещение ручки по ширине
+  DXn=dRucR/2				//смещение ручки по высоте
+  if (HandleAT==90)||(HandleAT==270) {
+    DXn=dRucUp/2
+    DZn=dRucR/2
+  }
+  If (Rpl_r==1) { Zh=dz+dwz/2 }    // По центру
+  If (Rpl_r==3) { Zh=dz+dwz-HandleZ-DZn } // Сверху
+  If (Rpl_r==4) { Zh=dz+HandleZ+DZn }     // Снизу
+
+	If (Rplace==1) { Xh=dx+dwx-HandleX-DXn }                // Слева
+	If (Rplace==2) { Xh=dx+HandleX+DXn }                    // Справа
+	If (Rplace==3) { Xh=dx+dwx/2 ; Zh=dz+dwz-HandleZ-DZn }  // Сверху
+	If (Rplace==4) { Xh=dx+dwx/2 ; Zh=dz+HandleZ+DZn }      // Снизу
+
+  if (DOUb_r==1) {             // Две ручки
+    if (Rplace==0) { Xh=dx+HandleX+DXn HandleAT=HandleA+90 }
+    else { Xh=dx+HandleX+DXn }
+  }
+
+//================================
+SHAN:
+CodRuc=PriceInfo(HandleType,"S1","Ruch")
+macro ProtoPath+"SetECod.mac" "7201";
+// macro ProtoPath+"SetKCod.mac" CodRuc ""	0;
+macro ProtoPath+"SetEnam.mac" "Ручка мебельная" ;
+object_1=sysvar(60);
+Macro ProtoPath+"MakeHand.mac"	HandleType	1
+						Xh	G	Zh
+						90	HandleAT -90;
+object_2=sysvar(60)-object_1;
+if (object_2>0) {
+  if (DOUb_r==1) {
+    move last 1 done dwx-2*Xh 0 0  copy 1 ;
+  }
+}
+
+exit ;

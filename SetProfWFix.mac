@@ -1,0 +1,23 @@
+//-- Макропрограмма установки типа крепежа профиля 
+global ProtoPath;
+global
+PrfP_1     
+PrfP_2  
+;
+getpar FixB DX_B AngB FixE DX_E AngE;
+
+NULLOUT=setvarinst(2,"FixB",FixB);		//-- Крепеж начала профиля
+NULLOUT=setvarinst(2,"DX_B",DX_B);		//-- Сдвиг крепежа начала профиля
+NULLOUT=setvarinst(2,"AngB",AngB);		//-- Угол поворота крепежа начала профиля
+NULLOUT=setvarinst(2,"FixE",FixE);		//-- Крепеж конца профиля
+NULLOUT=setvarinst(2,"DX_E",DX_E);		//-- Сдвиг крепежа конца профиля
+NULLOUT=setvarinst(2,"AngE",AngE);		//-- Угол поворота крепежа конца профиля
+
+ShiftXB=PriceInfo(FixB,"ToleranceX",0,2);	//-- Величина подрезки профиля в начале
+ShiftXE=PriceInfo(FixE,"ToleranceX",0,2);	//-- Величина подрезки профиля в начале
+
+NULLOUT=setvarinst(2,"PrfP_1",ShiftXB);		//-- Подрез начальной точки профиля
+NULLOUT=setvarinst(2,"PrfP_2",ShiftXE);		//-- Подрез конечной точки профиля
+PrfP_1=ShiftXB;
+PrfP_2=ShiftXE;
+exit;

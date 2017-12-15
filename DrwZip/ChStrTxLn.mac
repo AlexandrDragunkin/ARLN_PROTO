@@ -1,0 +1,59 @@
+//***Преобразуем габарит Х текста с сохранением стиля,
+//            Исполняемый модуль
+//              Драгункин А.Р.
+//              ГеоС 2008 г.
+//*********************************************
+global StrArr ;
+global
+N_str   //Число заполненных элементов
+;
+getpar
+Leng         //заданная длина
+;
+defarray info[8] ;
+//На входе Массив с единственным заполненным элементом StrArr[1]
+//На выходе Массив с заполненными элементами и число  заполненных элементов.
+StrI=StrArr[1]        //стартовое значение для строки
+
+
+StrI=Trim(strI);   //обрезаем пробелы слева и справа
+
+
+k=0
+met0:
+
+     k=k+1
+
+Nsimb=Len(strI);         //Число символов в строке
+=Nsimb
+if Nsimb<1 { goto metend ; }
+StrI=Trim(strI);         //обрезаем пробелы слева и справа
+Nsimb=Len(strI);         //Число символов в строке
+Tbi=0                    //позиция последнего пробела
+Xsize=0                  //Длина строки стартовое значение
+i=0
+met1:
+if Xsize<Leng { //Длина строки менее допустимой
+   i=i+1
+   StrIA=Left(StrI,i) ;
+   if Nsimb==i { StrArr[k]=strIA ; goto metend ;  }
+   Tb=Mid(StrI,i); if Tb==" " { Tbi=i } //ищем пробел
+   //=stria
+   N=GetRectText(StrIA,Xsize,Ysize);
+   goto met1 ;
+}
+else { //Длина  строки превысила допустимую
+    if Tbi>1 {    //Присваиваем k-му элементу массива первые Tbi
+       StrArr[k]=Left(strI,Tbi) ;
+       StrI=Right(StrI,(Len(strI)-Tbi)); //обрезаем у переменной StrI первые Tbi символы
+    }
+    else { //или i символов
+       StrArr[k]=Left(strI,i) ;
+       StrI=Right(StrI,(Len(strI)-i)); //обрезаем у переменной StrI первые i символы
+    }
+goto met0 ;
+}
+
+metend:
+N_str=k ;
+exit ;

@@ -1,0 +1,72 @@
+// BendDoorFs.mac
+//============================================
+// Драгункин Александр г.Дубна 2008 г.
+//============================================
+//  гибка створки фасадного полотна
+global x_Door y_Door z_Door H_Door W_Door ;
+Global
+G_BendS    //параметр развертки
+sproem
+LSegBARC
+BpL
+BpR
+NewParam
+RadiusB    // Радиус
+AngleB     // Угол  гибки
+G_ust
+AngleBP
+AngleBL
+dWfas
+;
+
+getpar
+pnt    //указатель на дверку
+DOUD   //-- Признак двойной двери
+R_Fas L_Fas
+Door_Zw
+PrizLR //признак угла поворота  0-правый 1-левый
+;
+//=========================
+//defarr arr[4] xm[6];
+//=========================
+  R_Fas=0;	// + к фасаду справа	Размер 0
+  L_Fas=0;	// + к фасаду слева	Размер 0
+     gosub Bend_D;    // Гнем дверку
+
+exit;
+
+//==============================
+//==============================SUB
+//==============================
+//==============================
+//==============================
+Bend_D:    // Гнем дверку
+  if prizLR==0
+  {
+    bend pnt x_Door+BpR y_Door-RadiusB z_Door
+             x_Door+BpR y_Door-RadiusB z_Door+100
+             x_Door+BpR y_Door+100     z_Door
+             RadiusB AngleB ;
+    objident last 1 pnt ;
+    rotate pnt done 2points x_Door+R_Fas y_Door z_Door
+                            x_Door+R_Fas y_Door z_Door+100
+                            (DOUD*grad(AngleBL))+grad(AngleBP)
+                            nocopy ;
+  }
+    if prizLR==1
+  {
+    bend pnt x_Door+G_BendS-BpR y_Door-RadiusB z_Door
+             x_Door+G_BendS-BpR y_Door-RadiusB z_Door+100
+             x_Door+G_BendS-BpR y_Door+100     z_Door
+             RadiusB reorient AngleB ;
+    objident last 1 pnt ;
+    
+    rotate pnt done 2points x_Door+G_BendS y_Door z_Door
+                            x_Door+G_BendS y_Door z_Door+100
+                            (-1)*((DOUD*grad(AngleBL))+grad(AngleBP))
+                            nocopy ;
+    move pnt done -dWfas 0 0 nocopy ;
+  }
+return;
+//=============================
+

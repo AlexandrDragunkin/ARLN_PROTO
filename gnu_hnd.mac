@@ -1,0 +1,97 @@
+//-- Установка ручки на дверь распашную с гнутым фасадом
+global ProtoPath  ;
+ProtoPath=GetProtoMac("Shkaf.ptl")
+global		// Для ручек
+HandleType, 	// Тип ручки
+HandleX,    	// Сдвиг ручки по x
+HandleZ,    	// Сдвиг ручки по z
+HandleA,    	// Поворот ручки
+HandleD,	// Двойная или одиночная ручка
+HandleR,	// Тип положения ручки 0-своб 1-центр 3-сверх 4-сниз
+g_gnu,          //-- Угол гнутого фасада
+g_w_f;          //-- Размер по оси y гнутого фасада
+//g_gnu_type;     //-- Тип гнутого фасада (15 - стойка, 16 - полка)
+
+
+getpar
+dx	G	dz	// Базовый угол двери (на фасаде)
+dwx,	dwz		// Размеры
+Rplace Handle	// Способ открывания и тип ручки из прайса
+ARMX	ARMZ	ARMA	// Сдвиги и угол поворота
+;
+
+//==============
+DOUb_r=HandleD
+Rpl_r=HandleR
+D_DxN=DbVar("D_DxN",2);
+//=========================
+if (HandleType==0) { exit; }
+
+dRucUp=PriceInfo(HandleType,"Height",50)
+dRucR=PriceInfo(HandleType,"Length",0)
+ha=HandleA;
+Xh=dx+ARMX ; Zh=dz+HandleZ;
+Yh=G-g_w_f+ARMX;
+axax=180;
+azaz=-g_gnu;
+//  if (Rpl_r==0) { goto SHAN; }                // Свободно
+
+  if (Rplace==0) { exit; Xh=dx+dwx/2 HandleA=90 }           // Для ящиков (Нет)
+  if (Rplace==3)||(Rplace==4) { HandleA=HandleA+90 }
+
+  DZn=dRucUp/2				//смещение ручки по ширине
+  DXn=dRucR/2				//смещение ручки по высоте
+  if (HandleA==90)||(HandleA==270) {
+    DXn=dRucUp/2
+    DZn=dRucR/2	
+  }
+  If (Rpl_r==1) { Zh=dz+dwz/2 }    // По центру
+  If (Rpl_r==3) { Zh=dz+dwz-HandleZ-DZn } // Сверху
+  If (Rpl_r==4) { Zh=dz+HandleZ+DZn }     // Снизу
+
+	If (Rplace==1) { Xh=dx+dwx+D_DxN;}                // Слева
+	If (Rplace==2) { Xh=dx; }                    // Справа
+  if (Rpl_r==0)
+  {
+     HandleA=ha;
+     goto SHAN;
+  }                // Свободно	
+	If (Rplace==3)   // Сверху
+	{
+	    Xh=dx+dwx/2;
+	    Zh=dz+dwz-HandleZ-g_w_f-DZn;
+	    yh=G;
+	    axax=-90;
+	    azaz=handleA;
+	    HandleA=90;
+       }
+	If (Rplace==4)         // Снизу
+	{
+	    Xh=dx+dwx/2;
+	    Zh=dz+HandleZ+g_w_f+DZn;
+	    yh=G;
+	    axax=-90;
+	    azaz=handleA;
+	    HandleA=90;
+        }
+
+  if (DOUb_r==1) {             // Две ручки
+    if (Rplace==0) { Xh=dx+ARMX+DXn HandleA=90 }
+    else { Xh=dx+ARMX+DXn }
+  }
+
+//================================
+SHAN:
+CodRuc=PriceInfo(HandleType,"S1","Ruch")
+macro ProtoPath+"SetECod.mac" "7201";
+// macro ProtoPath+"SetKCod.mac" CodRuc ""	0;
+macro ProtoPath+"SetEnam.mac" "Ручка мебельная" ;
+Macro ProtoPath+"MakeHand.mac"	HandleType	1
+						xh	yh	Zh
+						axax	azaz	HandleA;
+
+if (DOUb_r==1) 
+{
+  move last 1 done dwx-2*Xh 0 0  copy 1 ;
+}
+exit ;

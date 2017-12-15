@@ -1,0 +1,15 @@
+//--Макро создания стойки для гардеробных систем
+global ProtoPath;
+getpar 
+X, Y, Z,	//--Координаты точки установки
+W,		//--Высота 
+D		//--Глубина
+Ots		//--Отступ
+;	
+
+//--Расчитываем параметры
+NULLOUT=getvarinst(2,"TypeStWard",TypeStWard,0);		//-- Тип стойки
+macS=PriceInfo(TypeStWard,"MacroFile","",2);
+
+macro ProtoPath+macS X Y Z W D Ots TypeStWard;
+exit;          

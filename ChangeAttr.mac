@@ -1,0 +1,380 @@
+//-- Программа запрашивает и присваивает мебельные атрибуты объекту
+
+global ProtoPath;
+global g_SFurnType,g_IFurnType,g_FurnTypeL,g_FurTyp;
+defarr a78[5] b7[5]; // b8[3];
+defarr a1[6] b1[6];
+defarr a2[8] b2[8];
+defarr a56[5] b5[5] b6[5] c56[10];
+defarr a10[6], b10[6];
+
+getpar obj; //-- Принимаем объект, группа или каркас
+NULLOUT=getsnap();
+kark=getattr(obj,"KarkasNumb",-1);
+position=getattr(obj,"Position",-1);
+Top=0;
+zbt7=0;
+//macro ProtoPath+"global_s.mac";
+//FuDim=GetDimArray(g_SFurnType);
+//FuDim1=GetDimArray(g_FurTyp);
+
+//--------------------------------------------------------------------------------
+//-- Описываем массивы диалога
+a1[1]="Корпус";
+a1[2]="Длинномер";
+a1[3]="Группа длинномеров";
+a1[4]="Техника";
+a1[5]="Аксессуары";
+a1[6]="Мягкая мебель";
+
+b1[1]=0;
+b1[2]=1;
+b1[3]=2;
+b1[4]=3;
+b1[5]=4;
+b1[6]=5;
+
+a2[1]="На полу";
+a2[2]="Объект на стене";
+a2[3]="Объкт врезной в столешницу";
+a2[4]="Под карнизом или под навесным объектом";
+a2[5]="Объект на объекте сверху";
+a2[6]="Встраиваемая техника";
+a2[7]="Навесной элемент";
+a2[8]="Под потолком";
+
+b2[1]=0;
+b2[2]=1;
+b2[3]=2;
+b2[4]=3;
+b2[5]=4;
+b2[6]=5;
+b2[7]=6;
+b2[8]=7;
+
+a56[1]="Без подрезки ";
+a56[2]="Фаска";
+a56[3]="Скругление";
+a56[4]="Дуга";
+a56[5]="Вырез";
+
+b5[1]=0;
+b5[2]=1;
+b5[3]=2;
+b5[4]=3;
+b5[5]=4;
+
+b6[1]=0;
+b6[2]=1;
+b6[3]=2;
+b6[4]=3;
+b6[5]=4;
+
+c56[1]=90;  c56[6]=90;
+c56[2]=0;   c56[7]=0;
+c56[3]=0;   c56[8]=0;
+c56[4]=0;   c56[9]=0;
+c56[5]=0;   c56[10]=0;
+
+a78[1]="Прямой";
+a78[2]="Угловой";
+a78[3]="Контакт спереди справа";
+a78[4]="Контакт спереди слева";
+a78[5]="Без контантов";
+
+b7[1]=1;
+b7[2]=2;
+b7[3]=3;
+b7[4]=4;
+b7[5]=0;
+
+a10[1]="Зазор справа";
+a10[2]="Зазор слева";
+a10[3]="Зазор сзади";
+a10[4]="Зазор спереди";
+a10[5]="Зазор снизу";
+a10[6]="Зазор сверху";
+
+b10[1]=0;
+b10[2]=0;
+b10[3]=0;
+b10[4]=0;
+b10[5]=0;
+b10[6]=0;
+
+zat1="" zat2="" zat3=0 zat4="" zat5="" zat6="" zat7="" zat8="" zat9="100000" zat10="";
+//------------------------------------------------------------------------------
+//-- Присвоенные значения атрибутов подставляем в умолчания
+z=getattr(obj,"ObjType",-1);
+if (z!=-1)
+{
+	zbt1=z;
+	zat1=a1[findinarray(b1,zbt1)];
+}
+z=getattr(obj,"PlaceType",-1);
+if (z==-1)
+{
+	zp=0;
+	NULLOUT=getprotoval(obj,"Top",zp);
+	if (zp!=0)
+	{
+		z=1;
+	}
+}
+if (z!=-1)
+{
+	zbt2=z;
+	zat2=a2[findinarray(b2,zbt2)];
+}
+z=getattr(obj,"AngleType",-1);
+if (z!=-1)
+{
+	zat3=z;
+}
+z=getattr(obj,"FurnType","000000");
+if (z!="000000")
+{
+	zat9=z;
+}
+z=getattr(obj,"FurnKind","");
+if (z!="")
+{
+	zat10=z;
+}
+z=getattr(obj,"ElemName","");
+if (z!="")
+{
+	zat12=z;
+}
+z=getattr(obj,"UnitName","");
+if (z!="")
+{
+	zat12=z;
+}
+z=getattr(obj,"Article","");
+if (z!="")
+{
+	zat4=z;
+}
+z=getattr(obj,"CutType","");
+if (z!="")
+{
+//-- Заносим строку в массив значений
+	zbt56=z;
+  NULLOUT=splitbydelim(z,",",c56);
+}
+zat5=a56[findinarray(b5,c56[2])];
+zat6=a56[findinarray(b6,c56[7])];
+//-- Зазоры расстановки
+z=getattr(obj,"GapValue","");
+if (z!="")
+{
+//-- Заносим строку в массив значений
+  NULLOUT=splitbydelim(z,",",b10);
+}
+
+//------------------------------------------------------------------------------
+//-- Формируем диалоговую карточку
+s=" ";
+#ok_flag
+Setvar
+"Характеристики объекта"
+""
+left
+"Определите характеристики объекта"
+done
+
+str auto listonly
+    let i=1
+    loo1:
+     if (a1[i]==zat1)  {
+      current
+      }
+     a1[i]
+     let i=i+1
+     if (i<=6) { goto loo1; }
+done
+             "Тип объекта" zat1
+//str default zat10 "Пользовательский тип объекта" zat10
+str default zat12 "Наименование объекта" zat12
+str default zat4 "Артикул" zat4
+
+str auto listonly
+    let i=1
+    loo2:
+     if (a2[i]==zat2)
+     {
+       current
+     }
+     a2[i]
+     let i=i+1
+     if (i<=8) { goto loo2; }
+done
+             "Тип размещения объекта" zat2
+
+logical  default 0 "Установить атрибут навески" zat11
+logical  default zat3 "Накрывать угловым длинномером"  zat3
+
+str auto listonly
+    let i=1
+    loo5:
+     if (a56[i]==zat5)
+     {
+       current
+     }
+     a56[i]
+     let i=i+1
+     if (i<=5) { goto loo5; }
+done
+             "Тип подрезки правого края" zat5
+
+str auto listonly
+    let i=1
+    loo6:
+     if (a56[i]==zat6)  {
+      current
+      }
+     a56[i]
+     let i=i+1
+     if (i<=5) { goto loo6; }
+done
+             "Тип подрезки левого края" zat6
+
+if (kark==-1)
+{
+	str auto listonly
+    let i=1
+    loo7:
+     if (i==1)  {
+      current
+      }
+     a78[i]
+     let i=i+1
+     if (i<=5) { goto loo7; }
+	done
+             "Тип секции" zat7
+	logical default 0 "Навесной шкаф" Top
+}
+	real default b10[1] a10[1] b10[1]
+	real default b10[2] a10[2] b10[2]
+	real default b10[3] a10[3] b10[3]
+	real default b10[4] a10[4] b10[4]
+	real default b10[5] a10[5] b10[5]
+	real default b10[6] a10[6] b10[6]
+done;
+if (ok_flag==0)
+{
+	if (getattr(obj,"ObjType",-1)!=-1)
+  {
+    NULLOUT=resnap();
+    exit;
+  }
+}
+//------------------------------------------------------------------------------
+if (zat11==1)
+{
+  macro ProtoPath+"AddRep.mac" obj;
+}
+FurnType="100000"
+//-- Значения атрибутов
+//if (zat9!="")
+//{
+//  FurnType=g_IFurnType[findinarray(g_SFurnType,zat9)];
+//}
+zbt1=b1[findinarray(a1,zat1)];
+zbt2=b2[findinarray(a2,zat2)];
+zbt3=zat3;
+if (kark==-1)
+{
+	zbt7=b7[findinarray(a78,zat7)];
+}
+//-- Значения подреза
+c56[2]=b5[findinarray(a56,zat5)];
+c56[7]=b6[findinarray(a56,zat6)];
+
+     j=2;
+z56:
+     if (j==2) { h=" правого края" }
+     if (j==7) { h=" левого края" }
+
+     if (c56[j]==0) { c56[j+1]=0 c56[j+2]=0 c56[j+3]=0 }
+
+     if (c56[j]==1)
+     {
+       #ok_flag
+       Setvar
+       "Размеры"
+       ""
+       left
+       "Определите размеры фаски"+h
+       done
+       real default c56[j+1] "Размер по длине" c56[j+1]
+       real default c56[j+2] "Размер по ширине" c56[j+2]
+       done;
+       c56[j+3]=0
+
+       if (ok_flag==0)
+       { goto Stat1 }
+     }
+
+     if (c56[j]==2)
+     {
+       #ok_flag
+       Setvar
+       "Размеры"
+       ""
+       left
+       "Определите размеры скругления"+h
+       done
+       real default c56[j+1] "Внешниий радиус" c56[j+1]
+       real default c56[j+2] "Внутренний радиус" c56[j+2]
+       done;
+       c56[j+3]=0
+
+       if (ok_flag==0)
+       { goto Stat1 }
+     }
+
+     if (c56[j]==3)
+     {
+       #ok_flag
+       Setvar
+       "Размеры"
+       ""
+       left
+       "Определите размеры дуги"+h
+       done
+       real default c56[j+1] "Радиус" c56[j+1]
+       done;
+       c56[j+2]=0;
+       c56[j+3]=0;
+
+       if (ok_flag==0)
+       { goto Stat1 }
+     }
+     if (c56[j]==4)
+     {
+       #ok_flag
+       Setvar
+       "Размеры"
+       ""
+       left
+       "Определите размеры выреза"+h
+       done
+       real default c56[j+1] "Размер по длине" c56[j+1]
+       real default c56[j+2] "Размер по ширине" c56[j+2]
+       real default c56[j+3] "Радиус" c56[j+3]
+       done;
+
+       if (ok_flag==0)
+       { goto Stat1 }
+     }
+j=j+5;
+if (j<8) { goto z56; }
+
+zbt56=str(c56[1])+","+str(c56[2])+","+str(c56[3])+","+str(c56[4])+","+str(c56[5])+","+str(c56[6])+","+str(c56[7])+","+str(c56[8])+","+str(c56[9])+","+str(c56[10])
+gva=str(b10[1])+","+str(b10[2])+","+str(b10[3])+","+str(b10[4])+","+str(b10[5])+","+str(b10[6]);
+//------------------------------------------------------------------------------
+macro ProtoPath+"ChangeAttr2.mac" obj, zat4, zat3, Top, kark, zbt7, zbt1, zbt2, zbt56, gva, position, FurnType, zat10, zat12;
+NULLOUT=ReSnap();
+exit;

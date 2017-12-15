@@ -1,0 +1,60 @@
+//-- Создание обналички для окна
+global TextLib;
+global ProtoPath;
+getpar lw hw tjugle ТолОтк sdept sheight Col_sill HideFlag d1 tw;
+//------------------------------------------------------------------------------
+if (HideFlag==0)
+{
+  goto D2Draw;
+}
+#bsill box ТолОтк,tw,0  lw-ТолОтк,sdept+tjugle,sheight;
+#bdl box ТолОтк-d1,tjugle,0, ТолОтк,sdept+tjugle,sheight;
+#bdr box lw-ТолОтк+d1,tjugle,0, lw-ТолОтк,sdept+tjugle,sheight;
+#bsill boolean union full bsill bdl bdr;
+
+ChProp MapByPars bsill Done
+0,  -1                        //-- Для всех секций
+1,  TextLib+str(Col_sill)     //-- Меняем код материала на  материал в таблице материалов
+;
+//-- Откосы
+#b1 box 4points 0 0 0
+      ТолОтк 0 0
+      ТолОтк tjugle 0
+      ТолОтк tjugle hw ;
+#b2 move b1 done lw-ТолОтк 0 0  copy 1 ;
+#b3 box 4points ТолОтк 0 hw
+      lw-ТолОтк  0 hw
+      lw-ТолОтк 0 hw-ТолОтк
+      lw-ТолОтк tjugle hw-ТолОтк ;
+ChProp MapByPars last 3 Done
+0,  -1                        //-- Для всех секций
+1,  TextLib+str(Col_sill)     //-- Меняем код материала на  материал в таблице материалов
+;
+exit;
+//------------------------------------------------------------------------------
+D2Draw:
+defarr p1[3], p2[3], p3[3];
+
+p1[1]=0;
+p1[2]=0;
+p1[3]=0;
+p2[1]=lw;
+p2[2]=0;
+p2[3]=0;
+p3[1]=lw;
+p3[2]=sdept+tjugle;
+p3[3]=0;
+macro ProtoPath+"WDDRHatch.mac" p1 p2 p3 0;
+
+p1[1]=0;
+p1[2]=0;
+p1[3]=0;
+p2[1]=ТолОтк;
+p2[2]=0;
+p2[3]=0;
+p3[1]=ТолОтк;
+p3[2]=tjugle;
+p3[3]=0;
+macro ProtoPath+"WDDRHatch.mac" p1 p2 p3 1;
+#okn group all done;
+exit;

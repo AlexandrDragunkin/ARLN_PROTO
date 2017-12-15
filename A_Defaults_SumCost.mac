@@ -1,0 +1,41 @@
+// Список переменных для работы. В случае изменений в БД внести здесь. 
+
+global ProtoPath;
+
+MaxHKorobBox=200; // Максимальное значение высоты корпуса ящика
+nullout=setvarinst(2,"MaxHKorobBox",MaxHKorobBox);
+
+CourseUE=63; // Курс У.Е.
+
+IncludeBand=5; // Убираем из стоимости кромку по E, остальное считаем
+nullout=setvarinst(2,"IncludeBand",IncludeBand);
+//------------
+CostBand=3;
+nullout=setvarinst(2,"CostBand",CostBand);
+CostCurBand=5;
+nullout=setvarinst(2,"CostCurBand",CostCurBand);
+//------------
+
+// Список используемых  имен атрибутов для хранения цен
+SCMatPl="MaterialPl";	// Профиль
+nullout=setvarinst(2,"SCMatPl",SCMatPl);
+SCMatSq="MaterialSq";	// Площадь
+nullout=setvarinst(2,"SCMatSq",SCMatSq);
+SCElemFurn="ElemFurn";	// Фурнитура
+nullout=setvarinst(2,"SCElemFurn",SCElemFurn);
+SCDSDoor="DSDoor";		// Двери-купе по таблице
+nullout=setvarinst(2,"SCDSDoor",SCDSDoor);
+SCDBand="Band_";		// Кромки
+nullout=setvarinst(2,"SCDBand",SCDBand);
+SCDecor="Decorate_";	// Отделки
+nullout=setvarinst(2,"SCDecor",SCDecor);
+
+// nullout=setvarinst(2,"CourseUE",CourseUE);
+
+// path=MPathExpand("<Projects>");
+// putmsg(path)
+
+// strQuery="UPDATE udEntity SET udEntity.sVal=\""+str(MacroSumCost)+"\" WHERE udEntity.Query=\"MacroSumCost\"";
+// rkd=adbModify(con,strQuery);
+// err=aDbUpdate(rkd);
+exit;

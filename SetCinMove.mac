@@ -1,0 +1,29 @@
+global ProtoPath ;
+//*********************************************
+// Формирование строки для атрибута Синема 
+// Добавим Сдвиг вдоль вектора
+//              МСВ
+//              ГеоС 2014 г.
+//*********************************************
+getpar
+scr		// скретч
+x1, y1, z1,	// вектор
+btime		// Начальное время
+etime		// Конечное время
+BossKey		// Ключ хозяина
+;
+
+//  cinestr[1]=cinestr[1]+str(BossKey)+", "+str(btime)+", "+str(etime)+", ";
+//  cinestr[1]=cinestr[1]+"0, "+str(x1)+", "+str(y1)+", "+str(z1)+", ";
+
+	defarr scarr[12];
+	scarr[1]=scr
+	scarr[2]=BossKey
+	scarr[3]=btime
+	scarr[4]=etime
+	scarr[5]=x1
+	scarr[6]=y1
+	scarr[7]=z1
+	 kol=CinemaScr(1,scarr);
+
+exit;

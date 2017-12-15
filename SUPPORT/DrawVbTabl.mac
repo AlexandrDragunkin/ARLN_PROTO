@@ -1,0 +1,163 @@
+//Формируем объект таблицу с данными сцены по водоотбойникам
+global CBDpath DRWZPath;
+
+
+global
+IdKrom
+TyZnak
+DRWZPath
+
+;
+
+defarr gr[50] xm[6] ArrSys[20] matr[9] info[8] ;
+
+
+err=SysArr(43,ArrSys) ; // массив свойств созаваемого объекта
+
+setucs save "%%DrawVbTabl%%" ;
+global CBDpath ;
+="Тип длинномера "+str(3)
+visible attribute "LongsType==3" ;
+select attribute  "LongsType==3" done
+N=sysvar(61)
+=N
+if (N==0)	{
+	#ok_flag alternative "Внимание!" msgbox text "Сцена не содержит оъектов типа водоотбойник" done "Ок" done
+	exit
+	}
+defarr ObjSt[N] ;
+i=0
+metA1:
+if i<N {
+   i=i+1
+   ObjSt[i]=GetSelNum(i) ;  //Все засвеченные объекты засунули в массив
+   goto metA1 ;
+}
+
+
+If (!IsAttrdef("StrihVb"))  { Attribute Create "StrihVb" "Указатель на знак водоотбойника" Real 5 0  ; }
+
+hatchcoeff 1  //Масштаб штриховки  K - масштаб
+hatchangle 0  //Угол штриховки
+hatchunits 0 //k= 0 не учитывать или 1 учитывать графический коэффициент.
+
+
+
+
+
+
+fnk=CBDpath+"VbDb.dbf"
+if GetCount(fnk) {  DbOpen rcdCBD,fnk; } // ищем, есть ли такая база?
+DbFilter rcdCBD,"" ;
+err=DbRecCount(rcdcbd) ;//ОПРЕДЕЛИЛИ ЧИСЛО ЗАПИСЕЙ В ОТКРЫТОМ НАБОРЕ
+if err>0 {
+i=0
+met1:
+DbFilter rcdCBD,"PRIZ==0" ;
+SummLn=0
+TextKr=""
+err=DbRecCount(rcdcbd) ;//ОПРЕДЕЛИЛИ ЧИСЛО ЗАПИСЕЙ В ОТКРЫТОМ НАБОРЕ
+if err==0 { goto metend ; }
+DbMoveFirst rcdcbd; // Встали на первую запись
+iD_CURR=DbGetValue(rcdcbd,"PRICEVB",0) ;//считали из поля PRICEIDIK
+//iD_ZNAK=DbGetValue(rcdcbd,"ZNAK",0) ;    //Считали номер значка
+DbFilter rcdCBD,"(PRIZ==0)&&(PRICEVB==iD_CURR)";//Отфильтровали по этому полю
+SunmmLen=0
+TextKr=""
+Tyznak=Tyznak+1
+j=0
+met2:
+         If !DbEOF(rcdCBD) {
+            err=DbRecCount(rcdCBD) ;//ОПРЕДЕЛИЛИ ЧИСЛО ЗАПИСЕЙ В ОТКРЫТОМ НАБОРЕ
+            if err<1 { #ok_flag alternative "Внимание!!" msgbox text " Записи  в базе с именем "+fnk+" не обнаружены." done "Ок" done ; exit ; }
+            else {                // Встали на первую запись
+                 ValLen=DbGetValue(rcdCBD,"LENGTHVB",-99); //Определили длину кромки
+                 DbSetValue rcdCBD,"PRIZ",1 ; //Каждой обработанной записи в поле PRIZ поставили 1
+                 DbUpdate rcdCBD ;
+                 if j==0 { TextKr=TextKr+str(ValLen);   }
+                 else { TextKr=TextKr+"+"+str(ValLen);  }
+                 SummLn=SummLn+ValLen;
+                 DbMoveNext rcdCBD;
+
+                 j=j+1
+                 //   Рисуем
+                 setucs lcs ObjSt[i+j] ;
+                 NULLOUT=InitArray(matr,0) ;
+                 err=GetUCSMatr(Matr)  ;
+                 Chloc=GetAttr(ObjSt[i+j],"Chainloc",0);   //определили  принадлежность цепочке
+                 #l1 line 0 10 -matr[3] ValLen 10 -matr[3] ;
+                 //#l1 path select l1 done l1 create ;
+                 Chprop Lwidth l1 done 1 ;
+
+                 //macro GetFilePath(SysVar(7))+"postZ1auto.mac" TyZnak l1 ValLen/2 0 0 ;
+                 macro DRWZPath+"leader1auto.mac" TyZnak ValLen/2 0 -matr[3]      ValLen/2+0.01 10 -matr[3] ;
+                 objident last 1 VbZnak ;
+                 attrobj attach "kromZNAK" "ChainLoc"  done  l1 TyZnak chloc ;
+                 attrobj attach "ChainLoc"  done  VbZnak chloc ;
+                 setucs restore "%%DrawVbTabl%%" ;
+
+                 }
+                 goto met2 ;
+            }
+   //из поля длин сформировали запись Общая ****(мм) (**;**;**;**;)
+   TextKr="Ls%%003(мм)%%004="+str(SummLn)+"  ("+TextKr+")" ;
+   =TextKr
+
+   //Формируем картинку группируем помещаем в бланк.
+   i=i+1
+
+    macro DRWZPath+"leader1auto.mac" TyZnak 0 0+10*i*SYSvAR(76)*ArrSys[3] 0 0.01 10+10*i*SYSvAR(76)*ArrSys[3] 0 ;
+    objident last 1 pnt ;
+   //Определили наименование материала
+   name=PriceInfo(iD_CURR,"Matname",0)
+   #tx text name+" "+textkr done -10-10*SYSvAR(76) 0+10*i*SYSvAR(76) 0 @-10 0 0 ;
+   gosub EdЕtextNM ; //Редактируем параметры текста  присваиваем параметры Nmebel
+   Group last 2 done ;
+   objident last 1 gr[i] ;
+
+   goto met1 ;
+   }
+//else { DbClose rcdcbd; exit ; }
+metend:
+   invisible attribute "LongsType==3" ;
+   setucs restore "%%DrawVbTabl%%" ;
+   setucs delete "%%DrawVbTabl%%" ;
+
+N=i
+text "%%uВодоотбойник. Условные обозначения" done 0 0 0  @-10 0 0 ;
+i=0
+#pnt group last 1 done ;
+met6:
+if i<N {
+   i=i+1
+   add pnt gr[i] done
+   goto met6 ;
+}
+Objident last 1 pnt;
+Invisible pnt done ;
+//#gr1 group all done ;
+#gr1 group attribute "ChainLoc==1" done ;
+=objgab3(gr1,xm);
+explode gr1  done
+visible pnt done
+Xc=Xm[4]
+Yc=xm[5]+10*sysvar(76);
+=objgab3(pnt,xm);
+move  pnt done  2point  Xm[4] Xm[2] 0 Xc Yc 0  nocopy ;
+If (IsAttrdef("ChainLoc"))   { attrobj attach "ChainLoc" done pnt 1 ; }
+
+DbClose rcdcbd;
+exit;
+
+EdЕtextNM:
+//Редактируем параметры текста  присваиваем параметры Nmebel
+err=GetTextInfo(Tx,Info);
+Info[1]="Nmebel.shx" //1 Имя шрифта
+Info[2]=5            //2 Высота символа
+Info[3]=100          //3 Отношение ширины к высоте (в процентах)
+Info[4]=15           //4 Угол наклона шрифта (в градусах)
+Info[5]=0            //5 Разрядка  между  символами  по  горизонтали(в процентах)
+Info[6]=0            //6 Разрядка между символами по вертикали (в процентах)
+err=PutTextInfo(Tx,Info);
+
+return;

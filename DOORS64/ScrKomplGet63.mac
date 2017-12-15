@@ -1,0 +1,71 @@
+//-- Макропрограмма извлекает из scratch атрибута данные для установки комплектующих
+//-- на профили в системе дверей
+
+//-- Входные параметры:
+
+//-- IsNull - если ноль - обнуляем . Это необходимо при перестроении
+
+nullout=getvarinst(2,"Doors63",Doors63,"Doors63.zmc|");
+
+global ProtoPath ;
+global g_UsVarName g_UsVarVal g_skrKompl;;
+global
+      g_drp
+;
+defarr g_UsVarName[100] g_UsVarVal[100];
+
+
+getpar IsNull syst;            //-- Если ноль, обнуляем число комплектующих
+
+//================Проверяем и открываем доступ к базе=================================
+C_key=0
+//g_keyDS63=iif(isvardef("g_keyDS63")==0,0,g_keyDS63);
+//if g_keyDS63!=1
+//{
+//   macro ProtoPath++Doors63+"CrtSysDoor63.mac" ;
+//   C_key=1 // Признак что база открыта в этом макро
+//}
+//====================================================================================
+err=0;
+
+Namescr="ScrKompl";
+ScrMod=0;
+err=isassign(Namescr,0);
+if (isassign(Namescr,0))
+{
+  ScrMod=readscratch(Namescr,0);   //-- Читаем из записи
+  //putmsg("ScrFlapGet ScrFlat определен",0);
+  g_skrKompl=1;
+}
+else
+{
+  ScrMod=filetoscrtch(ProtoPath+Namescr+".scr");
+  g_skrKompl=0;
+}
+if (ScrMod==0)
+{
+   ScrMod=InitScratch();
+   err=AddScratch(ScrMod,"сист_"+str(syst),"номер",syst); 	//--номер системы
+   err=AddScratch(ScrMod,"сист_"+str(syst),"InOp_"+str(0),0); // Наличие параметра InOp_ говорит о неоднозначности установки комплектующего если его нет то ставим везде где можем
+}
+  //
+
+//====================================================================================
+if C_key==1
+{
+ //macro ProtoPath++Doors63+"ClosSysDoor63.mac";
+}
+ENDM4:
+if (!isattrdef(Namescr))
+{
+  Attribute Create Namescr "Параметры комплектующих 63" text 30 80 ;
+}
+writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+exit;
+//======================
+//В таблице DSExtraParams определены дополнительныепараметры установки комплектующих
+//они объеденены параметром Hold2 который определяет их конкретное отношение к системе
+//параметр UnitPos указывает на родительский объект (сечение профиля)
+//Hold1 указывает на владельца комплектующее
+// в случае многовариантной ситуации Hold1 2 3 пустые UnitPos указывает на ID хозяина вариантной записи

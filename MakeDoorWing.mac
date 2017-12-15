@@ -1,0 +1,114 @@
+//-- Создание створки распашной двери с ручкой и петлями
+//-- Входные параметры:
+//-- x1,y1,z1 - координаты правого нижнего дальнего угла створки
+//-- W1, H1 - ширина и высота створки
+//-- R_Fas - увеличение фасада справа
+//-- L_Fas - увеличение фасада слева
+//-- U_Fas - увеличение фасада сверху
+//-- D_Fas - увеличение фасада снизу
+//-- Variant - вариант открываения створки двери
+//--         = 1 - слева
+//--         = 2 - справа
+//--         = 3 - сверху
+//--         = 4 - снизу
+//--         = 0 - не отрывается (декоративная створка)
+//-- pDoorKonst - тип конструкции двери (стандартная, поворотная)
+//-- pDoorMater - материал панелей двери
+//-- FasadType - тип фасада
+//-- Handle - тип ручки
+//-- ARMX, ARMZ - положение ручки по осям X и Z соответственно
+//-- ARMA-- угол поворота ручки
+
+global ProtoPath;
+global DoorKonst,DoorMater;
+getpar
+x1,y1,z1,
+W1,H1,
+R_Fas,
+L_Fas,
+U_Fas,
+D_Fas,
+Variant,
+pDoorKonst,
+pDoorMater,
+FasadType,
+Handle,
+ARMX,ARMZ,
+ARMA;
+//------------------------------------------------------------------------------
+DoorKonst=pDoorKonst;
+DoorMater=pDoorMater;
+NULLOUT=setvarinst(1,"FrameFasadThin",-1);    //-- Обнулим значения толщины и ширины рамки фасада
+NULLOUT=setvarinst(1,"FrameFasadWidth",-1);   //-- Используются для установки ручек рамочных фасадов
+NULLOUT=setvarinst(1,"FrameFasadPlase",-1);   //-- Положение ручки на вставке
+NULLOUT=setvarinst(1,"FrameFasGorWidth",-1);  //-- Ширина горизонтальной части рамки
+ElemDoorName=priceinfo(FasadType,"NAME"," ",2); //-- Имя фасада из справочника сборочных единиц
+if (ElemDoorName!=" ")
+{
+  ElemDoorName="Фасад "+ElemDoorName;
+}
+HND_mac=""; //-- Имя макропрограммы установки ручки
+//-----------------------------------------------------------------
+objDo=sysvar(60);
+//-- Установим имя фасада
+macro ProtoPath+"SetEnam.mac" ElemDoorName;
+//-- Установим увеличение фасада
+macro ProtoPath+"SetFasPlas.mac" R_Fas L_Fas U_Fas D_Fas;
+if (DoorKonst!=0)
+{
+  //-- Если конструкция двери отличается от стандартной
+  Door_mac=PriceInfo(DoorKonst,"MacroFile","",2);
+  macro Protopath+Door_Mac x1,y1,z1,W1,H1,R_Fas,L_Fas,U_Fas,D_Fas,Variant;  
+}
+else
+{
+  //-- Иначе строим стандартную дверь
+  macro Protopath+"DoorStan.mac" x1,y1,z1,W1,H1,R_Fas,L_Fas,U_Fas,D_Fas,Variant;
+}
+
+// object_h=sysvar(60);
+selbyattr "Left(FurnType,2)==\"50\"&&Posit==52" partly all done
+if sysvar(61)>0 {
+Fasd=getselnum(sysvar(61));
+}
+
+object_h=sysvar(60);
+macro Protopath+"GetFasThin.mac" ByRef h_fas FasadType, ARMX, ARMZ;
+if (Handle!=0)
+{
+  HND_mac=PriceInfo(DoorKonst,"HNDMac",PriceInfo(FasadType,"HNDMac","",2),2);
+  if (Len(HND_Mac)!=0) //-- Если задано имя макропрограммы установки ручки
+  {
+	  //-- Особенная установка ручки
+    macro Protopath+HND_Mac
+		  x1-R_Fas,y1+h_fas,z1-D_Fas,         //-- Базовый угол двери
+		  W1+R_Fas+L_Fas,H1+U_Fas+D_Fas,abs(Variant)  //-- Ширина, высота и сторона открывания двери
+      Handle,ARMX,ARMZ,ARMA;  //-- Тип ручки и параметры положения
+  }
+  else
+  {
+	  //-- Установка ручки по-умолчанию
+    macro Protopath+"DoorHND.mac"
+		  x1-R_Fas,y1+h_fas,z1-D_Fas,         //-- Базовый угол двери
+		  W1+R_Fas+L_Fas,H1+U_Fas+D_Fas,abs(Variant)  //-- Ширина, высота и сторона открывания двери
+      Handle,ARMX,ARMZ,ARMA;  //-- Тип ручки и параметры положения
+  }
+  object_h=sysvar(60)-object_h;
+  // Этих свойств нет в наших базах,есть Height, Length, Width
+  // NULLOUT=getvarinst(1,"Xhandl",Xh,-99);
+  // NULLOUT=getvarinst(1,"Zhandl",Zh,-99);
+  
+  NULLOUT=getvarinst(1,"Height",Xh,-99);
+  NULLOUT=getvarinst(1,"Width",Zh,-99);
+  
+  // Закоменчено, так как при установке ручки и отделки появляется лишний элемент с атрибутами фасада и
+  // в выгрузку он попадает в TElements
+  
+  // macro ProtoPath+"getGabsDrillFasToHandle.mac" Fasd Xh y1 Zh 5 ByRef minV ByRef maxV ;
+  // if y1+h_fas!=maxV&&Xh!=-99 {
+    // move nocopy last object_h done 0 maxV-(y1+h_fas) 0 nocopy ;
+  // }
+}
+objPosle=sysvar(60);
+macro ProtoPath+"SetDoorCinema.mac" objDo objPosle x1,y1,z1,W1,H1,h_fas,Variant;
+exit;

@@ -1,0 +1,473 @@
+//-- Создание группы ящиков
+
+global MacroSw  ; //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global PanMater;  //-- Материал панелей
+global PanCKro;   //-- Цвет кромки
+
+NULLOUT=GetVarInst(2,"TypKroB",TypKroB,0); // тип кромки для ящиков
+
+global OfSetPan;  //-- Параметры наложения накладного дна
+KarkasNumb=getcarcnumb();   //-- Порядковый номер каркаса в сцене
+global ProtoPath;
+global PanDir;	       //-- Направление шпона 1=D 2=B 0-игнорируется
+
+global g_BoxBottom, g_BottomOts; //-- Тип дна ящика и dеличина отступа для врезного дна
+global DoorBCol DoorBand;        //-- Цвет и тип кромки фасада
+
+global g_KorobVar, g_Ykorob; // -- Новые параметры ящиков 
+g_Ykorob=0  // g_Ykorob		//Глубина короба В случае свободного размера
+g_KorobVar=1 // g_KorobVar Вариант расчета глубины короба 0-заданный(свободный) размер  1-автоматически по минимальному зазору сзади
+
+
+global
+DoorMater,  //-- Материал панелей двери
+DoorPict,   //-- Тип рисунка
+DoorMatVS1, //-- Материал вставки 1 фасада
+DoorMatVS2, //-- Материал вставки 2 фасада
+DoorType;   //-- Утопленная/накладная
+
+global
+BoxDMater,  //-- Материал дна ящика
+BoxSLX,     //-- Увеличение фасада слева по X
+BoxSUZ,     //-- Увеличение фасада сверху по Z
+BoxSRX,	    //-- Увеличение фасада справа по X
+BoxSDZ;     //-- Увеличение фасада снизу по Z
+
+global
+gs_NBoxobj         //-- Счетчик числа ящиков в объекте
+BoxOpen,    //-- Открытый ящик
+BoxKType;   //-- Тип корпуса ящика
+
+global
+HandleType, //-- Тип ручки
+HandleX,    //-- Сдвиг ручки по x
+HandleZ,    //-- Сдвиг ручки по z
+HandleA;    //-- Поворот ручки
+
+global
+HandleD,	  //-- Двойная или одиночная ручка
+HandleR;	  //-- Тип положения ручки 0-своб 1-центр 3-сверх 4-сниз
+
+global ElemName; //-- Имена мебельных элементов
+global HoldName; //-- Имя хозяина
+global D_DxU D_DzU D_DxN D_DzN ;
+
+global DOUD	OpenD;
+OpenD=0; //-- Ящики открытыми не бывают
+DOUD=0;  //-- Ящики двойными не бывают
+
+global BoxMater; //-- Материал ящика
+global gs_ZFtDn;
+
+NULLOUT=GetVarInst(2,"B_Zbox",B_Zbox,2); //-- Зазор между фасадами ящиков по вертикали
+NULLOUT=GetVarInst(2,"B_Zup",B_Zup,25);
+NULLOUT=getvarinst(2,"B_Zdown",B_Zdown,30);
+
+// Уточняем параметры если они предписаны конструкцией ящика
+gosub setGS;
+//---------------------------------------------------------
+
+global  gs_BTypeX,         //-- Типы ящиков
+        gs_IDsec,          //-- Cчетчик обработанных в объекте ящиков
+        gs_FasTyp          //-- Типы фасадов
+        gs_Kbox            //-- Количество ящиков из скретча
+		gs_ZFt,				//-- Высота фасадов ящиков из скрейча
+		gs_ZFtS,			//-- Подрез фасадов ящиков из скрейча
+		gs_ZmFt,  			//-- Наличие замка на фасаде ящика из скрейча
+		gs_ZmZ,				//-- Сдвиг  замка по высотеа фасаде ящика из скрейча
+		g_zamokBx			//-- Наличие замка по умолчанию
+		g_grDec 			//-- массив групп отделок
+		g_Dec				//-- массив материалов отделок
+		gs_hk				//-- высота короба ящика
+		gs_HmFt				//-- ручка на скрытом
+;
+defarr TpmTypes[100], TpmFTypes[100] TmpHk[100];
+
+getpar
+xn yn zn		//-- Правый нижний дальний угол
+w d h 	    //-- Размеры по ширине глубине и высоте
+Kb;	        //-- Количество ящиков
+
+
+//--------------------------------------------------------------------------------------
+par1=2/3;	//-- Максимадльная степень выдвижения (внизу)
+par2=1/3;	//-- Минимальная степень выдвижения (вверху)
+position=63;  //-- Номер прототипа группы ящиков
+ElemBoxName="Группа ящиков";
+FurnType="310000";
+Namescr="ProtoParams";
+NULLOUT=setvarinst(1,"col_box_cin",Kb);
+
+ik=0;
+Tmpgs_IDsec=0;
+gs_Kbox=gs_Kbox+Kb;
+BoxMater=PanMater;
+h_dsp=priceinfo(BoxMater,"Thickness",dbvar("HDSP",16));
+nZFt=0 // число размеров в скрейче
+sZFt=0 // суммарная высота фасадов в скрейче
+macro protopath+"getdvBoxGr.py" ByRef nZFt  ByRef sZFt ByRef gs_ZFt done;
+
+NULLOUT=getsnap();
+if (MacroSw==0)
+{
+  gosub SimpleNew;
+}
+else
+{
+  gosub New_box;
+  attrobj attach "UnitCode" Done last 1 "3D00" ;
+}
+NULLOUT=resnap();
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done last 1 done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+}
+if (isassign("HoldName",0))
+{
+  attrobj copy record "HoldName" done last 1 done;
+}
+else
+{
+  attrobj attach "HoldName" done last 1 HoldName ;
+}
+attrobj attach "ElemName" done last 1 ElemBoxName ;
+attrobj attach "Posit" done last 1 position;
+attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 w d h; //-- Размеры ящика
+
+attrobj attach "FurnType" done last 1 FurnType;
+attrobj attach "Assembly" done last 1 1;        //-- Признак сборочной единицы
+
+ElemName=priceinfo(DoorPict,"NAME"," ",2);       //-- Имя фасада из прайс-листа
+if (ElemName!=" ")
+{
+  ElemName="Фасад "+ElemName;
+}
+
+exit;
+//=========================================
+New_box:
+B_Zupt=B_Zup;
+B_Zdownt=B_Zdown;
+if (DoorType==1)
+{
+  y=d;
+  Xrt=h_dsp-D_DxN+BoxSRX;
+  Xlt=h_dsp-D_DxN+BoxSLX;
+  Zdn=h_dsp-D_DzN+BoxSDZ;
+  Zup=h_dsp-D_DzN+BoxSUZ;
+  ZF1=int((H+Zup+Zdn-B_Zbox*(Kb-1))/Kb);
+  B_Zdownt=B_Zdownt //+h_dsp;
+  B_Zupt=B_Zupt+h_dsp;
+}
+else
+{
+  if (DoorType==0)
+  {
+    y=d-h_dsp;
+    Xrt=-D_DxU+BoxSRX;
+    Xlt=-D_DxU+BoxSLX;
+    Zdn=-D_DzU+BoxSDZ;
+    Zup=-D_DzU+BoxSUZ;
+    ZF1=int((H+Zup+Zdn-B_Zbox*(Kb-1))/Kb);
+  }
+  else
+  {
+    y=d;
+    Zdn=OfSetPan[1];
+    Zup=OfSetPan[2];
+    Xrt=OfSetPan[3];
+    Xlt=OfSetPan[4];
+    ZF1=int((H+Zup+Zdn-B_Zbox*(Kb-1))/Kb);
+    if (Zdn>0)
+    {
+      B_Zdownt=B_Zdownt+Zdn;
+    }
+    if (Zup>0)
+    {
+      B_Zupt=B_Zupt+Zup;
+    }
+  }
+}
+Hbox=(h)/Kb-(B_Zup+B_zdownt);
+
+Hbox=int(Hbox);
+if (isvardef("gs_IDsec"))
+{
+   gs_IDsec=gs_IDsec+1;
+   NULLOUT=CopyArray(TpmTypes,1,gs_BtypeX,gs_IDsec,Kb)
+   NULLOUT=CopyArray(TpmFTypes,1,gs_FasTyp,gs_IDsec,Kb)
+
+   macro ProtoPath+"ScrFormRec.mac" TpmTypes, TpmFTypes, kb;
+   NULLOUT=CopyArray(TpmTypes,1,gs_BtypeX,1,100);       //-- Сделаем копию
+   NULLOUT=CopyArray(TpmFTypes,1,gs_FasTyp,1,100);      //-- Сделаем копию
+   Tmpgs_IDsec=gs_IDsec;                                //-- И запомним текущий индекс
+}
+protoobj create "Shkaf.ptl" 63
+  "W" w
+  "D" y
+  "H" h
+  "Hk" hbox
+  "R_Fas"    Xrt
+  "L_Fas"    Xlt
+  "U_Fas"    Zup
+  "D_Fas"    Zdn
+  "Nshp"     Pandir
+  "Z_Sk"     B_Zdownt
+  "PrMater"  PanMater
+  "PrMatDv"  BoxDMater
+  "FsMater"  DoorMater
+  "Face_col" PanCKro
+  "Face_cof" DoorBCol
+  "Band_F"   DoorBand
+  "Band"     TypKroB
+  "Kbox"     Kb
+  "FsType"   DoorPict
+  "B_Zbox"   B_Zbox
+  "Выдящ"    BoxOpen
+  "HanType"  HandleType
+  "rx"       HandleX
+  "rz"       HandleZ
+  "ra"       HandleA
+  "Rpl_r"    HandleR
+  "Doub_r"   HandleD
+  "PrMatVs1" DoorMatVS1
+  "PrMatVs2" DoorMatVS2
+  "BxType"   BoxKType
+  "dnotype"  g_BoxBottom
+  "ots"      g_BottomOts
+  "KorobVar" g_KorobVar
+  "Ykorob"	 g_Ykorob
+  done
+  xn yn zn;
+
+MacroSw=1;
+NULLOUT=CopyArray(gs_BtypeX,1,TpmTypes,1,100);    //-- Восстановим копию
+NULLOUT=CopyArray(gs_FasTyp,1,TpmFTypes,1,100);   //-- Восстановим копию
+gs_IDsec=Tmpgs_IDsec;                             //-- И вспомним текущий индекс
+gs_IDsec=gs_IDsec+Kb-1;
+return;
+//---------------------------------------------------------------------
+SimpleNew:
+B_Zupt=B_Zup;
+B_Zdownt=B_Zdown;
+
+if (DoorType==1) { // накладной
+  y=d;
+  Xrt=h_dsp-D_DxN+BoxSRX;
+  Xlt=h_dsp-D_DxN+BoxSLX;
+  Zdn=h_dsp-D_DzN+BoxSDZ;
+  Zup=h_dsp-D_DzN+BoxSUZ;
+  ZF1=int((H+Zup+Zdn-B_Zbox*(Kb-1))/Kb);
+  B_Zdownt=B_Zdownt //+h_dsp;
+  B_Zupt=B_Zupt //+h_dsp;
+}
+else {
+  if (DoorType==0) {
+    y=d-h_dsp;
+    Xrt=-D_DxU+BoxSRX;
+    Xlt=-D_DxU+BoxSLX;
+    Zdn=-D_DzU+BoxSDZ;
+    Zup=-D_DzU+BoxSUZ;
+    ZF1=int((H+Zup+Zdn-B_Zbox*(Kb-1))/Kb);
+  }
+  else {
+    y=d;
+    Zdn=OfSetPan[1];
+    Zup=OfSetPan[2];
+    Xrt=OfSetPan[3];
+    Xlt=OfSetPan[4];
+    ZF1=round((H+Zup+Zdn-B_Zbox*(Kb-1))/Kb);
+    if (Zdn>0)
+    {
+      B_Zdownt=B_Zdownt+Zdn;
+    }
+    if (Zup>0)
+    {
+      B_Zupt=B_Zupt+Zup;
+    }
+  }
+}
+Hbox=(h)/Kb-(B_Zupt+B_zdownt);
+Hbox=int(Hbox);
+if (Hbox<50) { Hbox=50 }
+w1=w-B_Zbok*2;
+X_Fas=W+Xrt+Xlt;
+
+dfas=(Kb-iif(h-sZFt>50,nZFt,1))
+if dfas>0 {
+	Z_Fas=round((H+Zup+Zdn-B_Zbox*(Kb-1)-iif(h-sZFt>50,sZFt,0))/dfas); //ZF1;
+}
+else {
+	Z_Fas=sZFt
+}
+xsd=-Xrt;
+zsd=-Zdn;
+x_Sk=B_Zbok-xsd;
+Khandl=1;
+z_Sk=B_Zdownt;
+Hbox=Z_Fas-(B_Zupt+B_zdownt)
+BoxKT_Old=BoxKType;
+
+//---------------------------------------------------------------------
+goto NNN;  //-- Если стоит комментарий, то старый быстрый вариант
+// object_1=sysvar(60);
+// macro ProtoPath+"MakeBox1.mac" xn yn zn X_Fas Z_Fas w1 y hbox-z_Sk x_Sk z_Sk Khandl;
+
+// object_2=sysvar(60)-object_1;
+// move last 1 done xsd 0 zsd nocopy  ;
+
+// move last 1 done 0 0 Z_Fas+B_Zbox copy (Kb-1) ;
+
+// group last Kb done;
+return;
+//---------------------------------------------------------------------
+NNN:	//-- Новый вариант
+object_1=sysvar(60);
+xt=xn+xsd;
+yt=yn;
+zt=zn+zsd;
+
+BoxKTyDF=BoxKType;
+DoorPiDF=DoorPict;
+
+if (Kb!=1) {
+  kc=y*(par1-par2)*ik/(Kb-1);  //-- Вычисляем степень выдвижения конкретного ящика
+}
+else {
+  kc=0;
+}
+
+//macro ProtoPath+"SetCinema.mac" objDo objPosle "0, 5, 1, 0, 400, 0 ";
+ik=ik; //+1;
+i=0;
+dops=0;
+if (isvardef("gs_IDsec")) {
+  IDsec=gs_IDsec;
+}
+
+Loop1:
+if (i<Kb) {
+	dopHfasPs=0; // Увеличение высоты фасада
+	if (isvardef("gs_IDsec")) {
+		gs_IDsec=gs_IDsec+1;	
+		
+		NULLOUT=setvarinst(1,"BoxHk",gs_Hk[gs_IDsec])
+		NULLOUT=setvarinst(1,"BoxHmFt",gs_HmFt[gs_IDsec])
+				
+		if (gs_BTypeX[gs_IDsec]!=0) {
+			BoxKType=gs_BtypeX[gs_IDsec];
+		}
+		else {
+			BoxKType=BoxKTyDF;
+		}
+		if (gs_FasTyp[gs_IDsec]!=0) {
+			DoorPict=gs_FasTyp[gs_IDsec];
+		}
+		else {
+			DoorPict=DoorPiDF;
+		}
+		// Уточняем параметры если они предписаны конструкцией ящика
+		gosub setGS;
+		w1=w-B_Zbok*2;
+		x_Sk=B_Zbok-xsd;
+		//B_Zupt=B_Zup;
+		//B_Zdownt=B_Zdown;
+		//---------------------------------------------------------		
+		ips=0;
+		lbps:
+		if ips<10 {
+			ips=ips+1;
+			BoxKTypePs=gs_BtypeX[gs_IDsec+ips] 
+			HideTypPs=priceinfo(BoxKTypePs,"BoxTypeHideFas",0,2);
+			H_FasMinPs=priceinfo(BoxKTypePs,"boxH_FasMin",0,2);
+			if HideTypPs>0 {
+				dopHfasPs=dopHfasPs+iif(gs_ZFt[gs_NBoxobj+ips+1]>0,gs_ZFt[gs_NBoxobj+ips+1],Z_Fas)+D_DzU;	
+				goto lbps;
+			}
+		}
+	}
+	if (Kb!=1)
+	{
+		kc=y*(par1-par2)*ik/(Kb-1); //-- Вычисляем степень выдвижения конкретного ящика
+	}
+	else
+	{
+		kc=0;
+	}	
+	ypol=yt+BoxOpen*(y*par1-Sgn(ik)*kc);
+	gs_NBoxobj=gs_NBoxobj+1;
+	Z_FasC=iif(gs_ZFt[gs_NBoxobj]>0,gs_ZFt[gs_NBoxobj],Z_Fas); // Высота фасада реальная
+	NULLOUT=setvarinst(1,"vZ_Fas",Z_FasC); // Помещаем реальную высоту в стек
+	Z_FasC=Z_FasC+dopHfasPs; // Уточняем если ящик скрытый
+	//Z_FasCn=iif(gs_FasTyp[gs_IDsec+1]>0,1,0);
+    Z_FasCn=iif(gs_ZFt[gs_IDsec]>0&&HideTypPs==0,1,0);
+	Z_FasCs=iif(gs_ZFtS[gs_NBoxobj]!=0,gs_ZFtS[gs_NBoxobj],0);
+	ZFtDn=iif(gs_ZFtDn[gs_NBoxobj]!=0,gs_ZFtDn[gs_NBoxobj],0);
+	NULLOUT=setvarinst(2,"vZFtDn",ZFtDn);
+    NULLOUT=setvarinst(1,"num_box_cin",i+1);
+	macro ProtoPath+"MakeBox1.mac" xt ypol zt+Z_FasCs X_Fas Z_FasC w1 y hbox-ZFtDn x_Sk z_Sk Khandl;
+	zt=zt+iif(Z_FasCn,Z_FasC,Z_Fas)+B_Zbox;
+	ik=ik+1;
+	i=i+1;
+    goto Loop1;
+}
+object_2=sysvar(60)-object_1;
+setucs move xn yn zn;
+#kbx group last object_2 done;
+if (isassign("FasadPar",0)) {
+  attrobj copy record "FasadPar" done kbx done;
+}
+if (isassign("ScrBox",0)) {
+  attrobj copy record "ScrBox" done kbx done;
+}
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"w",w);
+err=AddScratch(ScrMod,FurnType,"D",d);
+err=AddScratch(ScrMod,FurnType,"H",h);
+err=AddScratch(ScrMod,FurnType,"R_Fas",Xrt);
+err=AddScratch(ScrMod,FurnType,"L_Fas",Xlt);
+err=AddScratch(ScrMod,FurnType,"U_Fas",Zup);
+err=AddScratch(ScrMod,FurnType,"D_Fas",Zdn);
+err=AddScratch(ScrMod,FurnType,"Nshp",Pandir);
+err=AddScratch(ScrMod,FurnType,"Kbox",Kb);
+err=AddScratch(ScrMod,FurnType,"Выдящ",BoxOpen);
+err=AddScratch(ScrMod,FurnType,"B_Zbox",B_Zbox);
+err=AddScratch(ScrMod,FurnType,"Hk",Hbox);
+err=AddScratch(ScrMod,FurnType,"Z_Sk",B_Zdownt);
+err=AddScratch(ScrMod,FurnType,"PrMater",PanMater);
+err=AddScratch(ScrMod,FurnType,"PrMatDv",BoxDMater);
+err=AddScratch(ScrMod,FurnType,"FsMater",DoorMater);
+err=AddScratch(ScrMod,FurnType,"Band",TypKroB);
+err=AddScratch(ScrMod,FurnType,"Face_col",PanCKro);
+err=AddScratch(ScrMod,FurnType,"Face_cof",DoorBCol);
+err=AddScratch(ScrMod,FurnType,"Band_F",DoorBand);
+err=AddScratch(ScrMod,FurnType,"Fstype",DoorPiDF);
+err=AddScratch(ScrMod,FurnType,"BxType",BoxKT_Old);
+err=AddScratch(ScrMod,FurnType,"HanType",HandleType);
+err=AddScratch(ScrMod,FurnType,"Doub_r",HandleD);
+err=AddScratch(ScrMod,FurnType,"Rpl_r",HandleR);
+err=AddScratch(ScrMod,FurnType,"rx",HandleX);
+err=AddScratch(ScrMod,FurnType,"rz",HandleZ);
+err=AddScratch(ScrMod,FurnType,"ra",HandleA);
+err=AddScratch(ScrMod,FurnType,"PrMatVs1",DoorMatVS1);
+err=AddScratch(ScrMod,FurnType,"PrMatVs2",DoorMatVS2);
+err=AddScratch(ScrMod,FurnType,"dnotype",g_BoxBottom);
+err=AddScratch(ScrMod,FurnType,"ots",g_BottomOts);
+NULLOUT=writescratch(ScrMod,Namescr,kbx);
+NULLOUT=TermScratch(ScrMod);
+NULLOUT=addattrpi(kbx,1,position);
+return;
+//--------------------------------------------------------------------
+setGS:
+	BxType=BoxKType
+	baseType=PriceInfo(BxType,"boxType",BxType,2)
+	B_Zbok=iif(PriceInfo(BxType,"boxGapBack",PriceInfo(baseType,"boxGapBack",-99,2),2)==-99,PriceInfo(baseType,"B_Zbok",GetVarInst(2,"B_Zbok",B_Zbok,13),2),0) //iif(PriceInfo(BoxKType,"boxGapBack",0,2)>0,0,B_Zbok);  //-- Зазор с боковой панелью
+	B_Zup=PriceInfo(BxType,"boxGapUp",PriceInfo(baseType,"boxGapUp",PriceInfo(baseType,"B_Zup",DbVar("boxGapUp",1),2),2),2);    //-- Зазор сверху
+	B_Zdown=0;
+	B_Zdown=iif(PriceInfo(BoxKType,"boxBottm_H",PriceInfo(baseType,"boxBottm_H",DbVar("boxBottm_H",0),2),2)>0,0,PriceInfo(baseType,"B_Zdown",B_Zdown,2)); //-- Зазор снизу
+return;

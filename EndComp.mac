@@ -1,0 +1,66 @@
+//-- Присвоение атрибутов выдвижным полкам
+//-- Входные параметры:
+//-- obj - объект
+//-- Posit - атрибут Posit
+//-- XUnit,YUnit,ZUnit - атрибуты XUnit,YUnit,ZUnit
+//-- PriceID - атрибут GoodsID
+//-- ProtoParams - атрибут ProtoParams
+
+getpar obj, Posit, XUnit, YUnit, ZUnit, PriceID, ProtoParams;
+
+KarkasNumb=getcarcnumb();
+NULLOUT=getvarinst(1,"FurnType",FurnType,"000000");    //-- FurnType
+NULLOUT=getvarinst(1,"HoldName",HoldName," ");    //-- Имя хозяина элемента
+NULLOUT=getvarinst(1,"ElemName",ElemName," ");    //-- Имя элемента
+
+//-- Корректируем значения атрибутов
+if (len(FurnType)==0) { FurnType="000000"; }
+if (len(HoldName)==0) { HoldName=" "; }
+if (len(ElemName)==0) { ElemName=" "; }
+if (len(KonsCode)==0) { KonsCode=" "; }
+if (len(PropCode)==0) { PropCode=" "; }
+
+attrobj attach "Posit" done obj Posit;
+
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done obj done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done obj KarkasNumb;
+}
+if (isassign("ElemName",0))
+{
+  attrobj copy record "ElemName" done obj done;
+}
+else
+{
+  if (ElemName==" ")
+  {
+    ElemName="Полка выдвижная"
+  }
+    attrobj attach "ElemName" done obj ElemName;
+}
+if (isassign("HoldName",0))
+{
+  attrobj copy record "HoldName" done obj done;
+}
+else
+{
+  if (HoldName!=" ")
+  {
+    attrobj attach "HoldName" done obj HoldName;
+  }
+}
+attrobj attach "XUnit" "YUnit" "ZUnit" done obj XUnit YUnit ZUnit;
+attrobj attach "FurnType" done obj FurnType ;
+attrobj attach "GoodsID" done obj PriceID ;
+attrobj attach "GroupID" done obj 36;      //-- 36 - YAD группа типов выдвижных полок
+
+if (ProtoParams!="")
+{
+  attrobj copy record ProtoParams done obj done;
+}
+exit;

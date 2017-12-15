@@ -1,0 +1,140 @@
+//-- Макропрограмма создания сверловки
+
+xv=DbVar("xv",1);	//-- Вектор главного направления отверстия (по оси X)
+yv=DbVar("yv",0);	//-- Вектор главного направления отверстия (по оси Y)
+zv=DbVar("zv",0);	//-- Вектор главного направления отверстия (по оси Z)
+h1=DbVar("h1",0);	//-- Глубина основного отверстия
+h2=DbVar("h2",0); //-- Глубина ответного отверстия
+d1=DbVar("d1",0);	//-- Диаметр основного отверстия
+d2=DbVar("d2",0); //-- ГДиаметр ответного отверстия
+Izo=DbVar("Izo",1);	//-- Тип изображения
+AutoH=DbVar("AutoH",0); //-- Тип отверстия: Ручной = 0, Авто = 1
+TypeS=DbVar("TypeS",0); //-- Тип крепежа отверстия
+
+//-- Положение отверстия по-умолчанию
+x=0;
+y=0;
+z=0;
+
+Namescr="ProtoParams";
+FurnType="800600";      //-- Отверстие
+En="Отверстие";
+
+//-- Нормирование векторна направления
+nor=sqrt(xv*xv+yv*yv+zv*zv);
+if (nor>0.0001) {
+  xv=xv/nor;
+  yv=yv/nor;
+  zv=zv/nor;
+}
+else {
+  xv=0;
+  yv=0;
+  zv=1;
+}
+ALL_Ok=0;
+if (Izo==7)
+{
+  ls=2;
+  line x,y,z x+xv*h1,y+yv*h1,z+zv*h1 ;
+  line x+xv*(h1-ls*3),y+yv*h1,z+zv*h1+ls
+	     x+xv*h1,y+yv*h1,z+zv*h1
+	     x+xv*(h1-ls*3),y+yv*h1,z+zv*h1-ls ;
+  line x,y,z x-xv*h2,y-yv*h2,z-zv*h2 ;
+  line x-xv*(h2-ls*3),y-yv*h2,z-zv*h2+ls
+	     x-xv*h2,y-yv*h2,z-zv*h2
+	     x-xv*(h2-ls*3),y-yv*h2,z-zv*h2-ls;
+  line x,y,z-ls*2 x,y,z+ls*2 ;
+  line x,y-ls*2,z x,y+ls*2,z ;
+  ALL_Ok=1;
+}
+if (Izo==1)
+{
+  approximation meridians 8;
+  if (h1!=0&&d1!=0)
+  {
+    cylinder x,y,z x+xv*h1,y+yv*h1,z+zv*h1 d1/2 ;
+    ALL_Ok=1;
+    objident last 1 Hole;
+    attrobj attach "HoleType" done Hole 2;
+		attrobj attach "FurnType" done Hole FurnType ;
+    ScrMod=initscratch();
+    err=addscratch(ScrMod,FurnType,"h1",h1);
+    err=addscratch(ScrMod,FurnType,"d1",d1);
+    err=addscratch(ScrMod,FurnType,"TypeS",TypeS);
+    writescratch(ScrMod,Namescr,Hole);
+    NULLOUT=termscratch(ScrMod);
+  }
+  if (h2!=0&&d2!=0)
+  {
+    cylinder x,y,z x-xv*h2,y-yv*h2,z-zv*h2 d2/2;
+    ALL_Ok=1;
+    objident last 1 Hole;
+    attrobj attach "HoleType" done Hole 3;
+		attrobj attach "FurnType" done Hole FurnType ;
+    ScrMod=initscratch();
+    err=addscratch(ScrMod,FurnType,"h2",h2);
+    err=addscratch(ScrMod,FurnType,"d2",d2);
+    err=addscratch(ScrMod,FurnType,"TypeS",TypeS);
+    writescratch(ScrMod,Namescr,Hole);
+    NULLOUT=termscratch(ScrMod);
+  }
+  line x-xv*h2,y-yv*h2,z-zv*h2
+	     x+xv*h1,y+yv*h1,z+zv*h1;
+       approximation meridians 24;
+  ALL_Ok=1;
+}
+if (Izo==2)
+{
+  if (h1!=0&&d1!=0)
+  {
+    cylinder x,y,z x+xv*h1,y+yv*h1,z+zv*h1 d1/2 ;
+    objident last 1 Hole;
+    attrobj attach "HoleType" done Hole 2;
+		attrobj attach "FurnType" done Hole FurnType ;
+    ScrMod=initscratch();
+    err=addscratch(ScrMod,FurnType,"h1",h1);
+    err=addscratch(ScrMod,FurnType,"d1",d1);
+    err=addscratch(ScrMod,FurnType,"TypeS",TypeS);
+    writescratch(ScrMod,Namescr,Hole);
+    NULLOUT=termscratch(ScrMod);
+    line x,y,z x+xv*(h1+1),y+yv*(h1+1),z+zv*(h1+1);
+    chprop ltype last 1 done 5 ;
+    ALL_Ok=1;
+  }
+}
+if (Izo==3)
+{
+  if (h2!=0&&d2!=0)
+  {
+    cylinder x,y,z x-xv*h2,y-yv*h2,z-zv*h2 d2/2;
+    objident last 1 Hole;
+    attrobj attach "HoleType" done Hole 3;
+		attrobj attach "FurnType" done Hole FurnType ;
+    ScrMod=initscratch();
+    err=addscratch(ScrMod,FurnType,"h2",h2);
+    err=addscratch(ScrMod,FurnType,"d2",d2);
+    err=addscratch(ScrMod,FurnType,"TypeS",TypeS);
+    writescratch(ScrMod,Namescr,Hole);
+    NULLOUT=termscratch(ScrMod);
+    line x,y,z x-xv*(h2+1),y-yv*(h2+1),z-zv*(h2+1);
+    chprop ltype last 1 done 5 ;
+    ALL_Ok=1;
+  }
+}
+if (ALL_Ok!=1)
+{
+  point x,y,z ;
+}
+group all done;
+
+//-- Присваиваем атрибуты
+if (!isattrdef("ConnectT"))
+{ attribute create "ConnectT" "Тип соединения" real 5 0 ; }
+
+if (!isattrdef("DbCode"))
+{ attribute create "DbCode" "Код детали" str 15 20 ; }
+
+attrobj attach "HoleType" "AutoPlace" "ConnectT" "DbCode" done last 1 1 AutoH TypeS " ";
+attrobj attach "ElemName" done last 1 en;
+exit;

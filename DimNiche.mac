@@ -1,0 +1,165 @@
+//Простановка габаритов ниши (доработано ГеoС 22.05.06)
+//Коваленко И.Ю. г. Владивосток
+//================================
+global ProtoPath;
+global xsek1, xsek2, ysek1, ysek2, zsek1, zsek2 ; 	// Габариты ниши
+global ysek2P, ysek2S ysek2PM, ysek2SM; 		// Глубина для полок и стоек минимум и максимум
+defarr fr[3],to[3],wh[3];
+defarr arr[14];
+
+NULLOUT=GetVarInst(2,"TolceVar",TolceVar,0);
+
+defarr BaseGab[5];
+NULLOUT=getarrinst(2,"BaseGab",BaseGab);          //-- Габариты каркаса
+
+NULLOUT=GetSnap();
+typeX=0;
+typeY=0;
+typeZ=0;
+ots=60;
+
+begin:
+macro ProtoPath+"NishaP.mac" ;
+macro ProtoPath+"NishaPDraw.mac" ; // Рисуем нишу
+
+#ok_flag
+setvar
+"Простановка габаритов ниши"
+""
+"Введите параметры размеров" done
+real default ots "Отступ размерной линии" ots
+logical default typeX "Размер по ширине"        typeX
+logical default typeY "Размер по глубине"       typeY
+logical default typeZ "Размер по высоте"        typeZ
+
+str 	listonly
+        current
+	"Снаружи"
+	"Внутри"
+
+done
+	 "Расположение размерных линий:"    orient
+done
+delete last 1 done;
+if (ok_flag==0)
+{
+  goto end;
+}
+
+If (typeX==1)           //По ширине ниши (X)
+{
+  If (orient=="Снаружи")
+	{
+    fr[1]=xsek1;
+		fr[2]=ysek2P;
+		fr[3]=zsek1;
+		to[1]=xsek2;
+		to[2]=ysek2P;
+		to[3]=zsek1;
+		wh[1]=(xsek2-xsek1)/2;
+		wh[2]=ysek2P;
+		wh[3]=zsek2+ots;
+    gosub attr;
+  }
+  If (orient=="Внутри")
+	{
+    fr[1]=xsek1;
+		fr[2]=ysek2P;
+		fr[3]=zsek1;
+		to[1]=xsek2;
+		to[2]=ysek2P;
+		to[3]=zsek1;
+		wh[1]=(xsek2-xsek1)/2;
+		wh[2]=ysek2P;
+		wh[3]=zsek1+ots;
+    gosub attr;
+  }
+}
+If (typeY==1)           //По глубине полки (Y)
+{
+  If (orient=="Снаружи")
+	{
+    fr[1]=xsek1;
+		fr[2]=ysek1;
+		fr[3]=zsek1;
+		to[1]=xsek1;
+		to[2]=ysek2P;
+		to[3]=zsek1;
+		wh[1]=xsek1-ots;
+		wh[2]=(ysek2PM-ysek1)/2;
+		wh[3]=zsek1;
+    gosub attr;
+  }
+  If (orient=="Внутри")
+	{
+    fr[1]=xsek2;
+		fr[2]=ysek1;
+		fr[3]=zsek1;
+		to[1]=xsek2;
+		to[2]=ysek2P;
+		to[3]=zsek1;
+		wh[1]=xsek2-ots;
+		wh[2]=(ysek2PM-ysek1)/2;
+		wh[3]=zsek1;
+    gosub attr;
+	}
+}
+If (typeZ==1)          //По высоте ниши (Z)
+{
+  If (orient=="Снаружи")
+	{
+	  fr[1]=xsek1;
+		fr[2]=ysek2P;
+		fr[3]=zsek1;
+		to[1]=xsek1;
+		to[2]=ysek2P;
+		to[3]=zsek2;
+		wh[1]=xsek1-ots;
+		wh[2]=ysek2P;
+		wh[3]=(zsek2-zsek1)/2;
+    gosub attr;
+	}
+  If (orient=="Внутри")
+	{
+
+	  fr[1]=xsek2;
+		fr[2]=ysek2P;
+		fr[3]=zsek1;
+		to[1]=xsek2;
+		to[2]=ysek2P;
+		to[3]=zsek2;
+		wh[1]=xsek2-ots;
+		wh[2]=ysek2P;
+		wh[3]=(zsek2-zsek1)/2;
+    gosub attr;
+	}
+}
+goto begin;
+end:
+NULLOUP=ReSnap();
+exit;
+//--Присваиваем атрибут авторазмера и проставляем допуск
+attr:
+#dst distance fr[1],fr[2],fr[3] to[1],to[2],to[3];
+if (tolcevar!=3)
+{
+	macro ProtoPath+"ToleranS.mac" dst ;
+}
+If (!IsAttrdef("AutoPlace"))
+{
+	Attribute Create "AutoPlace" "Тип установки" Real 5 0 ;
+}
+NULL=sysarr(43,arr);
+grfcur=arr[3];    // Текущий граф.коэффициент
+if (arr[3]<6)
+{
+  grfcoeff 6;
+  grfcur=6;
+}
+LDim 3DDim fr[1],fr[2],fr[3] to[1],to[2],to[3] parallel wh[1],wh[2],wh[3];
+If (!IsAttrdef("AutoPlace"))
+ { Attribute Create "AutoPlace" "Тип установки" Real 5 0 ; }
+Attrobj Attach  "AutoPlace"  Done Last 1 1;
+dimtext 0 "<> " ;
+grfcoeff arr[3];
+return;

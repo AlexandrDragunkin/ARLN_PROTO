@@ -1,0 +1,638 @@
+//-- Сформировать вырез для двери-витрины
+global ProtoPath;
+global FasVaria;
+getpar xn,yn,zn,dx,dz,
+       PictPar    // Массив дополнительных параметров для рисунка (к-во зависит от рисунка)
+       Panel	  // Панель для выреза
+       Picture    // Номер рисунка
+;
+pat="0";
+//======================== Крышка двойная ===========
+if (Picture==3)
+{
+   dx1=40; //-- Отступ узора по ширине
+   dz1=50; //-- Отступ узора по высоте
+  // Малый фасад
+  if (dx<PictPar[1]*2+PictPar[3]*2+186)||(dz<PictPar[2]*2+PictPar[3]*2+76)
+  {
+   exit;
+  }
+  // Обычный фасад
+  xn=xn+PictPar[1]
+  zn=zn+PictPar[2]
+  dx=dx-PictPar[1]*2
+  dz=dz-PictPar[2]*2
+  xn=xn+PictPar[3]
+  zn=zn+PictPar[3]
+  dx=dx-PictPar[3]*2
+  dz=dz-PictPar[3]*2
+  line xn+dx1 yn zn+dz-dz1
+		 xn yn zn+dz-dz1
+		 xn yn zn
+		 xn+dx yn zn
+		 xn+dx yn zn+dz-dz1
+		 xn+dx-dx1 yn zn+dz-dz1;
+
+   arc xn+dx-dx1 yn zn+dz-dz1
+		Internal xn+dx/2 yn  zn+dz
+		xn+dx1 yn zn+dz-dz1;
+  #Pat path select last 6 done last 6 create;
+  MBPanel incut incut panel pat;
+  delete pat done;	
+}
+//========================= Н-образный ===========================
+if (Picture==2) 
+{
+  //-- Горизонтальные линии
+  d1=PictPar[1];
+  if (dx<d1*2+96)||(dz<d1*2+66)
+  {
+   exit;
+  }
+  line xn+d1,yn,zn+d1
+     xn+dx-d1,yn,zn+d1
+     xn+dx-d1,yn,zn+dz-d1
+     xn+d1,yn,zn+dz-d1
+     close
+     done;
+  #Pat path select last 5 done last 1 create;
+  MBPanel incut incut panel pat;
+  delete pat done;
+}
+//============================= Крышка одинарная =======================
+if (Picture==1) 
+{
+  xn=xn+PictPar[1]
+  zn=zn+PictPar[2]
+  dx=dx-PictPar[1]*2
+  dz=dz-PictPar[2]*2
+  dx1=30; //-- Отступ узора по ширине
+  dz1=50; //-- Отступ узора по высоте
+  if (dx<186)||(dz<86)		// Без рисунка фасада
+  {
+	exit;
+  }
+  line xn+dx1 yn zn+dz-dz1
+		 xn yn zn+dz-dz1
+		 xn yn zn
+		 xn+dx yn zn
+		 xn+dx yn zn+dz-dz1
+		 xn+dx-dx1 yn zn+dz-dz1;
+
+   arc xn+dx-dx1 yn zn+dz-dz1
+		Internal xn+dx/2 yn  zn+dz
+		xn+dx1 yn zn+dz-dz1;
+  #Pat path select last 6 done last 6 create;
+  MBPanel incut incut panel pat;
+  delete pat done;
+}
+//============================== Лабиринт ======================
+if (Picture==4)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине
+  dz1=PictPar[2]; //-- Отступ узора по высоте
+  d2=PictPar[3]; //-- Отступ между узорами
+  if (dz<=(dz1+d2+d2+10)*2) 
+  {  // Малый фасад
+   exit;
+  }
+    // Обычный фасад
+    line         xn+dx1+d2    yn zn+dz-dz1-2*d2
+		 xn+dx1+2*d2    yn zn+dz-dz1-2*d2
+		 xn+dx1+2*d2    yn zn+dz-dz1-d2
+		 xn+dx-dx1-2*d2 yn zn+dz-dz1-d2
+		 xn+dx-dx1-2*d2 yn zn+dz-dz1-2*d2
+		 xn+dx-dx1-d2 yn zn+dz-dz1-2*d2
+		 xn+dx-dx1-d2 yn zn+dz1+2*d2
+		 xn+dx-dx1-2*d2 yn zn+dz1+2*d2
+		 xn+dx-dx1-2*d2 yn zn+dz1+d2
+		 xn+dx1+2*d2    yn zn+dz1+d2
+		 xn+dx1+2*d2    yn zn+dz1+2*d2
+		 xn+dx1+d2    yn zn+dz1+2*d2
+		 xn+dx1+d2    yn zn+dz-dz1-2*d2
+		 done;
+    #Pat path select last 12 done last 1 create;
+  MBPanel incut incut panel pat;
+  delete pat done;
+}
+//============================== Пирамида ======================
+if (Picture==5)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине
+  dz1=PictPar[2]; //-- Отступ узора по высоте
+  d2=PictPar[3]; //-- Отступ между узорами 25 мм
+  if (dz<=(dz1+d2*2)*2)||(dx<=(dx1+d2*2)*2)
+  {  // Малый фасад
+   exit;
+  }
+  // Обычный фасад
+    line         xn+dx1+d2    yn zn+dz-dz1-d2
+		 xn+dx-dx1-d2 yn zn+dz-dz1-d2
+		 xn+dx-dx1-d2 yn zn+dz1+d2
+		 xn+dx1+d2    yn zn+dz1+d2
+		 close;
+    #Pat path select last 4 done last 1 create;
+    MBPanel incut incut panel pat;
+    delete pat done;
+}
+//================================ Волна ====================
+if (Picture==7)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50мм
+  d2=PictPar[3];    //-- Прогиб малого фасада 40мм
+  if (dx<2*dx1+156)||(dz<2*dz1+256)
+  {  // Малый фасад
+	exit;
+  }
+  else
+    { // Обычный фасад
+    ras=sqrt(((xn+dx-3*dx1)-(xn+dx-2.5*dx1))*((xn+dx-3*dx1)-(xn+dx-2.5*dx1))+((zn+dz-dz1)-(zn+dz-dz/2)));
+    cq=ras/1.4;
+    if (FasVaria==1)
+    {
+     line         xn+dx1    yn zn+dz-dz1
+		  xn+dx-3*dx1 yn zn+dz-dz1
+		  done;
+     arc          xn+dx-3*dx1 yn zn+dz-dz1
+	 internal xn+dx-3*dx1-cq yn zn+dz-dz/4
+		  xn+dx-2.5*dx1 yn zn+dz-dz/2
+		  ;
+     arc          xn+dx-2.5*dx1 yn zn+dz-dz/2
+	 internal xn+dx-dx1 yn zn+dz/4+dz1
+		  xn+dx-dx1 yn zn+dz1
+		  ;
+     line	  xn+dx-dx1 yn zn+dz1
+		  xn+dx1 yn zn+dz1
+		  done;
+     line         xn+dx1 yn zn+dz1
+		  xn+dx1    yn zn+dz-dz1
+		  done;
+    }
+    if (FasVaria==2)
+    {
+     line         xn-dx1+dx    yn zn+dz-dz1
+		  xn+3*dx1 yn zn+dz-dz1
+		  done;
+     arc          xn+3*dx1 yn zn+dz-dz1
+	 internal xn+3*dx1+cq yn zn+dz-dz/4
+		  xn+2.5*dx1 yn zn+dz-dz/2
+		  ;
+     arc          xn+2.5*dx1 yn zn+dz-dz/2
+	 internal xn+dx1 yn zn+dz/4+dz1
+		  xn+dx1 yn zn+dz1
+		  ;
+     line	  xn+dx-dx1 yn zn+dz1
+		  xn+dx1 yn zn+dz1
+		  done;
+     line         xn-dx1+dx yn zn+dz1
+		  xn-dx1+dx yn zn+dz-dz1
+		  done;     
+    }
+    #Pat path select last 5 done last 1 create;
+  }
+  MBPanel incut incut panel pat;
+  delete pat done;
+}
+//================================ Танго ====================
+if (Picture==8)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 40мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 40мм
+  rs=PictPar[4]; //-- Отступ до скругления углов. 60мм
+  rst=1.4*rs; // -- Прогиб дуги
+  d2=0;  // -- Отступ до узора. Здесь можно обнулить
+  if (dz<=(dz1+rs+10)*2)||(dx<=(dx1+rs+10)*2) //Малый фасад
+   {
+    exit;
+   }
+ else
+  { //Обычный фасад
+  arc            xn+dx1+d2    yn zn+dz-dz1-rs-d2
+      internal	 xn+dx1+(rs-rst/4)+d2 yn zn+dz-dz1-(rs-rst/4)-d2
+	         xn+dx1+rs+d2 yn zn+dz-dz1-d2
+		 ;
+  line		 xn+dx1+rs+d2 yn zn+dz-dz1-d2
+		 xn+dx-dx1-rs-d2 yn zn+dz-dz1-d2
+		 done;
+  arc            xn+dx-dx1-rs-d2 yn zn+dz-dz1-d2
+      internal	 xn+dx-dx1-(rs-rst/4)-d2 yn zn+dz-dz1-(rs-rst/4)-d2
+	         xn+dx-dx1-d2 yn zn+dz-dz1-rs-d2
+		 ;
+  line		 xn+dx-dx1-d2 yn zn+dz-dz1-rs-d2
+		 xn+dx-dx1-d2 yn zn+dz1+rs+d2
+		 done;
+  arc            xn+dx-dx1-d2 yn zn+dz1+rs+d2
+      internal	 xn+dx-dx1-(rs-rst/4)-d2 yn zn+dz1+(rs-rst/4)+d2
+	         xn+dx-dx1-rs-d2 yn zn+dz1+d2
+		 ;
+  line		 xn+dx-dx1-rs-d2 yn zn+dz1+d2
+		 xn+dx1+rs+d2 yn zn+dz1+d2
+		 done;
+  arc            xn+dx1+rs+d2 yn zn+dz1+d2
+      internal	 xn+dx1+(rs-rst/4)+d2 yn zn+dz1+(rs-rst/4)+d2
+	         xn+dx1+d2 yn zn+dz1+rs+d2
+		 ;
+  line		 xn+dx1+d2 yn zn+dz1+rs+d2
+		 xn+dx1+d2    yn zn+dz-dz1-rs-d2
+		 done;
+  #Pat path select last 8 done last 1 create;
+  }
+  MBPanel incut incut panel pat;
+  delete pat done;
+}
+//============================= Танго с кантом =======================
+if (Picture==9)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 60мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 60мм
+  rs=PictPar[4]; //-- Отступ до скругления углов. 60мм
+  rst=1.4*rs; // -- Прогиб дуги
+  PictPar[3]=50;
+  d2=PictPar[3];  // --- Отступ до узора 50мм
+  if (dz<=(dz1+rs+30)*2)||(dx<=(dx1+rs+30)*2) //Малый фасад
+   {
+    exit;
+   }
+  else
+  { //Обычный фасад
+  arc            xn+dx1+d2    yn zn+dz-dz1-rs-d2
+      internal	 xn+dx1+rs-rst/4+d2 yn zn+dz-dz1-(rs-rst/4)-d2
+	         xn+dx1+rs+d2 yn zn+dz-dz1-d2
+		 ;
+  line		 xn+dx1+rs+d2 yn zn+dz-dz1-d2
+		 xn+dx-dx1-rs-d2 yn zn+dz-dz1-d2
+		 done;
+  arc            xn+dx-dx1-rs-d2 yn zn+dz-dz1-d2
+      internal	 xn+dx-dx1-(rs-rst/4)-d2 yn zn+dz-dz1-(rs-rst/4)-d2
+	         xn+dx-dx1-d2 yn zn+dz-dz1-rs-d2
+		 ;
+  line		 xn+dx-dx1-d2 yn zn+dz-dz1-rs-d2
+		 xn+dx-dx1-d2 yn zn+dz1+rs+d2
+		 done;
+  arc            xn+dx-dx1-d2 yn zn+dz1+rs+d2
+      internal	 xn+dx-dx1-(rs-rst/4)-d2 yn zn+dz1+(rs-rst/4)+d2
+	         xn+dx-dx1-rs-d2 yn zn+dz1+d2
+		 ;
+  line		 xn+dx-dx1-rs-d2 yn zn+dz1+d2
+		 xn+dx1+rs+d2 yn zn+dz1+d2
+		 done;
+  arc            xn+dx1+rs+d2 yn zn+dz1+d2
+      internal	 xn+dx1+(rs-rst/4)+d2 yn zn+dz1+(rs-rst/4)+d2
+	         xn+dx1+d2 yn zn+dz1+rs+d2
+		 ;
+  line		 xn+dx1+d2 yn zn+dz1+rs+d2
+		 xn+dx1+d2    yn zn+dz-dz1-rs-d2
+		 done;
+  #Pat path select last 8 done last 1 create;
+   }
+   MBPanel incut incut panel pat;
+   delete pat done;
+}
+//================================ Дуга ====================
+if (Picture==11)  
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  d1=PictPar[5];  //-- Прогиб дуги 50 мм
+  if (dx<dx1*4)||(dz<(dz1+d1)*4) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+   exit;
+  }
+  arc   xn+dx1,yn,zn+dz-dz1-d1
+        xn+dx-dx1,yn,zn+dz-dz1-d1
+        xn+dx/2,yn,zn+dz-dz1;
+  line  xn+dx-dx1,yn,zn+dz-dz1-d1
+        xn+dx-dx1,yn,zn+dz1
+        xn+dx1,yn,zn+dz1
+        xn+dx1,yn,zn+dz-dz1-d1;
+  #Pat path select last 4 done last 1 create;
+  MBPanel incut incut panel pat;
+  delete pat done;
+}
+//================================ Две дуги ====================
+if (Picture==12)  
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  d1=PictPar[5];  //-- Прогиб дуги 25 мм
+  if (dx<dx1*4)||(dz<(dz1+d1*2)*4) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    exit;
+  }
+  arc   xn+dx1,yn,zn+dz-dz1-d1
+        xn+dx-dx1,yn,zn+dz-dz1-d1
+        xn+dx/2,yn,zn+dz-dz1;
+  line  xn+dx-dx1,yn,zn+dz-dz1-d1
+        xn+dx-dx1,yn,zn+dz1+d1;
+  arc   xn+dx-dx1,yn,zn+dz1+d1
+        xn+dx1,yn,zn+dz1+d1
+        xn+dx/2,yn,zn+dz1;
+  line  xn+dx1,yn,zn+dz1+d1
+        xn+dx1,yn,zn+dz-dz1-d1;
+  #Pat path select last 4 done last 1 create;
+  MBPanel incut incut panel pat;
+  delete pat done;
+}
+//================================ Биссектриса ====================
+if (Picture==13)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  if (dx<dx1*2)||(dz<dz1*2) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    exit;
+  }
+  line  xn+dx1,yn,zn+dz1
+	xn+dx1,yn,zn+dz-dz1
+        xn+dx-dx1,yn,zn+dz-dz1
+	xn+dx-dx1,yn,zn+dz1
+        xn+dx1,yn,zn+dz1;
+  #Pat path select last 4 done last 1 create;
+  MBPanel incut incut panel pat;
+  delete pat done;
+}
+//================================ Санта-Барбара ====================
+if (Picture==14) 
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  zz=PictPar[1];  //-- Расстояние между контурами фрезеровки
+  if (dx<dx1*2)||(dz<dz1+(dx-2*dx1)/2) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    exit;
+  }
+  line  xn+dx1,yn,zn+dz1
+        xn+dx1,yn,zn+dz-(dx-2*dx1)/2;
+  arc   xn+dx1,yn,zn+dz-(dx-2*dx1)/2
+        xn+dx-dx1,yn,zn+dz-(dx-2*dx1)/2
+        xn+dx/2,yn,zn+dz-dz1;
+  line  xn+dx-dx1,yn,zn+dz-(dx-2*dx1)/2
+        xn+dx-dx1,yn,zn+dz1;
+  line  xn+dx1,yn,zn+dz1
+	xn+dx-dx1,yn,zn+dz1;
+  #Pat path select last 4 done last 1 create;
+  MBPanel incut incut panel pat;
+  delete pat done;
+}
+//================================ Прямоугольник ====================
+if (Picture==15) 
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  if (dx<dx1*2)||(dz<dz1*2) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    exit;
+  }
+  line  xn+dx1,yn,zn+dz1
+        xn+dx1,yn,zn+dz-dz1
+        xn+dx-dx1,yn,zn+dz-dz1
+        xn+dx-dx1,yn,zn+dz1
+        xn+dx1,yn,zn+dz1;
+  #Pat path select last 4 done last 1 create;
+  MBPanel incut incut panel pat;
+  delete pat done;
+}
+//================================ Призрак ====================
+if (Picture==17)  
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  if (dx<dx1*4)||(dz<dz1*4) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    exit;
+  }
+  line  xn+2*dx1,yn,zn+dz1*2
+        xn+2*dx1,yn,zn+dz-2*dz1
+        xn+dx-dx1*2,yn,zn+dz-2*dz1
+        xn+dx-dx1*2,yn,zn+dz1*2
+        xn+2*dx1,yn,zn+dz1*2;
+  #Pat path select last 4 done last 1 create;
+  MBPanel incut incut panel pat;
+  delete pat done;
+}
+//================================ Ариадна ====================
+if (Picture==19)  
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  d1=PictPar[5];  //-- Прогиб дуги 50 мм
+  if (dx<(dx1+d1*2)*2)||(dz<(dz1+d1*2)*2) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    exit;
+  }
+  line  xn+dx1+d1,yn,zn+dz1+d1
+        xn+dx1+d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1-d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1-d1,yn,zn+dz1+d1
+        xn+dx1+d1,yn,zn+dz1+d1;
+  #Pat path select last 4 done last 1 create;
+  MBPanel incut incut panel pat;
+  delete pat done;
+}
+//================================ Ариадна с кантом ====================
+if (Picture==21)  
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  d1=PictPar[5];  //-- Прогиб дуги 50 мм
+  if (dx<(dx1+d1*2)*2)||(dz<(dz1+d1*2)*2) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    exit;
+  }
+  line  xn+dx1+d1,yn,zn+dz1+d1
+        xn+dx1+d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1-d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1-d1,yn,zn+dz1+d1
+        xn+dx1+d1,yn,zn+dz1+d1;
+  #Pat path select last 4 done last 1 create;
+  MBPanel incut incut panel pat;
+  delete pat done;
+}
+//================================ Призон ====================
+if (Picture==22) 
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  zz=PictPar[3];  //-- Перехлест крестов
+  if (dx<dx1*2)||(dz<dz1*2) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    exit;
+  }
+  line  xn+dx1+zz,yn,zn+dz1+zz
+        xn+dx1+zz,yn,zn+dz-dz1-zz
+        xn+dx-dx1-zz,yn,zn+dz-dz1-zz
+        xn+dx-dx1-zz,yn,zn+dz1+zz
+        xn+dx1+zz,yn,zn+dz1+zz;
+  #Pat path select last 4 done last 1 create;
+  MBPanel incut incut panel pat;
+  delete pat done;
+}
+//================================ Плетень с кантом ====================
+if (Picture==23)  
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  d1=PictPar[5];  //-- Прогиб дуги 50 мм
+  if (dx<(dx1+d1*2)*2)||(dz<(dz1+d1*2)*2) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    exit;
+  }
+  line  xn+dx1+d1,yn,zn+dz1+d1*3
+        xn+dx1+d1,yn,zn+dz-dz1-d1*3;
+  arc   xn+dx1+d1,yn,zn+dz-dz1-d1*3
+        xn+dx1+d1*3,yn,zn+dz-dz1-d1
+        xn+dx1+d1+d1*sqrt(2),yn,zn+dz-dz1-d1-d1*sqrt(2)
+  line  xn+dx1+d1*3,yn,zn+dz-dz1-d1
+        xn+dx-dx1-d1*3,yn,zn+dz-dz1-d1;
+  arc   xn+dx-dx1-d1*3,yn,zn+dz-dz1-d1
+        xn+dx-dx1-d1,yn,zn+dz-dz1-3*d1
+        xn+dx-dx1-d1-d1*sqrt(2),yn,zn+dz-dz1-d1-d1*sqrt(2);
+  line  xn+dx-dx1-d1,yn,zn+dz-dz1-3*d1
+        xn+dx-dx1-d1,yn,zn+dz1+3*d1;
+  arc   xn+dx-dx1-d1,yn,zn+dz1+3*d1
+        xn+dx-dx1-3*d1,yn,zn+dz1+d1
+        xn+dx-dx1-d1-d1*sqrt(2),yn,zn+dz1+d1+d1*sqrt(2);
+  line  xn+dx-dx1-3*d1,yn,zn+dz1+d1
+        xn+dx1+3*d1,yn,zn+dz1+d1;
+  arc   xn+dx1+3*d1,yn,zn+dz1+d1
+        xn+dx1+d1,yn,zn+dz1+d1*3
+        xn+dx1+d1+d1*sqrt(2),yn,zn+dz1+d1+d1*sqrt(2);
+  #Pat path select last 8 done last 1 create;
+  MBPanel incut incut panel pat;
+  delete pat done;
+}
+//================================ Ларец ====================
+if (Picture==24) 
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  d1=PictPar[5];  //-- Прогиб дуги 50 мм
+  if (dx<dx1*2)||(dz<(dz1+2*d1)*2) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    exit;
+  }
+  arc   xn+dx1+d1,yn,zn+dz-dz1-2*d1
+        xn+dx-dx1-d1,yn,zn+dz-dz1-2*d1
+        xn+dx/2,yn,zn+dz-dz1-3*d1;
+  line  xn+dx-dx1-d1,yn,zn+dz-dz1-2*d1
+        xn+dx-dx1,yn,zn+dz-dz1-2*d1
+        xn+dx-dx1,yn,zn+dz1
+        xn+dx1,yn,zn+dz1
+        xn+dx1,yn,zn+dz-dz1-2*d1
+        xn+dx1+d1,yn,zn+dz-dz1-2*d1;
+  #Pat path select last 6 done last 1 create;
+  MBPanel incut incut panel pat;
+  delete pat done;
+}
+//================================ Четыре крышки ====================
+if (Picture==25) 
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  d1=PictPar[5];  //-- Прогиб дуги 50 мм
+  if (dx<dx1*3)||(dz<(dz1+d1)*3) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    exit;
+  }
+  arc   xn+dx1+2*d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1-2*d1,yn,zn+dz-dz1-d1
+        xn+dx/2,yn,zn+dz-dz1;
+  line  xn+dx-dx1-2*d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1-d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1-d1,yn,zn+dz-dz1-2*d1;
+  arc   xn+dx-dx1-d1,yn,zn+dz-dz1-2*d1
+        xn+dx-dx1-d1,yn,zn+dz1+2*d1
+        xn+dx-dx1,yn,zn+dz/2;
+  line  xn+dx-dx1-d1,yn,zn+dz1+2*d1
+        xn+dx-dx1-d1,yn,zn+dz1+d1
+        xn+dx-dx1-2*d1,yn,zn+dz1+d1;
+  arc   xn+dx-dx1-2*d1,yn,zn+dz1+d1
+        xn+dx1+2*d1,yn,zn+dz1+d1
+        xn+dx/2,yn,zn+dz1;
+  line  xn+dx1+2*d1,yn,zn+dz1+d1
+        xn+dx1+d1,yn,zn+dz1+d1
+        xn+dx1+d1,yn,zn+dz1+2*d1;
+  arc   xn+dx1+d1,yn,zn+dz1+2*d1
+        xn+dx1+d1,yn,zn+dz-dz1-2*d1
+        xn+dx1,yn,zn+dz/2;
+  line  xn+dx1+d1,yn,zn+dz-dz1-2*d1
+        xn+dx1+d1,yn,zn+dz-dz1-d1
+        xn+dx1+2*d1,yn,zn+dz-dz1-d1;
+  #Pat path select last 12 done last 1 create;
+  MBPanel incut incut panel pat;
+  delete pat done;
+}
+//================================ Крышка ====================
+if (Picture==26)  
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  d1=PictPar[5];  //-- Прогиб дуги 50 мм
+  if (dx<dx1*3)||(dz<(dz1+d1)*3) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+   exit;
+  }
+  arc   xn+dx1+d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1-d1,yn,zn+dz-dz1-d1
+        xn+dx/2,yn,zn+dz-dz1;
+  line  xn+dx-dx1-d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1,yn,zn+dz-dz1-d1
+        xn+dx-dx1,yn,zn+dz1
+        xn+dx1,yn,zn+dz1
+        xn+dx1,yn,zn+dz-dz1-d1
+        xn+dx1+d1,yn,zn+dz-dz1-d1;
+  #Pat path select last 6 done last 1 create;
+  MBPanel incut incut panel pat;
+  delete pat done;
+}
+//================================ Две крышки ====================
+if (Picture==27) 
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  d1=PictPar[5];  //-- Прогиб дуги 50 мм
+  if (dx<dx1*3)||(dz<(dz1+d1)*3) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+   exit;
+  }
+  arc   xn+dx1+d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1-d1,yn,zn+dz-dz1-d1
+        xn+dx/2,yn,zn+dz-dz1;
+  line  xn+dx-dx1-d1,yn,zn+dz-dz1-d1
+        xn+dx-dx1,yn,zn+dz-dz1-d1
+        xn+dx-dx1,yn,zn+dz1+d1
+        xn+dx-dx1-d1,yn,zn+dz1+d1;
+  arc   xn+dx-dx1-d1,yn,zn+dz1+d1
+        xn+dx1+d1,yn,zn+dz1+d1
+        xn+dx/2,yn,zn+dz1;
+  line  xn+dx1+d1,yn,zn+dz1+d1
+        xn+dx1,yn,zn+dz1+d1
+        xn+dx1,yn,zn+dz-dz1-d1
+        xn+dx1+d1,yn,zn+dz-dz1-d1;
+  #Pat path select last 8 done last 1 create;
+  MBPanel incut incut panel pat;
+  delete pat done;
+}
+//================================ Уголки ====================
+if (Picture==28)  //-- Номер рисунка (свойство Tracery типа фасада)
+{
+  dx1=PictPar[1]; //-- Отступ узора по ширине 50 мм
+  dz1=PictPar[2]; //-- Отступ узора по высоте 50 мм
+  d1=PictPar[5];  //-- Расстояние между уголками
+  if (dx<dx1*3)||(dz<(dz1+d1)*3) //-- Малый фасад. Если рисунко полностью не умещается, создаем фасад с упрощенным рисунком
+  {
+    exit;
+  }
+  line  xn+2*dx1+d1*sqrt(2),yn,zn+dz1
+        xn+dx-dx1,yn,zn+dz1
+        xn+dx-dx1,yn,zn+dz-2*dz1-d1*sqrt(2)
+        xn+dx-2*dx1-d1*sqrt(2),yn,zn+dz-dz1
+        xn+dx1,yn,zn+dz-dz1
+        xn+dx1,yn,zn+2*dz1+d1*sqrt(2)
+        xn+2*dx1+d1*sqrt(2),yn,zn+dz1;
+  #Pat path select last 6 done last 1 create;
+  MBPanel incut incut panel pat;
+  delete pat done;
+}
+exit;

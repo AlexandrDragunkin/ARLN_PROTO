@@ -1,0 +1,265 @@
+//-- Подпрограмма редактирования фасада с применением Scratch-параметров
+global ProtoPath;
+global g_Scratch;
+global DoorPict;   //-- Рисунок фасада
+
+//-- Типы фасадов из базы прототипов
+// global Fas_typs Fas_ID N_Fas ;			//--Глухие фасады
+// NULLOUT=GetVarInst(2,"N_Fas",N_Fas,0);
+// defarr Fas_ID[N_Fas], Fas_typs[N_Fas];
+// NULLOUT=getarrinst(2,"Fas_ID",Fas_ID);
+// NULLOUT=getarrinst(2,"Fas_typs",Fas_typs);
+N_Fas=getmplsubst(15,"Fas_ID","Fas_typs");
+
+// global FasBtyps FasBID NBFas ;			//--Фасады ящиков
+// NULLOUT=GetVarInst(2,"NBFas",NBFas,0);
+// defarr FasBtyps[N_Fas], FasBID[N_Fas];
+// NULLOUT=getarrinst(2,"FasBID",FasBID);
+// NULLOUT=getarrinst(2,"FasBtyps",FasBtyps);
+
+NBFas=getmplsubst(29,"FasBID","FasBtyps");
+
+// global S_AFasads, I_AFasads, N_AFasads;		//--Угловые фасады
+N_AFasads=getmplsubst(72,"I_AFasads","S_AFasads");
+
+defarr CurFas[30], NameCurFas[30];
+defarr GroupName[15];				//--Массив названий групп
+NULLOUT=InitArray(NameCurFas,"");onerror final;
+switch autosingle on;
+selbyattr "IsAssign(\"FasadPar\")" prompt "Укажите фасад" wholly : ;
+switch autosingle off;
+offerror;
+if (sysvar(61)==0)
+{
+  exit;
+}
+pnt=getselnum(1);
+//---------Проверка на тип фасада---------
+NumbIndex=readscratch("FasadPar",pnt);
+if (NumbIndex==0)
+{
+ exit;
+}
+ColGroup=NameGroupScr(NumbIndex,GroupName);
+i=0;
+LOOPG:
+i=i+1;
+if (GroupName[i]=="doorgnu"||GroupName[i]=="doorgnu_v"||GroupName[i]=="doortrap"||GroupName[i]=="doortrap_v")
+{
+ defarr FasTP[N_AFasads];
+ defarr FasID[N_AFasads];
+ NULLOUT=copyarray(FasTP,1,S_AFasads,1);
+ NULLOUT=copyarray(FasID,1,I_AFasads,1);
+ FasN=N_AFasads;
+ goto NEXTSTEP;
+}
+if (i<ColGroup)
+{
+ goto loopg;
+}
+else
+{
+ defarr FasTP[N_Fas];
+ defarr FasID[N_Fas];
+ NULLOUT=copyarray(FasTP,1,Fas_typs,1);
+ NULLOUT=copyarray(FasID,1,Fas_ID,1);
+ FasN=N_Fas;
+}
+//-------------------------------------
+NEXTSTEP:
+g_Scratch=0;
+Namescr="FasadPar";
+
+If (IsAssign(Namescr,pnt))
+{
+  g_Scratch=ReadScratch(Namescr,pnt);   //-- Читаем из объекта
+  if (g_Scratch==0)
+  {
+    goto ERRO;
+  }
+}
+//-- Составляем список GoodsID фасадов в изделии
+selbyattr "Left(FurnType,2)==\"50\"" child pnt done;
+nk=sysvar(61);
+if (nk==0)
+{
+  putmsg("У данного мебельноего объекта нет фасадов.",0)
+  exit;
+}
+defarr SimFas[nk], SimFasID[nk];
+macro ProtoPath+"Arrobj.mac" nk, SimFas;
+i=0;
+loopf:
+i=i+1;
+SimFasID[i]=getattr(SimFas[i],"GoodsID",0); //-- GoodsID фасада
+if (i<nk)
+{
+  goto loopf;
+}
+FasTy=0;
+Kpar=cntvarscr(g_Scratch,"ТипФас");
+j=0;
+if (Kpar>0)
+{
+  i=1;
+  L1:
+  if (i<=Kpar)
+  {
+    err=GetScratch(g_Scratch,"ТипФас","ТипФас"+str(i),FasTy,SubstName);
+    //-- А есть ли такой фасад вообще в изделии
+    Ind=findinarray(SimFasID,FasTy,1,nk);
+    if (Ind==0) //-- Нет такого фасада в изделии
+    {
+      i=i+1;
+      goto L1;
+    }
+    if (j>0)
+    {
+      Ind=findinarray(CurFas,FasTy,1,j);
+      if (Ind!=0)
+      {
+        i=i+1;
+        goto L1;
+      }
+    }
+    j=j+1;
+    CurFas[j]=FasTy;
+    Ind=findinarray(FasID,FasTy,1,FasN);
+    if (Ind!=0)
+    {
+      NameCurFas[j]=FasTP[Ind];
+    }
+    else
+    {
+      Ind=findinarray(FasBID,FasTy,1,NBFas);
+      NameCurFas[j]=FasBtyps[Ind];
+    }
+    i=i+1;
+    goto L1;
+  }
+  Kpar=j;
+  if (Kpar==0)  //-- Нет скретчевых фасадов
+  {
+    putmsg("У данного мебельного объекта нет фасадов, которые можно отредактировать этой командой.",0)
+    exit;
+  }
+  if (Kpar==1)  //-- Есть только один скретчевый фасад
+  {
+    FasTy=CurFas[1];
+    goto L2;
+  }
+  #ok_flag
+  setvar
+  "Редактирование параметров фасада"
+  ""
+  left
+  "Выберите тип фасада"
+  done
+    str 	listonly
+	let j=Kpar
+	LoopJB:
+	if (j==Kpar)
+  {
+	  current
+	}
+	NameCurFas[j]
+	if (j>1)
+  {
+    Let j=j-1
+    goto LoopJB
+  }
+	done
+	"Тип фасада:"  FasName
+	done;
+  Ind=findinarray(FasTP,FasName,1,FasN);
+  if (Ind!=0)
+  {
+    FasTy=FasID[Ind];
+  }
+  else
+  {
+    Ind=findinarray(FasBtyps,FasName,1,NBFas);
+    FasTy=FasBID[Ind];
+  }
+  if (ok_flag==0)
+  {
+    TermScratch(g_Scratch);
+    exit;
+  }
+}
+L2:
+DoorPict=FasTy
+FasCode=GetFileTitle(PriceInfo(FasTy,"MacroFile",".mac",2))-4;
+// putmsg(FasCode)
+if (FasCode=="")
+{
+  goto ERRO;
+}
+// if (FasCode=="fasad_al")
+// {
+  // macro Protopath+"ScrDfasad_alEd.mac" pnt, FasCode ;
+  // goto endd;
+// }
+if (FasCode=="fasad_wood")||(FasCode=="fasad_compact")
+{
+  // macro Protopath+"ScrDfasad_woodEd.mac" pnt, FasCode ;
+  macro Protopath+"ScrDoorspl_Ed.mac" pnt, FasCode;
+  goto endd;
+}
+// if (FasCode=="doorvitr")
+// {
+  // macro Protopath+"ScrDvitrEd.mac" pnt, FasCode ;
+  // goto endd;
+// }
+// if (FasCode=="doorsplos"||FasCode=="doorgnu"||FasCode=="doortrap")
+// {
+  // macro Protopath+"ScrDsplosEd.mac" pnt, FasCode ;
+  // goto endd;
+// }
+// if (FasCode=="doorsplos_v"||FasCode=="doorgnu_v"||FasCode=="doortrap_v")
+// {
+  // macro Protopath+"ScrDsplosEd_V.mac" pnt, FasCode ;
+  // goto endd;
+// }
+// if (FasCode=="fasad_uzorpr")
+// {
+  // macro Protopath+"ScrDfasad_uzorprEd.mac" pnt, FasCode ;
+  // goto endd;
+// }
+// if (FasCode=="fasad_rampr")
+// {
+  // macro Protopath+"ScrDfasad_ramprEd.mac" pnt, FasCode ;
+  // goto endd;
+// }
+// if (FasCode=="fasad_figur")
+// {
+  // macro Protopath+"ScrDfasad_figurEd.mac" pnt, FasCode ;
+  // goto endd;
+// }
+// if (FasCode=="fas2col")
+// {
+  // macro Protopath+"ScrDfasad_fas2cEd.mac" pnt, FasCode ;
+  // goto endd;
+// }
+if (lower(FasCode)=="doorspl1-v"||lower(FasCode)=="doorspl1"||lower(FasCode)=="rs_neoclassic"||lower(FasCode)=="faskapry")
+{
+  brasers="doorspl1-v;doorspl1;rs_neoclassic;faskapry"; //Родственные типы! скрейч общий для всех
+  macro Protopath+"ScrDoorspl_Ed.mac" pnt, FasCode;
+  goto endd;
+}
+
+endd:
+smart edit list pnt nodc;
+exit;
+
+ERRO:
+TermScratch(g_Scratch);
+#ok_flag
+  alternative "Выбранный объект не содержит нужного фасада"
+  msgbox picture 3 beep 3 text "Попробуйте выбрать снова или нажмите ESC"
+  done
+  "  OK  "
+  done;
+final:
+switch autosingle off;
+exit;

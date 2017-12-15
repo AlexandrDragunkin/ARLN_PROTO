@@ -1,0 +1,154 @@
+//-- Макропрограмма устанавливает распашную дугообразной дверь
+defarr NichePar[17];
+defarr arr[10];
+global MacroSw;       //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+MacroSw=0;
+NULLOUT=initarray(arr,0);
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами
+NULLOUT=getvarinst(2,"Typ_Kro",Typ_Kro,0);          //-- Тип лицевой кромки
+NULLOUT=getvarinst(2,"PrMater",PrMater,0);          //-- Умолчание для материалов корпуса
+NULLOUT=getvarinst(2,"FasDMat",FasDMat,0);          //-- Умолчание для материалов фасада двери
+NULLOUT=getvarinst(2,"DoorVsMater1",DoorVsMater1,0);//-- Умолчание для материалов первой вставки фасада двери
+NULLOUT=getvarinst(2,"DoorVsMater2",DoorVsMater2,0);//-- Умолчание для материалов второй вставки фасада двери
+
+furn="'500102'"
+kol1=npgetbywhere(2,"furntype = "+furn,"arr");
+FasDTyp=arr[1];
+NULLOUT=getvarinst(2,"FasChordDTyp",FasDTyp,0);          //-- Умолчание на тип фасада двери
+NULLOUT=getvarinst(2,"DfPetl",DfPetl,0);            //-- Умолчание на тип накладной петли
+NULLOUT=getvarinst(2,"DfHandl",DfHandl,0);          //-- Умолчание на тип ручки
+NULLOUT=getvarinst(2,"DNUp",DNUp,14);               //-- Нахлест накладной двери сверху
+NULLOUT=getvarinst(2,"DNDown",DNDown,14);           //-- Нахлест накладной двери снизу
+NULLOUT=getvarinst(2,"DNLeft",DNLeft,14);           //-- Нахлест накладной двери слева
+NULLOUT=getvarinst(2,"DNRight",DNRight,14);         //-- Нахлест накладной двери справа
+NULLOUT=getvarinst(2,"Door_Zw",Door_Zw,2);          //-- Зазор между двойными дверьми
+NULLOUT=getvarinst(2,"DrHandPlace",DrHandPlace,0);  //-- Расположение ручки
+NULLOUT=getvarinst(2,"DrHandDouble",DrHandDouble,0);//-- Две ручки
+NULLOUT=getvarinst(2,"DrHandX",DrHandX,0);          //-- Сдвиг ручки
+NULLOUT=getvarinst(2,"DrHandZ",DrHandZ,0);          //-- Высота установки ручки
+NULLOUT=getvarinst(2,"DrHandAngle",DrHandAngle,0);  //-- Угол установки ручки
+NULLOUT=getvarinst(2,"DNColor",col,5);              //-- Цвет накладной двери
+NULLOUT=getvarinst(2,"IsColorUse",icu,1);           //-- Использовать ли цвета
+DProg=50
+
+NULLOUT=getvarinst(2,"N_DrHndPlace",N_DrHndPlace,1);    //-- Читаем типы расположения ручек
+defarr S_DrHndPlace[N_DrHndPlace], I_DrHndPlace[N_DrHndPlace];
+NULLOUT=getarrinst(2,"S_DrHndPlace",S_DrHndPlace);
+NULLOUT=getarrinst(2,"I_DrHndPlace",I_DrHndPlace);
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+
+onerror final;
+NULLOUT=getsnap();
+NULLOUT=pushinst(1);
+macromode undo off;
+if (icu==1)
+{
+  curcol=sysvar(40);
+  color col;
+}
+
+mbget "Укажите нишу распашной дугообразной двери" door NichePar :
+
+DefHPlace=str(getyadsubst(35))+"#"+str(DrHandPlace) ;                    // Формируем строку умолчаний.
+
+#ok_flag
+setvar
+"Распашная дугообразная дверь"
+PicturesPath+"Door_ras.wmf"
+left
+"Введите значения параметров"
+done
+real default DProg "Прогиб" DProg
+real default DNUp "Нахлест сверху" DNUp
+real default DNDown "Нахлест снизу" DNDown
+real default DNLeft "Нахлест слева" DNLeft
+real default DNRight "Нахлест справа" DNRight
+logical default 0 "Двойная дверь" Dou
+real default Door_Zw "Зазор между двойными дверьми" Door_Zw
+
+string button 6 default DefHPlace     "Расположение ручки:" NHPlace
+logical default DrHandDouble "Две ручки" DrHandDouble
+real default DrHandX "Сдвиг ручки" DrHandX
+real default DrHandZ "Высота установки ручки" DrHandZ
+real default DrHandAngle "Угол установки ручки" DrHandAngle
+done;
+if (ok_flag==0)
+{
+  goto final;
+}
+//DrHandPlace=I_DrHndPlace[fendinarray(S_DrHndPlace,SHandPlace,1,N_DrHndPlace)];
+splitbydelim(NHPlace,"#",Arr);
+DrHandPlace=Arr[2];
+//-- Проверяем, а на панель ли мы ставим дверь?
+ft=getattr(NichePar[1],"FurnType","")
+if (left(ft,2)!="01") //-- Это не панель
+{
+  hdsp=PriceInfo(PrMater,"Thickness",16);   //-- Толщина фасада
+}
+else //-- Читаем параметры панели для установки
+{
+  arr[1]=NichePar[1];
+  NULLOUT=getpan6par(1,arr);
+  hdsp=getpan6par(2,arr);  //-- Толщина панелей корпуса
+  nullout=getpan6par(999,arr);
+}
+
+//macro Protopath+"MakeDoor.Mac"
+//  0 NichePar[16] 0		//-- Правый нижний дальний угол
+//  NichePar[15] NichePar[17]; 	  //-- Размер по ширине и высоте
+
+protoobj create "Shkaf.ptl" 231
+    "S" NichePar[15]
+    "G" NichePar[16]
+    "Hd" NichePar[17]
+    "Dy" DProg
+    "R_Fas" DNRight
+    "L_Fas" DNLeft
+    "U_Fas" DNUp
+    "D_Fas" DNDown
+    "PrMater" FasDMat
+    "Fasrtype"  FasDTyp
+    "BAND" Typ_Kro
+    "Double" Dou
+    "P_Type" DfPetl
+    "HanType" DfHandl
+    "Rpl_r" DrHandPlace
+    "Rplace" NichePar[2]
+    "Doub_r" DrHandDouble
+    "rx" DrHandX
+    "rz" DrHandZ
+    "ra" DrHandAngle
+    "PrMatVs1" DoorVsMater1
+    "PrMatVs2" DoorVsMater2
+    "Door_Zw" Door_Zw
+   done
+  0 0 0;
+objident last 1 Door;
+final:
+offerror;
+if (icu==1)
+{
+  color curcol;
+}
+if (isvardef("Door")==16)
+{
+  macromode undo on "Door_RDug.mac" Door ;
+}
+else
+{
+  macromode undo on;
+}
+NULLOUT=setvarinst(2,"DNUp",DNUp);                //-- Нахлест накладной двери сверху
+NULLOUT=setvarinst(2,"DNDown",DNDown);            //-- Нахлест накладной двери снизу
+NULLOUT=setvarinst(2,"DNLeft",DNLeft);            //-- Нахлест накладной двери слева
+NULLOUT=setvarinst(2,"DNRight",DNRight);          //-- Нахлест накладной двери справа
+NULLOUT=setvarinst(2,"Door_Zw",Door_Zw);          //-- Зазор между двойными дверьми
+NULLOUT=setvarinst(2,"DrHandPlace",DrHandPlace);  //-- Расположение ручки
+NULLOUT=setvarinst(2,"DrHandDouble",DrHandDouble);//-- Две ручки
+NULLOUT=setvarinst(2,"DrHandX",DrHandX);          //-- Сдвиг ручки
+NULLOUT=setvarinst(2,"DrHandZ",DrHandZ);          //-- Высота установки ручки
+NULLOUT=setvarinst(2,"DrHandAngle",DrHandAngle);  //-- Угол установки ручки
+NULLOUT=resnap();
+NULLOUT=popinst(1);
+exit;

@@ -1,0 +1,50 @@
+//-- Макрос обрабатывает панель и возвращает общую толщину ее отделки на пласти А и F.
+getpar
+panel				//-- ссылка на панель
+ThA					//-- толщина отделки по стороне A (возвращаемый параметр)
+ThF					//-- толщина отделки по стороне F (возвращаемый параметр)
+;
+defarr arr[30];
+NULLOUT=InitArray(arr,0);
+//-- Инициируем панель
+arr[1]=panel;
+err=GetPan6Par(1,arr);
+//-- Отделка пласти А
+arr[1]=5;
+ColDecA=GetPan6Par(28,arr);
+if (ColDecA>0)
+{
+	ThA=0;
+	ia=0;
+	loopA:
+	ia=ia+1;
+	ThA=priceinfo(arr[ia*3],"Thickness",0)+ThA;
+	if (ia<ColDecA)
+	{
+		goto loopA;
+	}
+}
+else
+{
+  ThA=0;
+}
+//-- Отделка пласти F
+arr[1]=6;
+ColDecF=GetPan6Par(28,arr);
+if (ColDecF>0)
+{
+	ThF=0;
+	in=0;
+	loopF:
+	in=in+1;
+	ThF=priceinfo(arr[in*3],"Thickness",0)+ThF;
+	if (in<ColDecF)
+	{
+		goto loopF;
+	}
+}
+else
+{
+  ThF=0;
+}
+exit;

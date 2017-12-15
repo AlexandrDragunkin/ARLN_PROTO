@@ -1,0 +1,12 @@
+//-- Создание двери №3
+global DoorPath, TextLib;
+global ProtoPath;
+DoorPath=GetProtoMac("Doors.ptl");    //-- Путь к папке с прототипами
+ProtoPath=GetProtoMac("Shkaf.ptl");   //-- Путь к папке с макропрограммами общей библиотеке прототипов
+TextLib="Lb.room3_iml.#";             //-- Имя библиотеки текстур
+DoorPic=DbVar("DoorPic",13);          //-- Рисунок дверои
+dtype=3;                              //-- Тип двери
+Foto=1;                               //-- Фотографическая дверь
+plat=0;                               //-- Обналичка не нужна
+macro DoorPath+"DoorM.mac" dtype DoorPic Foto plat;
+exit;

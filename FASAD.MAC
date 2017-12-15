@@ -1,0 +1,55 @@
+//-- Создание объекта - фасад
+global ProtoPath;
+global FsMater, Col_Fas;
+global FsMatVs1 ColFv1  FsMatVs2 ColFv2 ;
+global Fas_mac Fastype;
+global DoorBCol;      //-- Цвет кромки фасада
+global FasVaria;      //-- Вариант фасада
+global g_FurnType;    //-- Тип мебельного объекта
+
+W=DbVar("W",300);             //-- Ширина фасада
+H=DbVar("H",450);             //-- Высота фасада
+Fastype=DbVar("Fasrtype",0);  //-- Рисунок фасада
+FsMaterl=DbVar("PrMater",0);  //-- Материал обрамления
+PrMatVs1=DbVar("PrMatVs1",0); //-- Материал первой вставки фасада
+PrMatVs2=DbVar("PrMatVs2",0); //-- Материал второй вставки фасада
+DoorBCol=DbVar("Face_col",0); //-- Цвет кромки
+Nshp=DbVar("Nshp",0);         //-- Направление текстуры
+DoorBand=DbVar("Band",0);     //-- Тип кромки
+FasVaria=DbVar("Variant",0);  //-- Вариант
+//--------------------------------------------------------------------------
+FurnType="500000";
+Namescr="ProtoParams";
+//--------------------------------------------------------------------------
+Fas_mac=PriceInfo(Fastype,"MacroFile","doorspl.mac",2);
+FsMater=FsMaterl;
+FsMatVs1=PrMatVs1;
+FsMatVs2=PrMatVs2;
+
+macro ProtoPath+"CheckPParFasMat.mac" Fasrtype, FsMater;
+
+macro ProtoPath+"SetFasdN.mac" FsMater Fastype DoorBCol DoorBand PrMatVs1 PrMatVs2 ;
+macro ProtoPath+"SetDir.mac" Nshp;
+if (Len(Fas_Mac)==0)
+{
+  point 0 0 0;
+}
+else
+{
+	macro Protopath+Fas_Mac 0, 0, 0, W, H;
+}
+FurnType=g_FurnType;
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"W",W);
+err=AddScratch(ScrMod,FurnType,"H",H);
+err=AddScratch(ScrMod,FurnType,"Fasrtype",Fastype);
+err=AddScratch(ScrMod,FurnType,"PrMater",FsMaterl);
+err=AddScratch(ScrMod,FurnType,"PrMatVs1",PrMatVs1);
+err=AddScratch(ScrMod,FurnType,"PrMatVs2",PrMatVs2);
+err=AddScratch(ScrMod,FurnType,"Face_col",DoorBCol);
+err=AddScratch(ScrMod,FurnType,"Nshp",Nshp);
+err=AddScratch(ScrMod,FurnType,"Band",DoorBand);
+err=AddScratch(ScrMod,FurnType,"Variant",FasVaria);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+exit;

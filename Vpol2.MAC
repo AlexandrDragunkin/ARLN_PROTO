@@ -1,0 +1,78 @@
+//-- Макропрограмма создания выдвижной полки
+//-- Входные параметры:
+//-- w, d - ширина и глубина полки
+//-- PrMater - материал боковин полки
+//-- Col_Kro - цвет кромки
+//-- BandT - тип кромки по сторонам
+//-- ff - прогиб кромки (d данном типе выдвижной полки не используется)
+//-- Выходные параметры:
+//-- Выдвижная полка с роликовыми направляющими
+
+global ProtoPath;
+NULLOUT=GetVarInst(2,"B_Zbok",B_Zbok,13);
+NULLOUT=GetVarInst(2,"B_Bmin",B_Bmin,25);
+defarr error[10];
+NULLOUT=initarray(error,"");
+NULLOUT=getvarinst(1,"CompShelfType",CompShelf,1);  //-- Тип выдвижной полки
+
+getpar w,d,PrMater,Col_Kro,BandT,ff;
+
+ff=0;       //-- Для данного типа полки прогиб не используется
+Hbox=100;		//-- Умолчание на высоту боковин полки
+Delta=0;		//-- Зазор между направляющими и полкой
+//IDProf=544;
+IDProf=PriceInfo(CompShelf,"MatID",0,2);  //-- Умолчание на профили для полотна полки
+
+h=25;				//-- Высота установки профилей от низа боковин
+//--------------------------------------------------------------------------
+h_dsp=PriceInfo(PrMater,"Thickness",16)
+Lbox=d-B_Bmin;
+
+// Новый запрос направляющих
+GoodsID=CompShelf     // ID Тип выдвижной полки в справочнике изделий
+GoodsProp="Guide"
+MatProp="Length"
+IDNapr=NPGetByProps(GoodsID,GoodsProp,MatProp,Lbox);
+
+Dpolozb=PriceInfo(IDNapr,"Length",200);
+
+//----------------------------------------------------------------------------------------
+//-- Построение боковин
+macro ProtoPath+"SetMat.mac" PrMater ;
+macro ProtoPath+"SetKrom.mac" Col_Kro BandT[4] BandT[4] BandT[4] BandT[4] ;
+macro ProtoPath+"SetEnam.mac" "Боковина полки";
+macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 2 70 0 0 0 0;
+macro ProtoPath+"SetECod.mac" "3101" ;
+// macro ProtoPath+"SetKCod.mac"	"DBYXX"	Hbox	Lbox;
+Macro ProtoPath+"MakePan.mac" B_zbok d-Lbox 0 Hbox Lbox 11 ;
+macro ProtoPath+"SetECod.mac" "3101" ;
+// macro ProtoPath+"SetKCod.mac"	"DBYXX"	Hbox	Lbox;
+Macro ProtoPath+"MakePan.mac" w-h_dsp-B_zbok d-Lbox 0 Hbox Lbox 11 ;
+macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+
+//-- Построение полотна выдвижной полки из профилей
+macro ProtoPath+"SetProf.mac" IDProf 0 0 0 0 0;
+macro ProtoPath+"MakeProf.mac" B_zbok+h_dsp d-50  h w-h_dsp-B_zbok d-50  h;
+macro ProtoPath+"MakeProf.mac" B_zbok+h_dsp d-100 h w-h_dsp-B_zbok d-100 h;
+macro ProtoPath+"MakeProf.mac" B_zbok+h_dsp d-200 h w-h_dsp-B_zbok d-200 h;
+macro ProtoPath+"MakeProf.mac" B_zbok+h_dsp d-150 h w-h_dsp-B_zbok d-150 h;
+if (Lbox>300)
+{
+  macro ProtoPath+"MakeProf.mac" B_zbok+h_dsp d-250 h w-h_dsp-B_zbok d-250 h;
+}
+if (Lbox>350)
+{
+  macro ProtoPath+"MakeProf.mac" B_zbok+h_dsp d-300 h w-h_dsp-B_zbok d-300 h;
+}
+if (Lbox>400)
+{
+  macro ProtoPath+"MakeProf.mac" B_zbok+h_dsp d-350 h w-h_dsp-B_zbok d-350 h;
+}
+//-- Построение направляющих
+macro ProtoPath+"SetECod.mac" "" ;
+macro ProtoPath+"SetEnam.mac" "Направляющие";
+macro ProtoPath+"MakeGuide.mac" IDNapr 2 1 B_zbok d-Lbox+Delta 0 0 0 0;
+macro ProtoPath+"SetECod.mac" "7301" ;
+macro ProtoPath+"MakeGuide.mac" IDNapr 1 0 w-B_zbok d-Lbox+Delta 0 0 0 0;
+macro ProtoPath+"SetEnam.mac" " " ;
+exit;

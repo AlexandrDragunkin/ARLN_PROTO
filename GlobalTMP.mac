@@ -1,0 +1,51 @@
+//-- Создание и иницииализация ряда глобальных переменных
+//-- Нужна исключительно для переходного этапа от 6.х к 6.6
+//-- В дальнейшем предполагается отказаться от использования глобальных
+//-- переменных и читать данные из хранилища непосредственно там, где это нужно.
+global ProtoPath;
+//-----------------------------------------------------------------
+//-- Режим работы макро
+global MacroSw;
+NULLOUT=GetVarInst(2,"MacroSw",MacroSw,0); //-- Способ построения
+if (NULLOUT==0)
+{
+  putmsg("Не удалось прочитать переменную 'MacroSw'",0);
+}
+//-----------------------------------------------------------------
+//-- Текущий FurnType
+global g_FurnType;
+NULLOUT=GetVarInst(1,"FurnType",g_FurnType,"000000");
+if (NULLOUT==0)
+{
+  putmsg("Не удалось прочитать переменную 'g_FurnType'",0);
+}
+//-----------------------------------------------------------------
+//-- Код возврата из макро
+global g_result;
+NULLOUT=GetVarInst(2,"g_result",g_result,0);
+if (NULLOUT==0)
+{
+  putmsg("Не удалось прочитать переменную 'g_result'",0);
+}
+//-- Коды и наименования
+global UnitName;
+NULLOUT=GetVarInst(1,"UnitName",UnitName," ");
+if (NULLOUT==0)
+{
+  putmsg("Не удалось прочитать переменную 'UnitName'",0);
+}
+global HoldName;
+NULLOUT=GetVarInst(1,"HoldName",HoldName," ");
+if (NULLOUT==0)
+{
+  putmsg("Не удалось прочитать переменную 'HoldName'",0);
+}
+global ElemName;
+NULLOUT=GetVarInst(1,"ElemName",ElemName," ");
+if (NULLOUT==0)
+{
+  putmsg("Не удалось прочитать переменную 'ElemName'",0);
+}
+
+macro ProtoPath+"Glob_sp.mac" ;
+exit;

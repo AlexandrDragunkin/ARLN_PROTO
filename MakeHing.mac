@@ -1,0 +1,241 @@
+//-- Добавление петли
+global ProtoPath ;
+global MacroSw  ; //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global ElemName ; //-- Имена мебельных элементов
+global HoldName ; //-- Имя хозяина
+global UnitCode ; //-- Код изделия (текст)
+global ElemCode ; //-- Код мебельных элементов
+global DoorMater; //-- Материал панелей двери
+KarkasNumb=getcarcnumb(); //-- Порядковый номер каркаса в сцене
+defarr  FixZ[30];
+
+getpar
+IdAcces         //-- Тип комплектующих
+NAcces	        //-- Не используется
+xn yn zn	      //-- Положение начала локальной системы координат
+ax az ax1;	    //-- Углы поворота
+
+x1=0;
+y1=0;
+z1=0;
+if (IdAcces==0) { exit; }
+
+// Так как указываются номенклатурные еденицы в выборе петель, то приходится иметь дубль
+// в сборочных единицах
+// goodID=PriceInfo(IdAcces,"GoodID1",0,1);
+goodID=IdAcces;
+NomID1=0;
+NomID2=0;
+// if goodID>0
+// {
+NomId1=PriceInfo(goodID,"NomID1",0,2)
+X1=PriceInfo(goodID,"ShiftX1",0,2)
+Y1=PriceInfo(goodID,"ShiftY1",0,2)
+Z1=PriceInfo(goodID,"ShiftZ1",0,2)
+TP=DbVar("MPlan",0);
+if TP>0
+{
+	NomId2=TP;
+}
+else
+{
+	NomId2=PriceInfo(goodID,"NomID2",0,2)
+}
+X2=PriceInfo(goodID,"ShiftX2",0,2)
+Y2=PriceInfo(goodID,"ShiftY2",0,2)
+Z2=PriceInfo(goodID,"ShiftZ2",0,2)
+AngleSetX1=PriceInfo(goodID,"AngleSetX1",0,2)
+AngleSetY1=PriceInfo(goodID,"AngleSetY1",0,2)
+AngleSetZ1=PriceInfo(goodID,"AngleSetZ1",0,2)
+AngleSetX2=PriceInfo(goodID,"AngleSetX2",0,2)
+AngleSetY2=PriceInfo(goodID,"AngleSetY2",0,2)
+AngleSetZ2=PriceInfo(goodID,"AngleSetZ2",0,2)
+
+// Крепеж ответки
+FixID=PriceInfo(goodID,"FixID",201,2);
+FixDist=PriceInfo(goodID,"FixDistance",24,2);
+shx=PriceInfo(goodID,"ShiftX",0,2);
+GlubShift=PriceInfo(goodID,"ShiftY",-37,2);
+// Крепеж чашки
+FixAddID=priceinfo(goodID,"FixAddID",-1,2);
+NomId3=PriceInfo(goodID,"NomID3",0,2)
+NomId4=PriceInfo(goodID,"NomID4",0,2)
+// Заглушка петли
+TipID=priceinfo(goodID,"TipID",-1,2);
+// }
+NULLOUT=getsnap();
+object_1=sysvar(60); //-- Кол-во объектов
+if NomId1>0
+{ IDElem=NomId1; }
+else
+{ IDElem=IdAcces; }
+
+accessory "040600" IDElem  0 yes  1+32;
+// objident last 1 Elem;
+// #Elem group Elem done;
+// move nocopy Elem done x1 y1 z1 ;
+// if NomId1!=IdAcces&&NomId1>0
+// {
+	// accessory "040006" NomId1  0 yes  1+32;
+	// objident last 1 Elem1;
+	// move nocopy Elem1 done x1 y1 z1 ;
+	// add Elem Elem1 done;
+// }
+// else
+// {
+	// move nocopy Elem done x1 y1 z1 ;
+// }
+
+if NomId2!=IdAcces&&NomId2>0
+{
+	accessory "040006" NomId2  0 yes  1+32;
+	objident last 1 Elem2;
+	move nocopy Elem2 done x2 y2 z2 ;
+	// rotate Elem2 done 2points x2 y2 z2 x2 y2 z2+1 az+AngleSetZ2 nocopy ;
+	rotate last 1 done 2points xn yn zn xn yn zn+1 az+AngleSetZ2 nocopy ;
+	// add Elem Elem2 done;
+}
+
+if TipID>0
+{
+	h_fas=PriceInfo(DoorMater,"Thickness",6);
+	// Здесь еще сдвиг заглушки на толщину фасада
+	accessory "040007" TipID  0 yes  1+32;
+	objident last 1 Elem3;
+	move nocopy Elem3 done x1 y1+h_fas z1 ;
+	// rotate Elem3 done 2points x1 y1 z1 x2 y1 z1+1 az+AngleSetZ1 nocopy ;
+	// add Elem Elem3 done;
+}
+
+if NomID3>0
+{
+	accessory "040008" NomID3  0 yes  1+32;
+	objident last 1 Elem3;
+	move nocopy Elem3 done x2 y2 z2 ;
+	// move nocopy Elem3 done x1 y1+h_fas z1 ;
+	// rotate Elem3 done 2points x1 y1 z1 x2 y1 z1+1 az+AngleSetZ1 nocopy ;
+	// add Elem Elem3 done;
+}
+
+if NomID4>0
+{
+	accessory "040008" NomID4  0 yes  1+32;
+	objident last 1 Elem3;
+	move nocopy Elem3 done x2 y2 z2 ;
+	// move nocopy Elem3 done x1 y1+h_fas z1 ;
+	// rotate Elem3 done 2points x1 y1 z1 x2 y1 z1+1 az+AngleSetZ1 nocopy ;
+	// add Elem Elem3 done;
+}
+
+// move nocopy Elem done xn yn zn ;
+// rotate Elem done 2points xn yn zn xn+1 yn zn ax nocopy ;
+// rotate Elem done 2points xn yn zn xn yn zn+1 az nocopy ;
+// rotate Elem done 2points xn yn zn xn+1 yn zn ax1 nocopy ;
+
+object_2=sysvar(60)-object_1; //-- Кол-во объектов
+if (object_2==0) //-- Нет объектов
+{ exit; }
+
+move nocopy last object_2 done xn yn zn ;
+rotate last object_2 done 2points xn yn zn xn+1 yn zn ax nocopy ;
+rotate last object_2 done 2points xn yn zn xn yn zn+1 az nocopy ;
+rotate last object_2 done 2points xn yn zn xn+1 yn zn ax1 nocopy ;
+
+#Elem group last object_2 done;
+move nocopy Elem done x1 y1 z1 ;
+
+// if goodID>0 {
+shP=0;
+
+if (udgetentity("FullPorting",ValType,FullPorting,sVal)==0) //-- Тип присадки(полная или нет)
+{
+	FullPorting=0;
+}
+// Ответка
+QFix=0;
+if FixID>0
+{
+	shP=16;
+	
+	FixZ[1]=xn;  FixZ[2]=yn+GlubShift; 	FixZ[3]=-shP;
+	FixZ[4]=xn;  FixZ[5]=yn+GlubShift; 	FixZ[6]=shP;
+	macro ProtoPath+"SetFixLine.mac"	FixZ[1]  FixZ[2] FixZ[3]
+										FixZ[1]-1  FixZ[2] FixZ[3]
+										FixZ[4]  FixZ[5] FixZ[6]
+										FixID;
+
+	FixZ[7]=0  FixZ[8]=0 	FixZ[9]=0
+	
+	QFix=2;
+	macro ProtoPath+"MakeFixGroup.mac" FixZ QFix;
+	
+	if FullPorting==0 {	fixing fix edit last 1 FixID yes; }
+	
+	// if AngleSetZ2!=0
+	// {
+		rotate last 1 done 2points xn yn zn xn yn zn+1 az+AngleSetZ2 nocopy ;
+	// }
+}
+if FixAddID==-1 { FixP=201; }	// Без свойства
+else { FixP=FixAddID; }			// Крепеж из свойства
+if FixAddID==0 { FixP=0; }		// Пустое свойство отменяет построение
+if FixP>0
+{
+	FixZ[1]=xn+shx;  FixZ[2]=yn; 	FixZ[3]=-FixDist;
+	FixZ[4]=xn+shx;  FixZ[5]=yn; 	FixZ[6]=FixDist;
+	macro ProtoPath+"SetFixLine.mac"	FixZ[1]  FixZ[2] FixZ[3]
+										FixZ[1]  FixZ[2]+1 FixZ[3]
+										FixZ[4]  FixZ[5] FixZ[6]
+										FixP;
+	
+	FixZ[7]=0  FixZ[8]=0 	FixZ[9]=0
+	
+	QFix=2;
+	macro ProtoPath+"MakeFixGroup.mac" FixZ QFix;
+	fixing fix edit last 1 FixP yes;
+}
+// }
+
+// object_2=sysvar(60)-object_1; //-- Кол-во объектов
+// if (object_2==0) //-- Нет объектов
+// {
+  // exit;
+// }
+// h_fas=4;
+// dx=100;
+// dz=100;
+// U_Fas=0;
+// mirror Elem done 3points xn+dx/2,yn+h_fas/2,zn xn+dx/2,yn,dz+zn-U_Fas xn+dx/2,yn+h_fas/2,dz+zn-U_Fas copy 1;
+
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done Elem done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done Elem KarkasNumb;
+}
+if (isattrdef("HoldName"))
+{
+  attrobj attach "HoldName" done Elem HoldName ;
+}
+
+if (isattrdef("ElemName"))
+{
+  attrobj attach "ElemName" done Elem "Группа петля" ;
+}
+
+if (isattrdef("UnitCode"))
+{
+	if len(ElemCode)>0
+	{
+		attrobj attach "UnitCode" done Elem ElemCode ;
+	}
+	attrobj attach "XUnit" "YUnit" "ZUnit" done Elem 0 0 0 ; //-- Размеры детали
+}
+NULLOUT=resnap();
+//-- Присваиваем атрибуты комплектующим
+// macro ProtoPath+"CompAttr.mac" IdAcces 1 ;
+NULLOUT=addattrpi(Elem,1,136,IdAcces);
+exit;

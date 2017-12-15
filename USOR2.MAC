@@ -1,0 +1,46 @@
+// Сформировать узор для дверки скругленной с рамкой
+global ProtoPath ;
+global FsMater;
+global DoorBCol,DoorBand;
+
+Getpar
+xn,
+yn,
+zn,
+dx,
+dy,
+dz;
+
+dx1=60; dz1=50
+
+Line xn+dx1 yn zn+dx1
+		 xn+dx-dx1 yn zn+dx1
+		 xn+dx-dx1 yn zn+dz-dx1
+		 xn+dx1 yn zn+dz-dx1
+		 close;
+#Pat path select last 4 done Last 1 done;
+
+  macro ProtoPath+"SetMat.mac" FsMater ;
+  macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+  macro ProtoPath+"SetFix.mac" 0 0 0 0 ;
+  macro ProtoPath+"SetECod.mac" "2102" ;
+  // macro ProtoPath+"SetKCod.mac" "ПЛДВ" dz dx ;
+  macro ProtoPath+"SetEnam.mac" "Полотно фасада" ;
+  macro ProtoPath+"SetKrom.mac" DoorBCol DoorBand DoorBand 0 0 ;
+  macro ProtoPath+"SetButts.mac" 3, 3, 2, 0, 10, 0, 0, 0, 0 ;
+  macro ProtoPath+"SetButts.mac" 4, 3, 2, 0, 10, 0, 0, 0, 0 ;
+  Macro ProtoPath+"MakePan.mac" xn yn zn dz dx 14 ;
+  macro ProtoPath+"SetButts.mac" 3, 0, 0, 0, 0, 0, 0, 0, 0 ;
+  macro ProtoPath+"SetButts.mac" 4, 0, 0, 0, 0, 0, 0, 0, 0 ;
+
+  objident last 1 Panel;
+  macro ProtoPath+"PutCutr.mac"
+  Panel,
+  Pat     //-- Объект Контур выреза
+  1       //-- Тип выреза: вырез(1), нарост(8), маски (2- симметрия отн.X; 4- симметрия отн.Y)
+  0       //-- Глубина выреза: 0, если вырез сквозной; > 0 - не сквозной со стороны пласти A; < 0 - не сквозной со стороны пласти F
+  5       //-- Секция раскрашивания А
+;
+delete Pat done ;
+
+exit;

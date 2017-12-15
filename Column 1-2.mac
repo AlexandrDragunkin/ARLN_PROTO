@@ -1,0 +1,24 @@
+//--Макро создания стойки с двумя винтами для трубчатой системы Komandor.
+global ProtoPath;
+getpar
+X Y Z		//-- Координаты установки
+W		//-- Высота стойки
+D		//-- Глубина стойки
+Ots		//-- Отступ до внутренней стойки
+TypeStWard	//-- ID стойки
+;
+
+//--Читаем свойства сборочной единицы
+IDKom1=PriceInfo(TypeStWard,"GoodID1",1,2);		//-- Начальный крепеж
+IDKom2=PriceInfo(TypeStWard,"GoodID2",1,2);		//-- Конечный крепеж
+IDProf1=PriceInfo(TypeStWard,"NomID1",1,2);		//-- Профиль
+nullout=getvarinst(1,"dwall",dwall,0);
+nullout=getvarinst(1,"nwallspot",nwallspot,0);
+ProfY=priceinfo(IDProf1,"ProfY",0.1,1);		//-- Глубина профиля
+
+//------------Строим вертикальный профиль-------------------------
+macro ProtoPath+"SetProfWFix.mac" IDKom1 0 0 IDKom2 0 0;
+macro ProtoPath+"SetProfWard.mac" IDProf1 0 0 0 0 0 0;
+macro ProtoPath+"MakeProfWard.mac" X Y+dwall+ProfY/2 Z X Y+dwall+ProfY/2 Z+W;
+macro ProtoPath+"MakeWardWallProf.mac" TypeStWard X Y Z W nwallspot dwall;
+exit;

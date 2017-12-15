@@ -1,0 +1,20 @@
+          //=====
+//FindVbDb.mac
+global
+CBDpath
+ ;
+
+
+fnk=CBDpath+"VbDb.dbf"
+DbCreate rcdCBD, fnk,
+"NUM","N",3,0,                  //00 Номер куска
+"PRICEVB","N",6,0,              //01 прайсID
+"LENGTHVB","N",5,0,             //02 длина кромки по участку
+"ZNAKVB","N",3,0,               //03 знак кромки по участку
+"PRIZ","N",2,0,                 //04 признак обработанного поля
+"CHLOC","N",3,0,                //05 Принадлежность цепочке
+;
+
+DbClose rcdCBD ;
+exit ;
+//===========

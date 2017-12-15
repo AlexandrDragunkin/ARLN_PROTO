@@ -1,0 +1,25 @@
+start:
+objident prompt "Укажите Объект-Источник" : PntFrom
+If !(IsAssign("ScrFlat",PntFrom))
+{
+   PutMsg("Указанный объект-источник не содержит набор параметров ScrFlat ",0);
+   goto start;
+}
+start1:
+Objident prompt "Укажите Объект-Цель" : PntBeg
+if !(IsAssign("ScrFlat",PntBeg))
+{
+   PutMsg("Указанный объект-цель не содержит набор параметров ScrFlat ",0);
+   goto start1;
+}
+If (IsAssign("ScrFlat",PntFrom))
+{
+  attrobj copy PntFrom "ScrFlat" done PntBeg done;
+}
+else
+{
+ goto metend;
+}
+smart edit list pntBeg ;
+metend:
+exit;

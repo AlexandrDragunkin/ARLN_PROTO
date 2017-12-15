@@ -1,0 +1,72 @@
+//-- Макропрограмма построения распашной карусельной двери
+
+global D_DxU D_DzU D_DxN D_DzN D_DxD;
+global ProtoPath;
+global g_FurnType;  //-- Тип мебельного объекта
+
+//-----------------------------------------------------------------
+S=DbVar("S",300);             //-- Ширина проема
+D=DbVar("G",450);             //-- Глубина двери
+H=DbVar("Hd",1870);           //-- Высота проема
+//R1=DbVar("R1",70);            //-- Размер трапеции справа
+//R2=DbVar("R2",70);            //-- Размер трапеции слева
+R_Fas=DbVar("R_Fas",0);       //-- Увеличение двери справа
+L_Fas=DbVar("L_Fas",0);       //-- Увеличение двери слева
+U_Fas=DbVar("U_Fas",0);       //-- Увеличение двери сверху
+D_Fas=DbVar("D_Fas",0);       //-- Увеличение двери снизу
+Nshp=DbVar("Nshp",0);         //-- Направление шпона
+Rplace=DbVar("Rplace",0);     //-- Тип открывания двери
+FPic=DbVar("Fasrtype",1174);  //-- Тип фасада двери
+defarr qwe[1];
+furn="'230300'"
+kol1=npgetbywhere(2,"furntype = "+furn,"qwe");
+      if (kol1>0) {
+   DoorKonst=qwe[1];	        //-- Тип двери карусельная)
+}
+FsMater=DbVar("PrMater",0);   //-- Материал фасада двери
+PrMatVs1=DbVar("PrMatVs1",0); //-- Материал первой вставки фасада
+PrMatVs2=DbVar("PrMatVs2",0); //-- Материал второй вставки фасада
+Col_KFas=DbVar("Face_col",0); //-- Цвет кромки фасада
+Band_Fas=DbVar("Band",0);     //-- Тип кромки фасада
+//DOUD=DbVar("Double",0);       //-- Признак двойной двери
+OpenD=DbVar("Open",1);        //-- Признак открытой двери
+ARMX=DbVar("rx",0);       		//-- Сдвиг ручки
+ARMZ=DbVar("rz",70);          //-- Высота ручки
+ARMA=DbVar("ra",0);           //-- Угол поворота ручки
+Handle=DbVar("HanType",0);    //-- Тип ручки
+Doub_r=DbVar("Doub_r",0);	    //-- Две ручки
+Rpl_r=DbVar("Rpl_r",0);   		//-- Расположение ручки
+P_Type=DbVar("P_Type",0);     //-- Тип петли двери
+AlPet=DbVar("Angle",0);       //-- Угол установки
+Door_Zw=DbVar("Door_Zw",0);   //-- Зазор по ширине
+
+DoorMater=FsMater
+FasadType=FPic
+//--------------------------------------------------------------------------
+
+macro ProtoPath+"SetDoorK.mac" DoorKonst;
+macro ProtoPath+"SetFasdN.mac" FsMater Fpic Col_KFas Band_Fas PrMatVs1 PrMatVs2 ;
+macro ProtoPath+"SetDoor.mac" Rplace 0 OpenD 2 P_Type AlPet 16;
+macro ProtoPath+"SetHand.mac" Doub_r Rpl_r ;
+macro ProtoPath+"SetHandl.mac" Handle, //-- Тип ручки
+      ARMX,    //-- Сдвиг ручки по x
+      ARMZ,    //-- Сдвиг ручки по z
+      ARMA;    //-- Поворот ручки
+
+macro ProtoPath+"SetDir.mac" Nshp;
+
+
+macro ProtoPath+"MakeDoorKar.mac"
+0 0 0		//-- Правый нижний дальний угол
+S D H     	//-- Размер по ширине, глубине и высоте
+  R_Fas         // Изменения фасада: справа
+  L_Fas         // Слева
+  U_Fas         // Сверху
+  D_Fas         //  Снизу
+  Door_Zw       // Зазор по ширине
+;
+ exit;
+//-----------------------------------------------------------------
+
+
+

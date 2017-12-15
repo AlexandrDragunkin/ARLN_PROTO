@@ -1,0 +1,365 @@
+// Проверка выдвигания ящика
+global g_colselect;
+defarr c1[6] c2[6] c3[6];// массивы для габаритных координат
+defarr Box[300];// массив для ящиков
+defarr Door[300];// массив для створок
+i=0; j=0; k=0;
+Fl=0; //0 - проходит, 1 - пересечение, 2 - не проходит
+defarr colobj[70]; //-- Массив для разукрашенных объектов
+ncol=0;
+
+// Умолчания на зазоры
+zus=30; // величина зазора для открытых поворотных створок
+zdnp=2; // величина добавочного зазора на перекос
+zzd=7; // уменьшение размера ниши, при открытой накладной створке
+
+pr_up=50; // Высота профиля верхнего рельса
+pr_d=20;  // Высота профиля нижнего рельса
+
+
+#ok_flag
+setvar
+"Зазоры"
+""
+left
+"Введите необходимые зазоры"
+done
+  real default  zus   "Величина зазора для открытых поворотных створок"  zus
+  real default  zdnp  "Величина добавочного зазора на перекос"  zdnp
+  real default  zzd   "Уменьшение размера ниши при открытой накладной створке"  zzd
+  real default  pr_up "Высота профиля верхнего рельса"  pr_up
+  real default  pr_d  "Высота профиля нижнего рельса"  pr_d
+done;
+if (ok_flag==0)
+{
+  exit;
+}
+
+//----------------------------------------------------------------------------
+NULLOUT=GetSnap();
+
+Num=SysVar(60);
+Nexti:
+i=i+1;
+if (i<=Num)
+{
+	O1=getobjnum(i);
+	Pos=ProtoID(O1);
+//-- Группа ящиков
+//-- Выдвижная полка
+//-- Сотовая корзина
+	if ((Pos==63)||(Pos==40)||(Pos==151))
+	{
+	j=j+1;
+		Box[j]=O1;
+	}
+  if ((Pos==121)||(Pos==163)||(Pos==162)) // двери
+	{
+		k=k+1;
+		Door[k]=O1;
+	}
+	goto Nexti;
+}
+NumB=j;
+NumD=k;
+
+// перебор заполненных массивов элементов
+j=0;
+Nextj:
+j=j+1;
+if (j<=NumB)
+{
+	karn1=GetAttr(Box[j],"KarkasNumb",-1)
+	tmp=objgab2(Box[j],c1);// берем элемент массива "ящики", коррекция габаритов по осям x,z
+	Pos=ProtoID(Box[j]);
+	// прототип группа ящиков
+	if (Pos==63)
+	{
+    NULLOUT=GetSnap();
+		setucs lcs Box[j];
+		PTransCS(0,3,0,0,0,xg1,yg1,zg1);
+		er=GetProtoVal(Box[j],"W",W);
+		er=GetProtoVal(Box[j],"H",H);
+		//er=GetProtoVal(Box[j],"BxType",BxType);
+		er=GetProtoVal(Box[j],"Fstype",Fstype);
+		er=GetProtoVal(Box[j],"R_Fas",R_Fas);
+		er=GetProtoVal(Box[j],"L_Fas",L_Fas);
+		er=GetProtoVal(Box[j],"U_Fas",U_Fas);
+		er=GetProtoVal(Box[j],"D_Fas",D_Fas);
+// фасада нет, столярный, метабокс
+		c1[1]=xg1;
+		c1[4]=xg1+W;
+		c1[3]=zg1;
+		c1[6]=zg1+H;
+// фасад есть, столярный, метабокс
+		if (Fstype!=0)
+		{
+			if (R_Fas>0)
+			{
+				c1[1]=c1[1]-R_Fas;
+			}
+			else
+			{
+				c1[1]=c1[1]+0.5;
+			}
+			if (L_Fas>0)
+			{
+				c1[4]=c1[4]+L_Fas;
+			}
+			else
+			{
+				c1[4]=c1[4]-0.5;
+			}
+			if (U_Fas>0)
+			{
+				c1[6]=c1[6]+U_Fas;
+			}
+			else
+			{
+				c1[6]=c1[6]-0.5;
+			}
+			if (D_Fas>0)
+			{
+				c1[3]=c1[3]-D_Fas;
+			}
+			else
+			{
+				c1[3]=c1[3]+0.5;
+			}
+		}
+    NULLOUT=ReSnap();
+	}
+// прототип полка выдвижная
+	if (Pos==40)
+	{
+		er=GetProtoVal(Box[j],"BxType",BxType);
+		er=GetProtoVal(Box[j],"PrMater",PrMater);
+		h_dsp=PriceInfo(PrMater,"Thickness",DbVar("HDSP",16)) // ==толщина панели
+		if (BxType==541)
+		{
+			c1[1]=c1[1];
+			c1[4]=c1[4];
+			c1[3]=c1[3];
+			c1[6]=c1[3]+h_dsp+zdnp;
+		}
+		if (BxType==543)
+		{
+			c1[1]=c1[1];
+			c1[4]=c1[4];
+			c1[3]=c1[3];
+			c1[6]=c1[6]+zdnp;
+	  }
+  }
+// прототип сотовая корзина
+	if (Pos==151)
+	{
+			c1[1]=c1[1]+1;
+			c1[4]=c1[4]-1;
+			c1[3]=c1[3]+1;
+			c1[6]=c1[6]+2;
+  }
+	k=0;
+	Nextk: k=k+1;
+	if (k<=NumD)
+	{
+     karn2=GetAttr(Door[k],"KarkasNumb",-1);
+     if (karn1==karn2)
+     {
+		    tmp=objgab2(Door[k],c2);// берем элемент массива "створки"
+		    Pos=ProtoID(Door[k]);
+		    if ((c2[6]<c1[3])||(c2[3]>c1[6])||(c2[4]<c1[1])||(c2[1]>c1[4])) // вообще к этой двери никакого отношения не имеет
+		    {
+		    	goto Nextk;
+		    }
+        if (Pos==121)
+        {
+          NULLOUT=GetSnap();
+          setucs lcs Door[k];
+          PTransCS(0,3,0,0,0,xg2,yg2,zg2);
+          er=GetProtoVal(Door[k],"S",S);
+          er=GetProtoVal(Door[k],"Hd",Hd);
+          er=GetProtoVal(Door[k],"G",G);
+          er=GetProtoVal(Door[k],"Double",Double);
+          er=GetProtoVal(Door[k],"Rplace",Rplace);
+          er=GetProtoVal(Door[k],"Door",Dr);
+          er=GetProtoVal(Door[k],"R_Fas",R_Fas);
+          er=GetProtoVal(Door[k],"L_Fas",L_Fas);
+          er=GetProtoVal(Door[k],"U_Fas",U_Fas);
+          er=GetProtoVal(Door[k],"D_Fas",D_Fas);
+          if ((R_Fas<0)&&(L_Fas<0)&&(D_Fas<0)&&(U_Fas<0))
+          {
+            er=GetProtoVal(Door[k],"PrMater",PrMater);
+            zzd=PriceInfo(PrMater,"Thickness",DbVar("HDSP",16)); // ==толщина панели
+            if (Dr==0)
+            {
+              zzd=zzd+zdnp;
+            } // уменьшение размера ниши, при открытой утопленной створке
+            if (Dr==545)
+            {
+              zzd=zzd+zus;
+            } // уменьшение размера ниши, при открытой утопленной поворотной створке
+          }
+          c2[1]=xg2;
+          c2[4]=xg2+S;
+          c2[3]=zg2;
+          c2[6]=zg2+Hd;
+          c2[2]=yg2+G;
+    // идентифицируем распашную одинарную дверь стандартную
+          if (Double==0&&Rplace==1)
+          {
+            c2[1]=c2[1]+zzd;
+          }
+          if (Double==0&&Rplace==2)
+          {
+            c2[4]=c2[4]-zzd;
+          }
+          if (Double==0&&Rplace==3)
+          {
+            c2[3]=c2[3]+zzd;
+          }
+          if (Double==0&&Rplace==4)
+          {
+            c2[6]=c2[6]-zzd
+          }
+    // идентифицируем распашную двойную дверь стандартную
+          if (Double==1&&(Rplace==1||Rplace==2))
+          {
+            c2[1]=c2[1]+zzd;
+            c2[4]=c2[4]-zzd;
+          }
+          if (Double==1&&(Rplace==3||Rplace==4))
+          {
+            c2[3]=c2[3]+zzd;
+            c2[6]=c2[6]-zzd;
+          }
+          if ((c1[1]<c2[1]&&c1[4]>c2[1])||(c1[1]<c2[4]&&c1[4]>c2[4]))
+          {
+            Fl=2;
+            chprop color Door[k] Box[j] done ;
+            ncol=ncol+2;
+            colobj[ncol-1]=Door[k];
+            colobj[ncol]=Box[j];
+          }
+          if ((c1[3]<c2[3]&&c1[6]>c2[3])||(c1[3]<c2[6]&&c1[6]>c2[6]))
+          {
+            Fl=2;
+            chprop color Door[k] Box[j] done g_colselect;
+            ncol=ncol+2;
+            colobj[ncol-1]=Door[k];
+            colobj[ncol]=Box[j];
+          }
+          NULLOUT=ReSnap();
+        }
+      if (Pos==163)
+      {
+        st2=GetAttr(Door[k],"NSysDoor",-1);
+        select attribute "NSysDoor=="+str(st2)+"&&Posit==162&&KarkasNumb=="+str(karn2) done;
+        kds=GetSelNum(1);
+        NULLOUT=GetSnap();
+        setucs lcs kds;
+        PTransCS(0,3,0,0,0,xg2,yg2,zg2);
+        er=GetProtoVal(kds,"x",x);
+        er=GetProtoVal(kds,"z",z);
+        c2[1]=xg2 c2[4]=xg2+x c2[3]=zg2+pr_d c2[6]=zg2+z-pr_up
+        er=GetProtoVal(Door[k],"y",st2y);
+        er=GetProtoVal(Door[k],"x",st2x);
+        er=GetProtoVal(Door[k],"z",st2z);
+  //------------------------------------------------------------------------------
+        q=0;
+        u=0;
+        Nextq:
+        q=q+1;
+        if (q<=NumD)
+        {
+          Pos=ProtoID(Door[q]);
+          st3=GetAttr(Door[q],"NSysDoor",-1);
+          karn3=GetAttr(Door[q],"KarkasNumb",-1)
+          er=GetProtoVal(Door[q],"y",st3y);
+          if (st2==st3&&Pos==163&&st2y==st3y&&karn2==karn3)
+          {
+            u=u+1;
+          }
+          goto Nextq;
+        }
+        st3x=st2x*u;
+        c3[1]=c2[1]+st3x;
+        c3[4]=c2[4]-st3x;
+        if ((c1[1]<c2[1]&&c1[4]>c2[1])||(c1[1]<c2[4]&&c1[4]>c2[4]))
+        {
+          Fl=2;
+          chprop color kds Door[k] Box[j] done g_colselect;
+          ncol=ncol+3;
+          colobj[ncol-2]=Door[k];
+          colobj[ncol-1]=Box[j];
+          colobj[ncol]=kds;
+        }
+        if ((c1[3]<c2[3]&&c1[6]>c2[3])||(c1[3]<c2[6]&&c1[6]>c2[6]))
+        {
+          Fl=2;
+          chprop color kds Door[k] Box[j] done g_colselect;
+          ncol=ncol+3;
+          colobj[ncol-2]=Door[k];
+          colobj[ncol-1]=Box[j];
+          colobj[ncol]=kds;
+        }
+        if (c1[4]>c2[1]&&c1[4]>c3[4]&&c1[1]<c2[4]&&c1[1]<c3[1])
+        {
+          Fl=2;
+          chprop color kds Door[k] Box[j] done g_colselect;
+          ncol=ncol+3;
+          colobj[ncol-2]=Door[k];
+          colobj[ncol-1]=Box[j];
+          colobj[ncol]=kds;
+        }
+//------------------------------------------------------------------------------
+        NULLOUT=ReSnap();
+      }
+	  }
+		goto Nextk;
+	}
+	goto Nextj;
+}
+if (Fl==2)
+{
+	result="Невыдвигающиеся объекты отмечены цветом";
+}
+//if (Fl==1)
+//{result="Объекты пересекаются";
+//}
+if (Fl==0)
+{
+	result="Все объекты выдвигаются";
+}
+
+#ok_flag
+     alternative "Внимание!!"
+     msgbox text
+     result
+if (Fl!=0)
+{
+   " "
+		 "Вернуть подсвеченным объектам текущий цвет?"
+     done
+     "Да" "Нет"
+}
+else
+{
+  done
+	"OK"
+}
+done;
+if (ok_flag==1&&Fl!=0)
+{
+	i=0;
+	chprop color
+	loopiii:
+	let i=i+1
+	colobj[i]
+	if (i<ncol)
+	{
+		goto loopiii
+	}
+	done sysvar(40);
+}
+NULLOUT=ReSnap();
+exit;

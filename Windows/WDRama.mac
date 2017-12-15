@@ -1,0 +1,82 @@
+//-- Создание рамы для окна
+global TextLib;
+global ProtoPath;
+getpar lw hw tw tw1 lf hf orient colw HideFlag ;
+//------------------------------------------------------------------------------
+if (HideFlag==0)
+{
+  goto D2Draw ;
+}
+if (Lf>lw-2*tw||hf>hw-2*tw)
+{
+  alternative "ВНИМАНИЕ!!!" msgbox
+  text "Ошибка в размерах форточки!" done
+  " OK " done
+  exit;
+}
+lf=lw-lf;
+
+#LL rectangle 3points 0,0,0 lw,0,0 lw,0,hw;
+#L2 rectangle 3points tw,0,tw lf-tw1,0,tw lf-tw1,0,hw-tw;
+#L3 rectangle 3points lf+tw1,0,tw lw-tw,0,tw lw-tw,0,hw-hf-tw1;
+#L4 rectangle 3points lf+tw1,0,hw-hf+tw1 lw-tw,0,hw-hf+tw1 lw-tw,0,hw-tw;
+if (orient!=1)  //-- Форточка справа
+{
+  move L2 done lw-lf-tw/2,0,0 nocopy;
+  move L3 L4 done -(lf-tw+tw/2),0,0 nocopy;
+}
+#Rama extrusion LL L2 L3 L4 done tw;	//-- Рама
+ChProp MapByPars last 1 Done
+0,  -1                    //-- Для всех секций
+1,  TextLib+str(colw)     //-- Меняем код материала на  материал в таблице материалов
+;
+delete LL L2 L3 L4 done;
+move Rama done 0,tw,0 nocopy;
+exit;
+//------------------------------------------------------------------------------
+D2Draw:
+defarr p1[3], p2[3], p3[3];
+p1[1]=0;
+p1[2]=0;
+p1[3]=0;
+p2[1]=tw;
+p2[2]=0;
+p2[3]=0;
+p3[1]=tw;
+p3[2]=tw;
+p3[3]=0;
+macro ProtoPath+"WDDRHatch.mac" p1 p2 p3 1;
+
+p1[1]=lw;
+p1[2]=0;
+p1[3]=0;
+p2[1]=lw-tw;
+p2[2]=0;
+p2[3]=0;
+p3[1]=lw-tw;
+p3[2]=tw; p3[3]=0;
+macro ProtoPath+"WDDRHatch.mac" p1 p2 p3 1;
+
+p1[1]=lw-lf+tw1;
+p1[2]=0;
+p1[3]=0;
+p2[1]=lw-(lf+tw)+tw1;
+p2[2]=0; p2[3]=0;
+p3[1]=lw-(lf+tw)+tw1;
+p3[2]=tw; p3[3]=0;
+macro ProtoPath+"WDDRHatch.mac" p1 p2 p3 1;
+if (orient!=1)  //-- Форточка справа
+{
+  mirror last 1 done 3points lw/2 0 0 lw/2 1 0 lw/2 1 1 nocopy ;
+}
+p1[1]=tw;
+p1[2]=0;
+p1[3]=0;
+p2[1]=lw-tw;
+p2[2]=0;
+p2[3]=0;
+p3[1]=lw-tw;
+p3[2]=tw; p3[3]=0;
+macro ProtoPath+"WDDRHatch.mac" p1 p2 p3 0;
+#okn group all done;
+exit;

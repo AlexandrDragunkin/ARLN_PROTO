@@ -1,0 +1,410 @@
+//ScrFlapMED.mac
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+// putmsg("DOORS63\ScrFlapMED.mac")
+nullout=getvarinst(2,"Doors64",Doors64,"Doors64.zmc|");
+defarr taaa[6];
+
+//Диалог по удалению вставок (выборочно), чтобы скрейчи не править вручную  ScrFlapDelSel
+
+//возможность резать несколько створок
+
+//возможность копировать свойства одной створки на остальные
+
+//(материалы и параметры вставок, цвета профилей и пр.)
+
+//ОЧЕНЬ важный момент - видимая часть, равные вставки могут быть по материалу (для оптимизации раскроя), а могут быть по видимой части (для красоты)
+
+//видимая часть вставки - это расстояние между габаритами ограничивающих ее (вставку) профилей, без учета утопленной в профиль части материала
+
+//Должна быть возможность посмотреть размер видимой части и рамера куска материала. Большая часть вставок - прямая, углы и мансарды - редкость
+
+//Я предлагаю команду - "описание створки". Кликаешь по створке и вуаля - полное описание створки с номерами вставок, описание этих вставок с размерами
+//и описание видимых частей двери (некий мини отчет) для проверки правильности построений. Информация снимается со скрейча и валится в карточку на экране
+
+global ProtoPath;
+global
+       gs_IdMid             // -- Id Разделительных профилей
+       gs_MidHV             // -- Массив с парметрами эквидистанты для расчета вставок в районе средних профилей
+       gs_XmidS  gs_ZmidS   // -- координаты начальных точек разделительных профилей в створке
+       gs_XmidE  gs_ZmidE   // -- координаты конечных  точек разделительных профилей в створке
+       gs_AngS   gs_AngE    // -- Углы подрезки профиля вначале и в конце разделительного профиля
+       gs_FlMater           // -- материалы вставок
+       gs_FlNshp            // -- направление текстуры шпона вставок
+       // gs_IdFl              // -- Cчетчик обработанных в объекте вставок
+       gs_IdMpr             // -- Cчетчик обработанных в объекте средних профилей
+       gs_KFL               // -- Количество вставок из скретча
+       gs_KMpr              // -- Количество средних профилей из скретча
+       ;
+global
+       gs_ProfX1               //-- массив с координатами X начала толстых профилей
+       gs_ProfZ1               //-- массив с координатами Z начала толстых профилей
+       gs_ProfX2               //-- массив с координатами X конца толстых профилей
+       gs_ProfZ2               //-- массив с координатами Z конца толстых профилей
+       gs_ProfHM               //-- Массив с парметрами эквидистанты для расчета средних профилей
+       gs_ProfHV               //-- Массив с парметрами эквидистанты для расчета вставок
+       gs_NProf                //-- число толстых профилей, участвующих в построении максимально их может быть 8. 4-е стороны+4-е вставки
+       ;
+global
+       gs_TlinX1               //-- массив с координатами X начала теоретических линий(осей)
+       gs_TlinZ1               //-- массив с координатами Z начала теоретических линий(осей)
+       gs_TlinX2               //-- массив с координатами X конца теоретических линий(осей)
+       gs_TlinZ2               //-- массив с координатами Z конца теоретических линий(осей)
+       gs_TlinHM               //-- Массив с парметрами эквидистанты для расчета средних профилей
+       gs_TlinHV               //-- Массив с парметрами эквидистанты для расчета вставок
+       gs_NTLin                //-- число теоретических линий(осей)
+       ;
+global g_CLTop  g_CLDown  g_CLMid  g_CLDer  g_CLVer g_CLVerR g_CLVerL g_DRP g_hmida g_hmidz ;
+//========================================================================================================
+defarr
+      arGrafPx[100] //-- массив координат X точек
+      arGrafPy[100] //-- массив координат Y точек
+      arTypeOb[100] //-- массив типов элементов графа 1-линия 2-дуга
+      arGrafEq[100] //-- массив велечин смещения 4-й параметр  AddEdgeGraph
+;
+defarr
+      arObjPar[10,5] //-- массив частей при делении для FindObjParts
+      arEquidi[100]  //-- массив указателей эквидистант
+      arGrafCu[6]   //-- массив точек для AddEdgeGraph
+;
+//========================================================================================================
+
+NobjGraf=0
+Namescr="ScrFlat";
+
+getpar auto ;
+// putmsg(auto)
+if auto==0
+{
+   Beg:
+   objident prompt "Укажите створку" : pnt ;
+   beg1:
+
+   if (isattrdef("ScrFlat"))    //-- Если определен ScrFlat
+   {
+      if (isassign("ScrFlat",pnt)) //-- Если он есть в объекте - копируем в "запись"
+      {
+         attrobj copy pnt "ScrFlat"  done  record done ;
+      }
+      else
+      {
+       goto Beg;
+      }
+   }
+   else
+   {
+    exit;
+   }
+   Na=0
+   // putmsg("GetSnap_ScrFlapMED_101")
+   SnapPt=GetSnap();
+   Macro ProtoPath+Doors64+"ScrFlapGet63.mac" 1 ;
+   // smart edit list pnt ;
+   objident last 1 pnt ;
+
+   'osnap autosnap
+   get "Укажите первую точку оси" point missing  PointLXn ppn PointLZn   :
+   get "Укажите вторую точку оси" point PointLXn pp PointLZn  PointLXk ppk PointLZk  :
+   ptranscs(0,3,PointLXn,ppn,PointLZn,PointLXn,ppng,PointLZn);
+   ptranscs(0,3,PointLXk,ppk,PointLZk,PointLXk,ppkg,PointLZk);
+   setucs lcs pnt ;
+   ptranscs(3,0,PointLXn,ppng,PointLZn,PointLXn,ppn,PointLZn);
+   ptranscs(3,0,PointLXk,ppkg,PointLZk,PointLXk,ppk,PointLZk);
+   SnapPt=ReSnap();
+}
+else
+{
+ getpar pnt Na aPointLXn aPointLZn aPointLXk aPointLZk;
+ // putmsg("getpar_MED_gs_NTLin="+str(gs_NTLin))
+ if (isattrdef("ScrFlat"))    //-- Если определен ScrFlat
+ {
+  if (isassign("ScrFlat",pnt)) //-- Если он есть в объекте - копируем в "запись"
+  {
+    attrobj copy pnt "ScrFlat"  done  record done ;
+  }
+  else
+  {
+	// putmsg("exit_127")
+    exit;
+  }
+ }
+ else
+ {
+ // putmsg("exit_133")
+  exit;
+  }
+   // putmsg("GetSnap_ScrFlapMED_137")
+  // SnapPt=GetSnap();
+  //setucs save "$$tempUSC";
+  // smart edit list pnt ;
+  // objident last 1 pnt ;
+  // SnapPt=ReSnap();
+  ppn=0; ppk=0;
+}
+//====================================================================
+;Macro ProtoPath+Doors64+"ScrFlapGet63.mac" 1 ;
+// KFL=gs_KFL               // -- Количество вставок из скретча
+// KMpr=gs_KMpr             // -- Количество средних профилей из скретча
+NProf=gs_NProf           //-- число толстых профилей
+NTLin=gs_NTLin           //-- число теоретических линий(осей)
+// putmsg("толстые профили MED_NProf="+str(NProf))
+// putmsg("теор линии MED_NTLin="+str(NTLin))
+grf_st=begingraph();  // Инициализируем граф
+grf_Pr=begingraph();  // Инициализируем граф
+
+gosub InitStGraf;
+
+im=0
+labIm:
+if Na>Im
+{
+
+   im=im+1
+   // putmsg("GetSnap_ScrFlapMED_159")
+   SnapPt=GetSnap();
+   ptranscs(0,3,aPointLXn[im],ppn,aPointLZn[im],PointLXn,ppng,PointLZn);
+   ptranscs(0,3,aPointLXk[im],ppk,aPointLZk[im],PointLXk,ppkg,PointLZk);
+   setucs lcs pnt ;
+   ptranscs(3,0,PointLXn,ppng,PointLZn,PointLXn,ppn,PointLZn);
+   ptranscs(3,0,PointLXk,ppkg,PointLZk,PointLXk,ppk,PointLZk);
+   // putmsg("ReSnap_ScrFlapMED_166")
+   SnapPt=ReSnap();
+   
+   gosub addNewLGraf;
+   
+   goto labIm;
+}
+if auto==0 { gosub addNewLGraf; }
+
+
+NULLOUT=InterGraph(grf_st);  // Находим точки пересечения и корректируем граф
+
+NG=FindLoops(grf_st);  // Находим циклы в графе
+if (NG==0)
+{
+	NULLOUT=FreeGraph(grf_st);  // Удаляем исходный граф
+	NULLOUT=FreeGraph(grf_Pr);  // Удаляем исходный граф
+	exit;
+}
+
+ii=0;
+loop:
+ii=ii+1;
+arEquidi[ii]=EquidLoop(grf_st,ii);  // Строим эквидистанту к циклу
+
+
+if (ii<NG)
+{
+  goto loop;
+}
+
+gri=0;
+loogri:
+
+gri=gri+1;
+looi=0;
+if (arEquidi[gri]==0)
+{
+  goto nextGraph;
+}
+cy1:
+//PutMsg("arEquidi[gri]="+str(arEquidi[gri]),1);
+nedges=GetNumEdges(arEquidi[gri]);  // Получаем число ребер
+loolooi:
+looi=looi+1;
+nz=GetEdgeGraph(arEquidi[gri],looi,arGrafCu);  // Получаем по очереди все ребра каждого цикла
+// Строим ребра
+if (nz==4)
+{
+  //line arGrafCu[1],-10,arGrafCu[2], arGrafCu[3],-10,arGrafCu[4] done;
+}
+if (nz==6)
+{
+  //arc arGrafCu[1],arGrafCu[2],0 arGrafCu[3],arGrafCu[4],0 arGrafCu[5],arGrafCu[6],0;
+}
+if (looi<nedges)
+{
+  goto loolooi;
+}
+nextGraph:
+if (gri<NG)
+{
+  goto loogri;
+}
+gri=0;
+llof:
+gri=gri+1;
+if (arEquidi[gri]>0) {
+  NULLOUT=FreeGraph(arEquidi[gri]); // Удаляем графы с эквидистантами
+}
+if (gri<NG)
+{
+  goto llof;
+}
+
+
+NULLOUT=FreeUnObj2D(Lin1);  // Удаляем объект из списка UnObj
+NULLOUT=FreeGraph(grf_st);  // Удаляем исходный граф
+NULLOUT=FreeGraph(grf_Pr);  // Удаляем исходный граф
+// putmsg("after_atr_gs_NTLin="+str(gs_NTLin))
+macro ProtoPath+Doors64+"ScrFlatatr63.mac" 0 pnt ;             //-- Запись  Scratch атрибута
+// putmsg("ReSnap_ScrFlapMED_246")
+// SnapPt=ReSnap(SnapPt);
+// SnapPt=ReSnap();
+smart edit list pnt ;
+
+objident Last 1 pnt;
+if auto==0
+{
+
+   goto beg1;
+}
+exit;
+
+//======================== S U B R O U T I N E ========================
+
+InitStGraf:
+   i_isg=0
+   lb_ISG1:
+   if i_isg<NProf
+   {
+      i_isg=i_isg+1
+      arGrafCu[1]=gs_ProfX1[i_isg];
+      arGrafCu[2]=gs_ProfZ1[i_isg];
+      arGrafCu[3]=gs_ProfX2[i_isg];
+      arGrafCu[4]=gs_ProfZ2[i_isg];
+      arTypeOb[i_isg]=1
+      ee=addedgegraph(grf_st,arTypeOb[i_isg],arGrafCu,gs_ProfHM[i_isg]);  // Добавляем в граф ребро
+      gosub Putline;
+      goto lb_ISG1;
+   }
+   j_isg=0
+   lb_ISG2:
+   if i_isg<NProf+NTLin
+   {
+      i_isg=i_isg+1
+      j_isg=j_isg+1
+      arGrafCu[1]=gs_TLinX1[j_isg];
+      arGrafCu[2]=gs_TLinZ1[j_isg];
+      arGrafCu[3]=gs_TLinX2[j_isg];
+      arGrafCu[4]=gs_TLinZ2[j_isg];
+      arTypeOb[i_isg]=1
+      ee=addedgegraph(grf_st,arTypeOb[i_isg],arGrafCu,gs_TLinHM[j_isg]);  // Добавляем в граф ребро
+      arGrafCu[1]=gs_TLinX2[j_isg];
+      arGrafCu[2]=gs_TLinZ2[j_isg];
+      arGrafCu[3]=gs_TLinX1[j_isg];
+      arGrafCu[4]=gs_TLinZ1[j_isg];
+      arTypeOb[i_isg]=1
+      ee=addedgegraph(grf_st,arTypeOb[i_isg],arGrafCu,gs_TLinHM[j_isg]);  // Добавляем в граф ребро
+      gosub Putline;
+      goto lb_ISG2;
+   }
+return;
+//========================
+putline:
+// #lg1 line arGrafCu[1] -10 arGrafCu[2]  arGrafCu[3] -10 arGrafCu[4]  ;
+
+return;
+//========================
+addNewLGraf:
+            //-- добавляем отрезок в граф
+            //get "точка 1" point missing  arGrafCu[1] pp arGrafCu[2]   :
+            //get "точка 2" point arGrafCu[1] pp arGrafCu[2]  arGrafCu[3] pp  arGrafCu[4]  :
+			// putmsg("addNewLGraf");
+			// putmsg(PointLXn);
+			// putmsg(PointLZn);
+			// putmsg(PointLXk);
+			// putmsg(PointLZk);
+            arGrafCu[1]=PointLXn
+            arGrafCu[2]=PointLZn
+            arGrafCu[3]=PointLXk
+            arGrafCu[4]=PointLZk
+            gosub PutLine;
+            gosub addTlinP; // добавляем  указанные точки в массивы теоретических осей gs_TLinX1 gs_TLinZ1 gs_TLinX2 gs_TLinZ2
+			if grf_Pr>0 {
+				// putmsg("Удаляем исходный граф grf_Pr")
+				NULLOUT=FreeGraph(grf_Pr);   // Удаляем исходный граф
+				grf_Pr=begingraph();  // Инициализируем граф
+			}
+			// ts_nedges=GetNumEdges(grf_st);  // Получаем число ребер
+			// putmsg("число ребер "+str(ts_nedges))
+            NULLOUT=EquidGraph(grf_st,grf_Pr);       // Строим эквидистантный граф
+
+            Lin1=AddUnObj2D(1,0,arGrafCu); // Добавляем отрезок в UnObj
+            N_til=FindObjParts(grf_Pr,Lin1,arObjPar);
+			// putmsg(N_til)
+            ee=addedgegraph(grf_st,1,arGrafCu,10);  // Добавляем в граф ребро
+            x=arGrafCu[3]
+            y=arGrafCu[4]
+            arGrafCu[3]=arGrafCu[1]
+            arGrafCu[4]=arGrafCu[2]
+            arGrafCu[1]=x
+            arGrafCu[2]=y
+            ee=addedgegraph(grf_st,1,arGrafCu,10);  // Добавляем в граф ребро
+            // =ee
+			// putmsg(ee)
+
+            //gosub sarObjPar;
+            i_Nlg=0
+            lbNLG:
+            if i_NLG<N_til
+            {
+              i_Nlg=i_Nlg+1;
+              aa=GetUnObj2D(arObjPar[i_Nlg,1],ObTyp,arGrafCu);
+              gs_KMpr=iif(isvardef("gs_KMpr")==0,0,gs_KMpr);
+              gs_KMpr=gs_KMpr+1
+              gs_XmidS[gs_KMpr]=arGrafCu[1]  gs_ZmidS[gs_KMpr]=arGrafCu[2]   // -- координаты начальных точек разделительных профилей в створке
+              gs_XmidE[gs_KMpr]=arGrafCu[3]  gs_ZmidE[gs_KMpr]=arGrafCu[4]   // -- координаты конечных  точек разделительных профилей в створке
+              gs_IdMid[gs_KMpr]=g_CLMid;
+              Ang1=grad(arObjPar[i_Nlg,3]);
+              Ang2=grad(arObjPar[i_Nlg,5]);
+              SgnAng1=iif(Sgn(Ang1)==0,1,Sgn(Ang1));
+              SgnAng2=iif(Sgn(Ang2)==0,1,Sgn(Ang2));
+              Ang1=Abs(Ang1);
+              Ang2=Abs(Ang2);
+              gs_AngS[gs_KMpr]=SgnAng1*(Ang1-90); // угол сопряжения первой точки объекта
+              gs_AngE[gs_KMpr]=SgnAng1*(Ang2-90); // угол сопряжения второй точки объекта
+              goSub PutLine;
+              //chprop color lg1 done 12
+
+              goto lbNLG;
+            }
+            //PutMsg("Результат FindObjParts = "+str(N_til),1);
+return;
+
+sarObjPar:
+i_sop=0
+ lb_sop:
+ if i_sop<N_til
+ {
+  i_sop=i_sop+1
+  =arObjPar[i_sop,1] // номер объекта в списке объектов
+  =arObjPar[i_sop,2] // код первой точки объекта (0 - нормальная вершина, 1 - проходит через вершину графа);
+  =grad(arObjPar[i_sop,3]) // угол сопряжения первой точки объекта
+  =arObjPar[i_sop,4] // код второй точки объекта (0 - нормальная вершина, 1 - проходит через вершину графа);
+  =grad(arObjPar[i_sop,5]) // угол сопряжения второй точки объекта
+  =gs_KMpr
+
+  goto lb_sop;
+ }
+
+return;
+
+addTlinP:
+	// putmsg("addTlinP")
+           gs_NTLin=gs_NTLin+1;
+		   // putmsg(gs_NTLin)
+           NTLin=gs_NTLin;
+           gs_TLinX1[NTLin]=arGrafCu[1];
+           gs_TLinZ1[NTLin]=arGrafCu[2];
+           gs_TLinX2[NTLin]=arGrafCu[3];
+           gs_TLinZ2[NTLin]=arGrafCu[4];
+           gs_TLinHM[NTLin]=g_hmida/2;
+		   // putmsg(g_hmidz)
+           // gs_TLinHV[NTLin]=iif(g_hmida==g_hmidz,0,g_hmidz/2);
+		   gs_TLinHV[NTLin]=iif(g_hmida==g_hmidz,0,g_hmidz);
+return;

@@ -1,0 +1,72 @@
+//-- ћакропрограмма читает из таблицы Rails базы данных DoorSys.mdb значени€
+//-- параметров SlipTop - зазор сверху по высоте створки,
+//-- SlipBottom - зазор снизу по высоте створки,
+//-- SlipDoors - величина нахлеста дверей (вли€ет на ширину створки)
+//-- ¬ходные параметры:
+//-- IDSys - ID системы дверей
+//-- ¬ыходные параметры:
+//-- g_SlipTop, g_SlipBottom, g_SlipDoors
+
+global ProtoPath , g_tab_place, g_keyDS63,g_Doorscon;
+global g_dwRailD;  // смещение трека
+global g_SlipTop,g_SlipBottom,g_SlipDoors;
+
+defarr SqlArr[10];
+
+getpar IDSys ;
+
+
+if isvardef("g_keyDS63")==0 { g_keyDS63=0 }
+KDS=0 // признак открыти€ базы если на выходе ключ не изменит значение то дискон делать не стоит
+//-- ”станавливаем соединение с базой DoorSys63.mdb
+if g_keyDS63!=1
+{
+   macro ProtoPath+"CrtSysDoor63.mac" ;
+   KDS=1 // если здесь открыли, то здесь и закрывать придетс€
+}
+SqlArr[1]="SELECT DSSystemFlap.ID, DSSystemFlap.NameSys, DSSystemTrack.MacroSet, DSGabProfile.TypProfile, DSGabProfile.w,";
+SqlArr[2]=" DSGabProfile.zw, DSSystemFlap.SlipBottom, DSSystemFlap.SlipTop, DSSystemFlap.SlipLeft, DSSystemFlap.SlipRight, DSSystemFlap.SlipDoors";
+SqlArr[3]=" FROM ((DSSystemFlap INNER JOIN DSSystemTrack ON DSSystemFlap.IdSysTrack = DSSystemTrack.ID) INNER JOIN DSFlapSostav";
+SqlArr[4]=" ON DSSystemFlap.ID = DSFlapSostav.IDSyst) INNER JOIN DSGabProfile ON DSFlapSostav.IDProf = DSGabProfile.ID";
+SqlArr[5]=" WHERE (((DSSystemFlap.ID)="+str(IDSys)+") AND ((DSGabProfile.TypProfile)=9));";
+
+SysRs=adbOpen(g_Doorscon,SqlArr,5);
+ij=adbRecCount(SysRs);
+//-- ≈сли количество нужных записей меньше единицы - выходим
+if (ij<1)
+{
+  g_SlipTop=0;
+  g_SlipBottom=0;
+  g_SlipDoors=0;
+  goto end;
+}
+NULLOUT=adbMoveFirst(SysRs);
+//-- —читываем им€ макроса установки направл€ющих и расчитываем параметры смещени€ нижнего трека
+
+g_SlipTop=adbGetValue(SysRs,"SlipTop");
+g_SlipBottom=adbGetValue(SysRs,"SlipBottom");
+g_SlipDoors=adbGetValue(SysRs,"SlipDoors");
+
+end:
+SysRs=adbClose(SysRs);
+if KDS==1
+{
+ macro ProtoPath+"ClosSysDoor63.mac"; //-- –азрываем соединение
+}
+exit;
+
+//==============================================================================
+//-- ¬ывод окна сообщени€ об ошибке
+//-- ¬ходные параметры:
+//-- errcode - сод ошибки
+err:
+#ok_flag
+     alternative "ќшибка базы данных"
+     msgbox text "Ќекорректно заполнена база данных систем дверей"
+     " "
+     errcode
+     done
+     "  OK  "
+     done;
+return;
+//==============================================================================

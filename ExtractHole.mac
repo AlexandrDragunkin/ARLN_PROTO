@@ -1,0 +1,16 @@
+//-- Макропрограмма исключает отверстие из хозяина (объекта)
+//-- Входные параметры:
+//-- obj - объект, из которой извлекаем отверстие
+
+global ProtoPath;
+getpar obj;
+//-- Находим родителя объекта
+NULLOUT=GetObjHold(obj,par);
+if (NULLOUT==0)
+{
+  exit;
+}
+extract partly par obj done;
+//macro ProtoPath+"AddAttrPI.mac" obj 0 32 ;
+NULLOUT=addattrpi(obj,1,32);
+exit;

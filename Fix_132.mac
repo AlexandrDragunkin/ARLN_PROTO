@@ -1,0 +1,303 @@
+// Минификс
+
+global NumFixMac;   // Для передачи количества из пользовательского макро
+global NumComm;
+NumFixMac=0;        // надо расчитать здесь
+
+getpar
+Lengh   // Длина стороны 
+IDHol   //  ID отверстия
+XHol    //  положение вдоль длины от начала
+YHol    //  положение поперек длины
+ZHol    //  положение внутрь панели ? может и не надо
+;
+Tip1=1530; // Эксцентрик
+Tip2=1512; // Дюбель, шток
+Tip3=1601; // Шкант
+Lengh=round(Lengh,0.1);
+
+Dx=20;
+Dx3=32;
+
+if Lengh>196 { Dx=50; Dx2=82; }
+if Lengh>804 { Dx=82; Dx2=50; }
+
+
+// if Lengh>1476 { Dx=82; }
+// if Lengh>LenPan&&Lengh<=804 { FixNum=3; }
+// if Lengh>804&&Lengh<=1476 { FixNum=4; }
+// if Lengh>1476 { FixNum=5; }
+// if Lengh>1476&&Lengh<2200 { FixNum=5; }
+// if Lengh>=2200 { FixNum=6; }
+
+if (Lengh<72)
+{
+	exit;
+}
+
+if (Lengh<=104)
+{
+	i=1;
+	IDHol[i]=Tip1
+	XHol[i]=Dx
+	YHol[i]=0
+	zHol[i]=0
+
+	i=i+1;
+	IDHol[i]=Tip2
+	XHol[i]=Dx
+	YHol[i]=0
+	zHol[i]=0
+
+	i=i+1;
+	IDHol[i]=Tip3
+	XHol[i]=Lengh-Dx
+	YHol[i]=0
+	zHol[i]=0
+	
+	NumFixMac=i;
+	NumComm=1;
+	exit;
+}
+	
+if (Lengh<=196)
+{
+	i=1;
+	IDHol[i]=Tip1
+	XHol[i]=Lengh-Dx
+	YHol[i]=0
+	zHol[i]=0
+
+	i=i+1;
+	IDHol[i]=Tip2
+	XHol[i]=Lengh-Dx
+	YHol[i]=0
+	zHol[i]=0
+
+	i=i+1;
+	IDHol[i]=Tip3
+	XHol[i]=Lengh/2
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1
+	IDHol[i]=Tip1
+	XHol[i]=Dx
+	YHol[i]=0
+	zHol[i]=0
+
+	i=i+1
+	IDHol[i]=Tip2
+	XHol[i]=Dx
+	YHol[i]=0
+	zHol[i]=0
+	
+	NumComm=2;
+	NumFixMac=i
+	exit
+}
+
+i=1;
+IDHol[i]=Tip1
+XHol[i]=Lengh-Dx
+YHol[i]=0
+zHol[i]=0
+
+i=i+1;
+IDHol[i]=Tip2
+XHol[i]=Lengh-Dx
+YHol[i]=0
+zHol[i]=0
+
+i=i+1;
+IDHol[i]=Tip3
+XHol[i]=Lengh-Dx2
+YHol[i]=0
+zHol[i]=0
+	
+i=i+1
+IDHol[i]=Tip1
+XHol[i]=Dx
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip2
+XHol[i]=Dx
+YHol[i]=0
+zHol[i]=0
+
+i=i+1;
+IDHol[i]=Tip3
+XHol[i]=Dx2
+YHol[i]=0
+zHol[i]=0
+
+NumComm=2;
+
+if Lengh>612&&Lengh<=804
+{
+	i=i+1;
+	IDHol[i]=Tip3
+	XHol[i]=Lengh/2-Dx3
+	YHol[i]=0
+	zHol[i]=0
+
+	i=i+1
+	IDHol[i]=Tip1
+	XHol[i]=Lengh/2
+	YHol[i]=0
+	zHol[i]=0
+
+	i=i+1
+	IDHol[i]=Tip2
+	XHol[i]=Lengh/2
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1;
+	IDHol[i]=Tip3
+	XHol[i]=Lengh/2+Dx3
+	YHol[i]=0
+	zHol[i]=0
+	
+	NumFixMac=i;
+	NumComm=NumComm+1;
+	exit
+}
+
+if Lengh>804&&Lengh<=1476
+{
+	i=i+1;
+	IDHol[i]=Tip3
+	XHol[i]=Lengh/3-Dx3
+	YHol[i]=0
+	zHol[i]=0
+
+	i=i+1
+	IDHol[i]=Tip1
+	XHol[i]=Lengh/3
+	YHol[i]=0
+	zHol[i]=0
+
+	i=i+1
+	IDHol[i]=Tip2
+	XHol[i]=Lengh/3
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1
+	IDHol[i]=Tip1
+	XHol[i]=2*Lengh/3
+	YHol[i]=0
+	zHol[i]=0
+
+	i=i+1
+	IDHol[i]=Tip2
+	XHol[i]=2*Lengh/3
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1;
+	IDHol[i]=Tip3
+	XHol[i]=2*Lengh/3+Dx3
+	YHol[i]=0
+	zHol[i]=0
+	
+	NumFixMac=i;
+	NumComm=NumComm+2;
+	exit
+}
+
+if Lengh>1476
+{
+	i=i+1;
+	IDHol[i]=Tip3
+	XHol[i]=Lengh/4-Dx3
+	YHol[i]=0
+	zHol[i]=0
+
+	i=i+1
+	IDHol[i]=Tip1
+	XHol[i]=Lengh/4
+	YHol[i]=0
+	zHol[i]=0
+
+	i=i+1
+	IDHol[i]=Tip2
+	XHol[i]=Lengh/4
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1;
+	IDHol[i]=Tip3
+	XHol[i]=Lengh/2-Dx3
+	YHol[i]=0
+	zHol[i]=0
+
+	i=i+1
+	IDHol[i]=Tip1
+	XHol[i]=Lengh/2
+	YHol[i]=0
+	zHol[i]=0
+
+	i=i+1
+	IDHol[i]=Tip2
+	XHol[i]=Lengh/2
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1;
+	IDHol[i]=Tip3
+	XHol[i]=Lengh/2+Dx3
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1
+	IDHol[i]=Tip1
+	XHol[i]=3*Lengh/4
+	YHol[i]=0
+	zHol[i]=0
+
+	i=i+1
+	IDHol[i]=Tip2
+	XHol[i]=3*Lengh/4
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1;
+	IDHol[i]=Tip3
+	XHol[i]=3*Lengh/4+Dx3
+	YHol[i]=0
+	zHol[i]=0
+	
+	NumFixMac=i;
+	NumComm=NumComm+3;
+	exit
+}
+// // "Серединные" крепежи
+// if round(Lengh,0.1)>LenPan {
+	// // Расчет количества и расстояний
+	// Dist=(Lengh-Dx*2)/(FixNum-1); // Расстояние между крепежами расчетное
+	// FixNum=FixNum*2
+
+	// cycle:
+	// if i<FixNum
+	// {
+		// i=i+1
+		// IDHol[i]=Tip1
+		// XHol[i]=XHol[i-1]+Dist
+		// YHol[i]=0
+		// zHol[i]=0
+
+		// i=i+1
+		// IDHol[i]=Tip2
+		// XHol[i]=XHol[i-2]+Dist
+		// YHol[i]=0
+		// zHol[i]=0
+
+		// goto cycle;
+	// }
+// }
+NumFixMac=i;
+exit;

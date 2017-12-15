@@ -1,0 +1,56 @@
+//-- Прототип "Выдвижное вешало"
+global ProtoPath;
+//------------------------------------------------------------------------
+typeF=DbVar("typeF",0);									//-- Тип вешала
+w=DbVar("w",600);												//-- Ширина
+//-- Свойства корзины
+typeKor=priceinfo(typeF,"NomID1",0,2);	//-- Тип вешала
+HeightF=priceinfo(typeKor,"Height",0);		//-- Высота
+DeptF=priceinfo(typeKor,"Dept",0);		//-- Ширина
+
+FurnType=priceinfo(typeF,"FurnType","000000",2);		
+position=getprotoid("Shkaf","Выдвижная корзина/полка","ProtoMacro","MotFlasP");  //-- ID прототипа
+Namescr="ProtoParams";
+ElemName=priceinfo(typeF,"Name","Выдвижное вешало",2);
+HoldName=" ";
+KarkasNumb=getcarcnumb();    //-- Текущий номер каркаса
+//----------------------------------------------------------------------
+NULLOUT=pushinst(1);
+macro ProtoPath+"SetEnam.mac" " ";
+sy=sysvar(60);
+macro ProtoPath+"MotHang.mac";	//-- Макрос создания
+sy=sysvar(60)-sy;
+if (sy==0)
+{
+  goto final;
+}
+objident last sy  obj;
+Namescr="ProtoParams";
+//-- Присваиваем атрибуты
+attrobj attach "Posit" done Last 1 position;
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done last 1 done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done Last 1 KarkasNumb;
+}
+if (isassign("HoldName",0))
+{
+  attrobj copy record "HoldName" done Last 1 done;
+}
+if (isassign("UnitName",0))
+{
+  attrobj copy record "UnitName" done Last 1 done;
+}
+attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 w DeptF HeightF; //-- Размеры 
+  
+attrobj attach "FurnType" done last 1 FurnType;
+attrobj attach "GoodsID" done last 1 typeF; 
+attrobj attach "Assembly" done last 1 1;
+attrobj attach "ElemName" done last 1 ElemName;
+attrobj copy record Namescr done last 1 done;
+final:
+NULLOUT=popinst(1);
+exit;

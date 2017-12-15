@@ -1,0 +1,19 @@
+//-- Устновка параметров ручек
+global
+HandleType, //-- Тип ручки
+HandleX,    //-- Сдвиг ручки по x
+HandleZ,    //-- Сдвиг ручки по z
+HandleA;    //-- Поворот ручки
+
+getpar P1,P2, P3,P4;
+HandleType=P1;
+HandleX=P2;
+HandleZ=P3;
+HandleA=P4;
+
+nullout=setvarinst(1,"HandleType",HandleType); //-- Тип ручки
+nullout=setvarinst(1,"HandleX",HandleX); //-- Сдвиг ручки по x
+nullout=setvarinst(1,"HandleZ",HandleZ); //-- Сдвиг ручки по z
+nullout=setvarinst(1,"HandleA",HandleA); //-- Поворот ручки
+
+exit;

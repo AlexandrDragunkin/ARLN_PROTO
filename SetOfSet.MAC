@@ -1,0 +1,16 @@
+//-- Установить текущие параметры наложения для накладных стенок
+//-- Устарел. Лучгше использовать SetCuts
+//-- Входные параметры:
+//-- CutB, CutC, CutD, CutE - подрезы по сторонам B, C, D, E соответственно.
+//-- Выходные параметры:
+//-- g_PanCuts[4] - глобальный массив со значениями подрезов
+
+global g_PanCuts;
+defarr g_PanCuts[4];
+getpar CutB,CutC,CutD,CutE;
+g_PanCuts[1]=-CutB;
+g_PanCuts[2]=-CutC;
+g_PanCuts[3]=-CutD;
+g_PanCuts[4]=-CutE;
+NULLOUT=setarrinst(1,"g_PanCuts",g_PanCuts);
+exit;

@@ -1,0 +1,84 @@
+//ApSec.mac
+//
+//===============================================
+//===========(c)ГеоС Н.Новгород 2008 г===========
+//===============================================
+//===============================================
+// (c) Драгункин Александр г.Дубна 2008 г.
+//===============================================
+//Проверка возможности интерполяции дугами группы контуров или единичного контура
+
+getpar pnt ;
+
+defarr obj[200] xm1[6] ;
+
+
+If (!IsAttrdef("Navs"))
+ { Attribute Create "Navs" "На всякий случай" Real 5 0 ; }
+ attrobj attach "Navs"  done pnt 1  ;
+           pnt1=pnt ;
+           met4:
+
+           if (GetObjType(pnt)==5)  {
+
+           Test1=TestArcsPath(pnt1,0.5);
+              if test1==1 {
+                 //#l1 Line 0 0 0 1 0 0 ;
+                 attrobj attach "Navs"  done pnt 1  ;
+                 attrobj copy  pnt all record ;
+                 n_elem=getcntobjga(pnt);
+                 //macro GetFilePath(sysvar(7))+"interp8.mac" 1 pnt ;
+                 //macro GetFilePath(sysvar(7))+"interp6.mac"  pnt ;
+                 arcs_path pnt  ;
+                 objident last 1 pnt ;
+                 attrobj copy record  all pnt ;
+                 attrobj delete pnt "Navs"  done    ;
+                 //delete l1 ;
+              }
+            }
+            else { //Кусок с вырезом
+
+                  //#l1 Line 0 0 0 1 0 0 ;
+                  attrobj copy  pnt all record ;
+                  bylo=SysVar(60) ;
+                  explode pnt done ;
+                  stalo=SysVar(60)-bylo+1 ;
+                  select last stalo ;
+                  NselT=SysVar(61) ;
+                  m=0
+                  met6:
+                  if m<NselT {
+                     m=m+1
+                     obj[m]=getselnum(m);
+                     goto met6 ;
+                  }
+                  k=0
+                  met5:
+                  if k<NselT {
+                     k=k+1
+                     pnt=obj[k];
+                     IF GETOBJTYPE(PNT)!=5 { GOTO MET5 ; }
+                     Test2=TestArcsPath(pnt,0.5);
+                     if test2==1 {
+                     //macro GetFilePath(sysvar(7))+"interp8.mac" 1 pnt ;
+                    //macro GetFilePath(sysvar(7))+"interp6.mac"  pnt ;
+                     arcs_path pnt  ;
+                     //NULLOUT=ReSnap();
+                     objident last 1 pnt ;
+                     }
+                     attrobj copy record all pnt ;
+                     attrobj delete pnt  "Navs"  done    ;
+                     //visible P_st0 ll1 ;
+
+                     //setucs lcs ll1 ;
+
+                     =Objgab3(pnt,xm1);
+                     obj[k]=pnt
+                     goto met5 ;
+                  }
+                  group last NselT done ;
+                  //delete l1 done ;
+             }
+attribute delete  "Navs" done ;
+exit ;
+

@@ -1,0 +1,29 @@
+// Ниша
+
+defarr BaseGab[5];
+NULLOUT=getarrinst(2,"BaseGab",BaseGab);          //-- Габариты каркаса
+
+If (!IsAttrdef("MoveDoor"))
+ { Attribute Create "MoveDoor" "Сдвиг двери" Real 10 3 ; }
+
+object_2=sysvar(60);
+
+i=0
+lab_1:
+i=i+1
+If (i<=object_2) {  // Двигаем двери
+  point=getobjnum(i);
+  NSys=getattr(point,"NSysDoor",-1);
+  If (NSys!=-1) {
+    visible point done;
+    SdOld=getattr(point,"MoveDoor",0);
+    move point done -SdOld 0 0 nocopy ;
+    Sd=0;
+    Attrobj Attach "MoveDoor" Done  point Sd;
+  }
+  goto lab_1
+}
+
+
+exit;
+

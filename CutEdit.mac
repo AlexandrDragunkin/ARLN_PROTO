@@ -1,0 +1,172 @@
+//-- Изменить подрез панели
+selbyattr "Posit==10" child all done;
+karkas_kol=sysvar(61);
+karkas_num=GetCarcNumb();
+if (karkas_kol==0)
+{
+ putmsg("Сначала надо создать мебельный каркас",0);
+ exit;
+}
+if (karkas_kol==1)
+{
+ #karkas MBCarcase set yes;
+}
+if (karkas_kol>1&&karkas_num==0)
+{
+ #karkas MBCarcase set no yes :
+} 
+
+
+global ProtoPath;
+global pnt, iPNT;
+defarr arr[10];
+
+Podr=0;
+#Side
+alternative "Изменить подрез"
+ msgbox picture 2 beep 2 text "Выберите сторону панели:" done "B" "C" "D" "E" "Отказ" done
+if (Side==5)
+{
+  exit;;
+}
+#ok_flag
+setvar
+"Изменить подрез панели"
+""
+left
+"Определите параметры замены"
+done
+
+str listonly
+	  current
+		"Новый"
+		"Дополнительный"
+	done
+				"Тип подреза:"    T_pod
+real default Podr	 "Величина подреза:"      	Podr
+str 	listonly
+	  current "По указанию"
+		"Все панели"
+		"Все полки"
+		"Все стойки"
+		"Все врезные стенки"
+		"Все накладные стенки"
+done
+"Способ замены:"    S_zam
+done;
+if (ok_flag==0)
+{
+  exit;
+}
+macro Protopath+"ChgSel.mac" S_zam ;
+if (S_zam=="По указанию")
+{
+Loop:
+  PodrA=Podr;
+  a=fltrparamobj(1,61);  //-- Фильтр по мебельной панели
+  switch autosingle on;
+  onerror final;
+  select partly : ;
+  switch autosingle off;
+  offerror;
+  a=fltrparamobj(0);     //-- Выключили фильтр по мебельной панели
+  if (sysvar(61)==0)
+  {
+    goto final;
+  }
+  p1=getselnum(1);
+  offerror;
+  NULLOUT=InitArray(arr,0);
+  arr[1]=p1;
+  GetPan6Par(1,arr);
+  GetPan6Par(6,arr);
+  if (Side==1)
+  {
+    if (T_pod!="Новый")
+    {
+      PodrA=Podr+arr[4];
+    }
+    MBPanel item p1 21 PodrA 0;
+  }
+  if (Side==2)
+  {
+    if (T_pod!="Новый")
+    {
+      PodrA=Podr+arr[2];
+    }
+    MBPanel item p1 19 PodrA 0 ;
+  }
+  if (Side==3)
+  {
+    if (T_pod!="Новый")
+    {
+      PodrA=Podr+arr[1];
+    }
+    MBPanel item p1 18 PodrA 0;
+  }
+  if (Side==4)
+  {
+    if (T_pod!="Новый")
+    {
+      PodrA=Podr+arr[3];
+    }
+    MBPanel item p1 20 PodrA 0 ;
+  }
+  goto Loop;
+}
+else
+{
+  i=0;
+LoopAll:
+  PodrA=Podr;
+  if (i<iPNT)
+  {
+    i=i+1;
+    p1=pnt[i];
+    err=1;
+    NULLOUT=InitArray(arr,0);
+    arr[1]=p1;
+    err=GetPan6Par(1,arr);
+    if (err==1)
+    {
+      GetPan6Par(6,arr);
+      if (Side==1)
+      {
+        if (T_pod!="Новый")
+        {
+          PodrA=Podr+arr[4];
+        }
+       MBPanel item p1 21 PodrA 0 ;
+      }
+      if (Side==2)
+      {
+        if (T_pod!="Новый")
+        {
+          PodrA=Podr+arr[2];
+        }
+        MBPanel item p1 19 PodrA 0;
+      }
+      if (Side==3)
+      {
+        if (T_pod!="Новый")
+        {
+          PodrA=Podr+arr[1];
+        }
+        MBPanel item p1 18 PodrA 0 ;
+      }
+      if (Side==4)
+      {
+        if (T_pod!="Новый")
+        {
+          PodrA=Podr+arr[3];
+        }
+        MBPanel item p1 20 PodrA 0 ;
+      }
+    }
+    goto LoopAll;
+  }
+}
+final:
+a=fltrparamobj(0);     //-- Выключили фильтр по мебельной панели
+switch autosingle off;
+exit;

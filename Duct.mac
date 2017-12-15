@@ -1,0 +1,222 @@
+//-- Создание короба под вырез
+global ProtoPath;
+defarr xm[6],arr[10],cm[6],FUT[3];
+defarr BaseGab[5];
+
+selbyattr "Posit==10" child all done;
+karkas_kol=sysvar(61);
+karkas_num=GetCarcNumb();
+if (karkas_kol==0)
+{
+  putmsg("Сначала надо создать мебельный каркас",0);
+  exit;
+}
+if (karkas_kol==1)
+{
+  #karkas MBCarcase set yes;
+}
+if (karkas_kol>1&&karkas_num==0)
+{
+  #karkas MBCarcase set no yes :
+}
+
+NULLOUT=getarrinst(2,"BaseGab",BaseGab);        //-- Габариты каркаса
+NULLOUT=getvarinst(2,"PrMater",PrMater,0);      //-- Запрос материала корпуса
+NULLOUT=getvarinst(2,"BPMater",BPMater,0);      //-- Запрос материала задней стенки
+NULLOUT=getvarinst(2,"Typ_Kro",Typ_Kro,0);      //-- Тип лицевой кромки
+NULLOUT=getvarinst(2,"DfFixSt",DfFixSt,0);      //-- Запрос крепежа стоек
+NULLOUT=getvarinst(2,"FixPBack",FixPBack,0);    //-- Читаем умолчание на крепеж накландных задних стенок
+
+h_dsp=PriceInfo(PrMater,"Thickness",DbVar("HDSP",16))   //-- Толщина панели
+h_dvp=PriceInfo(BPMater,"Thickness",DbVar("HDVP",4))    //-- Толщина задней стенки
+FUT[1]="0401";
+FUT[2]="80";
+FUT[3]="0104";
+
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+#ok_flag
+setvar
+"Короб под вырез"
+PicturesPath+"Korob_Par.wmf"
+left
+"Введите параметры короба"
+done
+real default 100 "Ширина" wid
+real default 100 "Глубина" dep
+str listonly
+	  current	"Накладная"
+	          "Утопленная"
+	          "Врезная"
+	done
+	"Тип стенки"                                                    BackType
+real default 10 "Отступ врезной задней стенки" DepthBp
+real default h_dsp/2 "Врезка врезной задней стенки" InCutBp
+done;
+
+if (ok_flag==0)
+{
+  exit;
+}
+onerror final;
+NULLOUT=getsnap();
+
+select partly attribute "Posit==10&&KarkasNumb=="+str(getcarcnumb()) done;
+if (sysvar(61)==0)
+{
+  putmsg("Отсутствует текущий каркас",0)
+  exit;
+}
+carc=getselnum(1);
+setucs lcs partly carc;
+#obj rectangle 3points 0,0,0 wid,0,0 wid,dep,0;
+
+move obj done ortho : nocopy ;
+NULLOUT=objgab3(obj,xm);
+ConfDuct=4; //-- По умолчанию, вырез внутри изделия
+if (xm[1]<=h_dsp)
+{
+  xm[1]=0;
+  ConfDuct=2; //-- Вырез справа
+}
+if (xm[1]+wid>BaseGab[1])
+{
+  xm[1]=BaseGab[1]-wid;
+  ConfDuct=3; //-- Вырез слева
+}
+shift=xm[1];
+if (BackType=="Накладная")
+{
+  TypeBp=1;
+}
+if (BackType=="Утопленная")
+{
+  TypeBp=0;
+}
+if (BackType=="Врезная")
+{
+  TypeBp=3;
+}
+
+CorpsId=getprotoid("Shkaf","Вырез под короб","ProtoMacro","DuctP");  //-- ID прототипа выреза под короб
+
+protoobj create "Shkaf.ptl" CorpsID //-- 259-й прототип "Вырез под короб"
+   "WidthDuct"    wid           //-- Ширина выреза
+   "DepthDuct"    dep           //-- Глубина выреза
+   "HeightDuct"   BaseGab[3]    //-- Высота выреза
+   "MaterDuct"    PrMater       //-- Материал панелей
+   "FixDuct"      DfFixSt       //-- Крепеж панелей выреза
+   "TypeBp"       TypeBp        //-- Тип задней стенки
+   "FixBp"        FixPBack      //-- Крепеж задней стенки
+   "DepthBp"      DepthBp       //-- Сдвиг врезной задней стенки
+   "InCutBp"      InCutBp       //-- Глубина врезки
+   "MatBp"        BPMater       //-- Материал задней стенки
+   "ConfDuct"     ConfDuct      //-- Конфигурация выреза
+done
+shift 0 0;
+//-- Теперь ищем пересекающиеся панели
+xm[1]=xm[1]-h_dsp;
+xm[2]=0;
+xm[3]=0;
+xm[4]=wid+2*h_dsp+xm[1];
+xm[5]=dep+h_dsp;
+xm[6]=BaseGab[3];
+delete obj done;
+#obj rectangle 3points xm[1]+h_dsp,0,0 wid+xm[1]+h_dsp,0,0 wid+xm[1]+h_dsp,dep,0;
+//-- Смотрим, сколько в каркасе панелей
+select attribute "Left(FurnType,2)==\"01\"&&KarkasNumb=="+str(getcarcnumb()) done;
+object_2=sysvar(61);
+if (object_2==0)  //-- Если нет ни одной панели
+{
+  goto final;
+}
+defarr panels[object_2];
+macro ProtoPath+"Arrobj.mac" object_2, panels;
+
+i=0;
+loop:
+i=i+1;
+pan=panels[i];
+NULLOUT=mebelgab(pan,cm,FUT);
+//-- Осуществляем габаритный тест
+if (xm[1]>cm[4]||cm[1]>xm[4])
+{
+  goto next;
+}
+if (xm[2]>cm[5]||cm[2]>xm[5])
+{
+  goto next;
+}
+if (xm[3]>cm[6]||cm[3]>xm[6])
+{
+  goto next;
+}
+ft=getattr(pan,"FurnType","");
+if (left(ft,4)=="0101"||left(ft,4)=="0110") //-- Полка
+{
+  mbpanel incut incut pan obj;
+}
+if (left(ft,4)=="0102") //-- Стойка
+{
+  arr[1]=pan;
+  NULLOUT=getpan6par(1,arr);
+  err=getpan6par(6,arr); //-- Подрезка сторон
+  arr[1]=arr[1]+xm[5]-iif(ConfDuct==4,0,h_dsp);   //-- Сnорона D
+  err=SetPan6Par(6,arr); //-- Подрезка сторон
+  mbpanel execute pan;
+}
+if (left(ft,4)=="0103"||left(ft,4)=="0104") //-- Стенка
+{
+  objident pan pan1;
+  cf=ConfDuct;
+  ConfDuct=4; //-- По умолчанию, вырез внутри изделия
+  if (xm[1]<=cm[1])
+  {
+    ConfDuct=2; //-- Вырез справа
+  }
+  if (xm[1]+wid>cm[4])
+  {
+    ConfDuct=3; //-- Вырез слева
+  }
+  if (ConfDuct==4)  //-- Вырез внутри корпуса
+  {
+    move pan done 0,0,0 copy 1;
+    objident last 1 pan1;
+  }
+  if (ConfDuct==2||ConfDuct==4)  //-- Вырез примыкает справа или внутри корпуса
+  {
+    arr[1]=pan;
+    NULLOUT=getpan6par(1,arr);
+    err=getpan6par(11,arr); //-- Размеры панели
+    if (arr[1]==2)          //-- Если панель опрямоугольная (с другими не работаем)
+    {
+      arr[3]=cm[4]-xm[4];     //-- Сnорона D
+      err=SetPan6Par(11,arr); //-- Размеры панели
+    }
+    mbpanel execute pan;
+    move last 1 done 2points 0,0,0 -(cm[1]-xm[4]),0,0 nocopy;
+  }
+  if (ConfDuct==3||ConfDuct==4)  //-- Вырез примыкает слева или внутри корпуса
+  {
+    arr[1]=pan1;
+    NULLOUT=getpan6par(1,arr);
+    err=getpan6par(11,arr); //-- Размеры панели
+    if (arr[1]==2)          //-- Если панель опрямоугольная (с другими не работаем)
+    {
+      arr[3]=xm[1]-cm[1];     //-- Сnорона D
+      err=SetPan6Par(11,arr); //-- Размеры панели
+    }
+    mbpanel execute pan1;
+  }
+  ConfDuct=cf;
+}
+next:
+if (i<object_2)
+{
+  goto loop;
+}
+//-- Здесь нужно пробежать по панелям каркаса и добавить вырез
+final:
+offerror;
+NULLOUT=resnap();
+delete obj done;
+exit;

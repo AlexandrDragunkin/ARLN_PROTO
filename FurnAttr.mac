@@ -1,0 +1,9 @@
+//-- Присвоение мебельных атрибутов библиотечному объекту
+getpar
+ObjTyp    //-- Тип объекта
+PlcTyp    //-- Тип размещение
+BibNum    //-- Номер в библиотеке (ID)
+FurnType; //-- Тип мебельного элемента
+attrobj attach "Objtype" "PlaceType" "Posit" "FurnType" done
+  last 1 ObjTyp PlcTyp BibNum FurnType;
+exit;

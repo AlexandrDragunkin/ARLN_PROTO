@@ -1,0 +1,370 @@
+// Рисуем номера
+
+defarr xm[6], dObj[1000] NumTar[1000];
+defarr w1[3], w2[3] arr1[3], arr2[3], poskrX[100], poskrY[100], poskrZ[100] aDate[8];
+defarr panels[500];
+keyerr="";
+getpar NameAtrPos ;
+gosub sDimLayer;
+NULLOUT=getsnap();
+err=InitArray(NumTar,99999);
+nullout=infinitepb(1," ");
+If (!IsAttrdef("NoHide"))
+{ 
+	Attribute Create "NoHide" "Не гасить" Real 5 0 ; 
+}
+If (!IsAttrdef("TempSel"))
+{
+	Attribute Create "TempSel" "Временный выбор" Real 5 0 ;
+}
+nullout=attrdelete("TempSel");
+setucs save "@@@@GEOSTEMP@@@@@";
+SavRm=SysVar(58); // RendMode
+SavVd=SysVar(51); // Номер текущего вида
+SavZVd=SysVar(52); // Развернут ли
+Rendmode all ,0;
+// vport 1;
+// setucs vcs ;
+vSec=sysarr(81,aDate);
+nameView="GEOSTEMP"+str(vSec)
+view save nameView ;
+onerror metend;
+vimage off;
+view user cartesian none ucs 0,1,0 done
+
+object_2=sysvar(60);
+
+i=0
+	If (!IsAttrdef("NumType"))
+	{ Attribute Create "NumType" "NumType" Real 5 0 ; }
+
+//  Удаляем старые номера
+j=0;
+
+lab_0:
+i=i+1
+If (i<=object_2)
+{
+  OBJ1=getobjnum(i);
+  If (IsAttrdef("NumType")) {
+
+    n=getattr(OBJ1,"NumType",-1);
+    if (n==1) {
+	j=j+1
+	dObj[j]=OBJ1 ;
+    }
+  }
+  goto lab_0;
+}
+nullout=infinitepb(2," ");
+i=0;
+Loop:
+
+i=i+1
+if (i<=j) {
+  if !GetObjVisual(dObj[i])
+  {
+     visible dObj[i];
+  }
+  delete dObj[i];
+goto Loop;
+}
+nullout=infinitepb(2," ");
+// Проставляем новые
+gosub sRcil;
+selbyattr "(Posit==11||Posit==12||Posit==13||Posit==14)" partly all done;
+object_2=sysvar(61);
+i=0
+i1=0
+lab_111:
+i=i+1
+If (i<=object_2)&&sysvar(61)>0
+{
+	OBJ1=getselnum(i);
+	name=getattr(OBJ1,NameAtrPos,-1);  // 2010-02-17
+	KarkasN=getattr(OBJ1,"KarkasNumb",-1);
+	PriceID=getattr(OBJ1,"PriceID",0);
+	i1=i1+1
+	panels[i1]=getselnum(i);
+	attrobj attach "TempSel" done partly panels[i1] i1 done;
+	goto lab_111;
+}
+nullout=infinitepb(2," ");
+currUP=0; // Unitpos текущего родителя
+i=0;
+dopsim="";
+ipos=0;
+lab_1:
+i=i+1
+If (i<=i1) {
+   //OBJ1=panels[i]
+	selbyattr "TempSel=="+str(i) partly all done;
+	if sysvar(61)==0 { goto lab_1; }
+	OBJ1=getselnum(1)
+	If (IsAttrdef(NameAtrPos))
+	{
+		name=getattr(OBJ1,NameAtrPos,-1);  // 2010-02-17
+		PriceID=getattr(OBJ1,"PriceID",0);
+		Vector=getattr(OBJ1,"PanDir",0);
+		Psim=iif(Vector==2,"=","");
+		UnicID=getattr(OBJ1,"UnitPos",0);
+        Holder=getattr(OBJ1,"TopParentPos",0);
+		KarkasN=getattr(OBJ1,"KarkasNumb",-1);
+		tErr=GetObjHold(OBJ1,tHolder);
+		pz=600
+		if KarkasN>0 {
+			keyerr="Расстановка номеров панелей по лицевому торцу доступна только(!!!) для разобранного каркаса.;";
+			selbyattr "KarkasNumb=="+str(KarkasN) partly all done ;	
+			nSelK=sysvar(61);
+
+			keySelk=0;
+			iselk=0;
+			labselk:
+			if iselk<nSelK {
+				iselk=iselk+1;
+				
+				pnSelk=getselnum(iselk);
+				vPosit=getattr(pnSelk,"Posit",0);
+
+				if vPosit!=10 {
+					goto labselk;
+				}
+				else {
+					select partly pnSelk done;
+					keySelk=1;
+				}
+			}
+
+			if keySelk==0 {
+				selbyattr "KarkasNumb=="+str(KarkasN)+"&&FurnType==\"100000\"" wholly all done ;	
+			}
+			
+			gosub sGetPz;			
+		}
+		
+	   if currUP!=Holder
+	   {
+			selbyattr "UnitPos=="+str(holder) partly all done ;
+			currUP=holder
+			if sysvar(61)==0
+			{
+				goto lab_1;
+			}
+			gosub sGetPz;
+		}	
+			
+	   
+
+		nullout=infinitepb(2," ");
+
+       name2=getattr(OBJ1,"Posit",-1);
+
+       vzkar=pz;
+	   if tErr 
+		{ 
+			#lTemp line 0 0 0 1 0 0;
+			add partly tHolder lTemp ; 
+			
+			extract partly tHolder OBJ1 ; 
+		}
+       setucs lcs OBJ1 ;
+       NULLOUT=objgab3(OBJ1,xm);
+	   if tErr 
+		{ 
+			add partly tHolder OBJ1 ; 
+			delete partly lTemp done;
+		}
+       if (name2==11)
+       {
+          ncol=9
+          posx=(xm[4]+xm[1])/2;
+		  posy=(xm[5]+xm[2])/2;
+		  posz=xm[3];
+		  posz=xm[6];
+		  posy=xm[2];
+		  posz=(xm[6]+xm[3])/2;
+		  strg=Psim+Str(name)+dopsim;
+		  posy=xm[5];
+       }
+       if (name2==12)
+       {
+        Ncol=12
+	posx=xm[1];
+	posy=(xm[5]+xm[2])/2;
+	posz=(xm[6]+xm[3])/2;
+	posx=xm[4];
+	posx=(xm[4]+xm[1])/2;
+	posy=xm[2];
+        strg=Psim+Str(name)+dopsim;;
+	posy=xm[5];
+       }
+       if (name2==13||name2==14||name2==33)
+       {
+        Ncol=4
+        posx=xm[1];
+	posy=xm[2];
+	posz=xm[3];
+	posz=xm[6];
+	posx=(xm[4]+xm[1])/2;;
+	posz=(xm[6]+xm[3])/2;
+	strg=Psim+Str(name)+dopsim;;
+	posy=xm[5];
+       }
+       if (name2!=13||name2!=14||name2!=33||name2!=11||name2!=12)
+       {
+        posx=xm[1];
+	posy=xm[2];
+	posz=xm[3];
+	posz=xm[6];
+	posx=(xm[4]+xm[1])/2;;
+	posz=(xm[6]+xm[3])/2;
+	strg=Psim+Str(name)+dopsim;;
+	posy=(xm[5]+xm[2])/2;;
+       }
+       ipos=ipos+1;
+       gosub PutText;
+       chprop color last 1 done ncol;
+       chprop lwidth last 1 done 0.1;
+  }
+  nullout=infinitepb(2," ");
+  goto lab_1;
+}
+//setucs gcs;
+
+
+metend:
+offerror;
+vimage on;
+regen all;
+vport SavVd;
+Rendmode,,SavRm;
+NULLOUT=resnap();
+view restore nameView ;
+setucs restore "@@@@GEOSTEMP@@@@@";
+
+setucs delete "@@@@GEOSTEMP@@@@@" ;
+if SavZVd
+{
+   vport zoom ,,;
+}
+  nullout=infinitepb(3," ");
+  nullout=attrdelete("TempSel");
+exit;
+//------------------------------------------------------------------------
+//-- Подпрограмма помещает строку в точку с указанными координатами на текущем виде
+//-- Входные параметры:
+//-- strg - строка текста
+//-- posx, posy, posz - координаты в ПСК точки, куда нужно поместить строку
+PutText:
+NULLOUT=getsnap();
+vx=0;
+vy=0;
+vz=0;
+ptranscs(0,1,posx,posy,posz,vx,vy,vz);
+setucs vcs;
+#txNum text strg done vx,vy,vzkar vx+1,vy,vzkar;
+attrobj attach "NoHide" done txNum  1;
+    NULLOUT=objgab3(txNum,xm);
+    dx=(xm[4]-xm[1]);
+    dy=(xm[5]-xm[2]) ;
+    dz=(xm[6]-xm[3]) ;
+    dBox=(xm[5]-xm[2])*0.12
+    Rcyl=sqrt(dx/2*dx/2+dy/2*dy/2)*1.05;
+    Rcyl=iif((Rcyl-gRcyl)>=0,Rcyl,gRcyl);
+    #clNum cyl  xm[1]+dx/2 xm[2]+dy/2 xm[3]+dz/2 xm[1]+dx/2 xm[2]+dy/2 xm[3]+dz/2-0.01 Rcyl ;
+    //#clNum box  xm[1]-dBox xm[2]-dBox xm[3]  xm[4]+dBox xm[5]+dBox xm[6]-0.01  ;
+    #grNum group clNum txNum done;
+    chprop lwidth  last 1 done  0.35;
+    Xmov=0;
+    Ymov=1;
+
+NumTar[ipos]=grNum
+if ipos==1
+{
+
+}
+else
+{
+ i_s1=0;
+ Lab_s1:
+ if i_s1<(ipos-1)
+ {
+    i_s1=i_s1+1;
+    //#ds1 dist  object NumTar[i_s1] TxNum ;
+    ds1=DistObjToObj(NumTar[i_s1],grNum,arr1,arr2);
+    NULLOUT=objgab3(grNum,xm);
+    dx=(xm[4]-xm[1]);
+    dy=(xm[5]-xm[2]) ;
+    dz=(xm[6]-xm[3]) ;
+    if (ds1<0)
+    {
+       vy=vy-dy*1.45*ymov;
+       vx=vx+dx*1.45*xmov;
+       goto nextnum;
+                    delete grNum done ;
+                    #txNum text strg done vx,vy,vzkar vx+1,vy,vzkar;
+					attrobj attach "NoHide" done txNum  1;
+                    NULLOUT=objgab3(txNum,xm);
+                    dx=(xm[4]-xm[1]);
+                    dy=(xm[5]-xm[2]) ;
+                    dz=(xm[6]-xm[3]) ;
+                    dBox=(xm[5]-xm[2])*0.12
+                    Rcyl=sqrt(dx/2*dx/2+dy/2*dy/2)*1.15;
+                    #clNum cyl  xm[1]+dx/2 xm[2]+dy/2 xm[3]+dz/2 xm[1]+dx/2 xm[2]+dy/2 xm[3]+dz/2-0.01 Rcyl ;
+                    //#clNum box  xm[1]-dBox xm[2]-dBox xm[3]  xm[4]+dBox xm[5]+dBox xm[6]-0.01  ;
+                    #grNum group clNum txNum done;
+                    chprop lwidth  last 1 done  0.35;
+                    NumTar[i]=grNum
+            nextnum:
+            move  NumTar[ipos] done dx*1.15*xmov  -dy*1.15*ymov 0 nocopy ;
+            Xmov=1;
+            Ymov=0;
+       i_s1=0
+
+    }
+    goto Lab_s1;
+	
+ }
+}
+	if (name2==12) { move txNum done 0  dy/3 0 nocopy;  }
+	if (name2==11) { move txNum done -dx/2 0  0 nocopy; }
+if KarkasN!=-1 { attrobj attach  "Karkasnumb" done last 1 KarkasN; }
+Attrobj Attach "NumType" Done  last 1 1;
+Attrobj Attach  "AutoPlace"  Done Last 1 1;
+Attrobj Attach  "VidDimPlace"  Done Last 1 CurrVi;
+NULLOUT=resnap();
+return;
+//================
+sRcil:
+#txNum text str(88) done 0,0,0 1,0,0;
+    NULLOUT=objgab3(txNum,xm);
+    dx=(xm[4]-xm[1]);
+    dy=(xm[5]-xm[2]) ;
+    dz=(xm[6]-xm[3]) ;
+    dBox=(xm[5]-xm[2])*0.12
+    gRcyl=sqrt(dx/2*dx/2+dy/2*dy/2)*1.05;
+    delete txNum done;
+return;
+sDimLayer:
+	 If (!IsAttrdef("AutoPlace"))
+	 { Attribute Create "AutoPlace" "Номер вида на котором определен размер" Real 5 0 ; }
+	  If (!IsAttrdef("VidDimPlace"))
+	 { Attribute Create "VidDimPlace" "Номер вида на котором определен размер" Real 5 0 ; }
+	 CurrVi=SysVar(51)   ;
+	 CV="VidDim_"+Str(CurrVi) ;
+	 layers new "VidDim_1" ;
+	 layers new "VidDim_2" ;
+	 layers new "VidDim_3" ;
+	 layers new "VidDim_4" ;
+ return;
+ //================
+sGetPz: 
+tHol=Getselnum(1);
+			setucs lcs tHol;
+			NULLOUT=objgab3(tHol,xm);
+			
+			pX=xm[4];
+			pY=xm[5]+5;
+			pZ=xm[6]+1;
+			ptranscs(0,1,px,py,pz,px,py,pz);
+return;

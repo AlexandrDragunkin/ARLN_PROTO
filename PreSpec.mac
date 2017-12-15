@@ -1,0 +1,113 @@
+//-- Подготовка к созданию отчетов
+global ProtoPath;
+
+getpar SpecType;
+
+ProjPath=getfilepath(sysvar(2));
+ReportPath=mpathexpand("<Reports>\\");              //-- Метапуть к шаблонам отчетов
+BaseName=ProjPath+getfiletitle(sysvar(2))-3+".mdb"; //-- Имя будущей базы
+
+CreateBase=1;   //-- Создавать ли базу (для отладки)
+if (CreateBase==1)
+{
+  res=fileexist(BaseName);
+  if (res==1)
+  {
+    res=removefile(BaseName);
+    if (res==0)
+    {
+       putmsg("Не удалось выгрузить мебельную базу. Файл блокирован. ",0);
+       exit;
+    }
+  }
+}
+putmsg("Собираем все разобранные каркасы");
+mbcarcase groupall;
+//-- Включаем кромку
+macro ProtoPath+"IsBand.mac" ;
+//-- Подбор артикулов
+macro ProtoPath+"IsArticle.mac" ;
+//-- Проверяем наличие крепежа и сверловки
+if (SpecType==1||SpecType==2||SpecType==5||SpecType==8)
+{
+  macro ProtoPath+"IsFixHole.mac" ;
+}
+// //-- Перенумерация
+// NULLOUT=initselected();
+// select partly attribute "FurnType!=\"010000\"&&Furntype!=\"050000\"&&!IsAssign(\"CommonPos\")" done;
+// if (sysvar(61)>0)
+// {
+  // macro ProtoPath+"Num.mac" ;
+// }
+if (SpecType==6)
+{
+  //-- Проверяем, рассчитана ли стоимость
+  select attribute "!IsAssign(\"SumCost\")&&IsAssign(\"FurnType\")" done;
+  if (sysvar(61)>0)
+  {
+    #ok_flag
+    alternative "Не рассчитана стоимость заказа"
+    msgbox picture 3 beep 3 text "Отчет будет содержать неверную стоимость."
+    " "
+    "Рассчитать стоимость заказа?"
+    done
+    "  Да " " Нет " "Отмена"
+    done;
+    if (ok_flag==3)
+    {
+      cancel;
+    }
+    if (ok_flag==1)
+    {
+      macro ProtoPath+"SumCost.mac" ;
+    }
+  }
+}
+if (CreateBase==1)
+{
+  #res mebelbase BaseName;
+  if (res==0)
+  {
+    putmsg("При создании мебельной базы произошла ошибка.",0);
+    mbcarcase set yes;
+    exit;
+  }
+}
+NULLOUT=freport("FRClose","0","0","0"); //-- Закрываем все открытые отчеты, если такие есть
+if (SpecType==1)
+{
+  macro ProtoPath+"Spec_Sv.mac" ;
+}
+if (SpecType==2)
+{
+  macro ProtoPath+"Spec_Ed.mac" ;
+}
+if (SpecType==5)
+{
+  macro ProtoPath+"Spec_Pro.mac" ;
+}
+if (SpecType==6)
+{
+  macro ProtoPath+"Spec_Cust.mac" ;
+}
+if (SpecType==7)
+{
+  macro ProtoPath+"Spec_Sketches.mac" ;
+}
+if (SpecType==8)
+{
+  macro ProtoPath+"Spec_Detail.mac" ;
+}
+if (SpecType==9)
+{
+  macro ProtoPath+"Spec_Band.mac" ;
+}
+if (SpecType==10)
+{
+  macro ProtoPath+"Spec_Object.mac" ;
+}
+if (SpecType==11)
+{
+  macro ProtoPath+"Spec_Label.mac" ;
+}
+exit;

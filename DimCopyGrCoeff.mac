@@ -1,0 +1,33 @@
+//-- ћакропрограмма позвол€ет прочитать и установить дл€ будущих
+//-- размеров параметры по образцу указанного размера
+
+defarr aInf[13] aObjInf[5] aDimInf[100];
+nullout=sysarr(43,aInf);
+vgut=0;
+onerror metend;
+nullout=fltrType("");
+if (fltrType("Dim"))
+{
+	objident prompt "”кажите размер дл€ сн€ти€ параметров:" partly : pDim
+	if (isvardef("pDim")==16)
+  {
+		n=GetObjProp(pDim,aObjInf);
+		if (n==5)
+    {
+			err=getdiminfo(pDim,aDimInf);
+			grfcoeff aObjInf[5];
+			valcoeff aDimInf[48];
+			//putmsg(aObjInf);
+			vgut=1;
+		}
+	}
+}
+metend:
+offerror;
+nullout=fltrType("");
+if (vgut==0)
+{
+	grfcoeff ainf[3];
+	//здесь надо если что откатывать и valcoeff, но € не знаю чему он равен при старте
+}
+exit;

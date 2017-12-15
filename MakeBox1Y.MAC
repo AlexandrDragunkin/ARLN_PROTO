@@ -1,0 +1,210 @@
+// создание ящика
+global ProtoPath;
+global MacroSw  ; // Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global PanMater ; // Материал панелей
+NULLOUT=GetVarInst(2,"TypKroB",TypKroB,0); // тип кромки для ящиков
+global OfSetPan;    // Параметры наложения накладных
+
+global W_Fasad  H_Fasad  SdX_Fasad SdZ_Fasad ;
+
+KarkasNumb=getcarcnumb();                    //-- Порядковый номер каркаса в сцене
+
+global		// Для фасадов и дверей
+DoorMater , // Материал панелей двери
+DoorPict,  // тип рисунка
+DoorMatVS1 , // Материал вставки 1 фасада
+DoorMatVS2; // Материал вставки 2 фасада
+
+global		// Для ящика
+BoxDMater;  // Материал дна ящика
+
+global		// Для ящика
+BoxKType ;   // Тип корпуса ящика
+
+global		// Для ручек
+HandleType, // Тип ручки
+HandleX,    // Сдвиг ручки по x
+HandleZ,    // Сдвиг ручки по z
+HandleA;    // Поворот ручки
+
+global ElemName ; // Имена мебельных элементов
+global HoldName ; // Имя хозяина
+//===================================================
+// Параметры для расчета распашных дверей
+//Ручки	Располож.
+global HanType Rplace ARMX ARMZ ARMA HanFile ;
+
+NULLOUT=GetVarInst(2,"B_Zbox",B_Zbox,2); //-- Зазор между фасадами ящиков по вертикали
+
+getpar 
+xn yn zn yg // правый нижний дальний угол ящика
+typdna ots  // тип дна и отступ
+ XF	// Размеры фасада
+ ZF
+ wk	// Размеры ящика
+ y
+ hk
+ X_Sk   // Сдвиг ящика
+ Z_Sk
+ Khandl // Кол-во ручек
+;
+
+Macro ProtoPath+"BegBox.mac" ;
+
+h_fas=PriceInfo(DoorMater,"Thickness",16)
+
+if MacroSw==0 {
+  gosub SimpleBox;
+}
+else {
+  gosub New_box;
+}
+Macro ProtoPath+"EndBox.mac" BoxKType wk y hk;
+//  setucs gcs ;
+
+exit
+//=========================================
+New_box:
+  ElemBoxName=ElemName
+
+  protoobj create "Shkaf.ptl" 161
+
+  "w"        w
+  "d"        yf
+  "H"        h
+  "R_Fas"    R_Fas
+  "L_Fas"    L_Fas
+  "U_Fas"    U_Fas
+  "D_Fas"    D_Fas
+  "Kbox"     Kbox
+  "B_Zbox"   B_Zbox
+  "Hk"       Hbox
+  "Z_Sk"     Z_Sk
+  "PrMater"  PrMater
+  "PrMatDv"  BcMater
+  "FsMater"  FacadMt
+  "Face_col" Col_Kro
+  "Band"     TypKroB
+  "Face_cof" Col_KFas
+  "Band_F"   Band_F
+  "FsType"   Fpic
+  "BxType"   BxType
+  "HanType"  Handle
+  "Doub_r"   Doub_r
+  "Rpl_r"    Rpl_r
+  "rx"       ARMX
+  "rz"       ARMZ
+  "ra"       ARMA
+  "PrMatVs1" PrMatVs1
+  "PrMatVs2" PrMatVs2
+  "Angle"    yg
+  "DnoType"  TypDna
+  "Ots"      Ots
+  done
+  // Базовая точка 
+  xn yn zn;
+
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+If (IsAssign("KarkasNumb",0))
+{
+    attrobj copy record "KarkasNumb" done last 1 done;
+}
+else
+{
+    attrobj Attach "KarkasNumb" Done  last 1 KarkasNumb;
+}
+
+  If (IsAttrdef("ElemName")) {
+    Attrobj Attach "ElemName" Done last 1 ElemBoxName ; 
+  }
+  If (IsAttrdef("HOldName")) {
+    Attrobj Attach "HOldName" Done last 1 HoldName ;
+  }
+MacroSw=1;
+return;
+//=========================================
+
+SimpleBox:
+object_1=sysvar(60); // Кол-во объектов
+
+//+++++++++++++++++++++++++++++++++++++++++++++
+w=XF;
+
+if yg!=0 { yg=yg+90; }
+  d1=Tan(radian(yg))*w;
+hdsp=PriceInfo(DoorMater,"Thickness",16)
+sq=sqrt((w)*(w)+(d1)*(d1));
+
+//+++++++++++++++++++++++++++++++++++++++++++++
+
+W_Fasad=XF  H_Fasad=ZF   SdX_Fasad=X_Sk  SdZ_Fasad=Z_Sk
+
+macro ProtoPath+"BoxKorpY.mac" wk y hk yg sq typdna ots X_Sk Z_Sk BoxKType PanMater BoxDMater 0;
+
+if (DoorPict>0) {
+// Вызов макро для фасада   
+  xsd=0 ; 
+  zsd=0 ; 
+PanMaterT=PanMater;
+//  macro ProtoPath+"SetFasPM.mac" DoorMater DoorPict DoorBCol DoorMatVS1 DoorMatVS2;
+
+  Macro ProtoPath+"MakeFas.mac"
+		xsd y zsd
+                sq  zf ;
+if (yg>=30&&yg<=60)
+{
+move last 1 done -(sq-w) 0 0 nocopy;
+rotate last 1 done 2points w-X_Sk,y,0  w-X_Sk,y,0+10 yg nocopy;
+}
+yg1=yg;
+if (yg1>=120&&yg1<=150)
+{
+if (yg1>=120&&yg1<=150) { yg=yg1-180; }
+rotate last 1 done 2points X_Sk,y,0  X_Sk,y,0+10 yg nocopy;
+}
+
+PanMater=PanMaterT;
+//=============================Авторучка начало
+o_1=sysvar(60);
+HND_mac="";
+Handle=HandleType
+Fastype=DoorPict
+if (Handle!=0) {
+  HND_mac=PriceInfo(Fastype,"S2","")
+//HND_mac="" ;  //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  if (Len(HND_Mac)!=0) {
+	macro Protopath+HND_Mac
+		xsd y+h_fas zsd
+                sq  ZF 0 Handle
+                HandleX HandleZ HandleA;
+  }
+  else {
+	macro Protopath+"BoxHND.Mac"
+		xsd y+h_fas zsd
+                sq  ZF 0 Handle
+                HandleX HandleZ HandleA ;
+  }
+
+}
+o_22=sysvar(60);
+o_2=o_22-o_1;
+if (o_2!=0) {
+ if (yg1>=30&&yg1<=60)
+  {
+   move last o_2 done -(sq-w) 0 0 nocopy;
+   rotate last o_2 done 2points w-X_Sk,y,0  w-X_Sk,y,0+10 yg nocopy;
+  }
+
+if (yg1>=120&&yg1<=150)
+  {
+   if (yg1>=120&&yg1<=150) { yg=yg1-180 }
+   rotate last o_2 done 2points X_Sk,y,0  X_Sk,y,0+10 yg nocopy;
+  }
+}
+//=============================Авторучка конец
+}
+
+object_2=sysvar(60)-object_1; // Кол-во объектов
+move last object_2 done xn yn zn nocopy  ;
+group last object_2 ;
+return

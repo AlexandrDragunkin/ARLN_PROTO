@@ -1,0 +1,59 @@
+//-- Создание сотовой полки
+//-- Входные параметры:
+//-- SotID - ID сотовой полки в справочнике сборочных единиц
+//-- xn, yn, zn - Координаты правого нижнего дальнего угла сотовой полки
+//-- xgab - Ширина секции
+//-- N_clypse - Количество клипс
+
+global ProtoPath;   //-- Путь к папке с макропрограммами
+
+getpar SotID, xn, yn, zn, xgab, N_clypse;
+//---------------------------------------------------------------
+position=150;  //-- Номер прототипа сотовой полки
+Namescr="ProtoParams";
+FurnType="340100";    //-- Сотовые полки
+
+width=PriceInfo(SotID,"Width",310,2);   //-- Размер прута
+NULLOUT=pushinst(1);
+NULLOUT=getsnap();
+NULLOUT=setvarinst(1,"FurnType",FurnType);    //-- FurnType
+NULLOUT=getvarinst(2,"SotColor",col,157);           //-- Цвет сотовой полки
+NULLOUT=getvarinst(2,"IsColorUse",icu,1);           //-- Использовать ли цвета
+
+object_1=sysvar(60);
+Sush_mac=PriceInfo(SotID,"MacroFile","",2) //-- Если сотовая полка нестандартная, читаем макрос
+
+if (Sush_mac!="")
+{
+   macro Protopath+Sush_Mac xgab,yn,zn,SotID,N_clypse;
+}
+else
+{
+   macro ProtoPath+"sush2.mac" xgab,yn,zn,SotID,N_clypse;
+}
+object_2=sysvar(60)-object_1;
+if (object_2==0) //-- Сотовую полку не создали
+{
+  goto end;
+}
+#sotp group last object_2 done;
+if (icu==1)
+{
+  chprop color sotp done col;
+}
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"x",xgab);
+err=AddScratch(ScrMod,FurnType,"y",yn);
+err=AddScratch(ScrMod,FurnType,"z",zn);
+err=AddScratch(ScrMod,FurnType,"width",SotID);
+err=AddScratch(ScrMod,FurnType,"N_clypse",N_clypse);
+NULLOUT=writescratch(ScrMod,Namescr,sotp);
+NULLOUT=termscratch(ScrMod);
+NULLOUT=addattrpi(sotp,1,position);
+//-- Присваиваем атрибуты
+macro ProtoPath+"EndSot.mac" sotp position xgab width 0 SotID "";
+//----------------------------------------------------------------
+end:
+NULLOUT=resnap();
+NULLOUT=popinst(1);
+exit;

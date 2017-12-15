@@ -1,0 +1,109 @@
+//-- Программа делает две двери смежными
+//-- Параметры для расчета распашных дверей и фасадов
+global
+D_DxU		//-- Зазор по ширине для утопленных
+D_DzU		//-- Зазор по высоте для утопленных
+D_DxN		//-- Зазор по ширине для накладных
+D_DzN		//-- Зазор по высоте для накладных
+D_DxA   //-- Зазор по ширине для хитрых дверей
+;
+
+global ProtoPath;
+global placeX,placeY,placeZ;
+global Choise;
+NULLOUT=GetVarInst(2,"g_eps",g_eps,0.01); // Погрешность округления
+//---------------------------------------------------
+Fas1=0;
+Fas2=0;
+Glub=0;
+Mat=0;
+Mat2=0;
+Glub2=0;
+Chg=0;
+//--------------------------------------------------
+onerror final;
+selbyattr "(Left(FurnType,2)==\"23\")" prompt "Укажите две распашные двери:" partly : ;
+offerror;
+if (sysvar(61)<2)
+{
+  goto final;
+}
+Door1=getselnum(1);
+Door2=getselnum(2);
+//-- Выясняем расположение объектов друг относительно друга
+//-- Ой, как необъодимо обезгеморроить все это...
+macro ProtoPath+"Raspolog.mac" Door1,Door2;
+if (((abs(placeX[6]-1)<g_eps)||(abs(placeX[7]-1)<g_eps))&&(abs(placeZ[6]-1)>=g_eps)&&(abs(placeZ[7]-1)>=g_eps)&&(Choise==1))
+{
+   if (abs(placeX[6]-1)<g_eps)   //-- Меняем местами номера дверей
+   {
+      Change=Door1;
+      Door1=Door2;
+      Door2=Change;
+      Chg=1;
+   }
+}
+else
+{
+  putmsg("Невозможно собрать смежные двери. Указанные створки не имеют общей панели установки.",0);
+  goto final
+}
+err=getprotoval(Door1,"HDSP_k",h_dsp1);
+err=getprotoval(Door2,"HDSP_k",h_dsp2);
+hdsp=max(h_dsp1,h_dsp2);
+//-- Определяем будущую глубину установки двери
+//-- Первая дверь
+err=getprotoval(Door1,"R_Fas",Fas1);  //-- Отступ от фасада
+err=getprotoval(Door1,"G",Glub1);     //-- Глубина ниши
+if (Fas1<0)  //-- Дверь утопленная
+{
+  err=getprotoval(Door1,"PrMater",Mat1);
+  Tolsh1=PriceInfo(Mat1,"Thickness",16);
+  y1=Glub1+Tolsh1;
+}
+else
+{
+  y1=Glub1;
+}
+U1=hdsp-D_DzN;
+D1=hdsp-D_DzN;
+//-- Вторая дверь
+err=getprotoval(Door2,"R_Fas",Fas2);  //-- Отступ от фасада
+err=getprotoval(Door2,"G",Glub2);     //-- Глубина ниши
+if (Fas2<0)  //-- Дверь утопленная
+{
+  err=getprotoval(Door2,"PrMater",Mat2);
+  Tolsh2=PriceInfo(Mat2,"Thickness",16);
+  y2=Glub2+Tolsh2;
+}
+else
+{
+  y2=Glub2;
+}
+U2=hdsp-D_DzN;
+D2=hdsp-D_DzN;
+//-- Если двери имеют одинаковые глубины установок, то они могут стать смежными
+if (abs(y1-y2)>g_eps)
+{
+  putmsg("Невозможно собрать смежные двери. Указанные створки имеют разную глубину.",0);
+  goto final;
+}
+
+protoobj edit list Door1 nodc       //-- Левая дверь
+  "G" y1
+  "R_Fas" hdsp-D_DxN
+  "L_Fas" hdsp/2-D_DxA/2
+  "U_Fas" U1
+  "D_Fas" D1
+  "Rplace" 2
+done;
+protoobj edit list Door2 nodc      //-- Правая дверь
+  "G" y2
+  "R_Fas" hdsp/2-D_DxA/2
+  "L_Fas" hdsp-D_DxN
+  "U_Fas" U1
+  "D_Fas" D1
+  "Rplace" 1
+done;
+final:
+exit;

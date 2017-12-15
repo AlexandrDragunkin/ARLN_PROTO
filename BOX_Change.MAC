@@ -1,0 +1,67 @@
+//-- Программа изменения типа ящика (утопленный/накладной)
+
+NULLOUT=getvarinst(2,"BNUp",BNUp,14);                 //-- Нахлест фасада накладного ящика сверху
+NULLOUT=getvarinst(2,"BNDown",BNDown,14);             //-- Нахлест фасада накладного ящика снизу
+NULLOUT=getvarinst(2,"BNLeft",BNLeft,14);             //-- Нахлест фасада накладного ящика слева
+NULLOUT=getvarinst(2,"BNRight",BNRight,14);           //-- Нахлест фасада накладного ящика справа
+NULLOUT=getvarinst(2,"B_Zdown",B_Zdown,25);           //-- Расстояние между корпусом ящика и панелью снизу
+NULLOUT=getvarinst(2,"BUUp",BUUp,2);                //-- Зазор фасада утопленного ящика сверху
+NULLOUT=getvarinst(2,"BUDown",BUDown,2);            //-- Зазор фасада утопленного ящика снизу
+NULLOUT=getvarinst(2,"BULeft",BULeft,2);            //-- Зазор фасада утопленного ящика слева
+NULLOUT=getvarinst(2,"BURight",BURight,2);          //-- Зазор фасада утопленного ящика справа
+hdsp=DbVar("HDSP",16);
+Fas=0;
+
+ukazanie:
+//-- Укажите ящик
+objident prompt "Укажите ящик" : Box ;      //Указываем объект
+b1=getattr(Box,"Posit",0);
+If (b1==63)         //Если этот объект - ящик, то работаем с ним
+{
+   err=getprotoval(Box,"R_Fas",Fas);
+
+   err=getprotoval(Box,"D",Glub);
+   // err=getprotoval(Box,"FsMater",FsMater);
+   // hdspDoor=PriceInfo(FsMater,"Thickness",16);
+   err=getprotoval(Box,"PrMater",Mat);
+   Tolsh=PriceInfo(Mat,"Thickness",16);
+
+
+   NULLOUT=getvarinst(2,"IsColorUse",icu,1);             //-- Использовать ли цвета
+   if (Fas<BNRight)       //Ящик - утопленный
+   {
+       y1=Glub+Tolsh;
+       B_Zdownt=B_Zdown+BNDown;
+       protoobj edit list Box nodc       //Делаем его накладным
+                "D" y1
+				"R_Fas" BNRight
+                "L_Fas" BNLeft
+                "U_Fas" BNUp
+                "D_Fas" BNDown
+                "Z_Sk"  B_Zdownt
+                done;
+				if icu==1 
+        {
+					NULLOUT=getvarinst(2,"BNColor",col,93);               //-- Цвет накладного ящика
+					chprop color last 1 done col;
+				}
+   }
+   if (Fas>=BNRight)        //Ящик - накладной
+   {
+       y1=Glub-Tolsh;
+       protoobj edit list Box nodc     //Делаем его утопленным
+                "D" y1
+				"R_Fas" -BURight
+                "L_Fas" -BULeft
+                "U_Fas" -BUUp
+                "D_Fas" -BUDown
+                "Z_Sk"  B_Zdown-BUDown
+                done;
+				if icu==1 
+       {
+					NULLOUT=getvarinst(2,"BUColor",col,81);             //-- Цвет утопленного ящика
+					chprop color last 1 done col;
+				}
+   }
+}
+exit;

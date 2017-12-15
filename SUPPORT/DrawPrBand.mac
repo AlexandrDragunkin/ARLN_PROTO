@@ -1,0 +1,90 @@
+//-- Построение контура длинномера
+global TiLDet ;
+defarr arr[6];
+NULLOUT=initarray(arr,0);
+fname=mpathexpand("<Tests>\\getoutline.txt");
+
+//objident prompt "Укажите профильтный длинномер" : long;
+getpar 
+	Long //-- Указатель на длинномер
+	Xtn  Ytn  Xln  Yln  //-- координаты точек начала t-тыльная l-лицевая линия
+	Xtk  Ytk  Xlk  Ylk  //-- координаты точек конца t-тыльная l-лицевая линия
+	ArcT  ArcL 			//-- указатели дуг t-тыльная l-лицевая линия
+	TypeBl  num
+;
+beg=MaxUnObj2D();   //-- Максимальныей номер UnObj2d в хранилище
+num=getoutline(long);   //-- Количество Unobj2d в хранилище
+if (num==0)         //-- Ничего не создали
+{
+  exit;
+}
+//-- Для каждого варианта длинномера характерна особенность которую можно определить по числу num и типу первого элемента type
+//-- type==1 (линия) num==4  линейный длинномер
+//-- type==2 num==4  сегмент (дугообразный) 
+//-- type==1 num==6  клюшка с дугой в конце
+//-- type==2 num==6  клюшка с дугой в начале
+//-- type==1 num==8  бумеранг
+KeyL=0;
+i=0;
+type=0;
+putstr(fname,"case "+str(getattr(long,"PozNumber",0))+":",0);
+putstr(fname,"numob="+str(num)+";",0);
+loop:
+i=i+1;
+coun=GetUnObj2D(i+beg,type,arr);
+if (type==0)
+{
+  putstr(fname,"UN_PointXY(&unobjarr["+str(i-1)+"], "+str(arr[1])+", "+str(arr[2])+");",0);
+  UN_LineXY(&unobjarr[1], 301, -250, 301, -667.194);
+  point arr[1],arr[2],0;
+}
+if (type==1)
+{
+  putstr(fname,"UN_LineXY(&unobjarr["+str(i-1)+"], "+str(arr[1])+", "+str(arr[2])+", "+str(arr[3])+", "+str(arr[4])+");",0);
+  line arr[1],arr[2],0 arr[3],arr[4],0 done;
+  gosub aChTyl;
+}
+if (type==2)
+{
+  putstr(fname,"UN_ArcPPP(&unobjarr["+str(i-1)+"], "+str(arr[1])+", "+str(arr[2])+", "+str(arr[3])+", "+str(arr[4])+", "+str(arr[5])+", "+str(arr[6])+");",0);
+  arc arr[1],arr[2],0 arr[3],arr[4],0 arr[5],arr[6],0 ;
+  
+  objident last 1 iif(KeyL,ArcT,ArcL);
+  KeyL=1
+  gosub aChTyl;
+}
+if i==1
+{
+	 Xln=arr[1];  Yln=arr[2]
+	 //PutMsg(Xln,1);PutMsg(Yln,1);
+	 TypeBl=Type
+
+}
+if i==num
+{
+	 Xtn=arr[1];  Ytn=arr[2]
+}
+if i==num/2
+{
+	 Xlk=arr[1];  Ylk=arr[2]
+	 Xtk=arr[3];  Ytk=arr[4]
+}
+NULLOUT=initarray(arr,0);
+if (i<num)
+{
+  goto loop;
+}
+putstr(fname,"break;",0);
+i=0;
+loopi:
+i=i+1;
+FreeUnObj2D(i+beg)
+if (i<num)
+{
+  goto loopi;
+}
+exit;
+aChTyl:
+	//chprop ltype last 1 done  TyLDet ; // Тип осевых линий
+	chprop lwidth last 1 done  TiLDet ; // Толщина осевых линий
+return;

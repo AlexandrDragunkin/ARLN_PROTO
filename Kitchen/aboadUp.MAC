@@ -1,0 +1,48 @@
+//-- Создание объекта - стол прямой угловой
+global MacroSw;     //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global ProtoPath;		//-- Путь к папке с макропрограммами общей библиотеке прототипов
+global LocalPath;		//-- Путь к папке с макропрограммами локальной библиотеке прототипов
+ProtoPath=GetProtoMac("Shkaf.ptl");
+LocalPath=GetProtoMac("Kitchen.ptl");
+MacroSw=0;
+
+PrMater=DbVar("PrMater",0); //-- Материал корпуса
+d=DbVar("Глуб",320);			  //-- Глубина
+w=DbVar("Шир",330);			    //-- Ширина
+h=DbVar("Выс",822);			    //-- Высота
+IsStop=dbvar("IsStop",0);		//-- Наличие стыкового упора
+ПравВар=DbVar("ПравВар",1); //-- Вариант правый (левый=0)
+//--------------------------------------------------------
+h_dsp=PriceInfo(PrMater,"Thickness",DbVar("HDSP",16));
+if (ПравВар==1)   //-- Т - образный контакт левый
+{
+  ТипКонт=4;      //-- Т - образный контакт левый
+  FurnType="100008";
+}
+else
+{
+  ТипКонт=3;        //-- Т - образный контакт правый
+  FurnType="100005";
+}
+Верхний=0;   //-- Нижний
+ObjTyp=0;    //-- Мебельный
+PlcTyp=0;    //-- Нижний
+BiblNum=130; //-- В библиотеке ID=130
+//--------------------------------------------------------
+
+macro ProtoPath+"BegUnit.mac" "" ;
+macro ProtoPath+"ScrBoxGet.mac" 0; //-- Создание Scratch атрибута ящика
+macro LocalPath+"aboadU.mac" ;
+
+//-- Ставим размеры
+macro ProtoPath+"aDimLine.mac" w  d h  ТипКонт Верхний;
+//-- Линии контакта
+macro ProtoPath+"aContLine.mac" w d d+h_dsp+iif(IsStop==1,35,0) h 0 ТипКонт Верхний;
+#Boad group all done;
+macro ProtoPath+"SetEnam.mac" "Стол угловой";
+macro ProtoPath+"EndUnit.mac" w d h ;
+//-- Присваиваем атрибуты
+macro ProtoPath+"FurnAttr.mac" ObjTyp PlcTyp BiblNum FurnType;
+macro ProtoPath+"OldArtic.mac" ;
+macro ProtoPath+"Scrcopatr.mac" ; //-- Запись в объект Scratch атрибута
+exit;

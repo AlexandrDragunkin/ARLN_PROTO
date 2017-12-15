@@ -1,0 +1,38 @@
+//-- Обувная полка (стандартный образец)
+//-- Входные параметры:
+//-- x - Ширина секции
+//-- y, z - Координты нижнего дальнего угла обувной полки
+//-- ShoID - ID сетчатого материала в номенклатурном справочнике
+//-- N_clypse - Количество клипс
+//-- N_Kron - Количество кронштейнов
+
+global ProtoPath;
+getpar x,y,z,ShoID,N_clypse,N_Kron;
+//-----------------------------------------
+xbase=0;  //-- Координата обувной полки по оси x
+// SShelfMat=priceinfo(ShoID,"AccessID",50,2);    //-- ID прута сетки
+//-----------------------------------------
+SotID=priceinfo(ShoID,"AccessID",396,2);
+PocketID=priceinfo(SotID,"PocketID",9520);
+
+mac=PriceInfo(PocketID,"MacroFile","") //-- Читаем макрос устаноки базы
+if (mac!="")
+{
+	macro Protopath+mac xbase,x,y,z,SotID,PocketID;
+}
+else
+{
+	putmsg("Отсутствует макро установки для "+str(PocketID))
+	cancel;
+}
+D1=25;
+Hor_Gap=3;
+
+macro ProtoPath+"pipe3.mac"
+xbase,y,z,
+x,
+D1,
+Hor_Gap,
+PocketID;
+// macro ProtoPath+"shclypse2.mac" xbase,x,y,z,SShelfMat,N_clypse,N_Kron;
+exit;

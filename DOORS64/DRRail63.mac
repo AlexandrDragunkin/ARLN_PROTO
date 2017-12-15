@@ -1,0 +1,321 @@
+//-- Програамма создания каркаса дверной системы
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+nullout=getvarinst(2,"Doors63",Doors63,"Doors63.zmc|");
+nullout=getvarinst(2,"Doors64",Doors64,"Doors64.zmc|");
+//-- Добавлены варианты создания дверных систем мансардного типа
+
+global g_FurnType;
+global g_IDPrice;        //-- ID каркаса дверной системы из Прайс-листа
+global ProtoPath, g_keyDS63,g_Doorscon;
+// KarkasNumb=getcarcnumb();  //-- Порядковый номер каркаса в сцене
+//global g_Syst;                 //-- Тип системы дверей
+global g_SlipTop,g_SlipBottom,g_SlipLeft,g_SlipRight,g_SlipDoors;  //-- Зазоры
+defarr SqlArr[10];
+
+global g_drp;
+NULLOUT=getVarinst(2,"g_x1",g_x1,0);
+NULLOUT=getVarinst(2,"g_y1",g_y1,0);
+NULLOUT=getVarinst(2,"g_z1",g_z1,0);
+NULLOUT=getVarinst(2,"g_xb",g_xb,0);
+NULLOUT=getVarinst(2,"g_yb",g_yb,0);
+NULLOUT=getVarinst(2,"g_zb",g_zb,0);
+global g_CLTop g_CLDown g_CLMid g_CLDer g_CLVer g_TCLDown g_TCLTop;
+global Fasca;
+//==========================
+nullout=getvarinst(1,"DoorSw",DoorSw,0);
+if DoorSw==1
+{
+	Syst=g_drp;
+	RailU=g_TCLTop;
+	RailD=g_TCLDown;
+	x=g_x1;
+	y=g_y1;
+	z=g_z1;
+	FasPr1=0;
+	dx1=Fasca[1];
+	dz1=Fasca[2];
+	FasPr2=0;
+	dx2=Fasca[3];
+	dz2=Fasca[4];
+	dx3=Fasca[5];
+	dz3=Fasca[6];
+	dx4=Fasca[7];
+	dz4=Fasca[8];
+	AngL=0;
+	AngR=0;
+	ColorRailU=0;
+	ColorRailD=0;
+	DeltaTRACK=0;
+	VisRailU=1;
+}
+else
+{
+	Syst=DbVar("Syst",10);               // Id системы створки из DsSystemFlap
+	RailU=DbVar("RailU",308);            // Id верхнего рельса  DSFlapProfile
+	RailD=DbVar("RailD",313);            // Id Нижнего рельса   DSFlapProfile
+	x=DbVar("x",2000);                   // Ширина секции
+	y=DbVar("y",600);                    // Глубина установки
+	z=DbVar("z",1700);                   // Высота секции
+	VisRailU=DbVar("VisRailU",1);        // Отображать верхний трек
+	FasPr1=DbVar("FasPr1",0);            // Профиль по фаске 1
+	dx1=DbVar("dx1",200);                // Фаска по X первого угла
+	dz1=DbVar("dz1",500);                // Фаска по Z первого угла
+	FasPr2=DbVar("FasPr2",0);            // Профиль по фаске 1
+	dx2=DbVar("dx2",300);                // Фаска по X второго угла
+	dz2=DbVar("dz2",300);                // Фаска по Z второго угла
+	dx3=DbVar("dx3",0);                  // Фаска по X третьего угла
+	dz3=DbVar("dz3",0);                  // Фаска по Z третьего угла
+	dx4=DbVar("dx4",0);                  // Фаска по X четвертого угла
+	dz4=DbVar("dz4",0);                  // Фаска по Z четвертого угла
+	AngL=DbVar("AngL",-45);              // Левый угол в плоскости XY
+	AngR=DbVar("AngR",-30);              // Правый угол в плоскости XY
+	ColorRailU=DbVar("ColorRailU",0);    // Цвет верхнего профиля
+	ColorRailD=DbVar("ColorRailD",0);    // Цвет нижнего  профиля
+	DeltaTRACK=DbVar("DeltaTRACK",0);    // Высота положения второго трека  для случая установки нижнего трекка из одноручьевых треков
+}
+// направляющие для дверей со скосом
+
+RailMS=DbVar("RailMS",0); //ID направляющей мансарды
+NRailMS=DbVar("NRailMS",0); //Число направляющих для дверей со скосомКоличество
+ZRailMS_1=DbVar("ZRailMS_1",0); //Высота положения первой направляющей
+YRailMS_1=DbVar("YRailMS_1",0); //Глубина положения первой направляющей
+LRailMS_1=DbVar("LRailMS_1",0); //Длина первой направляющей
+ZRailMS_2=DbVar("ZRailMS_2",0); //Высота положения второй направляющей
+YRailMS_2=DbVar("YRailMS_2",0); //Глубина положения второй направляющей
+LRailMS_2=DbVar("LRailMS_2",0); //Длина второй направляющей
+ZRailMS_3=DbVar("ZRailMS_3",0); //Высота положения третьей направляющей
+YRailMS_3=DbVar("YRailMS_3",0); //Глубина положения третьей направляющей
+LRailMS_3=DbVar("LRailMS_3",0); //Длина третьей направляющей
+ZRailMS_4=DbVar("ZRailMS_4",0); //Высота положения четвертой направляющей
+YRailMS_4=DbVar("YRailMS_4",0); //Глубина положения четвертой направляющей
+LRailMS_4=DbVar("LRailMS_4",0); //Длина четвертой направляющей
+ZRailMS_5=DbVar("ZRailMS_5",0); //Высота положения пятой направляющей
+YRailMS_5=DbVar("YRailMS_5",0); //Глубина положения пятой направляющей
+LRailMS_5=DbVar("LRailMS_5",0); //Длина  пятой направляющей
+ZRailMS_6=DbVar("ZRailMS_6",0); //Высота положения шестой направляющей
+YRailMS_6=DbVar("YRailMS_6",0); //Глубина положения шестой направляющей
+LRailMS_6=DbVar("LRailMS_6",0); //Длина шестой направляющей
+
+XRailMS_1=DbVar("XRailMS_1",0); //Начало положения первой направляющей
+XRailMS_2=DbVar("XRailMS_2",0);	//Начало  положения второй направляющей
+XRailMS_3=DbVar("XRailMS_3",0);	//Начало  положения третьей направляющей
+XRailMS_4=DbVar("XRailMS_4",0);	//Начало  положения четвертой направляющей
+XRailMS_5=DbVar("XRailMS_5",0);	//Начало  положения пятой направляющей
+XRailMS_6=DbVar("XRailMS_6",0);	//Начало  положения шестой направляющей
+
+
+//==========================
+g_IDPrice=Syst
+//--------------------------------------------------------
+FurnType="300100";
+Namescr="ProtoParams";
+if isvardef("g_keyDS63")==0 { g_keyDS63=0 }
+KDS=0 // признак открытия базы если на выходе ключ не изменит значение то дискон делать не стоит
+//-- Устанавливаем соединение с базой DoorSys63.mdb
+if g_keyDS63!=1
+{
+   macro ProtoPath++Doors63+"CrtSysDoor63.mac" ;
+   KDS=1 // если здесь открыли, то здесь и закрывать придется
+}
+
+SqlArr[1]="SELECT DSSystemFlap.ID, DSSystemFlap.NameSys, DSSystemTrack.MacroSet, DSGabProfile.TypProfile, DSGabProfile.w, DSSystemFlap.IdSysTrack,";
+SqlArr[2]=" DSGabProfile.zw, DSSystemFlap.SlipBottom, DSSystemFlap.SlipTop, DSSystemFlap.SlipLeft, DSSystemFlap.SlipRight, DSSystemFlap.SlipDoors";
+SqlArr[3]=" FROM ((DSSystemFlap INNER JOIN DSSystemTrack ON DSSystemFlap.IdSysTrack = DSSystemTrack.ID) INNER JOIN DSFlapSostav";
+SqlArr[4]=" ON DSSystemFlap.ID = DSFlapSostav.IDSyst) INNER JOIN DSGabProfile ON DSFlapSostav.IDProf = DSGabProfile.ID";
+SqlArr[5]=" WHERE (((DSSystemFlap.ID)="+str(syst)+") AND ((DSGabProfile.TypProfile)=9));";
+
+SysRs=adbOpen(g_Doorscon,SqlArr,5);
+ij=adbRecCount(SysRs);
+//-- Если количество нужных записей меньше единицы - выходим
+if (ij<1)
+{
+  errcode="Количество записей в запросе с номером "+str(Syst)+" равно "+str(ij);
+  gosub err;
+  goto end;
+}
+NULLOUT=adbMoveFirst(SysRs);
+//-- Считываем имя макроса установки направляющих и расчитываем параметры смещения нижнего трека
+MacroSet=adbGetValue(SysRs,"MacroSet"); // Rail63.mac
+w_vert_a=adbGetValue(SysRs,"w");
+w_vert_z=adbGetValue(SysRs,"zw");
+g_SlipTop=adbGetValue(SysRs,"SlipTop");
+g_SlipBottom=adbGetValue(SysRs,"SlipBottom");
+g_SlipLeft=adbGetValue(SysRs,"SlipLeft");
+g_SlipRight=adbGetValue(SysRs,"SlipRight");
+g_SlipDoors=adbGetValue(SysRs,"SlipDoors");
+
+// putmsg(w_vert_z)
+// putmsg(w_vert_a)
+// На сколько колесо ролика отступает от задней части верт. профиля(я так понял)
+g_dwRailD=w_vert_z-w_vert_a/2;
+nullout=setvarinst(1,"g_dwRailD",g_dwRailD);
+
+IdSysTrack=adbGetValue(SysRs,"IdSysTrack");
+
+if (len(MacroSet)==0)
+{
+  errcode="Отсутствует макро установки каркаса";
+  gosub err;
+  goto end;
+}
+
+objs=sysvar(60);
+
+macro ProtoPath+Doors64+MacroSet+".mac"
+        x,y,z,    // габариты
+        RailU, // Id верхнего профиля
+        RailD, // Id нижнего профиля
+		RailMS //ID направляющей мансарды
+        FasPr1	  //Профиль по фаске 1
+        dx1	  //Фаска по X первого угла
+        dz1	  //Фаска по Z первого угла
+        FasPr2	  //Профиль по фаске 1
+        dx2	  //Фаска по X второго угла
+        dz2	  //Фаска по Z второго угла
+        dx3	  //Фаска по X третьего угла
+        dz3	  //Фаска по Z третьего угла
+        dx4	  //Фаска по X четвертого угла
+        dz4	  //Фаска по Z четвертого угла
+        AngL	  //Левый угол в плоскости XY
+        AngR	  //Правый угол в плоскости XY
+        VisRailU  // Отображать верхний трек
+        DeltaTRACK  // Высота положения второго трека  для случая установки нижнего трекка из одноручьевых треков
+        NRailMS		 //Число направляющих для дверей со скосом
+		ZRailMS_1	//Высота положения первой направляющей
+		YRailMS_1	//Глубина положения первой направляющей
+		LRailMS_1	//Длина первой направляющей
+		ZRailMS_2	//Высота положения второй направляющей
+		YRailMS_2	//Глубина положения второй направляющей
+		LRailMS_2	//Длина второй направляющей
+		ZRailMS_3	//Высота положения третьей направляющей
+		YRailMS_3	//Глубина положения третьей направляющей
+		LRailMS_3	//Длина третьей направляющей
+		ZRailMS_4	//Высота положения четвертой направляющей
+		YRailMS_4	//Глубина положения четвертой направляющей
+		LRailMS_4	//Длина четвертой направляющей
+		ZRailMS_5	//Высота положения пятой направляющей
+		YRailMS_5	//Глубина положения пятой направляющей
+		LRailMS_5	//Длина  пятой направляющей
+		ZRailMS_6	//Высота положения шестой направляющей
+		YRailMS_6	//Глубина положения шестой направляющей
+		LRailMS_6	//Длина шестой направляющей
+		XRailMS_1
+		XRailMS_2
+		XRailMS_3
+		XRailMS_4
+		XRailMS_5
+		XRailMS_6
+		;
+
+objf=sysvar(60);
+
+selbyattr "P1==1" child last objf-objs done;
+
+NGrElems=sysvar(61);
+#gr group previous done;
+// putmsg(NGrElems)
+if NGrElems>0
+{
+	macro ProtoPath++Doors63+"CrtSysDoor63.mac" ;
+	//-- Читаем информацию о профилях
+	str_tab="SELECT * FROM DSGabProfile INNER JOIN DSFlapProfile ON DSGabProfile.ID = DSFlapProfile.PSYSTEM WHERE DSFlapProfile.ID="+str(RailU) ;
+	
+	ProfRs=adbOpen(g_DoorsCon,str_tab);
+	ij=adbRecCount(ProfRs);
+	if (ij<1)
+	{
+	  errcode="Количество профилей с ID "+str(RailU)+" равно "+str(ij);
+	  gosub err;
+	  goto end;
+	}
+	NULLOUT=adbMoveFirst(ProfRs);
+	
+	ProfMater=adbGetValue(ProfRs,"IDProfile");
+	attrobj attach "PriceID" done Last 1 ProfMater;
+	attrobj attach "Posit" done Last 1 IdSysTrack;
+	attrobj attach "FurnType" done Last 1 "210998";
+	attrobj attach "ElemName" done Last 1 "Трек двери-купе по таблице";
+}
+
+end:
+SysRs=adbClose(SysRs);
+if KDS==1
+{
+ macro ProtoPath++Doors63+"ClosSysDoor63.mac"; //-- Разрываем соединение
+}
+
+
+//-----------------------------------------------------------
+g_FurnType=FurnType;
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"x",x);
+err=AddScratch(ScrMod,FurnType,"y",y);
+err=AddScratch(ScrMod,FurnType,"z",z);
+err=AddScratch(ScrMod,FurnType,"Syst",Syst);
+err=AddScratch(ScrMod,FurnType,"RailU",RailU);
+err=AddScratch(ScrMod,FurnType,"RailD",RailD);
+err=AddScratch(ScrMod,FurnType,"VisRailU",VisRailU);
+err=AddScratch(ScrMod,FurnType,"FasPr1",FasPr1);
+err=AddScratch(ScrMod,FurnType,"dx1",dx1);
+err=AddScratch(ScrMod,FurnType,"dz1",dz1);
+err=AddScratch(ScrMod,FurnType,"FasPr2",FasPr2);
+err=AddScratch(ScrMod,FurnType,"dx2",dx2);
+err=AddScratch(ScrMod,FurnType,"dz2",dz2);
+err=AddScratch(ScrMod,FurnType,"dx3",dx3);
+err=AddScratch(ScrMod,FurnType,"dz3",dz3);
+err=AddScratch(ScrMod,FurnType,"dx4",dx4);
+err=AddScratch(ScrMod,FurnType,"dz4",dz4);
+err=AddScratch(ScrMod,FurnType,"AngL",AngL);
+err=AddScratch(ScrMod,FurnType,"AngR",AngR);
+err=AddScratch(ScrMod,FurnType,"ColorRailU",ColorRailU);
+err=AddScratch(ScrMod,FurnType,"ColorRailD",ColorRailD);
+err=AddScratch(ScrMod,FurnType,"DeltaTRACK",DeltaTRACK);
+err=AddScratch(ScrMod,FurnType,"RailMS",RailMS);       //ID направляющей мансарды
+err=AddScratch(ScrMod,FurnType,"NRailMS",NRailMS);     //Число направляющих для дверей со скосомКоличество
+err=AddScratch(ScrMod,FurnType,"ZRailMS_1",ZRailMS_1); //Высота положения первой направляющей
+err=AddScratch(ScrMod,FurnType,"YRailMS_1",YRailMS_1); //Глубина положения первой направляющей
+err=AddScratch(ScrMod,FurnType,"LRailMS_1",LRailMS_1); //Длина первой направляющей
+err=AddScratch(ScrMod,FurnType,"ZRailMS_2",ZRailMS_2); //Высота положения второй направляющей
+err=AddScratch(ScrMod,FurnType,"YRailMS_2",YRailMS_2); //Глубина положения второй направляющей
+err=AddScratch(ScrMod,FurnType,"LRailMS_2",LRailMS_2); //Длина второй направляющей
+err=AddScratch(ScrMod,FurnType,"ZRailMS_3",ZRailMS_3); //Высота положения третьей направляющей
+err=AddScratch(ScrMod,FurnType,"YRailMS_3",YRailMS_3); //Глубина положения третьей направляющей
+err=AddScratch(ScrMod,FurnType,"LRailMS_3",LRailMS_3); //Длина третьей направляющей
+err=AddScratch(ScrMod,FurnType,"ZRailMS_4",ZRailMS_4); //Высота положения четвертой направляющей
+err=AddScratch(ScrMod,FurnType,"YRailMS_4",YRailMS_4); //Глубина положения четвертой направляющей
+err=AddScratch(ScrMod,FurnType,"LRailMS_4",LRailMS_4); //Длина четвертой направляющей
+err=AddScratch(ScrMod,FurnType,"ZRailMS_5",ZRailMS_5); //Высота положения пятой направляющей
+err=AddScratch(ScrMod,FurnType,"YRailMS_5",YRailMS_5); //Глубина положения пятой направляющей
+err=AddScratch(ScrMod,FurnType,"LRailMS_5",LRailMS_5); //Длина  пятой направляющей
+err=AddScratch(ScrMod,FurnType,"ZRailMS_6",ZRailMS_6); //Высота положения шестой направляющей
+err=AddScratch(ScrMod,FurnType,"YRailMS_6",YRailMS_6); //Глубина положения шестой направляющей
+err=AddScratch(ScrMod,FurnType,"LRailMS_6",LRailMS_6); //Длина шестой направляющей
+err=AddScratch(ScrMod,FurnType,"XRailMS_1",XRailMS_1);
+err=AddScratch(ScrMod,FurnType,"XRailMS_2",XRailMS_2);
+err=AddScratch(ScrMod,FurnType,"XRailMS_3",XRailMS_3);
+err=AddScratch(ScrMod,FurnType,"XRailMS_4",XRailMS_4);
+err=AddScratch(ScrMod,FurnType,"XRailMS_5",XRailMS_5);
+err=AddScratch(ScrMod,FurnType,"XRailMS_6",XRailMS_6);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+exit;
+//==============================================================================
+//-- Вывод окна сообщения об ошибке
+//-- Входные параметры:
+//-- errcode - сод ошибки
+err:
+#ok_flag
+     alternative "Ошибка базы данных"
+     msgbox text "Некорректно заполнена база данных систем дверей"
+     " "
+     errcode
+     done
+     "  OK  "
+     done;
+return;
+//==============================================================================

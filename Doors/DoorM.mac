@@ -1,0 +1,90 @@
+//-- Создание двери
+global DoorPath, TextLib;
+global ProtoPath;
+getpar   dtype      //-- Тип двери
+DoorPic             //-- Цвет двери
+Foto                //-- Признак фото фасада
+plat                //-- Нужна ли обналичка
+;
+defarr  xm[6];
+//------------------------------------------------------------------------------
+hw=DbVar("Height",2100);	        //-- Высота двери
+lw=DbVar("Width",900);		        //-- Ширина двери
+tjugle=DbVar("Thickness",200);    //-- Толщина стены
+tw1=DbVar("CBeamWidth",30); 		  //-- Ширина перекладины между двумя рамами
+wjugle=DbVar("P_Width",200);      //-- Ширина обналички
+Thick=DbVar("P_Thick",100);       //-- Толщина наличника
+doorcolor=DbVar("doorcolor",13);  //-- Цвет обналички
+glasscolor=DbVar("glasscolor",9); //-- Рисунок двери
+nh=DbVar("m",4);	                //-- Количество окошек по высоте
+nl=DbVar("n",2);	                //-- Количество окошек по ширине
+Flag3D=DbVar("Flag3D",1);         //-- Отображение 3D
+//------------------------------------------------------------------------------
+glass=1;                          //-- Заполнение - стекло
+ТолОтк=0;                         //-- Толщина отделки откоса
+//------------------------------------------------------------------------------
+if (Flag3D==0)
+{
+  goto  D2Draw;
+}
+if (plat==1)                      //-- Если нужна обналичка
+{
+  ТолОтк=10;
+  #b1 box 4points 0 0 0
+                  ТолОтк 0 0
+                  ТолОтк tjugle 0
+                  ТолОтк tjugle hw ;
+  #b2 move b1 done lw-ТолОтк 0 0  copy 1 ;
+  #b3 box 4points ТолОтк 0 hw
+                  lw-ТолОтк  0 hw
+                  lw-ТолОтк 0 hw-ТолОтк
+                  lw-ТолОтк tjugle hw-ТолОтк ;
+  ChProp MapByPars last 3 Done
+  0,  -1                        //-- Для всех секций
+  1,  TextLib+str(doorcolor)    //-- Меняем код материала на  материал в таблице материалов
+  ;
+  //-- Обналичка
+  line ТолОтк 0 0
+       -wjugle 0 0
+       -wjugle 0 hw+wjugle
+       lw+wjugle 0 hw+wjugle
+       lw+wjugle 0 0
+       lw-ТолОтк 0 0
+       lw-ТолОтк 0 hw-ТолОтк
+       ТолОтк 0 hw-ТолОтк
+       close;
+  #fram path select last 8 done last 8 create;
+  #Nal extrusion fram done Thick;
+  delete fram done ;
+  ChProp MapByPars Nal  Done
+  0,  -1                        //-- Для всех секций
+  1,  TextLib+str(doorcolor)    //-- Меняем код материала на  материал в таблице материалов
+  ;
+  move Nal done 0 tjugle 0 nocopy;
+}
+//-- Дверь
+wdoor=lw-ТолОтк*2;
+hdoor=hw-ТолОтк;
+macro DoorPath+"DoorFill.mac" dtype wdoor hdoor tw1 glass
+                DoorPic  glasscolor Foto tjugle nh nl;
+objident last 1 Dfil ;
+rr=objgab3(Dfil,xm);
+move last 1  done ТолОтк tjugle/2-xm[5]/2 0  nocopy  ;
+#drr group all done;
+exit;
+//------------------------------------------------------------------------------
+D2Draw:
+defarr p1[3], p2[3], p3[3];
+p1[1]=0;
+p1[2]=0;
+p1[3]=0;
+p2[1]=lw;
+p2[2]=0;
+p2[3]=0;
+p3[1]=lw;
+p3[2]=Thick;
+p3[3]=0;
+macro ProtoPath+"WDDRHatch.mac" p1 p2 p3 1;
+move last 1 done 0 0.5*(tjugle-Thick) 0 nocopy;
+group all done;
+exit;

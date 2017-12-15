@@ -1,0 +1,56 @@
+//-- Макропрограмма создания выдвижной полки
+//-- Входные параметры:
+//-- w, d - ширина и глубина полки
+//-- PrMater - материал полки
+//-- Col_Kro - цвет кромки
+//-- BandT - тип кромки по сторонам
+//-- ff - прогиб кромки
+//-- Выходные параметры:
+//-- Выдвижная полка
+
+global ProtoPath;
+NULLOUT=GetVarInst(2,"B_Zbok",B_Zbok,13);
+NULLOUT=GetVarInst(2,"B_Bmin",B_Bmin,25);
+defarr error[10];
+NULLOUT=initarray(error,"");
+NULLOUT=getvarinst(1,"CompShelfType",CompShelf,1);  //-- Тип выдвижной полки
+
+getpar w,d,PrMater,Col_Kro,BandT,ff;
+Delta=0; //-- Зазор между направляющими и полкой
+//-------------------------------------------------------------------------->>>>
+if (ff<0)
+{
+  ff=0;
+}
+Lbox=d-B_Bmin-ff;
+
+// Новый запрос направляющих
+GoodsID=CompShelf     // ID Тип выдвижной полки в справочнике изделий
+
+GoodsProp="Guide"
+MatProp="Length"
+IDNapr=NPGetByProps(GoodsID,GoodsProp,MatProp,Lbox);
+Dpolozb=PriceInfo(IDNapr,"Length",200);
+
+//------------------------------------------------------------------------------
+//-- Полка
+macro ProtoPath+"SetMat.mac" PrMater;
+macro ProtoPath+"SetKrom.mac" Col_Kro BandT[1] BandT[2] BandT[3] BandT[4];
+macro ProtoPath+"SetFix.mac"  0 0 0 0;
+macro ProtoPath+"SetBend.mac" 0 0 0 ff 0 0 0 0;
+macro ProtoPath+"SetEnam.mac" "Выдвижная полка";
+macro ProtoPath+"SetECod.mac" "3101" ;
+// macro ProtoPath+"SetKCod.mac"	"DPVXX"	w-B_Zbok*2	Lbox+ff;
+Macro ProtoPath+"MakePan.mac" B_Zbok d-Lbox-ff 0 w-B_Zbok*2 Lbox+ff 12 ;
+macro ProtoPath+"SetBend.mac" 0 0 0 0 0 0 0 0;
+//-- Направляющие
+if (IDNapr!=0)
+{
+  macro ProtoPath+"SetECod.mac" "" ;
+  macro ProtoPath+"SetEnam.mac" "Направляющие" ;
+  macro ProtoPath+"MakeGuide.mac" IDNapr 2 1 B_Zbok d-Lbox+Delta-ff 0 0 0 0;
+  macro ProtoPath+"SetECod.mac" "7301" ;
+  macro ProtoPath+"MakeGuide.mac" IDNapr 1 0 w-B_Zbok d-Lbox+Delta-ff 0 0 0 0;
+  macro ProtoPath+"SetEnam.mac" " " ;
+}
+exit;

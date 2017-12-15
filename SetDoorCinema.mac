@@ -1,0 +1,48 @@
+global ProtoPath ;
+//*********************************************
+// присвоение атрибута Синема объектам Двери с objDo до objPosle
+//              МСВ
+//              ГеоС 2012 г.
+//*********************************************
+getpar
+objDo		//К-во старых объектов
+objPosle	//Общее
+x1, y1, z1,	// Точка ниши
+W1, H1		// Размер ниши
+h_fas		// Толщина фасада
+Variant		// Вариант открывания
+;
+angle=80  // Угол открывания
+if (Variant==1) {  // Слева
+//  h_fas=-h_fas/2
+//  y1=y1+5; x1=x1+15
+  cine="0, 1, 1, 0, "+str(-h_fas)+", 0, "+str(x1)+", "+str(y1)+", "+str(z1)+", ";
+  cine=cine+str(x1)+", "+str(y1)+", "+str(z1+H1)+", "+str(angle);
+}
+if (Variant==2) {  // Справа
+//putmsg(" Слева");
+//  h_fas=5
+//  y1=y1+5; x1=x1-15
+//putmsg(x1+W1);
+  cine="0, 1, 1, 0, "+str(-h_fas)+", 0, "+str(x1+W1)+", "+str(y1)+", "+str(z1)+", ";
+  cine=cine+str(x1+W1)+", "+str(y1)+", "+str(z1+H1)+", "+str(-angle);
+}
+if (Variant==3) {  // Сверху
+//  h_fas=-5
+//  y1=y1+5; z1=z1+15
+  cine="0, 1, 1, 0, "+str(h_fas)+", 0, "+str(x1)+", "+str(y1)+", "+str(z1)+", ";
+  cine=cine+str(x1+W1)+", "+str(y1)+", "+str(z1)+", "+str(-angle);
+}
+if (Variant==4) {  // Снизу
+//  h_fas=-5
+//  y1=y1+5; z1=z1-15
+  cine="0, 1, 1, 0, "+str(h_fas)+", 0,"+str(x1)+", "+str(y1)+", "+str(z1+H1)+", ";
+  cine=cine+str(x1+W1)+", "+str(y1)+", "+str(z1+H1)+", "+str(angle);
+}
+if (Variant<1) {	// Нет
+	goto final;
+}
+
+macro ProtoPath+"SetCinema.mac" objDo objPosle cine;
+final:
+exit;

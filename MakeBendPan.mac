@@ -1,0 +1,466 @@
+//-- Макропрограмма создания гнутой универсальной панели
+global MacroSw;   //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global PanMater;  //-- Материал панелей
+global PanCKro;   //-- Цвет кромки
+global ElemName ; //-- Имена мебельных элементов
+global HoldName ; //-- Имя хозяина
+global ProtoPath;
+defarr error[10];
+NULLOUT=initarray(error,"");
+
+global UnitCode; //-- Код изделия (текст)
+global g_Radius; //-- Радиус гнутой панели
+global ElemCode; //-- Код мебельных элементов
+global GrouPan;  //-- Групповой код для панелей
+
+global KonsCod PropCod; //-- Коды конструктивности и свойств
+KarkasNumb=getcarcnumb();    //-- Порядковый номер каркаса в сцене
+
+global g_BandPan; //-- Тип кромки по сторонам  и углам в порядке D 1 C 2 E 3 B 4
+global g_CBandPan;//-- Цвет кромки по сторонам  и углам в порядке D 1 C 2 E 3 B 4
+
+defarr bendp1[3],bendp2[3],bendp3[3];
+
+global	  //-- Для Панелей
+PanCol    //-- Цвет (условно)
+PanPok    //-- Покрытие
+PanIsp;   //-- Исполнение
+
+global
+FixtPan,     //-- Крепеж по сторонам
+BandPan,     //-- Кромка по сторонам
+TypeAngl,    //-- Типы подрезов углов
+ParamPan,    //-- Параметры подрезов
+BendPan,     //-- Параметры прогибов панелей
+BendFil,     //-- Параметры прогибов фасок
+OfSetPan,    //-- Параметры наложения накладных
+g_PanCuts,   //-- Подрезы по каждой из сторон панели
+PanDir;	     //-- НАправление шпона 1=D 2=B 0-игнорируется
+
+//-- Параметры пропила панелей для библиотеки стандартных объектов
+global
+PropN,   //-- Количество пропилов
+PazAM    //--     Пропил - сторона
+PazBM    //--     Пропил - параллельно
+PazRM    //--     Пропил - расстояние от стороны
+PazWM    //--     Пропил - ширина паза
+PazDM    //--     Пропил - глубина паза
+PazSM    //--     Пропил - отступа паза
+PazLM ;  //--     Пропил - длина паза
+global OverFixType;     //-- Атрибут ориентации крепежа панели
+global g_TorcPaz;       //-- Торцевые пазы
+global g_FoilModef;     //-- Количестово отделок панели
+global g_FoilModAF;     //-- Массив отделок из 8 групп по 3 элемента
+                        // Первый - пласть (А,F, 0 (ноль) - обнулить отделку)
+                        // второй - тип отделки, третий - цвет отделки.
+
+defarr Props[45]; //-- Массив с пропилами пласти панели
+
+defarr xm[6];
+
+getpar
+x y z		  //-- Начало стороны B
+wx wy wz 	//-- Размеры прямых участков и высота
+Orient,   //-- Ориентация
+Angle;    //-- Угол
+//Type_pan	//-- Тип (стенка)
+Type_pan=14;	//-- Тип (стенка)
+
+//==============================================================
+defarr NSIDE[4];
+NSIDE[1]="B";
+NSIDE[2]="C";
+NSIDE[3]="D";
+NSIDE[4]="E";
+
+defarr arr[20];
+SetPan6Par(1,arr);      // Инициализация
+arr[1]=PanMater;
+SetPan6Par(2,arr);      // Материал
+
+
+//-- Отделка
+NULLOUT=getvarinst(1,"g_Decorates",NumPI,0,1);
+if (NumPI>0)
+{
+	NumP=0;
+	Ldec:
+	NumP=NumP+1;
+	NULLOUT=getvarinst(1,"g_Decorates",Map,0,(NumP-1)*4+1+1);
+	NULLOUT=getvarinst(1,"g_Decorates",IDVariant,0,(NumP-1)*4+1+2);
+	NULLOUT=getvarinst(1,"g_Decorates",IDMat,0,(NumP-1)*4+1+3);
+	NULLOUT=getvarinst(1,"g_Decorates",Visibility,0,(NumP-1)*4+1+4);
+	arr[1]=Map;
+	arr[2]=IDVariant;
+	arr[3]=IDMat;
+	arr[4]=Visibility;
+	SetPan6Par(28,arr);      // отделка
+	if (NumP<NumPI)
+	{
+		goto Ldec;
+	}
+}
+
+//-- Обработка торцов
+Side=1;
+LButts:
+NULLOUT=getvarinst(1,"g_Butt",SideDI,-1,(Side-1)*8+1)
+if (SideDI>-1)
+{
+	//сторона (1- B, 2 - C, 3 - D, 4 - E)
+	NULLOUT=getvarinst(1,"g_Butt",TypeFrB,0,(Side-1)*8+1);
+	NULLOUT=getvarinst(1,"g_Butt",MapB,0,(Side-1)*8+2);
+	NULLOUT=getvarinst(1,"g_Butt",ShiftKB,0,(Side-1)*8+3);
+	NULLOUT=getvarinst(1,"g_Butt",DeptB,0,(Side-1)*8+4);
+	NULLOUT=getvarinst(1,"g_Butt",WidthB,0,(Side-1)*8+5);
+	NULLOUT=getvarinst(1,"g_Butt",Rz1B,0,(Side-1)*8+6);
+	NULLOUT=getvarinst(1,"g_Butt",Rz2B,0,(Side-1)*8+7);
+	NULLOUT=getvarinst(1,"g_Butt",Rz3B,0,(Side-1)*8+8);
+	SideButt=-1;
+	iif(Side==1,SideButt=7,SideButt==SideButt)
+	iif(Side==2,SideButt=3,SideButt==SideButt)
+	iif(Side==3,SideButt=1,SideButt==SideButt)
+  iif(Side==4,SideButt=5,SideButt==SideButt)
+	arr[1]=TypeFrB;
+	arr[2]=1;
+	arr[3]=SideButt;
+	arr[4]=MapB;
+	arr[5]=ShiftKB;
+	arr[6]=DeptB;
+	arr[7]=WidthB;
+	arr[8]=0;
+	arr[9]=0;
+	SetPan6Par(25,arr);      // торцевая обработка
+}
+if (Side<4)			
+{
+	Side=Side+1;
+	goto LButts;
+}
+
+
+if (PanDir==2)
+{
+  arr[1]=90;
+  SetPan6Par(19,arr);      //-- Направление шпона 1=D 2=B 0-игнорируется
+}
+
+//InitArray(arr,PanCKro);   // Инициализируем цветом кромки
+//arr[13]=BandPan[1];        // Кромка по сторонам
+//arr[5]=BandPan[2];
+//arr[1]=BandPan[3];
+//arr[9]=BandPan[4];
+//
+//arr[15]=BandPan[3];      // Кромка по углам
+//arr[3]=BandPan[3];
+//arr[7]=BandPan[4];
+//arr[11]=BandPan[4];
+//SetPan6Par(3,arr);     // Кромка
+
+
+i=1
+Loop:
+arr[1]=i;             //-- Сторона i
+arr[2]=g_BandPan[i];  //-- Тип кромки
+arr[3]=g_CBandPan[i]; //-- Цвет кромки
+arr[4]=1;             //-- Кромка по эквидистанте
+SetPan6Par(3,arr);    //-- Кромка
+i=i+1;
+if (i<9)
+{
+	goto Loop;
+}
+
+//-- Крепеж
+InitArray(arr,0);
+arr[1]=1;     // Главный поли
+arr[2]=7;     //  Сторона B
+arr[3]=FixtPan[1];     // Тип крепежа
+arr[4]=0;     // сдвиг
+arr[5]=0;             // Длина
+SetPan6Par(21,arr);       // крепеж
+arr[1]=1;     // Главный поли
+arr[2]=3;     //  Сторона C
+arr[3]=FixtPan[2];     // Тип крепежа
+arr[4]=0;     // сдвиг
+arr[5]=0;             // Длина
+SetPan6Par(21,arr);       // крепеж
+arr[1]=1;     // Главный поли
+arr[2]=1;     //  Сторона D
+arr[3]=FixtPan[3];     // Тип крепежа
+arr[4]=0;     // сдвиг
+arr[5]=0;             // Длина
+SetPan6Par(21,arr);       // крепеж
+arr[1]=1;     // Главный поли
+arr[2]=5;     //  Сторона E
+arr[3]=FixtPan[4];     // Тип крепежа
+arr[4]=0;     // сдвиг
+arr[5]=0;             // Длина
+SetPan6Par(21,arr);       // крепеж
+
+InitArray(arr,0);
+if (TypeAngl[1]==2)
+{
+  TypeAngl[1]=4;
+}
+if (TypeAngl[2]==2)
+{
+  TypeAngl[2]=4;
+}
+if (TypeAngl[3]==2)
+{
+  TypeAngl[3]=4;
+}
+if (TypeAngl[4]==2)
+{
+  TypeAngl[4]=4;
+}
+
+if (TypeAngl[1]==3)
+{
+  TypeAngl[1]=2;
+}
+if (TypeAngl[2]==3)
+{
+  TypeAngl[2]=2;
+}
+if (TypeAngl[3]==3)
+{
+  TypeAngl[3]=2;
+}
+if (TypeAngl[4]==3)
+{
+  TypeAngl[4]=2;
+}
+
+arr[1]=1;
+arr[2]=TypeAngl[1];    //-- Типы подрезов углов
+arr[3]=ParamPan[1];    //-- Параметры подрезов
+arr[4]=ParamPan[2];    //-- Параметры подрезов
+SetPan6Par(4,arr);
+arr[1]=2;
+arr[2]=TypeAngl[2];    //-- Типы подрезов углов
+arr[3]=ParamPan[3];    //-- Параметры подрезов
+arr[4]=ParamPan[4];    //-- Параметры подрезов
+SetPan6Par(4,arr);
+arr[1]=3;
+arr[2]=TypeAngl[3];    //-- Типы подрезов углов
+arr[3]=ParamPan[5];    //-- Параметры подрезов
+arr[4]=ParamPan[6];    //-- Параметры подрезов
+SetPan6Par(4,arr);
+arr[1]=4;
+arr[2]=TypeAngl[4];    //-- Типы подрезов углов
+arr[3]=ParamPan[7];    //-- Параметры подрезов
+arr[4]=ParamPan[8];    //-- Параметры подрезов
+SetPan6Par(4,arr);
+gosub AngleCorr;
+arr[1]=BendPan[3];    //  D
+arr[2]=BendPan[1];    //-- C
+arr[3]=BendPan[4];    //-- Параметры прогиба сторон  E
+arr[4]=BendPan[2];    //-- B
+SetPan6Par(5,arr);
+arr[1]=g_PanCuts[3];    // D
+arr[2]=g_PanCuts[1];    //-- C
+arr[3]=g_PanCuts[4];    //-- Параметры подрезки сторон E
+arr[4]=g_PanCuts[2];    //-- B
+SetPan6Par(6,arr);
+InitArray(arr,0);
+if (Orient==1)    //- Гнутая по двум сторонам и углу
+{
+  arr[1]=5;
+  arr[2]=wx+abs(g_Radius);
+  arr[3]=wy+abs(g_Radius);
+  arr[4]=abs(Angle)+iif(g_Radius<0,180,0);
+  arr[5]=abs(g_Radius); //abs(g_Radius)*iif(abs(Angle)>90,-1,1);
+  arr[6]=wz;
+  arr[7]=iif(Angle>=90,1,0);
+  arr[8]=1; //-- Ось гиба - Oy
+}
+else //if (Orient==2)    //- Гнутая по хорде
+{
+  arr[1]=4;
+  arr[2]=wx;
+  arr[3]=wy;
+  arr[4]=wz;
+  arr[5]=1; //-- Ось гиба - Oy
+}
+SetPan6Par(11,arr);
+// Пропилы   -----------------------------------------
+Propil=getattr(0,"CNPropil","");  //-- Читаем пропилы в пласти панели
+NULLOUT=splitbydelim(Propil,",",Props);
+initarray(arr,0);
+nums=PropN;
+if (nums==0)
+{
+  goto NoPropsN;
+}
+k=1;
+NexProp:
+arr[1]=PazAM[k];
+arr[2]=PazBM[k];
+arr[3]=PazRM[k];
+arr[4]=PazWM[k];
+arr[5]=PazDM[k];
+arr[6]=PazSM[k];
+arr[7]=PazLM[k];
+SetPan6Par(17,arr);
+k=k+1
+if (k<=nums) { goto NexProp; }
+NoPropsN:
+PropN=0; //-- Пропил отработали! Обнулим
+// Пропилы   -----------------------------------------
+// Торцевые пазы ===========================================
+k=0;
+NexTorc:
+if (g_TorcPaz[k*7+1]>0)
+{
+  InitArray(arr,0);
+  arr[1]=NSIDE[k+1];
+  arr[2]=g_TorcPaz[k*7+1];
+  arr[3]=g_TorcPaz[k*7+2];
+  arr[4]=g_TorcPaz[k*7+3];
+  arr[5]=g_TorcPaz[k*7+4];
+  arr[6]=g_TorcPaz[k*7+5];
+  arr[7]=g_TorcPaz[k*7+6];
+  arr[8]=g_TorcPaz[k*7+7];
+  SetPan6Par(18,arr);
+}
+k=k+1
+if (k<4) { goto  NexTorc; }
+// Торцевые пазы  конец ===========================================
+
+arr[1]=Type_pan;
+err=SetPan6Par(22,arr);
+MBPanel create x y z Type_pan ;
+err=SetPan6Par(999,arr);
+objident last 1 shell;
+exit;
+attribs:
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+If (IsAssign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done last 1 done;
+}
+else
+{
+  attrobj Attach "KarkasNumb" Done  last 1 KarkasNumb;
+}
+
+//-- Присвоение атрибутов
+Attrobj Attach "Posit" Done last 1 14;
+if (Type_pan==11) {  FurnType="010202"; }
+if (Type_pan==12) {  FurnType="010102"; }
+if (Type_pan==13) {  FurnType="010402"; }
+if (Type_pan==14) {  FurnType="010302"; }
+if (ElemName!=" ")
+{
+  attrobj attach "ElemName" done last 1 ElemName ;
+}
+else
+{
+    if (Type_pan==11) { ElemName1="Стойка гнутая" ;}
+    if (Type_pan==12) { ElemName1="Полка гнутая" ; }
+    if (Type_pan==13) { ElemName1="Стенка накладная гнутая" ; }
+    if (Type_pan==14) { ElemName1="Стенка гнутая" ; }
+    attrobj attach "ElemName" done shell ElemName1 ;
+}
+attrobj attach "FurnType" done shell FurnType ;
+If (IsAttrdef("HOldName"))
+{
+  if (len(HoldName)>0)
+  {
+    Attrobj Attach "HOldName" Done last 1 HoldName ;
+  }
+}
+If (IsAttrdef("UnitCode"))
+{
+  if (len(ElemCode)>0)
+  {
+    Attrobj Attach "UnitCode" Done last 1 ElemCode ;
+  }
+  else
+  {
+    Attrobj Attach "UnitCode" Done last 1 "XXX" ;
+  }
+}
+
+//-- Сохраняем информацию об ориентации крепежа
+If (IsAttrdef("FixOver"))
+{
+  If (IsAssign("FixOver",0))
+  {
+    attrobj copy record "FixOver" done shell done;
+  }
+}
+//-- Присваиваем атрибуты
+Attrobj Attach "GroupID" Done shell 17 ;           //-- 17 - группа материалов детали
+Attrobj Attach "PriceID" Done shell PanMater;      //-- Mатериал детали
+Attrobj Attach "XUnit" "YUnit" "ZUnit" Done shell round(xm[4]-xm[1]) round(xm[5]-xm[2]) round(xm[6]-xm[3]) ;   //-- Размеры детали
+Attrobj Attach "KBID" "KCID" "KDID" "KEID" Done shell BandPan[1] BandPan[2] BandPan[3] BandPan[4] ;        //-- Кромка
+Attrobj Attach "KID" Done shell PanCKro;          //-- Цвет Кромки
+Attrobj Attach "PanDir" Done shell PanDir;         //-- Направление шпона
+
+//If (!IsAttrdef("Fix"))
+//{
+//	Attribute Create "Fix" "Крепеж на панели" text 30 255 ;
+//}
+//attrobj copy record "Fix" done shell done;
+CurvePath=0;
+if (TypeAngl[1]+TypeAngl[2]+TypeAngl[3]+TypeAngl[4])
+{
+  CurvePath=1;
+}
+if (abs(BendPan[1])>0)  { CurvePath=1; }
+if (abs(BendPan[2])>0)  { CurvePath=1; }
+if (abs(BendPan[3])>0)  { CurvePath=1; }
+if (abs(BendPan[4])>0)  { CurvePath=1; }
+Attrobj Attach  "CurvePath" Done shell CurvePath;
+
+exit;
+//======================== Коррекция фасок на случай отрицательных значений параметров
+AngleCorr:
+if (TypeAngl[1]==1) {
+  if (ParamPan[1]<0) {
+    arr[1]=1;
+    arr[2]=7; //TypeAngl[1];    //-- Типы подрезов углов
+    arr[3]=0;                   //-- Параметры подрезов
+    arr[4]=ParamPan[2];    //-- Параметры подрезов
+    arr[5]=ParamPan[1];    //-- Параметры подрезов
+    arr[6]=0; //ParamPan[2];    //-- Параметры подрезов
+    SetPan6Par(4,arr);
+  }
+}
+if (TypeAngl[2]==1) {
+  if (ParamPan[3]<0) {
+    arr[1]=2;
+    arr[2]=7; //TypeAngl[2];    //-- Типы подрезов углов
+    arr[3]=0; //ParamPan[3];    //-- Параметры подрезов
+    arr[4]=ParamPan[4];    //-- Параметры подрезов
+    arr[5]=ParamPan[3];    //-- Параметры подрезов
+    arr[6]=0; //ParamPan[4];    //-- Параметры подрезов
+    SetPan6Par(4,arr);
+  }
+}
+if (TypeAngl[3]==1) {
+  if (ParamPan[5]<0) {
+    arr[1]=3;
+    arr[2]=7; //TypeAngl[3];    //-- Типы подрезов углов
+    arr[3]=0; //ParamPan[5];    //-- Параметры подрезов
+    arr[4]=ParamPan[6];    //-- Параметры подрезов
+    arr[5]=ParamPan[5];    //-- Параметры подрезов
+    arr[6]=0; //ParamPan[6];    //-- Параметры подрезов
+    SetPan6Par(4,arr);
+  }
+}
+if (TypeAngl[3]==1) {
+  if (ParamPan[7]<0) {
+    arr[1]=4;
+    arr[2]=7; //TypeAngl[4];    //-- Типы подрезов углов
+    arr[3]=0; //ParamPan[7];    //-- Параметры подрезов
+    arr[4]=ParamPan[8];    //-- Параметры подрезов
+    arr[5]=ParamPan[7];    //-- Параметры подрезов
+    arr[6]=0; //ParamPan[8];    //-- Параметры подрезов
+    SetPan6Par(4,arr);
+  }
+}
+return

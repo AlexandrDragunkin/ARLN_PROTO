@@ -1,0 +1,171 @@
+//InitDesignTrack63.mac
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+//Инициализация дизайна Треков
+global ProtoPath g_nameSf, g_namePs;
+global g_DRSysN,g_DRSysI,g_DRNumb,g_Ndors,g_DRS;
+global g_DRDesN,g_DRDesI,g_DRDesNumb,g_DRP;
+
+global g_TrTopN,g_TrTopI,g_TrTopNumb,g_TrTop,g_TrTopDr;
+global g_TrDownN,g_TrDownI,g_TrDownNumb,g_TrDown,g_TrDownDr;
+global g_k3fPath;
+
+getpar g_key_prev;
+
+vDefT=iif(isvardef("g_TrTop")==0,1,findinarray(g_TrTopI,g_TrTop,1,g_TrTopNumb));
+vDefD=iif(isvardef("g_TrDown")==0,1,findinarray(g_TrDownI,g_TrDown,1,g_TrDownNumb));
+vDefT=iif(vDefT>0,vDefT,1);
+vDefD=iif(vDefD>0,vDefD,1);
+DRS_top=g_TrTopN[vDefT];
+DRS_Down=g_TrDownN[vDefD];
+vardialog=2
+
+
+if (g_TrTopNumb>1)||(g_TrDownNumb>1)
+{
+        if vardialog==1 { gosub Dialog1; }
+        if vardialog==2 { gosub Dialog2; }
+        if ok_flag==0
+        {
+          g_key_prev=0;
+          exit;
+        }
+}
+if (g_TrTopNumb==1)
+{
+ DRS_top=g_TrTopN[1]
+}
+if (g_TrDownNumb==1)
+{
+ DRS_Down=g_TrDownN[1]
+}
+
+g_TrTop=g_TrTopI[findinarray(g_TrTopN,DRS_top,1,g_TrTopNumb)];       //--Определение ID группы верхнего Трека
+g_TrDown=g_TrDownI[findinarray(g_TrDownN,DRS_Down,1,g_TrDownNumb)];  //--Определение ID группы нижнего Трека
+
+g_IsTopV=0;
+g_IsDownV=0;
+
+// 107,108 - ???
+
+// if g_TrTop==107
+// {
+	// g_IsTopV=1;
+// }
+// if g_TrDown==108
+// {
+	// g_IsDownV=1;
+// }
+
+// Ключ построения непрофильной створки
+nullout=getvarinst(1,"KeyFas",KeyFas,0);
+
+if KeyFas
+{
+	g_IsTopV=1;
+	g_IsDownV=1;
+}
+nullout=setvarinst(1,"g_IsTopV",g_IsTopV);
+nullout=setvarinst(1,"g_IsDownV",g_IsDownV);
+
+g_key_prev=1;
+exit;
+
+dialog1:
+#ok_flag
+setvar
+"Установка систем дверей "+g_nameSf+" в нишу"
+""
+left
+"Трек для створки "+g_namePs
+
+  if g_TrTopNumb==1
+  {
+  "Верхний горизонтальный профиль "+DRS_top
+  }
+  if g_TrDownNumb==1
+  {
+  "Нижний горизонтальный профиль "+DRS_Down
+  }
+
+done
+if g_TrTopNumb>1
+{
+str 	listonly
+	let j=1
+	LoopJ1:
+	 if J==vDefT {
+	  current
+	 }
+	 g_TrTopN[j]
+	 if (j<g_TrTopNumb) { Let j=j+1 goto LoopJ1 }
+	done
+	"Тип верхнего Трека:"    DRS_top
+}
+
+if g_TrDownNumb>1
+{
+str 	listonly
+	let j=1
+	LoopJ2:
+	 if J==vDefD {
+	  current
+	 }
+	 g_TrDownN[j]
+	 if (j<g_TrDownNumb) { Let j=j+1 goto LoopJ2 }
+	done
+	"Тип нижнего Трека:"    DRS_down
+}
+done;
+return;
+
+Dialog2:
+
+if g_TrTopNumb>1
+{
+#ok_flag
+  alternative
+  "Установка систем дверей в нишу"
+  picbox
+  text
+  center
+  "Определите дизайн профиля нижнего трека "+g_nameSf
+  done
+  default 1
+  let j=1
+  LoopJ3:
+        g_TrTopN[j]  g_k3fPath+g_TrTopDr[j]
+  if (j<g_TrTopNumb) { Let j=j+1 goto LoopJ3 }
+done;
+ if (ok_flag!=0)
+ {
+  DRS_Top=g_TrTopN[ok_flag];
+ }
+}
+
+if g_TrDownNumb>1
+{
+#ok_flag
+  alternative
+  "Установка систем дверей в нишу"
+  picbox
+  text
+  center
+  "Определите дизайн профиля нижнего трека "+g_nameSf
+  done
+  default 1
+  let j=1
+  LoopJ:
+        g_TrDownN[j]  g_k3fPath+g_TrDownDr[j]
+  if (j<g_TrDownNumb) { Let j=j+1 goto LoopJ }
+done;
+ if (ok_flag!=0)
+ {
+  DRS_Down=g_TrDownN[ok_flag];
+ }
+}
+return;

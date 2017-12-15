@@ -1,0 +1,29 @@
+//-- Назначить номера объектов
+
+global ProtoPath;
+NULLOUT=getvarinst(2,"NumType",NumType,1);
+NULLOUT=getvarinst(2,"NumCriteria1",NumCriteria1,0);
+NULLOUT=getvarinst(2,"NumCriteria2",NumCriteria2,0);
+NULLOUT=getvarinst(2,"NumCriteria3",NumCriteria3,0);
+
+if (NumType==1) //-- По уникальному номеру
+{
+  macro ProtoPath+"ReNumUnitPos.mac" 0;
+  exit;
+}
+if (NumType==2) //-- С поиском похожих (сквозная нумерация)
+{
+  macro ProtoPath+"ReNumCommonPos.mac" 0 0 NumCriteria1, NumCriteria2, NumCriteria3;
+  exit;
+}
+if (NumType==3) //-- С поиском похожих (по типам)
+{
+  macro ProtoPath+"ReNumCommonPos.mac" 0 1 NumCriteria1, NumCriteria2, NumCriteria3;
+  exit;
+}
+if (NumType==4) //-- Внутри сборочной единицы
+{
+  macro ProtoPath+"ReNumDetailPos.mac";
+  exit;
+}
+exit;

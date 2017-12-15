@@ -1,0 +1,19 @@
+//-- Подпрограмма редактирования Scratch параметров фасада сплошного без узора
+global ProtoPath ;
+global g_Scratch;
+
+defarr arr[10]  aLogDec[5] fLogDec[5];
+
+getpar pnt, FasCode ;
+// putmsg("Scr_Doorspl_ed")
+//-- Проверки
+if (IsVarDef("pnt")!=16) //-- Если переменная - не ссылка на объект
+{
+  exit;
+}
+
+macro protopath+"scrDialogFasSpl.py" byref pnt byref FasCode;
+
+
+
+exit;

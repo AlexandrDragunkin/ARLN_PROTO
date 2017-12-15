@@ -1,0 +1,234 @@
+global ProtoPath;
+global DfHand; // Последняя установленная
+global g_result;
+
+defarr arr[15], arrin[15], yarr[1];
+getpar IDGroup furnty;
+defarr tm[6];
+
+kol1=npgetbywhere(1,"","yarr",IDGroup);
+// putmsg(kol1)
+if (kol1>0) {
+  DfAcc=yarr[1]; // В качестве умолчания берем первый из подстановки
+}
+else { DfAcc=0; }
+// Формируем строку умолчаний
+// putmsg(IDGroup)
+DefAcce=str(IDGroup)+"#"+str(DfAcc) ;
+#ok_flag
+setvar
+"Установка комплектующих"
+""
+left
+"Выберите тип комплектующего"
+done
+string auto button 6 default DefAcce //"67#578"
+     "Тип комплектующего:" NAcce
+done;
+if ok_flag==0 { exit }
+
+splitbydelim(NAcce,"#",Arr);
+DfHand=Arr[2];
+
+NULLOUT=GetSnap();
+
+AccPlace=priceinfo(DfHand,"AccPlace",0);
+ElemName=priceinfo(DfHand,"MatName","");
+if (AccPlace==0)
+{
+  //-- Устанавливаем тип установки - свободно
+   AccPlace=32
+
+}
+
+macromode undo off;
+Macro ProtoPath+"SetAccPLace.mac"   AccPlace;
+macro ProtoPath+"SetEnam.mac" ElemName;
+Macro ProtoPath+"MakeAcce.mac" DfHand furnty   0 0 0 0 0 0;
+objident last 1  hobj;
+  attrobj attach "AccPlace" done hobj AccPlace ;     // Тип размещения - На панель, вертикально
+
+onerror nend;
+
+if (AccPlace==32)
+{
+  move last 1 done : ;
+  macromode undo on "AddAcce.mac" hobj ;
+  NULLOUT=ReSnap();
+  exit;
+}
+if (AccPlace==513)
+{
+  initarray(arrin,0);
+  arrin[1]=hobj  // Объект
+  arrin[2]=1  // Флаг фасада
+  arrin[3]=90  // Угол
+  arrin[10]=0  // вектор, если нулевой, то 0 0 1
+  arrin[11]=1
+  arrin[12]=0
+
+  mbget "Укажите точку установки:" point arrin arr :
+  place hobj ;
+
+  macromode undo on "AddAcce.mac" hobj ;
+  NULLOUT=ReSnap();
+  exit;
+}
+if (AccPlace==257)
+{
+  initarray(arrin,0);
+  arrin[1]=hobj  // Объект
+  arrin[2]=0  // Флаг фасада
+  arrin[3]=90  // Угол
+  arrin[10]=0  // вектор, если нулевой, то 0 0 1
+  arrin[11]=0
+  arrin[12]=1
+
+  mbget "Укажите точку установки:" point arrin arr :
+  place hobj ;
+
+  macromode undo on "AddAcce.mac" hobj ;
+  NULLOUT=ReSnap();
+  exit;
+}
+if (AccPlace==258)
+{
+  initarray(arrin,0);
+  arrin[1]=hobj  // Объект
+  arrin[2]=0  // Флаг фасада
+  arrin[3]=90  // Угол
+  arrin[10]=0  // вектор, если нулевой, то 0 0 1
+  arrin[11]=0
+  arrin[12]=1
+
+  mbget "Укажите точку установки:" point arrin arr back :
+  place hobj ;
+
+  macromode undo on "AddAcce.mac" hobj ;
+  NULLOUT=ReSnap();
+  exit;
+}
+if (AccPlace==322)
+{
+  objgab3(hobj,tm);
+  initarray(arrin,0);
+  arrin[1]=hobj  // Объект
+  arrin[2]=0  // Флаг фасада
+  arrin[3]=90  // Угол
+  arrin[10]=0  // вектор, если нулевой, то 0 0 1
+  arrin[11]=0
+  arrin[12]=1
+
+  mbget "Укажите точку установки:" point arrin arr back flip :
+  place hobj ;
+  macromode undo on "AddAcce.mac" hobj ;
+  NULLOUT=ReSnap();
+  exit;
+}
+if (AccPlace==129)
+{
+  objgab3(hobj,tm);
+  initarray(arrin,0);
+  arrin[1]=hobj  // Объект
+  arrin[2]=0  // Флаг фасада
+  arrin[3]=90  // Угол
+  arrin[10]=0  // вектор, если нулевой, то 0 0 1
+  arrin[11]=-1
+  arrin[12]=0
+
+  mbget "Укажите точку установки:" point arrin arr :
+  place hobj ;
+  macromode undo on "AddAcce.mac" hobj ;
+  NULLOUT=ReSnap();
+  exit;
+}
+if (AccPlace==322)
+{
+  objgab3(hobj,tm);
+  initarray(arrin,0);
+  arrin[1]=hobj  // Объект
+  arrin[2]=0  // Флаг фасада
+  arrin[3]=90  // Угол
+  arrin[10]=0  // вектор, если нулевой, то 0 0 1
+  arrin[11]=0
+  arrin[12]=1
+
+  mbget "Укажите точку установки:" point arrin arr back flip:
+  place hobj ;
+  macromode undo on "AddAcce.mac" hobj ;
+  NULLOUT=ReSnap();
+  exit;
+}
+if (AccPlace==386)
+{
+  objgab3(hobj,tm);
+  initarray(arrin,0);
+  arrin[1]=hobj  // Объект
+  arrin[2]=0  // Флаг фасада
+  arrin[3]=90  // Угол
+  arrin[10]=0  // вектор, если нулевой, то 0 0 1
+  arrin[11]=0
+  arrin[12]=-1
+
+  mbget "Укажите точку установки:" point arrin arr back :
+  place hobj ;
+  macromode undo on "AddAcce.mac" hobj ;
+  NULLOUT=ReSnap();
+  exit;
+}
+if (AccPlace==769)
+{
+  objgab3(hobj,tm);
+  initarray(arrin,0);
+  arrin[1]=hobj  // Объект
+  arrin[2]=1  // Флаг фасада
+  arrin[3]=90  // Угол
+  arrin[10]=0  // вектор, если нулевой, то 0 0 1
+  arrin[11]=0
+  arrin[12]=1
+
+  mbget "Укажите точку установки:" point arrin arr :
+  place hobj ;
+  macromode undo on "AddAcce.mac" hobj ;
+  NULLOUT=ReSnap();
+  exit;
+}
+if (AccPlace==514)
+{
+  initarray(arrin,0);
+  arrin[1]=hobj  // Объект
+  arrin[2]=1  // Флаг фасада
+  arrin[3]=90  // Угол
+  arrin[10]=0  // вектор, если нулевой, то 0 0 1
+  arrin[11]=1
+  arrin[12]=0
+
+  mbget "Укажите точку установки:" point arrin arr back :
+  place hobj ;
+  macromode undo on "AddAcce.mac" hobj ;
+  NULLOUT=ReSnap();
+  exit;
+}
+//-- Относится к AccPlace==4
+#obj mbget "Укажите торец панели, на который нужно поставить комплектующее"
+  Panel idpoly idline band :
+
+arrin[1]=obj;    // Панель
+arrin[2]=idpoly
+arrin[3]=idline;
+arrin[4]=hobj;  // размещаемый объект
+arrin[5]=32     // кратность шага
+arrin[6]=45;   // Угол кратного поворота
+
+mbget "точка:" fix arrin arr :
+
+place  hobj ;
+  macromode undo on "AddAcce.mac" hobj ;
+NULLOUT=ReSnap();
+exit;
+nend:
+delete hobj;
+  macromode undo on ;
+NULLOUT=ReSnap();
+exit;
+

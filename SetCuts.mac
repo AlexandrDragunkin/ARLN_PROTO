@@ -1,0 +1,16 @@
+//-- ћакропрограмма устанавливает текущие подрезы по сторонам панели
+//-- ¬ходные параметры:
+//-- CutB, CutC, CutD, CutE - подрезы по сторонам B, C, D, E соответственно.
+//-- ¬ыходные параметры:
+//-- g_PanCuts[4] - глобальный массив со значени€ми подрезов
+
+global g_PanCuts;
+defarr g_PanCuts[4];
+
+getpar CutB,CutC,CutD,CutE;
+g_PanCuts[1]=CutB;
+g_PanCuts[2]=CutC;
+g_PanCuts[3]=CutD;
+g_PanCuts[4]=CutE;
+NULLOUT=setarrinst(1,"g_PanCuts",g_PanCuts);
+exit;

@@ -1,0 +1,6 @@
+//-- Установить имена мебельных элементов
+global ElemName; //-- Имена мебельных элементов
+getpar Name;
+ElemName=Name;
+NULLOUT=setvarinst(1,"ElemName",ElemName);
+exit;

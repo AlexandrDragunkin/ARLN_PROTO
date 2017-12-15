@@ -1,0 +1,82 @@
+//-- Передача данный в К3-Мебель Модуль раскроя листовых материалов
+global ProtoPath;
+ProjPath=getfilepath(sysvar(2));
+BaseName=ProjPath+getfiletitle(sysvar(2))-3+".mdb"; //-- Имя будущей базы
+// putmsg("ToK3Cutting")
+// defarr arr[len(getcutting())];
+// splitbydelim(getcutting(),"\"",arr)
+// putmsg(arr)
+// CreatorPath=getcutting()+"\\_NEW_\\";
+CreatorPath=getcutdata()+"\\_NEW_\\Bin\\";
+// putmsg(getcutdata())
+//-- Выгружаем базу данных
+res=fileexist(BaseName);
+if (res==1)
+{
+  res=removefile(BaseName);
+  if (res==0)
+  {
+     putmsg("Не удалось выгрузить мебельную базу ",0);
+     exit;
+  }
+}
+//-- Включаем кромку
+macro ProtoPath+"IsBand.mac" ;
+//-- Проверяем наличие крепежа и сверловки
+macro ProtoPath+"IsFixHole.mac" ;
+//-- Перенумерация
+NULLOUT=initselected();
+// select partly attribute "FurnType!=\"010000\"&&Furntype!=\"050000\"&&!IsAssign(\"CommonPos\")" done;
+// if (sysvar(61)>0)
+// {
+  // macro ProtoPath+"Num.mac" ;
+// }
+#res mebelbase BaseName;
+if (res=0)
+{
+  putmsg("Не удалось выгрузить мебельную базу ",0);
+  exit;
+}
+comline=" -p -i \""+BaseName+"\"";
+onerror err;
+// NameCut=Right(CreatorPath,13);
+// putmsg(NameCut)
+
+// if (NameCut=="K3Raskroy.exe")
+// putmsg(CreatorPath+"\\K3Raskroy.exe")
+if fileexist(CreatorPath+"\\K3Raskroy.exe")
+{
+	#q execute wait prompt "Выгрузка данных в \"Модуль раскроя К3-Мебель\"" both CreatorPath+"\\K3Raskroy.exe" comline ;
+	#ok_flag
+	alternative "Модуль раскроя К3-Мебель"
+	msgbox picture 4 beep 4 text left
+	"Данные для \"Модуля раскроя К3-Мебель\" успешно переданы"
+	done
+	"  OK  "
+	done;
+	exit;
+}
+else
+{
+	offerror;
+  #ok_flag
+	alternative "Ошибка передачи данных для \"Модуля раскроя К3-Мебель\""
+	msgbox picture 1 beep 1 text left
+	"Неверно задан путь к программе раскроя"
+	"Заданный путь не указывает на Модуль раскроя К3-Мебель"
+	done
+	"  OK  "
+	done;
+	exit;
+}
+//---------------------------------------------------
+err:
+offerror;
+#ok_flag
+alternative "Ошибка передачи данных для \"Модуля раскроя К3-Мебель\""
+msgbox picture 1 beep 1 text left
+"В процессе создания файла для \"Модуля раскроя К3-Мебель\" произошла ошибка"
+done
+"  OK  "
+done;
+exit;

@@ -1,0 +1,53 @@
+
+defarr Rez1l[4] Rez1r[4] Cut1[4] Gab1[6];
+defarr Rez2l[4] Rez2r[4] Cut2[4] Gab2[6];
+defarr arr[11];
+global g_DrawTaile;           //формировать деталировку 0-нет 1-да
+
+
+Getpar pnt1 ;
+Objects=Sysvar(60) ;
+ObjStart=Objects
+nkont=beginpanel(pnt1,g_DrawTaile);
+  //putmsg("kont="+str(nkont))
+
+i=0
+L1:
+  i=i+1
+  nelem=GetNContPan(i)
+  //putmsg("elem="+str(nelem))
+  j=0;
+  L2:
+  j=j+1
+  type=GetPanelEl(j,i,0,arr);
+  //putmsg("type="+str(type))
+  band=GetPanElWrk(j,i,2);
+  //putmsg("band="+str(band))
+  //=arr[1] =arr[2] =arr[3] =arr[4] =arr[5] =arr[6] =arr[7] =arr[8] =arr[9]
+
+  L3:
+  if (band>0) {  if (band>250) { band=band-250; goto L3; } //color band;
+  }
+  //else { color 0 ; }
+  if (type==1) {    // отрезок
+     line arr[1] arr[2] arr[3] arr[4] arr[5] arr[6] ;
+  }
+  else {
+    if (type==2) {    // дуга
+      arc arr[1] arr[2] arr[3] arr[4] arr[5] arr[6] arr[7] arr[8] arr[9];
+    }
+  }
+
+  if (j<nelem) { goto L2; }
+  objects=SysVar(60)-Objects
+  if Objects>0 {
+     Path select last  Objects done last 1 ;
+   }
+  Objects=Sysvar(60)
+  if (i<nkont) { goto L1; }
+  Nnew=Objects-ObjStart
+  if Nnew>0 { group last nnew done ; }
+err=endpanel();
+
+exit;
+

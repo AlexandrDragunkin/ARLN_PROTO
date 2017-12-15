@@ -1,0 +1,276 @@
+//-- Программа рисует створку дверной системы
+//***************************************************
+//
+//             (с)ГеоС 2009-2015 Александр Драгункин
+//
+//****************************************************
+nullout=getvarinst(2,"Doors63",Doors63,"Doors63.zmc|");
+nullout=getvarinst(2,"Doors64",Doors64,"Doors64.zmc|");
+
+global g_FurnType;
+global ProtoPath, g_tab_place, g_keyDS63,g_Doorscon, g_DRP ;
+global g_CLTop  g_CLDown  g_CLMid  g_CLDer  g_CLVer g_CLVerR g_CLVerL;
+KarkasNumb=getcarcnumb();     //-- Порядковый номер каркаса в сцене
+global g_Syst;           //-- Тип системы дверей
+global g_IDPrice;        //-- ID створки дверной системы из Прайс-листа
+global g_VstSt;          // материал вставки по умолчанию
+global g_TypRis;         // Тип стандартной раскладки
+global g_NStVst;         // число вставок стандартной раскладки
+global g_rplace          // вариант открывания для распашных
+
+global
+gs_IdMid             // -- Id Разделительных профилей
+gs_MidHV             // -- Массив с парметрами эквидистанты для расчета вставок в районе средних профилей
+gs_XmidS  gs_ZmidS   // -- координаты начальных точек разделительных профилей в створке
+gs_XmidE  gs_ZmidE   // -- координаты конечных  точек разделительных профилей в створке
+gs_AngS   gs_AngE    // -- Углы подрезки профиля вначале и в конце разделительного профиля
+gs_FlMater           // -- материалы вставок
+gs_FlNshp            // -- направление текстуры шпона вставок
+gs_IdFl              // -- Cчетчик обработанных в объекте вставок
+gs_IdMpr             // -- Cчетчик обработанных в объекте средних профилей
+gs_KFL               // -- Количество вставок из скретча
+gs_KMpr              // -- Количество средних профилей из скретча
+;
+
+nullout=getvarinst(1,"DoorSw",DoorSw,0);
+if DoorSw==1
+{
+	nullout=getvarinst(1,"x1",x1,100);
+	nullout=getvarinst(1,"y1",y1,100);
+	nullout=getvarinst(1,"z1n",z1n,100);
+	nullout=getvarinst(1,"CLVerR",CLVerR,0);
+	nullout=getvarinst(1,"CLVerL",CLVerL,0);
+	=g_DRP;
+	=g_CLTop;
+	=g_CLDown;
+	g_CLMid=iif(isvardef("g_CLMid")!=0,g_CLMid,0);
+	g_CLDer=iif(isvardef("g_CLDer")!=0,g_CLDer,0);
+	g_CLVerR=iif(CLVerR!=0,CLVerR,g_CLVer);
+	g_CLVerL=iif(CLVerL!=0,CLVerL,g_CLVer);
+	=g_VstSt;
+	// =g_rplace;
+	x=x1;
+	y=y1;
+	z=z1n;
+	// g_TypRis=0;
+	g_NStVst=1;
+	nullout=getvarinst(1,"vstMater1",vstMater1,g_VstSt);
+	nullout=getvarinst(1,"vstMater2",vstMater2,g_VstSt);
+	nullout=getvarinst(1,"vstMater3",vstMater3,g_VstSt);
+	// putmsg(vstMater1)
+	// putmsg(vstMater2)
+	// putmsg(vstMater3)
+	Mvst1=vstMater1;
+	Mvst2=vstMater2;
+	Mvst3=vstMater3;
+	Mvst4=0;
+	Mvst5=0;
+}
+else
+{
+	g_DRP=DBVar("Syst",10);   // Id выбранной СТВОРКИ DSSystemFlap
+	g_CLTop=DBVar("CLTop",408);                   // Верхний
+	g_CLDown=DBVar("CLDown",359);                  // Нижний
+	g_CLMid=DBVar("CLMid",iif(isvardef("g_CLMid")!=0,g_CLMid,387));                   // Средний
+	g_CLDer=DBVar("CLDer",282);                   // декоративный
+	g_CLVerR=DBVar("CLVerR",385);                  // вертикальный  правый
+	g_CLVerL=DBVar("CLVerL",385);                  // вертикальный  левый
+	g_VstSt=DBVar("ClVst",1581);                   // id материала вставки по умолчанию
+	g_rplace=DBVar("Rplace",1);                   // [Типы открывания]
+	
+	g_TypRis=DbVar("TypRis",0);  // 	Стандартная раскладка
+	g_NStVst=DbVar("NStVst",0);  // 	Число вставок стандартного заполнения
+	Mvst1=DbVar("Mvst1",0);  // 	Материал вставки 1(нижняя или левая)
+	Mvst2=DbVar("Mvst2",0);  // 	Материал вставки 2
+	Mvst3=DbVar("Mvst3",0);  // 	Материал вставки 3
+	Mvst4=DbVar("Mvst4",0);  // 	Материал вставки 4
+	Mvst5=DbVar("Mvst5",0);  // 	Материал вставки 5
+
+	x=DbVar("x",1000);	// Ширина створки
+	y=DbVar("y",450);
+	z=DbVar("z",1870);
+}
+	dx1=DbVar("dx1",0);  // Фаска по X угла 1                            // |2              1|
+	dx2=DbVar("dx2",0);  // Фаска по X угла 2                            // |                |
+	dx3=DbVar("dx3",0);  // Фаска по X угла 3                            // |                |
+	dx4=DbVar("dx4",0);  // Фаска по X угла 4                            // |3______________4|
+	dz1=DbVar("dz1",0);  // Фаска по Z угла 1
+	dz2=DbVar("dz2",0);  // Фаска по Z угла 2
+	dz3=DbVar("dz3",0);  // Фаска по Z угла 3
+	dz4=DbVar("dz4",0);  // Фаска по Z угла 4
+	
+	P_L=DbVar("P_L",0);  // 	Подрез слева
+	P_R=DbVar("P_R",0);  // 	Подрез справа
+	P_D=DbVar("P_D",0);  // 	Подрез снизу
+
+//=========================================================
+if g_TypRis>0
+{
+   //gs_KFL=gs_KFL+g_NStVst
+   //gs_KMpr=gs_KMpr+g_NStVst-1
+   gs_FlMater[1]=Mvst1;
+   gs_FlMater[2]=Mvst2;
+   gs_FlMater[3]=Mvst3;
+   gs_FlMater[4]=Mvst4;
+   gs_FlMater[5]=Mvst5;
+}
+
+if isvardef("g_keyDS63")==0 { g_keyDS63=0 }
+if g_keyDS63!=1
+{
+   macro ProtoPath++Doors63+"CrtSysDoor63.mac" ;
+}
+
+macro ProtoPath+Doors63+"GetFlap63.mac" g_DRP ;
+
+str_tab="SELECT * FROM DSSystemFlap WHERE (((DSSystemFlap.ID)="+str(g_DRP)+"));";
+
+FlapRs=adbOpen(g_Doorscon,str_tab);
+ij=adbRecCount(FlapRs);
+//-- Если количество нужных створок не равно единице - выходим
+if (ij<1)
+{
+  errcode="Количество створок с ID "+str(IDflap)+" равно "+str(ij);
+  gosub err;
+  goto end1;
+}
+NULLOUT=adbMoveFirst(FlapRs);
+//g_IDPrice=adbGetValue(FlapRs,"IDPrice"); //-- ID каркаса системы дверей из прайса
+
+NameSys63=adbGetValue(FlapRs,"NameSys");
+nullout=setvarinst(1,"NameSys63",NameSys63);
+MacroSet=adbGetValue(FlapRs,"MacroSet"); // Flap_Data63.mac
+g_Syst=adbGetValue(FlapRs,"TypeFlap");
+IDName=adbGetValue(FlapRs,"NAME");
+NumVar=adbGetValue(FlapRs,"NumVar");
+if NumVar>0
+{
+	g_TypRis=NumVar;
+}
+
+str_tab="SELECT DSNameSystem.ID, DSNameSystem.NAME FROM DSNameSystem WHERE DSNameSystem.ID="+str(IDName)
+Rs=adbOpen(g_Doorscon,str_tab);
+//-- Если количество нужных названий систем не равно единице - выходим
+if (ij<1)
+{
+  errcode="Количество систем с ID "+str(IDName)+" равно "+str(ij);
+  gosub err;
+  Rs=adbClose(Rs);
+  goto end1;
+}
+NULLOUT=adbMoveFirst(Rs);
+Name63=adbGetValue(Rs,"NAME");
+
+// Определяем тип створки в системе
+sqlstr="SELECT  * FROM DSSystemFlap WHERE DSSystemFlap.ID="+str(g_drp);
+MoveTypRs=adbOpen(g_Doorscon,sqlstr);
+nzp=adbRecCount(MoveTypRs);
+if nzp==0
+{
+   MoveTypRs=adbClose(MoveTypRs);
+   g_Doorscon=adbDisCon(g_Doorscon); //-- Разрываем соединение
+   g_keyDS63=0
+   cancel;
+}
+g_MoveType=adbGetValue(MoveTypRs,"TypeFlap");
+
+nullout=setvarinst(1,"xsysdoor",x);
+
+if (len(MacroSet)==0)
+{
+  errcode="Отсутствует макро установки створки";
+  gosub err;
+  goto end1;
+}
+MacroExtra=adbGetValue(FlapRs,"MacroExtra");
+macro ProtoPath+Doors64+MacroSet x,y,z,
+dx1,dz1,dx2,dz2,dx3,dz3,dx4,dz4,P_L,P_R,P_D;
+
+if (len(MacroExtra)!=0)
+{
+  macro ProtoPath+Doors64+MacroExtra x,y,z,PrMater1,Nshp1,PrMater2,Nshp2,PrMater3,Nshp3,
+  PrMater4,Nshp4,PrMater5,Nshp5,PrMater6,Nshp6,DoorNS,
+  DoorH1n,DoorH1k,DoorH2n,DoorH2k,DoorH3n,DoorH3k,DoorH4n,DoorH4k,DoorH5n,DoorH5k
+  ColorKant,IDFlap,
+  dx1,dz1,dx2,dz2,dx3,dz3,dx4,dz4;
+}
+
+Rs=adbClose(Rs);
+
+//--------------------------------------------------------------
+FurnType="200000";
+Namescr="ProtoParams";
+if (g_Syst==1)
+{
+  FurnType="210000";  //-- Раздвижные двери
+}
+if (g_Syst==2)
+{
+  // FurnType="230200";  //-- Дверь распашная поворотная
+  FurnType="210000";
+}
+if (g_Syst==3)
+{
+  FurnType="220000";  //-- Складные двери
+}
+if (g_Syst==4)
+{
+  FurnType="210100";  //-- Перегородка
+}
+if (g_Syst==5)
+{
+  FurnType="210200";  //-- Раздвижная подвесная
+}
+end1:
+FlapRs=adbClose(FlapRs);
+end:
+macro ProtoPath++Doors63+"ClosSysDoor63.mac";
+g_keyDS63=0;
+//--------------------------------------------------
+g_FurnType=FurnType;
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"x",x);
+err=AddScratch(ScrMod,FurnType,"y",y);
+err=AddScratch(ScrMod,FurnType,"z",z);
+err=AddScratch(ScrMod,FurnType,"Syst",g_DRP);
+err=AddScratch(ScrMod,FurnType,"CLTop",g_CLTop);
+err=AddScratch(ScrMod,FurnType,"CLDown",g_CLDown);
+err=AddScratch(ScrMod,FurnType,"CLVerR",g_CLVerR);
+err=AddScratch(ScrMod,FurnType,"CLVerL",g_CLVerL);
+err=AddScratch(ScrMod,FurnType,"ClVst",g_VstSt);
+err=AddScratch(ScrMod,FurnType,"dx1",dx1);
+err=AddScratch(ScrMod,FurnType,"dx2",dx2);
+err=AddScratch(ScrMod,FurnType,"dx3",dx3);
+err=AddScratch(ScrMod,FurnType,"dx4",dx4);
+err=AddScratch(ScrMod,FurnType,"dz1",dz1);
+err=AddScratch(ScrMod,FurnType,"dz2",dz2);
+err=AddScratch(ScrMod,FurnType,"dz3",dz3);
+err=AddScratch(ScrMod,FurnType,"dz4",dz4);
+err=AddScratch(ScrMod,FurnType,"P_L",P_L);
+err=AddScratch(ScrMod,FurnType,"P_R",P_R);
+err=AddScratch(ScrMod,FurnType,"P_D",P_D);
+err=AddScratch(ScrMod,FurnType,"TypRis",g_TypRis);
+err=AddScratch(ScrMod,FurnType,"NStVst",g_NStVst);
+err=AddScratch(ScrMod,FurnType,"Mvst1",Mvst1);
+err=AddScratch(ScrMod,FurnType,"Mvst2",Mvst2);
+err=AddScratch(ScrMod,FurnType,"Mvst3",Mvst3);
+err=AddScratch(ScrMod,FurnType,"Mvst4",Mvst4);
+err=AddScratch(ScrMod,FurnType,"Mvst5",Mvst5);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+exit;
+//==============================================================================
+//-- Вывод окна сообщения об ошибке
+//-- Входные параметры:
+//-- errcode - сод ошибки
+err:
+#ok_flag
+     alternative "Ошибка базы данных"
+     msgbox text "Некорректно заполнена база данных систем дверей"
+     " "
+     errcode
+     done
+     "  OK  "
+     done;
+return;
+//==============================================================================

@@ -1,0 +1,28 @@
+//-- Макропрограмма извлекает все крепежи из панелей
+global ProtoPath;
+
+selbyattr "left(FurnType,2)==\"06\"" prompt "Выберите крепеж" partly all done;
+object_2=sysvar(61);
+if (object_2==0)
+{
+  exit;;
+}
+defarr fixes[object_2];
+macro ProtoPath+"Arrobj.mac" object_2, fixes;
+i=0;
+loop:
+i=i+1;
+macro ProtoPath+"ExtractFix.mac" fixes[i];
+if (i<object_2)
+{
+  goto loop;
+}
+#ok_flag
+alternative "Извлечение крепежа"
+msgbox picture 4 beep 4 text left
+"Крепеж из панелей извлечен."
+" "
+done
+"  OK  "
+done;
+exit;

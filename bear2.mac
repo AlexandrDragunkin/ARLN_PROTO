@@ -1,0 +1,36 @@
+//-- Программа создания штангодержателей для продольной вешалки
+global ProtoPath;
+
+getpar xbase,ybase,zbase,D1,Hor_Gap,xsec,RackID;
+flan=priceinfo(RackID,"AccessID",0,2);
+en="Штангодержатель";
+NULLOUT=pushinst(1);
+if (flan==0)
+{
+  H=20; //-- Размер штангодержателя по-умолчанию
+  Line xbase ybase+0.01 zbase
+    xbase+Hor_Gap ybase+0.01 zbase
+    xbase+Hor_Gap ybase+D1 zbase
+    xbase+H ybase+D1 zbase
+    xbase+H ybase+D1+5 zbase
+    xbase+6 ybase+D1+5 zbase
+    xbase+6 ybase+D1+15 zbase
+    xbase ybase+D1+15 zbase
+    close;
+  #p1 path select last 8 done Last 1 create;
+  #r1 revolve p1 xbase ybase zbase xbase+1 ybase zbase 360;
+  delete p1 done;
+  #r2 mirror r1 done  3points xbase+xsec/2 ybase zbase
+	  xbase+xsec/2 ybase zbase+10
+	  xbase+xsec/2 ybase+10 zbase copy 1;
+}
+else
+{
+  macro ProtoPath+"SetEnam.mac" en ;
+  macro ProtoPath+"SetECod.mac" "8401" ;
+  Macro ProtoPath+"SetAccPLace.mac"   0;
+  macro ProtoPath+"MakeAcce.mac" flan,"040700",xsec,ybase+D1-25,zbase-15,0,180,0;
+  macro ProtoPath+"MakeAcce.mac" flan,"040700",0,ybase+D1-25,zbase-15,0,0,0;
+}
+NULLOUT=popinst(1)
+exit;

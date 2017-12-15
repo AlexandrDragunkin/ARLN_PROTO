@@ -1,0 +1,49 @@
+//-- Макропрограмма формирует атрибут торцевой обработки и приписывает его панели
+
+global ProtoPath;
+defarr w[32] ;
+getpar Side   //-- Сторона 1 - B
+      TypeFr  //-- Тип обработки торца 1 - паз, 2 - угол
+      ShiftK  //-- Смещение от А в долях толщины
+      Dept    //-- Глубина паза или смещение в мм для угла
+      Width   //-- Ширина паза или угол в градусах
+      Rz1     //-- Резерв
+      Rz2     //-- Резерв
+      Rz3     //-- Резерв
+      pnt ;   //-- Указатель на панель
+
+If (!IsAssign("FRZTRC",pnt))
+{
+  NULLOUT=initarray(w,0);
+}
+else
+{
+  Propil=getattr(pnt,"FRZTRC",-1);
+  NULLOUT=splitbydelim(Propil,",",w);
+}
+Side=Side-1;
+w[Side*7+1]=TypeFr;
+w[Side*7+2]=ShiftK;
+w[Side*7+3]=Dept;
+w[Side*7+4]=Width;
+w[Side*7+5]=Rz1;
+w[Side*7+6]=Rz2;
+w[Side*7+7]=Rz3;
+
+gosub FormAtrFr;
+attrobj attach "FRZTRC" done pnt Propil;
+exit;
+//------------------------------------------------------
+//-- Формирование атрибута торцевой обработки
+FormAtrFr:
+i=0;
+Propil="" ;
+loopFor:
+Propil=Propil+str(w[i*7+1])+","+str(w[i*7+2])+","+str(w[i*7+3])+","
+Propil=Propil+str(w[i*7+4])+","+str(w[i*7+5])+","+str(w[i*7+6])+","+str(w[i*7+7])+"," ;
+i=i+1;
+if (i<4)
+{
+  goto loopFor;
+}
+return;

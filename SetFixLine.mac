@@ -1,0 +1,16 @@
+//-- Установить свободную линию крепежа
+// На которую можно будет добавлять группы крепежа
+global g_FixLine;         //свободная линия крепежа
+defarr g_FixLine[10];  // Три точки и тип крепежа
+getpar
+xn yn zn	//-- Начало линии крепежа
+xv yv zv	//-- точка на оси Z ЛСК линии крепежа
+xt yt zt        //-- Конец линии крепежа
+FixType;  //-- Тип крепежа
+
+g_FixLine[1]=xn g_FixLine[2]=yn g_FixLine[3]=zn	//-- Начало линии крепежа
+g_FixLine[4]=xv g_FixLine[5]=yv g_FixLine[6]=zv	//-- точка на оси Z ЛСК линии крепежа
+g_FixLine[7]=xt g_FixLine[8]=yt g_FixLine[9]=zt        //-- Конец линии крепежа
+g_FixLine[10]=FixType;  //-- Тип крепежа
+
+exit;

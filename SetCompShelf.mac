@@ -1,0 +1,8 @@
+//-- Установить тип выдвижной полки
+global  ProtoPath;
+getpar a;
+g_CompShelf=a;
+NULLOUT=setVarInst(2,"g_CompShelf",g_CompShelf);
+Macro ProtoPath+"SetComp.mac" a;
+
+exit;

@@ -1,0 +1,57 @@
+//-- Макрос построения радиатора
+global ProtoPath;
+K3FilePath=mpathexpand("<K3Files>\\");			//-- Папка K3File
+Radiator="Радиаторы\\";
+
+W=dbvar("W",500);
+typeR=dbvar("typeR",1);
+colorR=dbvar("color",1);
+
+//--Названия K3 файлов
+if (typeR==1)
+{
+	shirS=100;
+	glS=150;
+	vS=600;
+	shirL=4;
+	Osn="CastRadiator.k3";
+	Lock="CastRadiator_lock.k3"
+}
+if (typeR==2)
+{
+	shirS=99;
+	glS=88;
+	vS=585;
+	shirL=14.8;
+	Osn="AlRadiator.k3";
+	Lock="AlRadiator_lock.k3"
+}
+
+//--Расчет по ширине количества секций
+n=int((w-shirL*2)/shirS);
+wtrue=n*shirS+shirL*2;
+otsR=(w-wtrue)/2;
+objDO=sysvar(60);
+//--Добавление по количеству секций.
+append K3FilePath+Radiator+Lock 4 0 0;
+mirror last 1 done 3points (shirS*n)/2+4,0,0 (shirS*n)/2+4,0,1 (shirS*n)/2+4,1,0 copy;
+append K3FilePath+Radiator+Osn 4 0 0;
+move multicopy n-1 last 1 done shirS 0 0;
+move all done otsR 0 0;
+#LR line otsR,0,0 0,0,0  done;
+attrobj attach "Contact" done last 1 2; 
+#LL line w-otsR,0,0 w,0,0 done;
+attrobj attach "Contact" done last 1 1;
+objPosle=sysvar(60)-objDo;
+group last objPosle done;
+chprop mapbypars last 1 done
+0,  -1														//-- Для всех секций
+1,  "Lb.pkm7_1_iml.#"+str(colorR)   
+;
+//--Присваиваем атрибуты
+attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 w glS vS ;
+attrobj attach "ObjType" done last 1 4;
+attrobj attach "PlaceType" done last 1 1;
+attrobj attach "UnitName" done last 1 "Радиатор";
+exit;
+

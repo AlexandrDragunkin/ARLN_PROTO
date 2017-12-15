@@ -1,0 +1,40 @@
+//-- Создание контура столешницы-капли
+//-- Входные параметры
+//-- Rad - Радиус капли
+//-- Horda - Длина среза капли
+//-- Big - Большая часть круга
+//-- Angle - Угол среза
+
+getpar Rad, Horda, Big, Angle;
+
+if (Horda>=2*Rad)
+{
+  putmsg("Срез столешницы-капли не должен превышать ее диаметра",0);
+  cancel;
+}
+
+if (Horda==0)
+{
+  #pa circle Rad 0 0 normal 0,0,1 Rad;
+  rotate last 2 done 2points Rad,0,0 Rad,0,10 angle nocopy;
+}
+else
+{
+  sq=Sqrt(Rad*Rad-Horda/2*Horda/2);
+  if (Big!=1)
+  {
+    toc=Rad-sq;
+  }
+  else
+  {
+    toc=Rad+sq;
+  }
+  #L1 line 0, Horda/2, 0 0,-Horda/2, 0 done;
+  arc 0, -Horda/2, 0 0, Horda/2, 0 toc, 0, 0;
+  rotate last 2 done 2points iif(Big==1,sq,-sq),0,0 iif(Big==1,sq,-sq),0,10 angle nocopy;
+  #pa path select last 2 done L1 done;
+}
+#paa pline path pa;
+delete pa done;
+objident paa pa;
+exit;

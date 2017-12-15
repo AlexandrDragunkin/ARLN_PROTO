@@ -1,0 +1,58 @@
+//-- ћакропрограмма определ€ет входит ли точка в плоскую область заданную координатами.
+global ProtoPath;
+getpar
+par1				//-- резервный параметр
+Xp					//-- координата X точки
+Yp					//-- координата Y точки
+n						//-- количество точек области
+arrSecX			//-- массив ’ координат точек области
+arrSecY			//-- массив Y координат точек области
+result;			//-- возвращаемое значение, 0-не входит, 1-входит
+
+defarr 
+Vec1[3], 
+Vec2[3], 
+VecR[3];		//-- результат произведени€ векторов
+VecB=0;			//-- предыдущий результат произведени€
+result=0;
+i=0;
+loop:
+i=i+1;
+if (i!=n)
+{
+	Vec1[1]=arrSecX[i+1]-arrSecX[i];
+	Vec1[2]=arrSecY[i+1]-arrSecY[i];
+	Vec2[1]=Xp-arrSecX[i];
+	Vec2[2]=Yp-arrSecY[i];
+}
+else
+{
+  Vec1[1]=arrSecX[1]-arrSecX[i];
+	Vec1[2]=arrSecY[1]-arrSecY[i];
+	Vec2[1]=Xp-arrSecX[i];
+	Vec2[2]=Yp-arrSecY[i];
+}
+Vec1[3]=0;
+Vec2[3]=0;
+NULLOUT=Vectorv(Vec1,Vec2,VecR);	//- произведение двух векторов
+if (i>1&&sgn(VecB)!=sgn(VecR[3]))
+{
+ goto error;
+}
+VecB=VecR[3];
+if (i<n)
+{
+ goto loop;
+}
+if (sgn(VecB)!=sgn(VecR[3]))
+{
+ goto error;
+}
+result=1;	//-- точка входит в область
+//point Xp Yp 0;
+//putmsg("Xp="+str(Xp)+";Yp="+str(Yp)+"")
+exit;
+
+error:
+result=0;	//-- точка не входит в область
+exit;

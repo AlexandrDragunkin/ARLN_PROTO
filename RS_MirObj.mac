@@ -1,0 +1,40 @@
+//--Макро зеркальности объекта
+global ProtoPath;
+defarr gabKar[6];		//--Массив с размерами каркаса
+defarr gab[6];			//--Массив с размерами каркаса
+defarr gabP[6];			//--Массив с размерами каркаса
+defarr LCSP[3]; 
+defarr GCSP[3]; 
+defarr LCSK[3]; 
+defarr GCSK[3]; 
+//-----------------------------------------------------------------------
+getpar KARK;			//--Входной параметр - собранный каркас
+MBCarcase copy KARK 0 0 10000;
+karknumb=getcarcnumb();
+select attribute "(KarkasNumb=="+str(karknumb)+")&&(Posit==10)" done;
+ab=sysvar(61);
+karkas=getselnum(1);
+err=objgab3(karkas,gabkar);
+//--Зеркалим панели
+select attribute "left(FurnType,3)==\"010\"" done;
+kolP=sysvar(61);
+if (kolP!=0)
+{ 
+ defarr pan[kolP];
+ macro ProtoPath+"ArrObj.mac" kolP pan;
+ i=0;
+ LOOP:
+ i=i+1;
+ err=objgab3(pan[i],gab);
+ OTL=gabkar[4]-gab[4];
+ OTR=gab[1]-gabkar[1];
+ move pan[i] done OTL 0 0 nocopy;
+ move pan[i] done -OTR 0 0 nocopy;
+}
+ macro ProtoPath+"RS_MirPan.mac" pan[i];
+ if (i<kolP)
+ {
+  goto LOOP;
+ }
+}
+exit;

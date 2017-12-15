@@ -1,0 +1,66 @@
+//--Макро создания полки для гардеробных систем
+global ProtoPath;
+getpar
+x y z			//-- Правый нижний дальний угол
+w d 			//-- Размер по D и B
+Type_pan;		//-- Тип (полка, стойка стенка)
+;
+
+//--Расчитываем параметры
+KarkasNumb=getcarcnumb();			//-- Текущий номер каркаса
+Type_pan=12;					//-- Тип панели - всегда полка
+NULLOUT=getvarinst(1,"PanMater",Mat,0);		//-- Материал панели
+NULLOUT=getvarinst(2,"PanWFixB",TypeB,0);	//-- Крепеж по стороне В
+NULLOUT=getvarinst(2,"WFixOtB",D_B,0);		//-- Отступ крепежа по стороне В
+NULLOUT=getvarinst(2,"WFixRasB",An_B,0);	//-- 
+NULLOUT=getvarinst(2,"PanWFixC",TypeC,0);	//-- Крепеж по стороне С
+NULLOUT=getvarinst(2,"WFixOtC",D_C,0);		//-- Отступ крепежа по стороне С
+NULLOUT=getvarinst(2,"WFixRasC",An_C,0);	//-- 
+
+macB=PriceInfo(TypeB,"MacroFile","FixPolkaColumn.mac",2);		//-- макрос создания крепежа B
+macC=PriceInfo(TypeC,"MacroFile","FixPolkaColumn.mac",2);		//-- макрос создания крепежа C
+
+NULLOUT=getvarinst(2,"Shift_XB",ShiftXB,0);	//-- Подрез панели по стороне В
+NULLOUT=getvarinst(2,"Shift_XC",ShiftXC,0);	//-- Подрез панели по стороне С
+
+if (D_B+An_B==0)
+{
+ ShiftXB=0;
+}
+if (D_C+An_C==0)
+{
+ ShiftXC=0;
+}
+
+//--Создаем полку
+macro ProtoPath+"MakePan.mac" x+ShiftXB y z W-ShiftXB-ShiftXC D Type_pan;
+
+//--Cоздаем крепление B
+// if (D_B+An_B>20)
+// {
+ if (TypeB!=0)
+ {
+  macro ProtoPath+macB TypeB Mat W D D_B An_B;
+  attrobj attach "GoodsID" done last 1 TypeB ;
+  attrobj attach "GroupID" done last 1 147 ;     
+  attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+  attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 0 D 0 ; //-- Размеры
+  attrobj attach "Assembly" done last 1 1;
+ }
+// }
+//--Cоздаем крепление С
+// if (D_C+An_C>20)
+// {
+ if (TypeC!=0)
+ {
+  // macro ProtoPath+macC TypeC Mat W D (D-D_C-An_C) An_C;
+  macro ProtoPath+macC TypeC Mat W D An_C D_C;
+  rotate last 1 done 2points w/2 d/2 0 w/2 d/2 10 180 nocopy;
+  attrobj attach "GoodsID" done last 1 TypeC ;
+  attrobj attach "GroupID" done last 1 147 ;     
+  attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+  attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 0 D 0 ; //-- Размеры
+  attrobj attach "Assembly" done last 1 1;
+ }
+// }
+exit;          

@@ -1,0 +1,46 @@
+//-- Выравнивание объектов по одной из координат относительно текущего вида
+defarr xm[6] xn[6] d_pnt[3] ;
+onerror end;
+select prompt "Укажите объекты, которые выравниваем" wholly : ;
+if (sysvar(61)==0)
+{
+  goto end;
+}
+group previous done;
+objident last 1 pnt ;
+select prompt "Укажите объекты, по которым выравниваем" wholly : ;
+if (sysvar(61)==0)
+{
+  goto end;
+}
+group previous done;
+objident last 1 pnt1 ;
+get "Укажите сторону, по которой выравниваем" point missing d_pnt[1] d_pnt[2] d_pnt[3] :  ;
+NULLOUT=getsnap();
+ptransCS(0,3,d_pnt[1],d_pnt[2],d_pnt[3],d_pnt[1],d_pnt[2],d_pnt[3]) ;
+setucs vcs ;
+NULLOUT=objgab3(pnt1,xm) ;
+setucs move xm[1]+(xm[4]-xm[1])/2 xm[2]+(xm[5]-xm[2])/2 xm[3]+(xm[6]-xm[3])/2 ;
+NULLOUT=objgab3(pnt1,xm) ;
+NULLOUT=objgab3(pnt,xn) ;
+ptransCS(3,0,d_pnt[1],d_pnt[2],d_pnt[3],d_pnt[1],d_pnt[2],d_pnt[3]) ;
+if (abs(d_pnt[1])<=abs(d_pnt[2]))
+{
+  move pnt done ((xm[4]-xm[1])/2+xm[1])-((xn[4]-xn[1])/2+xn[1]) 0 0  ;
+}
+else
+{
+  move pnt done 0  ((xm[5]-xm[2])/2+xm[2])-((xn[5]-xn[2])/2+xn[2]) 0  ;
+}
+NULLOUT=resnap();
+end:
+if (isvardef("pnt")==16)
+{
+  explode pnt done;
+}
+if (isvardef("pnt1")==16)
+{
+  explode pnt1 done;
+}
+offerror;
+exit;

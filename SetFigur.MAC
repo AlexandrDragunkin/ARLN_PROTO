@@ -1,0 +1,14 @@
+//-- Установить параметры фигурной столешницы
+//-- Входные параметры:
+//-- FRad1 - Радиус 1
+//-- FRad2 - Радиус 1
+//-- FLeftFlag - Левая ориеннтация
+//-- FAngle - Угол стыковки радиусов
+
+getpar FRad1, FRad2, FLeftFlag, FAngle;
+
+NULLOUT=setvarinst(1,"FRad1",FRad1);
+NULLOUT=setvarinst(1,"FRad2",FRad2);
+NULLOUT=setvarinst(1,"FLeftFlag",FLeftFlag);
+NULLOUT=setvarinst(1,"FAngle",FAngle);
+exit;

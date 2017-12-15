@@ -1,0 +1,14 @@
+//-- Установить текущие типы кромки по углам панели
+global g_BandPan;  //-- Тип кромки по сторонам и углам в порядке D 1 C 2 E 3 B 4
+global g_CBandPan; //-- Цвет кромки по сторонам и углам в порядке D 1 C 2 E 3 B 4
+
+getpar Band1 Band2 Band3 Band4;
+g_BandPan[2]=Band1;
+g_BandPan[4]=Band2;
+g_BandPan[6]=Band3;
+g_BandPan[8]=Band4;
+NULLOUT=setvarinst(1,"g_BandPan",Band1,2);
+NULLOUT=setvarinst(1,"g_BandPan",Band2,4);
+NULLOUT=setvarinst(1,"g_BandPan",Band3,6);
+NULLOUT=setvarinst(1,"g_BandPan",Band4,8);
+exit;

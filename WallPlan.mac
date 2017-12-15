@@ -1,0 +1,14 @@
+//-- Создание Разверток стен
+
+global ProtoPath;
+
+if (udgetentity("DrawType",ValType,DrawType,sVal)==0) //-- Тип создаваемых чертежей
+{
+  DrawType=1;
+}
+if (DrawType==1)	//-- Профессиональные черетежи
+{
+  macro ProtoPath+"ApmDraw.mac" ;
+  exit;
+}
+WallPlan

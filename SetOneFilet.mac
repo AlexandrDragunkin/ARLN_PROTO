@@ -1,0 +1,55 @@
+//-- Установить текущие типы и параметры подрезов для панели
+global TypeAngl;    //-- Типы подрезов углов
+global ParamPan;    //-- Параметры подрезов
+global BendFil;
+global g_AngleCut;
+defarr bbb[15];
+defarr g_AngleCut[4,6];
+defarr TypeAngl[4], ParamPan[8];
+getpar Anglenum Type P1 P2 ;
+TypeAngl[Anglenum]=Type;
+ParamPan[Anglenum*2-1]=P1;
+ParamPan[Anglenum*2]=P2;
+
+g_AngleCut[Anglenum,1]=TypeAngl[Anglenum];
+if (TypeAngl[Anglenum]==4)
+{
+  g_AngleCut[Anglenum,1]=5;
+}
+if (TypeAngl[Anglenum]==2)
+{
+  g_AngleCut[Anglenum,1]=4;
+}
+if (TypeAngl[Anglenum]==3)
+{
+  g_AngleCut[Anglenum,1]=2;
+  g_AngleCut[Anglenum,4]=0;
+  g_AngleCut[Anglenum,3]=0;
+}
+if (TypeAngl[Anglenum]==5)
+{
+  g_AngleCut[Anglenum,1]=2;
+  g_AngleCut[Anglenum,4]=min(ParamPan[Anglenum*2-1],ParamPan[Anglenum*2]);
+}
+g_AngleCut[Anglenum,5]=0;
+g_AngleCut[Anglenum,6]=0;
+sq=sqrt(ParamPan[Anglenum*2-1]*ParamPan[Anglenum*2-1]+ParamPan[Anglenum*2]*ParamPan[Anglenum*2]);
+if (TypeAngl[Anglenum]==1&&BendFil[Anglenum]!=0&&sq>0)
+{
+  g_AngleCut[Anglenum,1]=3;
+  x3=ParamPan[Anglenum*2-1]/2-ParamPan[Anglenum*2]*BendFil[Anglenum]/sq;
+  y3=ParamPan[Anglenum*2]/2-ParamPan[Anglenum*2-1]*BendFil[Anglenum]/sq;
+  #aaa arc ParamPan[Anglenum*2-1],0,0 0,ParamPan[Anglenum*2],0 x3,y3,0;
+  NULLOUT=getobjgeo(aaa,bbb);
+  g_AngleCut[Anglenum,4]=iif(BendFil[Anglenum]>0,bbb[1],-bbb[1]);
+  delete aaa done;
+}
+g_AngleCut[Anglenum,2]=ParamPan[Anglenum*2-1];
+g_AngleCut[Anglenum,3]=ParamPan[Anglenum*2];
+NULLOUT=setvarinst(1,"g_AngleCut",g_AngleCut[Anglenum,1],Anglenum,1);
+NULLOUT=setvarinst(1,"g_AngleCut",g_AngleCut[Anglenum,2],Anglenum,2);
+NULLOUT=setvarinst(1,"g_AngleCut",g_AngleCut[Anglenum,3],Anglenum,3);
+NULLOUT=setvarinst(1,"g_AngleCut",g_AngleCut[Anglenum,4],Anglenum,4);
+NULLOUT=setvarinst(1,"g_AngleCut",g_AngleCut[Anglenum,5],Anglenum,5);
+NULLOUT=setvarinst(1,"g_AngleCut",g_AngleCut[Anglenum,6],Anglenum,6);
+exit;

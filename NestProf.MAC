@@ -1,0 +1,77 @@
+//-- Установка профиля по направляющей
+defarr xm[3];
+global ProtoPath;
+
+defarr arr[3];
+
+NULLOUT=getvarinst(2,"DfProf",DfProf,0);          //-- Умолчание для материалов
+DefProf=str(getyadsubst(4))+"#"+str(DfProf) ;                    // Формируем строку умолчаний.
+objident prompt "Укажите направляющую" : B1 ;
+#LB clength B1;
+Lb=int(LB);
+
+#ok_flag
+setvar
+"Профиль по направляющей"
+""
+left
+"Опредлите параметры профиля"
+done
+
+string auto button 6 default DefProf     "Материал профиля:" NDMat
+
+real     default 0	       "Угол поворота:"      	Angle
+logical  default 0   "Сделать только заготовку"  Zflag
+done;
+if (ok_flag==0)
+{
+  exit;
+}
+NULLOUT=GetSnap();
+
+splitbydelim(NDMat,"#",Arr);
+DfProf=Arr[2];
+Prof=DfProf;
+setucs lcs B1 ;
+defarr  w1[3]  w2[3];
+//-- Делаю профиль прямой
+    w1[1]=0;
+    w1[2]=0;
+    w1[3]=0;
+    w2[1]=0;
+    w2[2]=0;
+    w2[3]=LB;
+macro Protopath+"PutProf.mac" w1 w2 ;
+
+//protoobj create "Shkaf.ptl" 39
+//"CLengthX" LB
+//"PrProf" Prof
+//done
+//0 0 0;
+
+objident last 1 zagot;
+if (Zflag==1)
+{
+  goto end;
+}
+FileProf=PriceInfo(Prof,"K3file",""); //-- Имя файла с образующей
+FilePath=MPathExpand("<K3files>\\"+FileProf)
+#AAA append FilePath 0 0 0;
+NULLOUT=contstatus(B1,xm);
+if (xm[2]==0||NULLOUT==0) //-- Контур незамкнутый (или не контур)
+{
+  #ProfOb pipe B1 AAA done 0 0 0 Angle yes ; //-- Делаем гнутый профиль
+}
+else
+{
+  #ProfOb pipe B1 AAA 0 0 0 Angle ; //-- Делаем гнутый профиль
+}
+delete AAA done ;
+attrobj copy zagot all ProfOb done;  //-- Копируем атрибуты от прямого в гнутый
+if (ZFlag==0) //-- Заготовку не оставляем
+{
+  delete zagot done;
+}
+end:
+NULLOUT=ReSnap();
+exit;

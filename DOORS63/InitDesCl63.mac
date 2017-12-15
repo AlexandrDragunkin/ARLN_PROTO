@@ -1,0 +1,239 @@
+//InitDesignColor63.mac
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+//Инициализация цвета профилей определение конкретного Id профиля
+
+global ProtoPath g_nameSf, g_namePs;
+global g_MoveType;
+
+global g_tab_place, g_keyDS63,g_Doorscon;
+global g_CLTopN   g_CLTopI       g_CLTopNumb   g_CLTop;
+global g_CLDownN  g_CLDownI      g_CLDownNumb  g_CLDown;
+global g_CLMidN   g_CLMidI       g_CLMidNumb   g_CLMid g_DRMidNumb;
+global g_CLDerN   g_CLDerI       g_CLDerNumb   g_CLDer g_DRDerNumb;
+global g_CLVerN   g_CLVerI       g_CLVerNumb   g_CLVer;
+global g_TCLTopN  g_TCLTopI      g_TCLTopNumb  g_TCLTop;
+global g_TCLDownN g_TCLDownI     g_TCLDowNumb  g_TCLDown;
+global g_CLObramN g_CLObramI     g_CLObramNum g_CLObram g_CLrObram;
+global g_CLrTop g_CLrDown g_CLrMid g_CLrDer g_CLrVer g_TCLrDown g_TCLrTop;
+
+getpar g_key_prev;
+
+ DRS_Ver=g_CLVerN[1];
+IntElemOb=iif(isvardef("g_CLrObram")==0,1,findinarray(g_CLObramN,g_CLrObram,1,g_CLObramNum)); //FindInArray(g_CLObramN,DRS_Ver)
+IntElemOb=iif(IntElemOb>0,IntElemOb,1);
+g_CLrObram=iif(isvardef("g_CLrObram")==0,"x",g_CLrObram);
+g_CLrMid=iif(isvardef("g_CLrMid")==0,"x",g_CLrMid);
+g_CLrDer=iif(isvardef("g_CLrDer")==0,"x",g_CLrDer);
+g_TCLrDown=iif(isvardef("g_TCLrDown")==0,"x",g_TCLrDown);
+g_TCLrTop=iif(isvardef("g_TCLrTop")==0,"x",g_TCLrTop);
+g_TCLrMs=iif(isvardef("g_TCLrMs")==0,"x",g_TCLrMs);
+
+ DRS_Obram=g_CLObramN[iif(IntElemOb==0,1,IntElemOb)];
+IntElemTp=FindInArray(g_CLTopN,DRS_Obram)
+ DRS_top=g_CLTopN[iif(IntElemTp==0,1,IntElemTp)];
+IntElemDn=FindInArray(g_CLDownN,DRS_Obram)
+ DRS_Down=g_CLDownN[iif(IntElemDn==0,1,IntElemDn)];
+IntElemMr=FindInArray(g_CLMidN,DRS_Obram)
+ DRS_Mid=g_CLMidN[iif(IntElemMr==0,1,IntElemMr)];
+IntElemMn=FindInArray(g_CLDerN,DRS_Obram)
+ DRS_Der=g_CLDerN[iif(IntElemMn==0,1,IntElemMn)];
+IntElemTT=FindInArray(g_TCLTopN,DRS_Obram)
+ DRS_Ttop=g_TCLTopN[iif(IntElemTT==0,1,IntElemTT)];
+IntElemTD=FindInArray(g_TCLDownN,DRS_Obram)
+ DRS_TDown=g_TCLDownN[iif(IntElemTD==0,1,IntElemTD)];
+// IntElemTM=FindInArray(g_TCLMsN,DRS_Obram)
+ // DRS_TMs=g_TCLMsN[iif(IntElemTM==0,1,IntElemTM)]; 
+
+
+g_CLDerNumb=0;
+Log1=(g_CLTopNumb>1)||(g_CLDownNumb>1)||(g_CLMidNumb>1)||(g_CLDerNumb>1)||(g_CLVerNumb>1);
+Log2=(g_MoveType==1)&&((g_TCLTopNumb>1)||(g_TCLDowNumb>1))
+
+nullout=getvarinst(1,"KeyFas",KeyFas,0);
+
+if Log1||Log2
+{
+#ok_flag
+setvar
+"Установка систем дверей "+g_nameSf+" в нишу"
+""
+left
+"Цвет профиля створки "+g_namePs
+  if g_CLVerNumb==1
+  {
+	"Вертикальный профиль "+DRS_Ver
+  }
+  if g_CLTopNumb==1
+  {
+	"Верхний горизонтальный профиль "+DRS_top
+  }
+  if g_CLDownNumb==1
+  {
+	"Нижний горизонтальный профиль "+DRS_Down
+  }
+  if g_CLMidNumb==1
+  {
+	"Разделительный профиль "+DRS_Mid
+  }
+  if g_CLDerNumb==1
+  {
+	"Декоративный профиль "+DRS_Der
+  }
+  if (g_MoveType>0)
+  {
+	  if g_TCLTopNumb==1
+	  {
+		"Верхний трек "+DRS_Ttop
+	  }
+	  if g_TCLDowNumb==1
+	  {
+		"Нижний трек "+DRS_TDown
+	  }
+  }
+
+done
+
+if g_CLObramNum>1
+{
+str 	listonly
+	let j=1
+	let KurKey=0
+	LoopJ1:
+	 if (g_CLrObram==g_CLObramN[j])&&(KurKey==0)  //J==IntElemOb
+         {
+	  current
+	  let KurKey=1
+	 }
+	 g_CLObramN[j]
+	 if (j<g_CLObramNum) { Let j=j+1 goto LoopJ1 }
+	done
+	"Цвет профилей рамки:"    DRS_Obram
+}
+//if g_CLTopNumb>1
+//{
+//str 	listonly
+//	let j=1
+//	LoopJ1:
+//	 if J==1 {
+//	  current
+//	 }
+//	 g_CLTopN[j]
+//	 if (j<g_CLTopNumb) { Let j=j+1 goto LoopJ1 }
+//	done
+//	"Цвет верхнего профиля створки:"    DRS_top
+//}
+
+//if g_CLDownNumb>1
+//{
+//str 	listonly
+//	let j=1
+//	LoopJ2:
+//	 if J==1 {
+//	  current
+//	 }
+//	 g_CLDownN[j]
+//	 if (j<g_CLDownNumb) { Let j=j+1 goto LoopJ2 }
+//	done
+//	"Цвет нижнего профиля створки:"    DRS_down
+//}
+//if g_CLVerNumb>1
+//{
+//str 	listonly
+//	let j=1
+//	LoopJ5:
+//	 if J==1 {
+//	  current
+//	 }
+//	 g_CLVerN[j]
+//	 if (j<g_CLVerNumb) { Let j=j+1 goto LoopJ5 }
+//	done
+//	"Цвет вертикального профиля створки:"    DRS_Ver
+//}
+if g_CLMidNumb>1
+{
+str 	listonly
+	let j=1
+	let KurKey=0
+	LoopJ3:
+	 if (J==IntElemMr)&&(KurKey==0) {
+	  current
+	  let KurKey=1
+	 }
+	 g_CLMidN[j]
+	 if (j<g_CLMidNumb) { Let j=j+1 goto LoopJ3 }
+	done
+	"Цвет разделительного профиля створки:"    DRS_Mid
+}
+
+
+if g_MoveType>0
+{
+ if g_TCLTopNumb>1
+ {
+ str 	listonly
+	let j=1
+	let KurKey=0
+	LoopJ6:
+	 if (g_TCLrTop==g_TCLTopN[j])&&(KurKey==0)  //J==IntElemTT
+         {
+	  current
+	  let KurKey=1
+	 }
+	 g_TCLTopN[j]
+	 if (j<g_TCLTopNumb) { Let j=j+1 goto LoopJ6 }
+	done
+	"Цвет верхнего Трека:"    DRS_Ttop
+ }
+
+ if g_TCLDowNumb>1
+ {
+  str 	listonly
+	let j=1
+	let KurKey=0
+	LoopJ7:
+	 if (g_TCLrDown==g_TCLDownN[j])&&(KurKey==0) //J==IntElemTD
+         {
+	  current
+	  let KurKey=1
+	 }
+	 g_TCLDownN[j]
+	 if (j<g_TCLDowNumb) { Let j=j+1 goto LoopJ7 }
+	done
+	"Цвет нижнего Трека:"    DRS_Tdown
+ }
+}
+ done;
+ if ok_flag==0
+ {
+  g_key_prev=0;
+  exit;
+  }
+}
+DRS_top=DRS_Obram;
+DRS_Down=DRS_Obram;
+DRS_Ver=DRS_Obram;
+
+// putmsg(DRS_top)
+// putmsg("g_CLtopNumb="+str(g_CLtopNumb))
+// putmsg(g_CLTopI)
+g_CLTop=g_CLTopI[findinarray(g_CLTopN,DRS_top,1,g_CLtopNumb)];       //--Определение ID  верхнего профиля
+g_CLDown=g_CLDownI[findinarray(g_CLDownN,DRS_Down,1,g_CLDownNumb)];  //--Определение ID  нижнего профиля
+g_CLMid=iif(g_DRMidNumb>0,g_CLMidI[findinarray(g_CLMidN,DRS_Mid,1,g_CLMidNumb)],0);       //--Определение ID  разделительного профиля
+g_CLDer=0
+ //g_CLDer=iif(g_DRDerNumb>0,g_CLDerI[findinarray(g_CLDerN,DRS_Der,1,g_CLDerNumb)],0);       //--Определение ID  декоративного профиля
+g_CLVer=g_CLVerI[findinarray(g_CLVerN,DRS_Ver,1,g_CLVerNumb)];       //--Определение ID  Вертикального профиля
+// putmsg(g_MoveType)
+if g_MoveType==1||g_MoveType==2||g_MoveType==3||g_MoveType==5||g_MoveType==6
+{
+ g_TCLTop=g_TCLTopI[findinarray(g_TCLTopN,DRS_Ttop,1,g_TCLTopNumb)];       //--Определение ID профиля верхнего Трека
+ g_TCLDown=g_TCLDownI[findinarray(g_TCLDownN,DRS_Tdown,1,g_TCLDowNumb)];  //--Определение ID профиля нижнего Трека
+}
+
+
+g_key_prev=1
+exit;

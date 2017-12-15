@@ -1,0 +1,53 @@
+
+NULLOUT=GetVarInst(2,"Typ_Kro",Typ_Kro,0); // Тип кромки
+NULLOUT=GetVarInst(2,"PrMater",PrMater,0); // Умолчание для материалов каркаса
+
+NULLOUT=GetVarInst(2,"DfFixPol",DfFixPol,0);
+global xsek1, xsek2, ysek1, ysek2, zsek1, zsek2 ; // Габариты ниши
+global ZZAZagl; // Заглубление полки
+global Type3,    //Тип угла 3
+       Type4,    //Тип угла 4
+       Par5,     //Размер фаски/радиуса угла 3 по х
+       Par6,     //Размер фаски угла 3 по y
+       Par7,     //Размер фаски/радиуса угла 4 по х
+       Par8;     //Размер фаски угла 4 по y
+global FixC, FixB;
+
+NULLOUT=GetSnap();
+
+getpar
+x y z		// правый нижний дальний угол	
+w s 	// размер по D и B
+Type3    //Тип угла 3
+Type4    //Тип угла 4
+Par5     //Размер фаски/радиуса угла 3 по х
+Par6     //Размер фаски угла 3 по y
+Par7    //Размер фаски/радиуса угла 4 по х
+Par8     //Размер фаски угла 4 по y
+FixB
+FixC
+Type_pan	// Тип (полка, стойка стенка)
+
+;
+
+protoobj create "Shkaf.ptl" 33
+  "x" w
+  "y" s
+  "Type_pan" 12
+  "Type3" Type3
+  "Type4" Type4
+  "Par5" Par5
+  "Par6" Par6
+  "Par7" Par7
+  "Par8" Par8
+  "PrMater" PrMater
+  "Band_E" Typ_Kro
+  "Face_col" 0
+  "Fit_B" FixB
+  "Fit_C" FixC
+  "Fit_D" DfFixPol
+done
+  x y z
+NULLOUT=ReSnap();
+exit;
+

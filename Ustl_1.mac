@@ -1,0 +1,397 @@
+//-- Построение контура углового покрытия
+
+//-- Массивы для координат контура углового покрытия
+defarr li1[4],li2[4],li3[4],li4[4],li5[4],li6[4],li7[4];
+defarr ar1[6],ar2[6],ar3[6],ar4[6],ar5[6],ar6[6],ar7[6];
+
+NULLOUT=initarray(li1,0);
+NULLOUT=initarray(li2,0);
+NULLOUT=initarray(li3,0);
+NULLOUT=initarray(li4,0);
+NULLOUT=initarray(li5,0);
+NULLOUT=initarray(li6,0);
+NULLOUT=initarray(li7,0);
+
+NULLOUT=initarray(ar1,0);
+NULLOUT=initarray(ar2,0);
+NULLOUT=initarray(ar3,0);
+NULLOUT=initarray(ar4,0);
+NULLOUT=initarray(ar5,0);
+NULLOUT=initarray(ar6,0);
+NULLOUT=initarray(ar7,0);
+
+lun1=0;
+lun2=0;
+lun3=0;
+lun4=0;
+lun5=0;
+lun6=0;
+lun7=0;
+
+run1=0;
+run2=0;
+run3=0;
+run4=0;
+run5=0;
+run6=0;
+run7=0;
+
+getpar
+LLK,			//        длина левого крыла
+LRK,			//        длина правого крыла
+SLK,			//        ширина левого крыла
+SRK,			//        ширина правого крыла
+VAR,      //				вариант состыковки крыльев
+SLF,			//				смещение точки изгиба по передней кромке левой
+SRF,			//				смещение точки изгиба по передней кромке правой
+RU1,			//     \
+RU2,      //      \
+RU3,      //        радиусы скругления на внешних углах
+RU4,      //      /
+RU5,      //     /
+RVU,			//        радиус скругления на внутренних углах
+;
+
+//-- Заполняем массивы информацией об отрезках
+li1[1]=0;
+li1[2]=0;
+li1[3]=LLK;
+li1[4]=0;
+lun1=addunobj2d(1,0,li1);
+
+li2[1]=LLK;
+li2[2]=0;
+li2[3]=LLK;
+li2[4]=SLK;
+lun2=addunobj2d(1,0,li2);
+
+li3[1]=LLK;
+li3[2]=SLK;
+
+if (VAR==0) //-- Фаска есть
+{
+  li3[3]=SRK;
+  li3[4]=SLK;
+  lun3=addunobj2d(1,0,li3);
+
+  li5[1]=SRK;
+  li5[2]=SLK;
+}
+else        //-- Фаски нет
+{
+  li3[3]=SRK+SLF;
+  li3[4]=SLK;
+  lun3=addunobj2d(1,0,li3);
+
+  li4[1]=SRK+SLF;
+  li4[2]=SLK;
+  li4[3]=SRK;
+  li4[4]=SLK+SRF;
+  lun4=addunobj2d(1,0,li4);
+
+  li5[1]=SRK;
+  li5[2]=SLK+SRF;
+}
+li5[3]=SRK;
+li5[4]=LRK;
+lun5=addunobj2d(1,0,li5);
+
+li6[1]=SRK;
+li6[2]=LRK;
+li6[3]=0;
+li6[4]=LRK
+lun6=addunobj2d(1,0,li6);
+
+li7[1]=0;
+li7[2]=LRK;
+li7[3]=0;
+li7[4]=0;
+lun7=addunobj2d(1,0,li7);
+
+if (RU1>0)
+{
+  run1=arcttunobj2d(lun2,lun3,RU1);
+  if (run1==0)
+  {
+    putmsg("По данным параметрам контур углового покрытия не строится",0);
+    goto end;
+  }
+  NULLOUT=getunobj2d(run1,ty,ar1);
+  u=div2unobj2d(lun2,ar1[1],ar1[2]);
+  if (u==0)
+  {
+    putmsg("По данным параметрам контур углового покрытия не строится",0);
+    goto end;
+  }
+  NULLOUT=freeunobj2d(u+1);
+  NULLOUT=freeunobj2d(lun2);
+  lun2=u;
+  u=div2unobj2d(lun3,ar1[3],ar1[4]);
+  if (u==0)
+  {
+    putmsg("По данным параметрам контур углового покрытия не строится",0);
+    goto end;
+  }
+  NULLOUT=freeunobj2d(u);
+  NULLOUT=freeunobj2d(lun3);
+  lun3=u+1;
+}
+if (RU2>0)
+{
+  run2=arcttunobj2d(lun1,lun2,RU2);
+  if (run2==0)
+  {
+    putmsg("По данным параметрам контур углового покрытия не строится",0);
+    goto end;
+  }
+  NULLOUT=getunobj2d(run2,ty,ar2);
+  u=div2unobj2d(lun1,ar2[1],ar2[2]);
+  if (u==0)
+  {
+    putmsg("По данным параметрам контур углового покрытия не строится",0);
+    goto end;
+  }
+  NULLOUT=freeunobj2d(u+1);
+  NULLOUT=freeunobj2d(lun1);
+  lun1=u;
+  u=div2unobj2d(lun2,ar2[3],ar2[4]);
+  if (u==0)
+  {
+    putmsg("По данным параметрам контур углового покрытия не строится",0);
+    goto end;
+  }
+  NULLOUT=freeunobj2d(u);
+  NULLOUT=freeunobj2d(lun2);
+  lun2=u+1;
+}
+if (RU3>0)
+{
+  run3=arcttunobj2d(lun7,lun1,RU3);
+  if (run3==0)
+  {
+    putmsg("По данным параметрам контур углового покрытия не строится",0);
+    goto end;
+  }
+  NULLOUT=getunobj2d(run3,ty,ar3);
+  u=div2unobj2d(lun7,ar3[1],ar3[2]);
+  if (u==0)
+  {
+    putmsg("По данным параметрам контур углового покрытия не строится",0);
+    goto end;
+  }
+  NULLOUT=freeunobj2d(u+1);
+  NULLOUT=freeunobj2d(lun7);
+  lun7=u;
+  u=div2unobj2d(lun1,ar3[3],ar3[4]);
+  if (u==0)
+  {
+    putmsg("По данным параметрам контур углового покрытия не строится",0);
+    goto end;
+  }
+  NULLOUT=freeunobj2d(u);
+  NULLOUT=freeunobj2d(lun1);
+  lun1=u+1;
+}
+if (RU4>0)
+{
+  run4=arcttunobj2d(lun6,lun7,RU4);
+  if (run4==0)
+  {
+    putmsg("По данным параметрам контур углового покрытия не строится",0);
+    goto end;
+  }
+  NULLOUT=getunobj2d(run4,ty,ar4);
+  u=div2unobj2d(lun6,ar4[1],ar4[2]);
+  if (u==0)
+  {
+    putmsg("По данным параметрам контур углового покрытия не строится",0);
+    goto end;
+  }
+  NULLOUT=freeunobj2d(u+1);
+  NULLOUT=freeunobj2d(lun6);
+  lun6=u;
+  u=div2unobj2d(lun7,ar4[3],ar4[4]);
+  if (u==0)
+  {
+    putmsg("По данным параметрам контур углового покрытия не строится",0);
+    goto end;
+  }
+  NULLOUT=freeunobj2d(u);
+  NULLOUT=freeunobj2d(lun7);
+  lun7=u+1;
+}
+if (RU5>0)
+{
+  run5=arcttunobj2d(lun5,lun6,RU5);
+  if (run5==0)
+  {
+    putmsg("По данным параметрам контур углового покрытия не строится",0);
+    goto end;
+  }
+  NULLOUT=getunobj2d(run5,ty,ar5);
+  u=div2unobj2d(lun5,ar5[1],ar5[2]);
+  if (u==0)
+  {
+    putmsg("По данным параметрам контур углового покрытия не строится",0);
+    goto end;
+  }
+  NULLOUT=freeunobj2d(u+1);
+  NULLOUT=freeunobj2d(lun5);
+  lun5=u;
+  u=div2unobj2d(lun6,ar5[3],ar5[4]);
+  if (u==0)
+  {
+    putmsg("По данным параметрам контур углового покрытия не строится",0);
+    goto end;
+  }
+  NULLOUT=freeunobj2d(u);
+  NULLOUT=freeunobj2d(lun6);
+  lun6=u+1;
+}
+if (VAR==0) //-- Фаски нет
+{
+  if (RVU>0)
+  {
+    run6=arcttunobj2d(lun3,lun5,-RVU);
+    if (run6==0)
+    {
+      putmsg("По данным параметрам контур углового покрытия не строится",0);
+      goto end;
+    }
+    NULLOUT=getunobj2d(run6,ty,ar6);
+    u=div2unobj2d(lun3,ar6[1],ar6[2]);
+    if (u==0)
+    {
+      putmsg("По данным параметрам контур углового покрытия не строится",0);
+      goto end;
+    }
+    NULLOUT=freeunobj2d(u+1);
+    NULLOUT=freeunobj2d(lun3);
+    lun3=u;
+    u=div2unobj2d(lun5,ar6[3],ar6[4]);
+    if (u==0)
+    {
+      putmsg("По данным параметрам контур углового покрытия не строится",0);
+      goto end;
+    }
+    NULLOUT=freeunobj2d(u);
+    NULLOUT=freeunobj2d(lun5);
+    lun5=u+1;
+  }
+}
+else  //-- Фаска есть
+{
+  if (RVU>0)
+  {
+    run6=arcttunobj2d(lun3,lun4,-RVU);
+    if (run6==0)
+    {
+      putmsg("По данным параметрам контур углового покрытия не строится",0);
+      goto end;
+    }
+    NULLOUT=getunobj2d(run6,ty,ar6);
+    u=div2unobj2d(lun3,ar6[1],ar6[2]);
+    if (u==0)
+    {
+      putmsg("По данным параметрам контур углового покрытия не строится",0);
+      goto end;
+    }
+    NULLOUT=freeunobj2d(u+1);
+    NULLOUT=freeunobj2d(lun3);
+    lun3=u;
+    u=div2unobj2d(lun4,ar6[3],ar6[4]);
+    if (u==0)
+    {
+      putmsg("По данным параметрам контур углового покрытия не строится",0);
+      goto end;
+    }
+    NULLOUT=freeunobj2d(u);
+    NULLOUT=freeunobj2d(lun4);
+    lun4=u+1;
+  }
+  if (RVU>0)
+  {
+    run7=arcttunobj2d(lun4,lun5,-RVU);
+    if (run7==0)
+    {
+      putmsg("По данным параметрам контур углового покрытия не строится",0);
+      goto end;
+    }
+    NULLOUT=getunobj2d(run7,ty,ar7);
+    u=div2unobj2d(lun4,ar7[1],ar7[2]);
+    if (u==0)
+    {
+      putmsg("По данным параметрам контур углового покрытия не строится",0);
+      goto end;
+    }
+    NULLOUT=freeunobj2d(u+1);
+    NULLOUT=freeunobj2d(lun4);
+    lun4=u;
+    u=div2unobj2d(lun5,ar7[3],ar7[4]);
+    if (u==0)
+    {
+      putmsg("По данным параметрам контур углового покрытия не строится",0);
+      goto end;
+    }
+    NULLOUT=freeunobj2d(u);
+    NULLOUT=freeunobj2d(lun5);
+    lun5=u+1;
+  }
+}
+//-- Читаем скорректированные координаты
+NULLOUT=getunobj2d(lun1,ty,li1);
+NULLOUT=getunobj2d(lun2,ty,li2);
+NULLOUT=getunobj2d(lun3,ty,li3);
+if (VAR==1) //-- Фаска есть
+{
+  NULLOUT=getunobj2d(lun4,ty,li4);
+}
+NULLOUT=getunobj2d(lun5,ty,li5);
+NULLOUT=getunobj2d(lun6,ty,li6);
+NULLOUT=getunobj2d(lun7,ty,li7);
+
+//-- Рисуем контур
+sy=sysvar(60);
+line li1[1],li1[2],0 li1[3],li1[4],0 done;
+line li2[1],li2[2],0 li2[3],li2[4],0 done;
+line li3[1],li3[2],0 li3[3],li3[4],0 done;
+line li5[1],li5[2],0 li5[3],li5[4],0 done;
+line li6[1],li6[2],0 li6[3],li6[4],0 done;
+line li7[1],li7[2],0 li7[3],li7[4],0 done;
+
+if (RU1>0) { arc ar1[1],ar1[2],0 ar1[3],ar1[4],0 ar1[5],ar1[6],0; }
+if (RU2>0) { arc ar2[1],ar2[2],0 ar2[3],ar2[4],0 ar2[5],ar2[6],0; }
+if (RU3>0) { arc ar3[1],ar3[2],0 ar3[3],ar3[4],0 ar3[5],ar3[6],0; }
+if (RU4>0) { arc ar4[1],ar4[2],0 ar4[3],ar4[4],0 ar4[5],ar4[6],0; }
+if (RU5>0) { arc ar5[1],ar5[2],0 ar5[3],ar5[4],0 ar5[5],ar5[6],0; }
+if (RVU>0) { arc ar6[1],ar6[2],0 ar6[3],ar6[4],0 ar6[5],ar6[6],0; }
+
+if (VAR==1) //-- Фаска есть
+{
+  line li4[1],li4[2],0 li4[3],li4[4],0 done;
+  if (RVU>0) { arc ar7[1],ar7[2],0 ar7[3],ar7[4],0 ar7[5],ar7[6],0; }
+}
+sy=sysvar(60)-sy;
+
+#pa path select last sy done last 1 done;
+#paa pline path pa;
+delete pa done;
+objident paa pa;
+end:
+//-- Чистим память из-под объектов
+if (lun1>0) { NULLOUT=freeunobj2d(lun1); }
+if (lun2>0) { NULLOUT=freeunobj2d(lun2); }
+if (lun3>0) { NULLOUT=freeunobj2d(lun3); }
+if (lun4>0) { NULLOUT=freeunobj2d(lun4); }
+if (lun5>0) { NULLOUT=freeunobj2d(lun5); }
+if (lun6>0) { NULLOUT=freeunobj2d(lun6); }
+if (lun7>0) { NULLOUT=freeunobj2d(lun7); }
+
+if (run1>0) { NULLOUT=freeunobj2d(run1); }
+if (run2>0) { NULLOUT=freeunobj2d(run2); }
+if (run3>0) { NULLOUT=freeunobj2d(run3); }
+if (run4>0) { NULLOUT=freeunobj2d(run4); }
+if (run5>0) { NULLOUT=freeunobj2d(run5); }
+if (run6>0) { NULLOUT=freeunobj2d(run6); }
+if (run7>0) { NULLOUT=freeunobj2d(run7); }
+exit;

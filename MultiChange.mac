@@ -1,0 +1,398 @@
+//-- Программа групповой замены параметров прототипов
+global ProtoPath;
+
+global g_result;
+
+defarr Groups[12] arr[3];
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+//------------------------------------------------------------------------------
+NULLOUT=getvarinst(2,"PrMater",PrMater,0);      //-- Запрос  переменной PrMater из пользовательских умолчаний
+DefPrMat=str(getyadsubst(2))+"#"+str(PrMater) ;                    // Формируем строку умолчаний.
+NULLOUT=getvarinst(2,"g_DfLeg",DfLeg,0);       //-- Умолчание на опоры
+DefNoga=str(getyadsubst(42))+"#"+str(DfLeg) ;  // Формируем строку умолчаний.
+NULLOUT=getvarinst(2,"DfHandl",DfHand,0);      //-- Умолчание на ручки
+DefAcce=str(getyadsubst(12))+"#"+str(DfHand) ;                    // Формируем строку умолчаний.
+NULLOUT=getvarinst(2,"FasBTyp",FasBTyp,0);      //-- Запрос  переменной FasBTyp из пользовательских умолчаний
+DefBTyp=str(getyadsubst(29))+"#"+str(FasBTyp) ;
+NULLOUT=getvarinst(2,"FasDTyp",FasDTyp,0);      //-- Запрос  переменной FasDTyp из пользовательских умолчаний
+DefDTyp=str(getyadsubst(15))+"#"+str(FasDTyp) ;
+NULLOUT=getvarinst(2,"g_BxTyp",g_BxTyp,0);      //-- Запрос  переменной g_BxTyp из пользовательских умолчаний
+DefBxTyp=str(getyadsubst(31))+"#"+str(g_BxTyp) ;
+//----------------------------------------------------------------------------------
+NULLOUT=getvarinst(2,"FasDMat",FasDMat,0);      //-- Запрос  переменной FasDMat из пользовательских умолчаний	
+DefFasDMat=str(getyadsubst(27))+"#"+str(FasDMat) ;
+NULLOUT=getvarinst(2,"Typ_kro",Typ_kro,0);      //-- Запрос  переменной Typ_kro из пользовательских умолчаний	
+DefTyp_kro=str(getyadsubst(8))+"#"+str(Typ_kro) ;
+NULLOUT=getvarinst(2,"DoorVsMater1",DoorVsMater1,0);      //-- Запрос  переменной Typ_kro из пользовательских умолчаний	
+DefDoorVS=str(getyadsubst(32))+"#"+str(DoorVsMater1) ;
+DefDTypU=str(getyadsubst(72))+"#"+str(1570) ;
+DefDTypG=str(getyadsubst(73))+"#"+str(1568) ;
+NULLOUT=getvarinst(2,"FasBMat",FasBMat,0);      //-- Запрос  переменной FasBMat из пользовательских умолчаний
+DefBMat=str(getyadsubst(26))+"#"+str(FasBMat) ;
+//------------------------------------------------------------------------------
+T_ruch="";
+T_nog="";
+T_fas_D="";
+T_fas_B="";
+T_boxx="";
+T_mat="";
+T_mat_fas="";
+T_mat_krom="";
+T_mat_vstav="";
+N_ruch=0;
+N_nog=0;
+N_fas_D=0;
+NU_fas_D=0;
+N_fas_B=0;
+N_boxx=0;
+N_mat=0;
+N_mat_fas=0;
+N_mat_krom=0;
+N_mat_vstav=0;
+//--------------------------------------------------------------------------------
+mbcarcase groupall;
+defarr tipobjt[10], tipobj[10];
+
+tipobjt[1]="Ручки";
+tipobjt[2]="Опоры";
+tipobjt[3]="Фасады";
+tipobjt[4]="Тип ящиков";
+tipobjt[5]="Материал корпуса";
+tipobjt[6]="Материал фасада";
+tipobjt[7]="Кромка";
+tipobjt[8]="Вставка в фасад";
+tipobjt[9]="Высота";
+tipobjt[10]="Глубина";
+
+tipobj[1]=PicturesPath+"HandlePic.jpg";
+tipobj[2]=PicturesPath+"LegPic.jpg";
+tipobj[3]=PicturesPath+"tipfas2.jpg";
+tipobj[4]=PicturesPath+"type_box.jpg";
+tipobj[5]=PicturesPath+"CorpMAT.jpg";
+tipobj[6]=PicturesPath+"Fasmat.jpg";
+tipobj[7]=PicturesPath+"BEND.jpg";
+tipobj[8]=PicturesPath+"vstavka.jpg";
+tipobj[9]=PicturesPath+"Ch_Gab_V.jpg";
+tipobj[10]=PicturesPath+"Ch_Gab_G.jpg";
+
+#T_pod
+alternative
+"Групповая замена"
+picbox
+text
+center
+"Выберите объект замены"
+done
+default 1
+tipobjt[1]  tipobj[1]
+tipobjt[2]  tipobj[2]
+tipobjt[3]  tipobj[3]
+tipobjt[4]  tipobj[4]
+tipobjt[5]  tipobj[5]
+tipobjt[6]  tipobj[6]
+tipobjt[7]  tipobj[7]
+tipobjt[8]  tipobj[8]
+tipobjt[9]  tipobj[9]
+tipobjt[10]  tipobj[10]
+
+
+done;
+if (T_pod==0) { exit; }
+	NULLOUT=setvarinst(2,"T_Pod_MC",T_pod);
+//-----------------------------РУЧКИ-------------------------------------------------
+if (T_pod==1)
+{
+  #ok_flag
+  Setvar
+  "Замена ручки"
+  ""
+  left
+  "Выберите тип ручки"
+  done
+  string auto button 6 default DefAcce    "Тип ручки:" NAcce
+  done;
+  if (ok_flag==0)
+  {
+    exit;
+  }
+  defarr IDGroup[1];
+  defarr NID[1];
+  //-- Поиск соответствующего ID
+  splitbydelim(NAcce,"#",Arr);
+  NID[1]=Arr[2];
+  //-- Заполняем массив количеством и номерами групп
+  IDGroup[1]=getyadsubst(12);
+  macro ProtoPath+"zapmass.mac" NID IDGroup;
+}
+//------------------------------НОЖКИ------------------------------------------------
+if (T_pod==2)
+{
+  #ok_flag
+  Setvar
+  "Замена ножки"
+  ""
+  left
+  "Выберите тип ножки"
+  done
+  string auto button 6 default DefNoga   "Тип ножки:" NNoga
+  done;
+
+  if (ok_flag==0)
+  {
+    exit;
+  }
+  defarr IDGroup[1];
+  defarr NID[1];
+  //-- Поиск соответствующего ID
+  splitbydelim(NNoga,"#",Arr);
+  NID[1]=Arr[2];
+  //Заполняем массив количеством и номерами групп
+  IDGroup[1]=getyadsubst(42);
+  macro ProtoPath+"zapmass.mac" NID IDGroup;
+}
+//------------------------------ТИП ЯЩИКОВ------------------------------------------------
+if (T_pod==4)
+{
+  #ok_flag
+  Setvar
+  "Замена типа ящика"
+  ""
+  left
+  "Выберите тип ящика"
+  done
+  string auto button 6 default DefBxTyp   "Тип ящика:" NT_boxx
+  done;
+
+  if (ok_flag==0)
+  {
+    exit;
+  }
+  defarr IDGroup[1];
+  defarr NID[1];
+  //-- Поиск соответствующего ID
+  splitbydelim(NT_boxx,"#",Arr);
+  NID[1]=Arr[2];
+  //-- Заполняем массив количеством и номерами групп
+  IDGroup[1]=getyadsubst(31);
+  macro ProtoPath+"zapmass.mac" NID IDGroup;
+}
+//---------------------------------МАТЕРИАЛ КОРПУСА---------------------------------------------
+if (T_pod==5)
+{
+  #ok_flag
+  Setvar
+  "Замена материала корпуса"
+  ""
+  left
+  "Выберите материал корпуса"
+  done
+  string auto button 6 default DefPrMat        "Материал корпуса:"   NE_Col2
+  done;
+
+  if (ok_flag==0)
+  {
+    exit;
+  }
+  defarr IDGroup[1];
+  defarr NID[1];
+  //-- Поиск соответствующего ID
+  splitbydelim(NE_Col2,"#",Arr);
+  NID[1]=Arr[2];
+  //-- Заполняем массив количеством и номерами групп
+  IDGroup[1]=getyadsubst(2);
+  macro ProtoPath+"zapmass.mac" NID IDGroup;
+}
+//---------------------------------ФАСАДЫ---------------------------------------------
+if (T_pod==3)
+{
+  #ok_flag
+  Setvar
+  "Замена типа фасада дверей"
+  ""
+  left
+  "Выберите тип фасада дверей"
+  done
+  string auto button 6 default DefDTyp         "Тип фасада сплошных дверей:"          NE_Col
+  string auto button 6 default DefDTypU        "Тип фасада угловых дверей:"           NU_Col
+  string auto button 6 default DefDTypG        "Тип фасада гнутых дверей:"            NG_Col
+  string auto button 6 default DefBTyp         "Тип фасада ящиков:"		      Nfas_B
+
+  done;
+
+  if (ok_flag==0)
+  {
+    exit;
+  }
+  defarr IDGroup[4];
+  defarr NID[4];
+  //-- Поиск соответствующего ID
+  splitbydelim(NE_Col,"#",Arr);
+  NID[1]=Arr[2];
+  //Заполняем массив количеством и номерами групп
+  IDGroup[1]=getyadsubst(15);
+
+    //-- Поиск соответствующего ID
+  splitbydelim(NU_Col,"#",Arr);
+  NID[2]=Arr[2];
+  //Заполняем массив количеством и номерами групп
+  IDGroup[2]=getyadsubst(72);
+
+      //-- Поиск соответствующего ID
+  splitbydelim(NG_Col,"#",Arr);
+  NID[3]=Arr[2];
+  //Заполняем массив количеством и номерами групп
+  IDGroup[3]=getyadsubst(73);
+
+    //-- Поиск соответствующего ID
+  splitbydelim(Nfas_B,"#",Arr);
+  NID[4]=Arr[2];
+  //-- Заполняем массив количеством и номерами групп
+  IDGroup[4]=getyadsubst(29);
+  macro ProtoPath+"zapmass.mac" NID IDGroup;
+
+}
+//----------------------------------МАТЕРИАЛ ФАСАДА------------------------------------------------------------ 
+if (T_pod==6)
+{
+  #ok_flag
+  Setvar
+  "Замена материала фасада"
+  ""
+  left
+  "Выберите материал фасада"
+  done
+  string auto button 6 default DefFasDMat        "Материал фасада дверей:"   NE_Col5
+  string auto button 6 default DefBMat		 "Материал фасада ящиков:"   NE_Col6
+  done;
+
+  if (ok_flag==0)
+  {
+    exit;
+  }
+  defarr IDGroup[2];
+  defarr NID[2];
+  //-- Поиск соответствующего ID
+  splitbydelim(NE_Col5,"#",Arr);
+  NID[1]=Arr[2];
+  //-- Заполняем массив количеством и номерами групп
+  IDGroup[1]=getyadsubst(27);
+
+  //-- Поиск соответствующего ID
+  splitbydelim(NE_Col6,"#",Arr);
+  NID[2]=Arr[2];
+  //-- Заполняем массив количеством и номерами групп
+  IDGroup[2]=getyadsubst(26);
+  macro ProtoPath+"zapmass.mac" NID IDGroup;
+}
+//-------------------------------------КРОМКА------------------------------------------------------------------------
+if (T_pod==7)
+{
+  #ok_flag
+  Setvar
+  "Замена кромки"
+  ""
+  left
+  "Выберите кромку"
+  done
+  string auto button 6 default DefTyp_kro    "Кромка:" NKrom
+  done;
+  if (ok_flag==0)
+  {
+    exit;
+  }
+  defarr IDGroup[1];
+  defarr NID[1];
+  //-- Поиск соответствующего ID
+  splitbydelim(NKrom,"#",Arr);
+  NID[1]=Arr[2];
+  //-- Заполняем массив количеством и номерами групп
+  IDGroup[1]=getyadsubst(8);
+  macro ProtoPath+"zapmass.mac" NID IDGroup;
+}
+//-------------------------------------Вставка в фасад------------------------------------------------------------------------
+if (T_pod==8)
+{
+  #ok_flag
+  Setvar
+  "Замена вставки в фасад"
+  ""
+  left
+  "Выберите материал вставки"
+  done
+  string auto button 6 default DefDoorVS    "Материал вставки:" NVstav
+  done;
+  if (ok_flag==0)
+  {
+    exit;
+  }
+  defarr IDGroup[1];
+  defarr NID[1];
+  //-- Поиск соответствующего ID
+  splitbydelim(NVstav,"#",Arr);
+  NID[1]=Arr[2];
+  //-- Заполняем массив количеством и номерами групп
+  IDGroup[1]=getyadsubst(32);
+  macro ProtoPath+"zapmass.mac" NID IDGroup;
+}
+
+//----------------------------------Высота------------------------------------------------------------ 
+if (T_pod==9)
+{
+  #ok_flag
+  Setvar
+  "Изменение высоты изделия"
+  ""
+  left
+  ""
+  done
+  string auto default "Заменить текущую"  
+	list
+	"Добавить к текущей"
+	done 
+	"Высота:" type
+  real default 820    "Величина:"   Gab
+  done;
+
+  if (ok_flag==0)
+  {
+    exit;
+  }
+  defarr Param[1];
+  defarr NID[1];
+  NULLOUT=setvarinst(2,"TypeChangeSize",type); 
+  NID[1]=Gab;
+  Param[1]="Высота";
+
+  macro ProtoPath+"zapmass.mac" NID Param;
+}
+//----------------------------------ГАБАРИТЫ------------------------------------------------------------ 
+if (T_pod==10)
+{
+  #ok_flag
+  Setvar
+  "Изменение глубины изделия"
+  ""
+  left
+  ""
+  done
+  string auto default "Заменить текущую"  
+	list
+	"Добавить к текущей"
+	done 
+	"Глубина:" type
+  real default 554    "Величина:"   Gab
+  done;
+
+  if (ok_flag==0)
+  {
+    exit;
+  }
+  defarr Param[1];
+  defarr NID[1];
+  NULLOUT=setvarinst(2,"TypeChangeSize",type); 
+  NID[1]=Gab;
+  Param[1]="Глубина";
+  macro ProtoPath+"zapmass.mac" NID Param;
+}
+//-------------------------------------------------------------------------------
+exit;

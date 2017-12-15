@@ -1,0 +1,18 @@
+//-- Программа создания отчета деталей с кромкой
+global ProtoPath;
+global g_BoutTbl,g_LbOutTbl;
+Protopath=GetProtoMac("Shkaf.ptl");
+BinPath=sysvar(1)-1;
+macro ProtoPath+"Sp_Karkas.mac"; //-- Запросим номер каркаса
+ProjPath=GetFilePath(SysVar(2));
+ProjName=GetFileTitle(SysVar(2))-3+"DK.xls";
+res=fmdbscript(ProtoPath+"PKMScrLib.mdb","FileSystem","FsoIsFileExist",ProtoPath+"Hell.xls");
+if (res==1)
+{
+  script MDB ProtoPath+"PKMScrLib.mdb" "FileSystem" "FsoDeleteFile" ProtoPath+"Hell.xls" ;
+}
+script MDB ProtoPath+"PKMScrLib.mdb" "Спецификация на детали и кромки" "ReportSpets"
+           BinPath+","+ProtoPath-1+",Zakaz.dbf,Shkaf.ptm,"+g_BOutTbl;
+script MDB ProtoPath+"PKMScrLib.mdb" "FileSystem" "FsoCopyFile" ProtoPath+"Hell.xls,"+ProjPath+ProjName ;
+script MDB ProtoPath+"PKMScrLib.mdb" "FileSystem" "FsoRunExcel"  ProjPath+ProjName ;
+exit;

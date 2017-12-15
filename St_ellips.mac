@@ -1,0 +1,39 @@
+// Построение простого эллипса
+//
+// Xc=1400 // X координата центра эллипса
+// Yc=400  // Y координата центра эллипса
+// Xpos=1330 // полуось эллипса в X
+// Ypos=385  // полуось эллипса в Y
+
+getpar Xc Yc Xpos Ypos;
+
+
+GradSeg=10   //  градусов в сегменте (10 соответствующего 36 * 10)
+
+Xp=Xc
+Yp=Yc-Ypos
+i=0
+lab1:
+if i<(360/GradSeg)
+{
+	i=i+1
+	X=Xc-Xpos*SIN(radian(i*GradSeg))
+	Y=Yc-Ypos*COS(radian(i*GradSeg))
+	s1=Pow(SIN(radian((i-0.5)*GradSeg)),2)
+
+	C1=Pow(COS(radian((i-0.5)*GradSeg)),2)
+
+	R=Pow(Xpos,2)*Pow(Ypos,2)*Pow((S1/Pow(Xpos,2))+(C1/Pow(Ypos,2)),1.5)
+	gosub sArc;
+	goto lab1;
+}
+path select last i done last 1 done;
+exit;
+//----------------------------------
+//----------------------------------
+sArc:
+arc Xp Yp 0 X Y 0 negative Radius R ;
+Xp=X
+Yp=Y
+return;
+

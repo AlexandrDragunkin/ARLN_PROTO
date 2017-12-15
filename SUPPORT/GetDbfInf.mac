@@ -1,0 +1,35 @@
+// открывает файл типа dBase с имененм arr[1] 
+// выполняет запрос arr[2]
+// заполняет данные результатами для поля arr[3]
+// максимальное число данных arr[4] как правило ограничено размерностью массива
+
+
+getpar aPrInfo;
+fnk=aPrInfo[1];
+if GetCount(fnk) // ищем, есть ли такая база?
+{  
+	DbOpen rcdCBD,fnk; 
+} 
+DbFilter rcdCBD aPrInfo[2] ;
+nSTr=DbRecCount(rcdcbd) ; //ОПРЕДЕЛИЛИ ЧИСЛО ЗАПИСЕЙ В ОТКРЫТОМ НАБОРЕ
+if nSTr>0 
+{
+   DBMoveFirst rcdCBD ;
+   i=1;
+   nStr=min(nStr,aPrInfo[4]);
+   vFld=aPrInfo[3];
+   tFld=dbFieldType(rcdcbd,vFld);  // тип поля
+   defVFLD=iif(tFld!="C",0,"");
+   lab1:
+   i=i+1;
+   aPrInfo[i]=DbGetValue(rcdcbd,vFld,defVFLD)  ;  //счетчик
+   DBMoveNext rcdCBD ;
+   if i<nSTr 
+   {
+	 goto lab1;
+   }
+}
+aPrInfo[1]=nSTr;
+DbClose rcdcbd;
+
+exit;

@@ -1,0 +1,15 @@
+//-- Постобработка нового проекта
+//-- Пользователь может сюда добавить свои настройки старта
+
+putmsg("NewProjPostProc.MAC")
+
+global ProtoPath;
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами 
+
+macro ProtoPath+"UserAttrs.mac" ; //-- Здесь собраны пользовательские атрибуты
+macro ProtoPath+"SetInit.mac" ; //-- Временно. потом убрать
+macro ProtoPath+"GlobalTMP.mac" ; //-- Временно. потом убрать
+// macro ProtoPath+"Glob_Sp.mac";
+macro ProtoPath+"A_Defaults.mac"; // Умолчания АРЛАЙН
+
+exit;

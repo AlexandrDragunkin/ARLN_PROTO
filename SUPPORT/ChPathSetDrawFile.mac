@@ -1,0 +1,40 @@
+global ProtoPath;
+pathApp=MPathExpand("<appdata>")+"\\"
+F_stamp=pathApp+"\\Stamp.dbf"
+defarr aInfo[10];
+if !FileExist(F_stamp) {
+	P_stamp=ProtoPath+"Stamp.dbf"
+	if FileExist(P_stamp) {
+		aInfo[1]="База правил заполнения штампов чертежей будет перенесена из папки "
+		aInfo[2]=ProtoPath
+		aInfo[3]="в папку "+pathApp
+		aInfo[4]="Все дальнейшие изменения в правилах заполнения штампов чертежей выполняйте по новому адресу "
+		aInfo[5]=F_stamp
+		macro ProtoPath+"ShowSmartInfo.mac" "База STAMP.DBF" 5 aInfo;
+		err=CopyFile(P_stamp,pathApp)
+		if !err {
+			aInfo[1]="Перенос не удался!"
+			macro ProtoPath+"ShowSmartError.mac" "База STAMP.DBF" 1 aInfo;
+		}
+	}
+}
+f_name="drawdial.txt";
+gosub scopyfile;
+f_name="Drawing.ini";
+gosub scopyfile;
+
+exit;
+//-------------------------------
+scopyfile:
+f_file=pathApp+f_name;
+if !FileExist(f_file) {
+	P_file=ProtoPath+f_name
+	if FileExist(P_file) {
+		err=CopyFile(P_file,pathApp)
+		if !err {
+		aInfo[1]="Перенос не удался!"
+		macro ProtoPath+"ShowSmartError.mac" f_name 1 aInfo;
+		}
+	}
+}
+return;

@@ -1,0 +1,85 @@
+global g_DRP IDSGeo g_IDKomp g_UserVar g_InstOpt g_UIDKomp g_Shift g_Coeff  gDopKompl;
+g_Shift=0;
+g_Coeff=0;
+g_UIDKomp=-1;
+g_UserVar="";
+//======================================================
+g_InstOpt=iif(isvardef("g_InstOpt")==0,0,g_InstOpt);
+Namescr="ScrKompl";
+ScrMod=0;
+err=isassign(Namescr,0);
+defarr NamesGr[2000] namesub[2000] gDopKompl[10];
+nulout=initarray(namesub,"");
+if (isassign(Namescr,0))
+{
+  ScrMod=readscratch(Namescr,0);   //-- „итаем из записи
+  if ScrMod>0
+  {
+     SubstName="";
+	 SubstValue=0;
+	 //------------------------
+     NameParG="сист_"+str(g_DRP);
+     NameParS="InOp_"+str(g_IDKomp);
+     gosub revScr;
+     err=iif(ValParS!=0,GetScratch(ScrMod,"сист_"+str(g_DRP),"InOp_"+str(g_IDKomp),g_InstOpt,SubstName),0);//»щем
+	 //------------------------
+     NameParG="сист_"+str(g_DRP);
+     NameParS="UsVar_"+str(g_IDKomp);
+     gosub revScr;
+     g_UserVar="";
+     err=iif(ValParS!=0,GetScratch(ScrMod,"сист_"+str(g_DRP),"UsVar_"+str(g_IDKomp),g_UserVar,SubstName),0);//»щем
+	 //------------------------
+	 NameParS="IdKm_"+str(g_IDKomp);
+     gosub revScr;
+     g_UIDKomp=-1;
+	 err=iif(ValParS!=0,GetScratch(ScrMod,"сист_"+str(g_DRP),"IdKm_"+str(g_IDKomp),g_UIDKomp,SubstValue),0);//»щем
+	 //------------------------	 
+	 NameParS="Shif_"+str(g_IDKomp);
+     gosub revScr;
+     g_Shift=0;
+	 err=iif(ValParS!=0,GetScratch(ScrMod,"сист_"+str(g_DRP),"Shif_"+str(g_IDKomp),g_Shift,SubstValue),0);//»щем
+	 //------------------------	 
+	 NameParS="Coef_"+str(g_IDKomp);
+     gosub revScr;
+     g_Coeff=0;
+	 //putmsg("g_IDKomp= "+str(g_IDKomp),1)
+	 err=iif(ValParS!=0,GetScratch(ScrMod,"сист_"+str(g_DRP),"Coef_"+str(g_IDKomp),g_Coeff,SubstValue),0);//»щем
+	 //------------------------	 
+	 i=0;
+	 labs:
+	 if i<10
+	 {
+		 i=i+1;
+		 NameParS="Dop"+str(i)+"_"+str(g_IDKomp);
+		 gosub revScr;
+		 gDopKompl[i]=0;
+		 err=iif(ValParS!=0,GetScratch(ScrMod,"сист_"+str(g_DRP),"Dop"+str(i)+"_"+str(g_IDKomp),gDopKompl[i],SubstValue),0);//»щем
+		 goto labs;
+	 }
+     //writescratch(ScrMod,Namescr,0);
+     NULLOUT=TermScratch(ScrMod);
+
+  }
+}
+exit;
+//--------------------
+revScr:
+
+        ValParS=0;
+           Nsub=CntVarScr(ScrMod,NameParG);
+           if Nsub<1 { goto endrs; }
+           Nsub=NameVarScr(ScrMod,NameParG,Namesub);
+           isub=0;
+           labrev1:
+           if isub<Nsub
+           {
+              isub=isub+1;
+              ValParS=iif(NameParS==Namesub[isub],1,0);
+			  //putmsg("ScrKomplGetSub ValParS="+str(NameParS),1);
+			 // putmsg("ScrKomplGetSub Namesub["+str(isub)+"]="+str(Namesub[isub]),1);
+              if ValParS==1 { goto endrs; }
+              goto labrev1;
+           }
+
+        endrS:
+return;

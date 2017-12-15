@@ -1,0 +1,156 @@
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+//-- Программа  установки профилей
+
+ullout=getvarinst(2,"Doors64",Doors64,"Doors64.zmc|");
+
+defarr GARR[4];
+
+global g_DLFN g_DLFK logFrame g_holder;
+global g_keyDS63,g_Doorscon,
+PrfMater // Материал профиля
+PrfP_1   // Подрез начальной точки
+PrfP_2   // Подрез конечной точки
+//PrfSd_X  // Сдвиг по Х ЛСК
+//PrfSd_Y  // Сдвиг по У ЛСК
+//PrfAngle // Угол поворота вокруг оси (град)
+//PrfAng_1 // Угол подрезки 1 стороны
+//PrfAng_2 // Угол подрезки 2 стороны
+//PrfColor; // Цвет профиля из прайса
+;
+
+global PrfAng_1, PrfAng_2, AngDir1, AngDir2;
+global g_DRP;
+global ProtoPath;
+//global g_ProfNumb; //-- Номер профиля в составе створки
+//global g_IntProto; //-- Построчный массив текстового атрибута интеллектуального прототипа
+
+getpar
+xp1 yp1 zp1		// 1 точка	
+xp2 yp2 zp2;	// 2 точка
+
+logFrame=iif(isvardef("logFrame")!=0,logFrame,0);
+DLF1_u=iif(isvardef("DLF1_u")!=0,DLF1_u,0);
+DLF2_u=iif(isvardef("DLF2_u")!=0,DLF2_u,0);
+IDP=PrfMater;
+// putmsg(PrfMater)
+if g_keyDS63!=1
+{
+   macro ProtoPath+Doors64+"CrtSysDoor63.mac" ;
+}
+//-- Читаем информацию о профилях
+str_tab="SELECT * FROM DSGabProfile INNER JOIN DSFlapProfile ON DSGabProfile.ID = DSFlapProfile.PSYSTEM WHERE DSFlapProfile.ID="+str(PrfMater) ;
+
+ProfRs=adbOpen(g_DoorsCon,str_tab);
+ij=adbRecCount(ProfRs);
+if (ij<1)
+{
+  errcode="MakeProfG63 Количество профилей с ID "+str(PrfMater)+" равно "+str(ij);
+  gosub err;
+  goto end;
+}
+NULLOUT=adbMoveFirst(ProfRs);
+
+prfmat=PrfMater;
+
+PrfMater=adbGetValue(ProfRs,"IDProfile");
+// putmsg(PrfMater)
+IDSyst=adbGetValue(ProfRs,"DSGabProfile.ID");
+MacroExtra=adbGetValue(ProfRs,"MacroExtra");
+nobj=sysvar(60);
+//macro ProtoPath+"SetEnam.mac" "Профиль системы дверей" ;
+// Зададим подрезку профилей для Compact
+defarr SqlArr[4];
+SqlArr[1]="SELECT ExParamsName.ParamName, * "
+SqlArr[2]="FROM DSExtraParams INNER JOIN ExParamsName ON DSExtraParams.ParamName = ExParamsName.ParamName "
+SqlArr[3]="WHERE ((DSExtraParams.UnitPos="+str(IDSyst)+") AND (DSExtraParams.Hold2="+str(g_DRP)+") "
+SqlArr[4]="AND (ExParamsName.ParamName=\"Cut45Prof\"))";
+
+ProfRs2=adbOpen(g_Doorscon,SqlArr,4);
+ij=adbRecCount(ProfRs2);
+ExVal=0;
+if (ij>0)
+{
+	NULLOUT=adbMoveFirst(ProfRs2);
+	exlab2:
+	if !adbIsEOF(ProfRs2)
+	{
+		ExVal=adbGetValue(ProfRs2,"NumValue");
+		NULLOUT=adbMoveNext(ProfRs2);
+		goto exlab2;
+	}
+}
+ProfRs2=adbClose(ProfRs2);
+
+AngDir1=0; AngDir2=0;
+if ExVal
+{
+	PrfAng_1=45;
+	PrfAng_2=45;
+	if (abs(PrfAng_1)>0) { AngDir1=1; }
+	if (abs(PrfAng_2)>0) { AngDir2=1; }
+}
+macro ProtoPath+Doors64++"SetProfD.mac" AngDir1 AngDir2;
+
+Macro ProtoPath+Doors64+"MakeProf.mac" xp1,yp1,zp1 xp2,yp2,zp2;
+objident last 1 prof;
+// attrobj attach "P1" done Last 1 1;
+attrobj attach "ExcSumCost" done Last 1 1;
+
+// Это профиль основа его надо отличать от дополнительных профилей
+// в качестве отличительного признака применяем атрибут
+If (!IsAttrdef("ProfDoorSys"))
+{
+	Attribute Create "ProfDoorSys" "Основной профиль дверной системы " Real 5 0 ;
+ }
+Attrobj Attach "ProfDoorSys" Done prof  1;
+
+Macro ProtoPath+Doors64+"SProfLayers.mac" prof;
+g_holder=prof;
+if (len(MacroExtra)!=0) // PutOnProfile63.mac
+{
+  macro ProtoPath+Doors64+MacroExtra
+  IDP,
+  xp1+PrfP_1+g_DLFN,yp1,zp1,
+  xp2-PrfP_2-g_DLFK,yp2,zp2;
+}
+nobj=sysvar(60)-nobj;
+
+if logFrame!=0
+{
+   DelName="DeleteObject";
+   If (!IsAttrdef(DelName))
+   {
+	Attribute Create DelName "Объекты удаления" Real 5 0 ;
+   }
+       if nobj>0
+       {
+        Attrobj Attach DelName Done group last nobj done 1;
+        nnn=sysvar(61);
+        //putmsg("nobjmp=="+str(nobj),0);
+        //putmsg("выбраноmp====="+str(nnn),0);
+       }
+}
+end:
+ProfRs=adbClose(ProfRs);
+
+//DoorsCon=adbDisCon(DoorsCon);
+exit;
+//==============================================================================
+//-- Вывод окна сообщения об ошибке
+//-- Входные параметры:
+//-- errcode - сод ошибки
+err:
+#ok_flag
+     alternative "Ошибка базы данных"
+     msgbox text "Некорректно заполнена база данных систем дверей"
+     " "
+     errcode
+     done
+     "  OK  "
+     done;
+return;

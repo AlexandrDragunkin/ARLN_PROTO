@@ -1,0 +1,190 @@
+//-- Макро формирования скретч-атрибута Cinema на основе комплектующих
+global ProtoPath;
+getpar
+HaveCinP			//-- признак того, что в комплектующих нет информации для движения
+ScrCin1				//-- Набор параметров
+DoorAngle		  //-- Угол установки
+objDo					//-- Количество объектов ДО
+objPosle			//-- Количетсво объектов после
+WX						//-- Сдвиг по X
+WY						//-- Сдвиг по Y
+WZ						//-- Сдвиг по Z
+Rz1						//-- Резервы
+Rz2
+;						
+//======================== Получения атрибутов для перемещения==============================
+LiftCin=0;
+MoveCount=0;
+SubstName="";
+//-------- Находим объекты-------
+select last objPosle-objDo done;
+ListObj=sysvar(61);
+if (ListObj==0)
+{
+	HaveCinP=0;	//-- признак того, что атрибута нет.
+	exit;
+}
+defarr obs[ListObj];
+macro ProtoPath+"ArrObj.mac" ListObj obs;
+io=0;
+LOOP1:
+io=io+1;
+Komp1=obs[io];
+Attr=getAttr(Komp1,"PriceID",0);
+HaveAttr=isassign("$CinemaScr",Komp1); //-- есть ли атрибут
+//if (HaveAttr==1)											 //-- если есть проверяем что это. Приоритет: 1 - направляющая, 2 - петля, 3 - лифт.
+//{
+	//Attr=getAttr(Komp1,"FurnType","");
+	//if (left(Attr,4)=="0406"||left(Attr,4)=="0403")	//-- если петля или направляющая 
+	//{
+		//HaveCinP=1;
+		//ObjWithCin=Komp1;
+		//goto NEXT1;
+	//}
+	//if (left(Attr,4)=="0408")	//-- если лифт 
+	//{
+		//HaveCinP=1;
+		//ObjWithCin=Komp1;
+		//LiftCin=1;
+		//Komp2=obs[io];
+	//}
+//}
+
+///////////////
+if (HaveAttr==1)											 //-- если есть проверяем что это. Приоритет: 1 - направляющая, 2 - петля, 3 - лифт.
+{
+	Attr=getAttr(Komp1,"FurnType","");
+	if (left(Attr,4)=="0406"||left(Attr,4)=="0403")	//-- если петля или направляющая 
+	{
+		HaveCinP=1;
+		ObjWithCin=Komp1;
+		LiftCin=1;
+		Komp2=obs[io];
+	}
+	if (left(Attr,4)=="0408")	//-- если лифт 
+	{
+		HaveCinP=1;
+		ObjWithCin=Komp1;
+		goto NEXT1;
+	}
+}
+////////////////////
+
+if (io<ListObj)
+{
+	goto LOOP1;
+}
+if (LiftCin==1)
+{	
+	Komp1=Komp2;
+	goto NEXT1;
+}
+HaveCinP=0;	//-- признак того, что атрибута нет.
+exit;
+//-----------------------------
+NEXT1:
+ScrCin1=readscratch("$CinemaScr",ObjWithCin);				//-- записываем информацию из скретча в набор
+NULLOUT=WriteScratch(ScrCin1,"$CinemaScr",0);
+defarr WS[3];
+WS[1]=0;
+WS[2]=-(WX*tan(radian(DoorAngle)));
+WS[3]=0;
+//-- Переводим координаты в ПСК сцены
+err=GetScratch(ScrCin1,"Main","MoveCount",MoveCount,SubstName);	//-- узнаем количество перемещений
+if (MoveCount==0||MoveCount<0)
+{
+  HaveCinP=0;	//-- признак того, что атрибута нет.
+	exit;
+}
+//-- Формируем матрицу объекта в ГСК.
+defarr MatrP[4,4];
+defarr MatrPC[4];
+defarr MoveP[4];
+defarr RoteteP1[4];
+defarr RoteteP2[4];
+NULLOUT=GetGeoMatr(Komp1,MatrP);
+if (DoorAngle<0)			//-- если угол установки не равен нулю, то преобразуем матрицу
+{
+	NULLOUT=Otdrot(MatrP,3,DoorAngle);
+}
+if (DoorAngle>0)			//-- если угол установки не равен нулю, то преобразуем матрицу
+{
+	NULLOUT=Otdrot(MatrP,3,DoorAngle);
+	NULLOUT=Otdtran(MatrP,WS);
+}
+//-- Читаем движения из атрибута, перемножаем их на матрицу объекта в ПСК и записываем это в скретч.
+ip=0;
+secP:
+ip=ip+1;
+err=GetScratch(ScrCin1,"Move"+str(ip-1),"MoveType",MoveType,SubstName);	//-- узнаем тип перемещения
+if (MoveType==0)	//-- если перемещение сдвиг получаем координаты вектора
+{
+  err=GetScratch(ScrCin1,"Move"+str(ip-1),"MoveX",MoveX,SubstName);	//-- вектор по X
+	err=GetScratch(ScrCin1,"Move"+str(ip-1),"MoveY",MoveY,SubstName);	//-- вектор по Y
+	err=GetScratch(ScrCin1,"Move"+str(ip-1),"MoveZ",MoveZ,SubstName);	//-- вектор по Z
+	//-- Перемножаем матрицы
+	MoveP[1]=0;
+	MoveP[2]=0;
+	MoveP[3]=0;
+	MoveP[4]=1;
+	//-- Начало вектора
+	MatrPC[1]=MatrP[1,1]*MoveP[1]+MatrP[1,2]*MoveP[2]+MatrP[1,3]*MoveP[3]+MatrP[1,4]*MoveP[4];
+	MatrPC[2]=MatrP[2,1]*MoveP[1]+MatrP[2,2]*MoveP[2]+MatrP[2,3]*MoveP[3]+MatrP[2,4]*MoveP[4];
+	MatrPC[3]=MatrP[3,1]*MoveP[1]+MatrP[3,2]*MoveP[2]+MatrP[3,3]*MoveP[3]+MatrP[3,4]*MoveP[4];
+	MatrPC[4]=MatrP[4,1]*MoveP[1]+MatrP[4,2]*MoveP[2]+MatrP[4,3]*MoveP[3]+MatrP[4,4]*MoveP[4];
+	//-- Конец вектора
+	MoveP[1]=MoveX;
+	MoveP[2]=MoveY;
+	MoveP[3]=MoveZ;
+	MoveP[4]=1;
+	MatrPC[1]=MatrP[1,1]*MoveP[1]+MatrP[1,2]*MoveP[2]+MatrP[1,3]*MoveP[3]+MatrP[1,4]*MoveP[4]-MatrPC[1];
+	MatrPC[2]=MatrP[2,1]*MoveP[1]+MatrP[2,2]*MoveP[2]+MatrP[2,3]*MoveP[3]+MatrP[2,4]*MoveP[4]-MatrPC[2];
+	MatrPC[3]=MatrP[3,1]*MoveP[1]+MatrP[3,2]*MoveP[2]+MatrP[3,3]*MoveP[3]+MatrP[3,4]*MoveP[4]-MatrPC[3];
+	MatrPC[4]=MatrP[4,1]*MoveP[1]+MatrP[4,2]*MoveP[2]+MatrP[4,3]*MoveP[3]+MatrP[4,4]*MoveP[4]-MatrPC[4];
+	NULLOUT=AddScratch(ScrCin1,"Move"+str(ip-1),"MoveX",MatrPC[1]);
+	NULLOUT=AddScratch(ScrCin1,"Move"+str(ip-1),"MoveY",MatrPC[2]);
+	NULLOUT=AddScratch(ScrCin1,"Move"+str(ip-1),"MoveZ",MatrPC[3]);
+}
+if (MoveType==1)	//-- если перемещение поворот получаем координаты оси
+{
+  err=GetScratch(ScrCin1,"Move"+str(ip-1),"Axe1X",Axe1X,SubstName);	//-- начало по X
+	err=GetScratch(ScrCin1,"Move"+str(ip-1),"Axe1Y",Axe1Y,SubstName);	//-- начало по Y
+	err=GetScratch(ScrCin1,"Move"+str(ip-1),"Axe1Z",Axe1Z,SubstName);	//-- начало по Z
+  err=GetScratch(ScrCin1,"Move"+str(ip-1),"Axe2X",Axe2X,SubstName);	//-- конец по X
+	err=GetScratch(ScrCin1,"Move"+str(ip-1),"Axe2Y",Axe2Y,SubstName);	//-- конец по Y
+	err=GetScratch(ScrCin1,"Move"+str(ip-1),"Axe2Z",Axe2Z,SubstName);	//-- конец по Z
+	RoteteP1[1]=Axe1X;
+	RoteteP1[2]=Axe1Y;
+	RoteteP1[3]=Axe1Z;
+	RoteteP1[4]=1;
+  RoteteP2[1]=Axe2X;
+	RoteteP2[2]=Axe2Y;
+	RoteteP2[3]=Axe2Z;
+	RoteteP2[4]=1;
+	//-- Перемножаем матрицы
+	MatrPC[1]=MatrP[1,1]*RoteteP1[1]+MatrP[1,2]*RoteteP1[2]+MatrP[1,3]*RoteteP1[3]+MatrP[1,4]*RoteteP1[4];
+	MatrPC[2]=MatrP[2,1]*RoteteP1[1]+MatrP[2,2]*RoteteP1[2]+MatrP[2,3]*RoteteP1[3]+MatrP[2,4]*RoteteP1[4];
+	MatrPC[3]=MatrP[3,1]*RoteteP1[1]+MatrP[3,2]*RoteteP1[2]+MatrP[3,3]*RoteteP1[3]+MatrP[3,4]*RoteteP1[4];
+	MatrPC[4]=MatrP[4,1]*RoteteP1[1]+MatrP[4,2]*RoteteP1[2]+MatrP[4,3]*RoteteP1[3]+MatrP[4,4]*RoteteP1[4];
+	//-- Перезаписываем значение в скретче
+	NULLOUT=AddScratch(ScrCin1,"Move"+str(ip-1),"Axe1X",MatrPC[1]);
+	NULLOUT=AddScratch(ScrCin1,"Move"+str(ip-1),"Axe1Y",MatrPC[2]);
+	NULLOUT=AddScratch(ScrCin1,"Move"+str(ip-1),"Axe1Z",MatrPC[3]);
+	//-- Перемножаем матрицы
+	MatrPC[1]=MatrP[1,1]*RoteteP2[1]+MatrP[1,2]*RoteteP2[2]+MatrP[1,3]*RoteteP2[3]+MatrP[1,4]*RoteteP2[4];
+	MatrPC[2]=MatrP[2,1]*RoteteP2[1]+MatrP[2,2]*RoteteP2[2]+MatrP[2,3]*RoteteP2[3]+MatrP[2,4]*RoteteP2[4];
+	MatrPC[3]=MatrP[3,1]*RoteteP2[1]+MatrP[3,2]*RoteteP2[2]+MatrP[3,3]*RoteteP2[3]+MatrP[3,4]*RoteteP2[4];
+	MatrPC[4]=MatrP[4,1]*RoteteP2[1]+MatrP[4,2]*RoteteP2[2]+MatrP[4,3]*RoteteP2[3]+MatrP[4,4]*RoteteP2[4];
+	//-- Перезаписываем значение в скретче
+	NULLOUT=AddScratch(ScrCin1,"Move"+str(ip-1),"Axe2X",MatrPC[1]);
+	NULLOUT=AddScratch(ScrCin1,"Move"+str(ip-1),"Axe2Y",MatrPC[2]);
+	NULLOUT=AddScratch(ScrCin1,"Move"+str(ip-1),"Axe2Z",MatrPC[3]);
+
+}
+if (ip<MoveCount)
+{
+	goto secP;
+} 
+HaveCinP=1;
+//NULLOUT=TermScratch(ScrCin1);	//-- закрываем набор параметров Cinema
+exit;

@@ -1,0 +1,33 @@
+//-- Создание объекта - диван типовой 3-х местный
+global ProtoPath;		//-- Путь к папке с макропрограммами общей библиотеке прототипов
+global LocalPath;		//-- Путь к папке с макропрограммами локальной библиотеке прототипов
+ProtoPath=GetProtoMac("Shkaf.ptl");
+LocalPath=GetProtoMac("MMebel.ptl");
+model=DbVar("model",2259); //-- Трехмерная модель
+//-------------------------------------------------------
+ObjTyp=5;      //-- Мебельный
+PlcTyp=0;      //-- Нижний
+BiblNum=240;   //-- В библиотеке ID=240
+FurnType="100300";
+ТипКонт=1;     //-- Прямой
+Верхний=0;     //-- Нижний
+MatName=PriceInfo(model,"MatName","Диван 3-х местный типовой");//-- Имя изделия
+//-------------------------------------------------------
+//-- Ставим мебель
+macro ProtoPath+"BegUnit.mac" "" ;
+macro LocalPath+"Divan3I.mac";
+objident last 1 softmeb;
+//-- Считываем размеры
+w=PriceInfo(model,"Width",round(objgab1(softmeb,1)));    //-- Ширина
+d=PriceInfo(model,"Length",round(objgab1(softmeb,2)));   //-- Глубина
+h=PriceInfo(model,"Height",round(objgab1(softmeb,3)));   //-- Высота
+//-- Ставим размеры
+macro ProtoPath+"aDimLine.mac" w  d h  ТипКонт Верхний;
+//-- Линии контакта
+macro ProtoPath+"aContLine.mac" w d d h 0 ТипКонт Верхний;
+add softmeb all done;
+//-- Присваиваем атрибуты
+macro ProtoPath+"SetEnam.mac" MatName;
+macro ProtoPath+"EndUnit.mac" w d h ;
+macro ProtoPath+"FurnAttr.mac" ObjTyp PlcTyp BiblNum FurnType;
+exit;

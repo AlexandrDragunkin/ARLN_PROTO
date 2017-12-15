@@ -1,0 +1,36 @@
+//--Макро создания держателя с винтом для колонной системы Komandor.
+global ProtoPath;
+nullout=getvarinst(2,"UnitCodeWard",UnitCodeWard,"8000");
+getpar GoodsID;
+//--Читаем свойства сборочной единицы
+IDFix1=PriceInfo(GoodsID,"NomID1",1,2);			//-- Регулировочная деталь		..54-2032..
+NameFix1=PriceInfo(IDFix1,"MatName","",1);	
+IDFix2=PriceInfo(GoodsID,"NomID2",1,2);			//-- Заглушка конструкторского профиля  ..54-2031..
+NameFix2=PriceInfo(IDFix2,"MatName","",1);	
+IDFix3=PriceInfo(GoodsID,"NomID3",1,2);			//-- Прокладка регулирующей ножки	..54-2033..
+NameFix3=PriceInfo(IDFix3,"MatName","",1);
+ShiftZ=PriceInfo(GoodsID,"ToleranceX",1,2);		
+
+obj_do=sysvar(60); 
+//-- Добавляем регулировочную деталь
+macro ProtoPath+"MakeAcce.mac" IDFix1 "040000" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameFix1;
+attrobj attach "UnitCode" Done last 1 UnitCodeWard;
+move last 1 done 0 0 ShiftZ nocopy;
+//-- Добавляем заглушку конструкторского профиля
+macro ProtoPath+"MakeAcce.mac" IDFix2 "040000" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameFix2;
+attrobj attach "UnitCode" Done last 1 UnitCodeWard;
+//-- Добавляем прокладку регулирующей ножки
+macro ProtoPath+"MakeAcce.mac" IDFix3 "040000" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameFix3;
+attrobj attach "UnitCode" Done last 1 UnitCodeWard;
+
+obj_posle=sysvar(60);
+kol=obj_posle-obj_do;
+group last kol done;
+FurnType=PriceInfo(GoodsID,"FurnType","350000",2);
+NameEl=PriceInfo(GoodsID,"Name","",2);
+attrobj attach "FurnType" done last 1 FurnType;
+attrobj attach "ElemName" Done last 1 NameEl;
+exit;

@@ -1,0 +1,183 @@
+global ProtoPath;
+//macro ProtoPath+"SaveParSp.mac" "ParSp1.cfg"  ;
+global PKM_SP ;
+if isvardef("PKM_SP")>0
+{
+   //Функция определяет, определена ли к данному моменту переменная, имя которой содержит строка variable. Функции возвращает:
+   //0  – переменная не определена;
+   //3  – переменная является массивом
+   //5  – переменная числового типа
+   //6  – переменная строкового типа
+   //16  – переменная является ссылкой на объект
+    macro ProtoPath+"Glob_Sp.mac" ; // Загружаем переменныые для макросов из   SUPPORT
+}
+//LnpathG.mac
+//*********************************************
+// Построение длинномера на элементе контура по выбранному типу
+//              Драгункин А.Р.
+//              ГеоС 2007 г.
+//*********************************************
+global Xn Yn Zn Xk Yk Zk ;
+getpar TypLn;    //Тип длинномера
+
+defarr
+First[3]
+Vector[3]
+xmm[15]
+xm[6]
+lobj[200]
+bd[11]
+arr[4]
+;
+Xn=0;
+Yn=0;
+Zn=0;
+Xk=0;
+Yk=0;
+Zk=0;
+dsn=999;
+dsk=999;
+ILc=0;
+Result=GetLongCut(arr);
+next:
+ILc=ILc+1;
+setucs save "LnObject" ;
+
+err=SetLongType(TypLn);
+macro ProtoPath+"LnTPath.mac"  0 ;
+Objident last 1 LLobj ;
+ARTvar=GetAttr(LLobj,"ARTICLE",-99);
+
+if (ILc>1)
+{
+  //Определяем ближайшие(на удалении 100 мм) в начале и конце
+  N=GetLongType();//текущий номер длинномера
+  N=N-1;
+  Select attribute "Longstype=="+str(N)+"&&Article==\""+ARTvar+"\"" Done ; // Исправлено 17.11.2008
+  N=sysvar(61) ;
+  i=0
+  mets:
+  if (i<N)
+  {
+    i=i+1;
+    Lobj[i]=getselnum(i);
+    goto mets;
+  }
+  i=0;
+  mets1:
+  if (i<N-1)
+  {
+    i=i+1;
+    Ltime=Lobj[i];
+    if (isVarDef("Ltime")!=16)
+    {
+      putmsg("Ошибка программы. IsVarDef(/"Ltime/")!=16",0) ;
+      Result=SetBentProf(Bd);
+      Result=SetLongCut(arr);
+      goto metend ;
+    }
+    #dsN Dist Xn Yn Zn object Lobj[i] ;   //Расстояние от точки ближней к ЛСК до заданного объекта
+    #dsK Dist Xk Yk Zk object Lobj[i] ;   //Расстояние от точки дальней от ЛСК до заданного объекта
+    if (IsVarDef("LLobj")!=0)
+    {     //проверяем определен ли указатель
+      if (compareobj(LLobj,Lobj[i])) //Сравниваем не указывают ли два указателя на один объект
+      {
+        goto mets1;
+      }
+    }
+    else
+    {  //выходим плавно , но с руганью
+      putmsg("Ошибка программы. IsVarDef(\"LLobj\")!=16",0) ;
+      Result=SetBentProf(Bd);
+      Result=SetLongCut(arr);
+      goto metend ;
+    }
+    If (dsk<=10)
+    {   //конечная точка
+      Setucs lcs LLobj ;  //запоминаем значение 0 ЛСК  для объекта у коорого ноль не изменится (правый)
+      PtransCS(0,3,0,0,0,Xng,Yng,Zng) ;
+      setucs gcs ;
+      if (IsVarDef("LLobj")!=16)
+      {
+        putmsg("Ошибка программы. IsVarDef(/"LLobj/")!=16",0) ;
+        Result=SetBentProf(Bd);
+        Result=SetLongCut(arr);
+        goto metend ;
+      }
+      macro ProtoPath+"LBunion5.mac"  1   Lobj[i] LLobj  ; //Соединяем
+      KeyCutK=1; //присваиваем значение ключу обработки конца
+      select last 2 done ;
+      KsD1=getselnum(1) ;
+      KsD2=getselnum(2) ;
+      Setucs lcs ksd2 ;
+      PtransCS(0,3,0,0,0,Xn2,Yn2,Zn2) ;
+      Setucs lcs ksd1 ;
+      PtransCS(0,3,0,0,0,Xn1,Yn1,Zn1) ;
+      setucs restore "LnObject" ;
+      if (Abs(xng-xn2)<0.5)&&(Abs(yng-yn2)<0.5)
+      {  // Значит ksd2=LLobj
+        LLobj=ksd2;
+        Lobj[i]=ksd1;
+        Lobj[N]=LLobj;
+      }
+      else
+      {
+        if (Abs(xng-xn1)<0.5)&&(Abs(yng-yn1)<0.5)
+        {  // Значит ksd1=LLobj
+          LLobj=ksd1;
+          Lobj[i]=ksd2;
+          Lobj[N]=LLobj;
+        }
+      }
+    }
+    If (dsn<=10)
+    {   //начальная точка
+      Setucs lcs Lobj[i] ; //запоминаем значение 0 ЛСК  для объекта у коорого ноль не изменится (правый)
+      PtransCS(0,3,0,0,0,Xng,Yng,Zng) ;
+      setucs gcs ;
+      if (IsVarDef("LLobj")!=16)
+      {
+        putmsg("Ошибка программы. IsVarDef(/"LLobj/")!=16",0) ;
+        Result=SetBentProf(Bd);
+        Result=SetLongCut(arr);
+        goto metend ;
+      }
+      macro ProtoPath+"LBunion5.mac"  1   LLobj Lobj[i] ;  //Соединяем
+      KeyCutN=1; //присваиваем значение ключу обработки начала
+      select last 2 done ;
+      KsD1=getselnum(1) ;
+      KsD2=getselnum(2) ;
+      Setucs lcs ksd2 ;
+      PtransCS(0,3,0,0,0,Xn2,Yn2,Zn2) ;
+      Setucs lcs ksd1 ;
+      PtransCS(0,3,0,0,0,Xn1,Yn1,Zn1) ;
+      setucs restore "LnObject" ;
+      if (Abs(xng-xn2)<0.5)&&(Abs(yng-yn2)<0.5)&&(Abs(zng-zn2)<0.5)
+      {  // Значит ksd1=LLobj
+        LLobj=ksd1;
+        Lobj[i]=ksd2;
+        Lobj[N]=LLobj;
+      }
+      else
+      {
+        if (Abs(xng-xn1)<0.5)&&(Abs(yng-yn1)<0.5)&&(Abs(zng-zn1)<0.5)
+        {  // Значит ksd2=LLobj
+          LLobj=ksd2;
+          Lobj[i]=ksd1;
+          Lobj[N]=LLobj;
+        }
+      }
+    }
+    goto mets1 ;
+  }
+  setucs restore "LnObject" ;
+  setucs delete  "LnObject" ;
+}
+metnext:
+Result=SetBentProf(Bd);
+Result=SetLongCut(arr);
+redraw,,
+goto next ;
+metend:
+redraw,,
+exit;

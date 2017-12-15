@@ -1,0 +1,164 @@
+//Формируем объект таблицу с данными сцены по столешницам
+global CBDpath RX;
+RX=0
+
+global
+IdKrom
+Ukas
+ElUkas
+CurentNum //текущий номер обрабатываемой столешницы
+CurentMat
+StUkas //Указатель на штриховку столешницы
+g_DrawTaile           //формировать деталировку 0-нет 1-да
+;
+
+defarr gr[20] xm[6] ArrSys[20] Info[8] ;
+
+getpar chk ;
+
+If (!IsAttrdef("StrihSt"))  { Attribute Create "StrihSt" "Указатель на штриховку столешницы" Real 5 0  ; }
+
+err=SysArr(43,ArrSys) ; // массив свойств создаваемого объекта
+
+hatchcoeff ArrSys[3] ; //Масштаб штриховки  K - масштаб
+hatchangle 0 ; //Угол штриховки
+hatchunits 1 ; //k= 0 не учитывать или 1 учитывать графический коэффициент.
+
+fnk=CBDpath+"StDb.dbf"
+if GetCount(fnk) {  DbOpen rcdCBD,fnk; } // ищем, есть ли такая база?
+
+//Формируем штриховку
+DbFilter rcdCBD,"" ;
+err=DbRecCount(rcdcbd) ;//ОПРЕДЕЛИЛИ ЧИСЛО ЗАПИСЕЙ В ОТКРЫТОМ НАБОРЕ
+if err>0 {
+i=0
+met3:
+DbFilter rcdCBD,"PRIZ==0" ;
+err=DbRecCount(rcdcbd) ;//ОПРЕДЕЛИЛИ ЧИСЛО ЗАПИСЕЙ В ОТКРЫТОМ НАБОРЕ
+if err==0 { goto metend1 ; }
+DbMoveFirst rcdcbd; // Встали на первую запись
+iD_CURR=DbGetValue(rcdcbd,"PRICEID",0) ;//считали из поля PRICEID
+iD_ZNAK=DbGetValue(rcdcbd,"NUM",0) ;    //Считали номер куска
+WD_PLITA=DbGetValue(rcdcbd,"WDPLITA",0) ;    //Считали толщину материала куска
+DbFilter rcdCBD,"(PRIZ==0)&&(PRICEID==iD_CURR)";//Отфильтровали по этому полю
+DbMoveFirst rcdcbd; // Встали на первую запись
+i=i+1
+DbSetValue rcdCBD,"PRIZST",StUkas[i] ; //Каждой обработанной записи в поле PRIZST поставили номер значка
+DbUpdate rcdCBD ;
+//=========штриховка===
+Objects=SysVar(60) ;
+hatchtype StUkas[i]  //Тип штриховки
+
+ci=0
+met7:
+if ci<chk {
+   ci=ci+1
+   select attribute  "(PRICEID=="+str(iD_CURR)+")&&(CHAINLOC=="+str(ci)+")" done ;
+   if Sysvar(61)>0 {
+      hatch  attribute  "(PRICEID=="+str(iD_CURR)+")&&(CHAINLOC=="+str(ci)+")"  done ;
+      If (IsAttrdef("ChainLoc"))   { attrobj attach "ChainLoc" done last 1 Ci ; }
+   }
+   goto met7 ;
+}
+
+objects=SysVar(60)-objects;
+if objects>0
+{
+select last objects done ;
+}
+else
+{
+  objects=0
+}
+k=0
+met5:
+if k<objects {
+k=k+1
+objident getselnum(k) pnt1 ;
+If (IsAttrdef("StrihSt")) { attrobj attach "StrihSt" done  pnt1  1 ; }
+}
+//=====================
+SunmmLen=0
+TextKr=""
+j=0
+met4:
+         If !DbEOF(rcdCBD) {
+            err=DbRecCount(rcdCBD) ;//ОПРЕДЕЛИЛИ ЧИСЛО ЗАПИСЕЙ В ОТКРЫТОМ НАБОРЕ
+            if err<1 { #ok_flag alternative "Внимание!!" msgbox text " Записи  в базе с именем "+fnk+" не обнаружены." done "Ок" done ; exit ; }
+            else {
+                 ValLen=DbGetValue(rcdCBD,"LENGTHST",-99); //Определили длину куска столешницы
+                 DbSetValue rcdCBD,"PRIZ",1 ; //Каждой обработанной записи в поле PRIZ поставили 1
+                 DbUpdate rcdCBD ;
+                 DbMoveNext rcdCBD;
+                 j=j+1
+                 if j==1 { TextKr=TextKr+str(ValLen);   }
+                 else { TextKr=TextKr+"+"+str(ValLen);  }
+                 }
+                 goto met4 ;
+            }
+            //из поля длин сформировали запись Общая ****(мм) (**;**;**;**;)
+   TextWD=iif(WD_PLITA!=0,"S%%003(мм)%%004="+str(WD_PLITA)+" ","");
+   TextKr=TextWD+"Ls%%003(мм)%%004="+"("+TextKr+")" ;
+
+   //Формируем картинку группируем помещаем в бланк.
+   //i=i+1
+
+   rectangle 0 0+10*i*SYSvAR(76)*ArrSys[3] 0 @-20*SYSvAR(76)*ArrSys[3] 0-9*SYSvAR(76)*ArrSys[3] 0 ;
+   hatchcoeff 0.4*arrsys[3]  //Масштаб штриховки  K - масштаб
+   hatch last 1 done  ;
+ 
+   hatchcoeff ArrSys[3]  //Масштаб штриховки  K - масштаб
+    //macro GetFilePath(SysVar(7))+"leader1auto.mac" iD_ZNAK 0 0+10*i*SYSvAR(76) 0 0.01 10+10*i*SYSvAR(76) 0 ;
+    objident last 1 pnt ;
+   //Определили наименование материала
+   name=PriceInfo(iD_CURR,"Matname",0)
+   #tx text name+" "+textkr done -10-25*sysVar(76) 0+10*i*SYSvAR(76) 0 @-10 0 0 ;
+   gosub EdЕtextNM ; //Редактируем параметры текста  присваиваем параметры Nmebel
+   Group last 3 done ;
+   objident last 1 gr[i] ;
+   goto met3 ;
+   }
+else {  DbClose rcdcbd; exit ; }
+metend1:
+
+N=i
+text "%%uОсновной материал. Условные обозначения" done 0 0 0  @-10 0 0 ;
+i=0
+#pnt group last 1 done ;
+met6:
+if i<N {
+   i=i+1
+   add pnt gr[i] done
+   goto met6 ;
+}
+
+Invisible pnt done ;
+//#gr1 group all done ;
+#gr1 group attribute "ChainLoc==1" done ;
+=objgab3(gr1,xm);
+explode gr1  done
+visible pnt done
+Xc=Xm[4]
+Yc=xm[5]+10*sysvar(76);
+=objgab3(pnt,xm);
+
+move  pnt done  2point  Xm[4] Xm[2] 0 Xc Yc 0  nocopy ;
+
+If (IsAttrdef("ChainLoc"))   { attrobj attach "ChainLoc" done pnt 1 ; }
+metend:
+DbClose rcdcbd;
+exit;
+//************************************************************************************
+
+EdЕtextNM:
+//Редактируем параметры текста  присваиваем параметры Nmebel
+err=GetTextInfo(Tx,Info);
+Info[1]="Nmebel.shx" //1 Имя шрифта
+Info[2]=5            //2 Высота символа
+Info[3]=100          //3 Отношение ширины к высоте (в процентах)
+Info[4]=15           //4 Угол наклона шрифта (в градусах)
+Info[5]=0            //5 Разрядка  между  символами  по  горизонтали(в процентах)
+Info[6]=0            //6 Разрядка между символами по вертикали (в процентах)
+err=PutTextInfo(Tx,Info);
+
+return;

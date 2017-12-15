@@ -1,0 +1,76 @@
+//-- Изменить подрез профиля
+global ProtoPath;
+defarr arr[16];
+global pnt, iPNT;
+
+#ok_flag
+setvar
+"Изменить подрез профиля"
+""
+left
+"Определите параметры замены"
+done
+real default 0 "Величина подреза:"     Podr
+logical default 1 "Прибавлять к текущему подрезу" DPodr
+str listonly
+	  current "По указанию"
+		"Все профили"
+done
+"Способ замены:"    S_zam
+done;
+
+if (ok_flag==0)
+{
+  cancel;
+}
+macro ProtoPath+"ChgSel.mac" S_zam ;
+
+PrProf=0;
+if (S_zam=="По указанию")
+{
+Loop:
+  #pnt1 MbGet "Укажите край профиля" Profile bBegin :
+  Length=0;
+  P1=0;
+  P2=0;
+  arr[1]=pnt1;
+  NULLOUT=GetProf6Par(1,arr);
+  arr[1]=0;
+  NULLOUT=GetProf6Par(3,arr);
+  P1=arr[2]
+  arr[1]=1;
+  NULLOUT=GetProf6Par(3,arr);
+  P2=arr[2]
+  NULLOUT=GetProf6Par(5,arr);
+  if (bBegin==0) {
+    MBProfile item pnt1 10 P1*DPodr+Podr 0 ;
+  }
+  else {                   // Начало профиля
+    MBProfile item pnt1 11 P2*DPodr+Podr 0 ;
+  }
+  goto Loop;
+ //--------------------------------------------------------------------
+}
+else
+{
+  i=0;
+LoopAll:
+  if (i<iPNT)
+  {
+    i=i+1;
+    pnt1=pnt[i];
+    P1=0;
+    P2=0;
+    arr[1]=pnt1;
+    NULLOUT=GetProf6Par(1,arr);
+    arr[1]=0;
+    NULLOUT=GetProf6Par(3,arr);
+    P1=arr[2]
+    arr[1]=1;
+    NULLOUT=GetProf6Par(3,arr);
+    P2=arr[2]
+    MBProfile item pnt1 10 P1*DPodr+Podr 11 P2*DPodr+Podr 0 ;
+    goto LoopAll;
+  }
+}
+exit;

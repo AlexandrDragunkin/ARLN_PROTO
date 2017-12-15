@@ -1,0 +1,122 @@
+//-- Макропрограмма устанавливает уголовое покрытие
+defarr arr[3], Rad[6];
+defarr BaseGab[5];
+defarr basep[3];
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами 
+NULLOUT=getarrinst(2,"BaseGab",BaseGab);            //-- Габариты каркаса
+NULLOUT=getvarinst(2,"Typ_Kro",Typ_Kro,0);          //-- Тип лицевой кромки 
+NULLOUT=getvarinst(2,"FDMater",PrMater,0);          //-- Умолчание для материалов фигурных столешниц 
+NULLOUT=getvarinst(2,"UgVneshRad",RV,50);           //-- Внешние радиусы углового покрытия
+NULLOUT=getvarinst(2,"UgVnutRad",RU,50);            //-- Внутренние радиусы углового покрытия
+NULLOUT=getvarinst(2,"UgVariant",UgVariant,0);      //-- Стыковка крыльев фаской
+NULLOUT=getvarinst(2,"UgDeskFillet",UgDeskFillet,100);//-- Размер фаски углового покрытия
+NULLOUT=getvarinst(2,"UgDeskLeft",UgDeskLeft,300);    //-- Ширина левого крыла углового покрытия
+NULLOUT=getvarinst(2,"UgDeskRight",UgDeskRight,300);  //-- Ширина правого крыла углового покрытия
+
+NULLOUT=setvarinst(2,"MacroSw",1);                //-- Текущий способ построения
+
+Thick=priceinfo(PrMater,"Thickness",16);
+onerror final;
+NULLOUT=getsnap();
+NULLOUT=pushinst(1);
+defarr arrin[3], arrout[8];
+arrin[1]=Thick;  // Высота резиновой панели
+mbget "Укажите положение панели" shell arrin arrout :
+basep[1]=arrout[1];
+basep[2]=arrout[2];
+basep[3]=arrout[3];
+xgab=arrout[4];
+ygab=arrout[5];
+Numb=arrout[6];
+Shift=arrout[7];
+//mbget "Укажите точку установки углового покрытия" shell
+//  basep[1] basep[2] basep[3] xgab ygab Numb Shift :
+
+NULLOUT=sysarr(33,arr); //-- Запоминаем координаты точки
+ptranscs(3,2,arr[1],arr[2],arr[3],arr[1],arr[2],arr[3]);
+IsB=iif(arr[1]>BaseGab[1]/2,1,0); //-- По какой стороне угол
+
+#ok_flag
+setvar
+"Угловое покрытие"
+mpathexpand("<Pictures>\\")+"ustl_1_RADSKR.wmf"
+left
+"Введите значения параметров"
+done
+real default UgDeskLeft "Ширина левого крыла:" UgDeskLeft
+real default UgDeskRight "Ширина правого крыла:" UgDeskRight
+str listonly
+	  if (UgVariant==0) { current	} "Простой"
+	  if (UgVariant==1) { current	} "Фаска"
+	done
+	"Вариант стыковки крыльев:"       variant
+real default UgDeskFillet "Размер фаски слева:" FasL
+real default UgDeskFillet "Размер фаски справа:" FasR
+real default RV "Радиус скругления 1:" Rad[1]
+real default RV "Радиус скругления 2:" Rad[2]
+real default RV "Радиус скругления 3:" Rad[3]
+real default RV "Радиус скругления 4:" Rad[4]
+real default RV "Радиус скругления 5:" Rad[5]
+real default RU "Радиус на внутренних углах:" Rad[6]
+done;
+if (ok_flag==0)
+{
+  goto final;
+}
+if (variant=="Фаска")
+{
+  UgVariant=1;
+}
+else
+{
+  UgVariant=0;
+}
+macro ProtoPath+"SetMat.mac" PrMater ;
+macro ProtoPath+"SetKrom.mac" 0 Typ_Kro Typ_Kro Typ_Kro Typ_Kro ;
+if (IsB==0)
+{
+  macro ProtoPath+"SetUstl.mac" UgDeskLeft, UgDeskRight, UgVariant, FasL, FasR,
+    Rad[1] Rad[2] Rad[3] Rad[4] Rad[5] Rad[6];
+}
+else
+{
+  macro ProtoPath+"SetUstl.mac" UgDeskRight, UgDeskLeft, UgVariant, FasR, FasL,
+    Rad[1] Rad[2] Rad[3] Rad[4] Rad[5] Rad[6];
+}
+macro ProtoPath+"SetEnam.mac" "Угловое покрытие";
+macromode undo off;
+if (IsB==0)
+{
+  macro ProtoPath+"MakeUstl.mac" basep[1] basep[2] basep[3] xgab, ygab;
+}
+else
+{
+  macro ProtoPath+"MakeUstl.mac" basep[1]+xgab basep[2] basep[3] ygab, xgab;
+  rotate last 1 done 2points basep[1]+xgab basep[2] basep[3] basep[1]+xgab basep[2] basep[3]+10 90 nocopy;
+}
+
+objident last 1 polka;
+if (Numb>1)
+{
+  move multicopy Numb-1 polka done 0 0 shift;
+}
+final:
+offerror;
+if (isvardef("polka")==16)
+{
+  macromode undo on "Ug_stol.mac" polka ;
+}
+else
+{
+  macromode undo on;
+}
+NULLOUT=setvarinst(2,"UgVneshRad",Rad[1]);        //-- Внешние радиусы углового покрытия
+NULLOUT=setvarinst(2,"UgVnutRad",Rad[6]);         //-- Внутренние радиусы углового покрытия
+NULLOUT=setvarinst(2,"UgVariant",UgVariant);      //-- Стыковка крыльев фаской
+NULLOUT=setvarinst(2,"UgDeskFillet",FasL);        //-- Размер фаски углового покрытия
+NULLOUT=setvarinst(2,"UgDeskLeft",UgDeskLeft);    //-- Ширина левого крыла углового покрытия
+NULLOUT=setvarinst(2,"UgDeskRight",UgDeskRight);  //-- Ширина правого крыла углового покрытия
+NULLOUT=resnap();
+NULLOUT=popinst(1);
+exit;

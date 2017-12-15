@@ -1,0 +1,84 @@
+//-- Макропрограмма создания вешалки продольной
+global ProtoPath;
+global MacroSw;   //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global HoldName;  //-- Имя хозяина
+//KarkasNumb=getcarcnumb();  //-- Порядковый номер каркаса в сцене
+//global g_FurnType;
+
+getpar xn yn zn x y z RackType;
+
+KarkasNumb=getcarcnumb();    //-- Текущий номер каркаса
+NULLOUT=getvarinst(2,"g_FurnType",FurnType,"040000");
+//NULLOUT=GetVarInst(2,"MacroSw",MacroSw,0); //-- Способ построения
+
+//---------------------------------------------------
+position=149;
+Namescr="ProtoParams";
+FurnType="350100";
+NULLOUT=setvarinst(2,"g_FurnType",FurnType);
+dn=priceinfo(RackType,"NAME","Вешалка продольная",2);
+
+if (len(dn)==0)
+{
+  dn="Вешалка продольная"
+}
+//---------------------------------------------------
+NULLOUT=getsnap();
+if (MacroSw!=0)
+{
+  protoobj create "Shkaf.ptl" 149
+  "x" x
+  "y" y
+  "z" z
+  "colo" RackType
+  done
+  xn yn zn;
+  MacroSw=1;
+}
+else
+{
+  H=20;
+  Hor_Gap=3;
+  D1=25;
+  sy=sysvar(60);
+  setucs xn,yn,zn xn+10,yn,zn oz xn,yn,zn+10;
+  NULLOUT=pushinst(1);
+  macro ProtoPath+"bear2.mac" 0,0,0,D1,Hor_Gap,x,RackType;
+  macro ProtoPath+"pipe2.mac" 0,0,0,x,D1,Hor_Gap,RackType;
+  macro ProtoPath+"SetEnam.mac" " ";
+  NULLOUT=popinst(1);
+  sy=sysvar(60)-sy;
+  #rack group last sy done;
+//  move rack done xn,yn,zn nocopy;
+  ScrMod=InitScratch();
+  err=AddScratch(ScrMod,FurnType,"x",x);
+  err=AddScratch(ScrMod,FurnType,"y",y);
+  err=AddScratch(ScrMod,FurnType,"z",z);
+  err=AddScratch(ScrMod,FurnType,"colo",RackType);
+  NULLOUT=writescratch(ScrMod,Namescr,rack);
+  NULLOUT=TermScratch(ScrMod);
+  NULLOUT=addattrpi(rack,1,149);
+}
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done last 1 done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+}
+if (isassign("HoldName",0))
+{
+  attrobj copy record "HoldName" done last 1 done;
+}
+else
+{
+  attrobj attach "HoldName" done last 1 HoldName ;
+}
+attrobj attach "Posit" done last 1 position;
+attrobj attach "ElemName" done last 1 dn;
+attrobj attach "FurnType" done last 1 FurnType;
+attrobj attach "Assembly" done last 1 1;        //-- Признак сборочной единицы
+NULLOUT=resnap();
+exit;

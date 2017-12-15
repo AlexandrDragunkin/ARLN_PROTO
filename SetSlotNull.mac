@@ -1,0 +1,5 @@
+//-- Удалить все пропилы из панели
+defarr Slot[56];
+NULLOUT=initarray(Slot,0);
+NULLOUT=setarrinst(1,"g_Slots",Slot);
+exit;

@@ -1,0 +1,174 @@
+//-- Программа создания размера и надписи номера изделия
+//-- Входные параметры:
+//-- w d h - габариты объекта по ширине, глубине и высоте соответственно
+//-- ТипКонт - Тип приставки
+//--					1 - прямой,
+//--					2 - угловой
+//--					3 - приставляем спереди по правому краю
+//--					4 - приставляем спереди по левому краю
+//-- Верхний - Объект верха (1) или объект низа (0)
+//-- РазмПлан - Где ставить размеры
+//-- 0 - Ширина на фасаде
+//-- 1 - Ширина на виде сверху
+//-- 10 - Ширина на фасаде
+//-- 20 - Ширина на виде сверху
+//-- 100 - Глубина слева
+//-- 200 - Глубина справа
+//-- 1000 - Высота слева
+//-- 2000 - Высота справа
+
+global РазмПлан;
+global ProtoPath;
+if (isvardef("РазмПлан")==0)
+{
+	РазмПлан=1;
+}
+defarr arr[14];
+
+getpar w d h ТипКонт Верхний;
+
+Color 0;
+NULL=sysarr(43,arr);
+grfcur=arr[3];    // Текущий граф.коэффициент
+if (arr[3]<10)
+{
+  grfcoeff 10;
+  grfcur=10;
+}
+//-- Рассчитываем, где ставить параметры, разбиваем РазмПлан
+p1=fmod(РазмПлан,100);
+p2=(РазмПлан-p1)/10;
+p2=(fmod(p2,100))/10;
+p3=Int(РазмПлан/1000);
+p1=p1/10;
+РазмПлан=0;
+//-- Объект низа
+if (Верхний==0)
+{
+  //-- Ширина на виде сверху
+	if (РазмПлан==1||p1==2)
+	{
+		text "Pos" done w/2+50 2*d/3 h+50 normal 0 0 1 w/2-1+50 2*d/3 h+50 ;
+		lwidth 0.2;
+		ldim 3ddim 0,0,0 w,0,0 parallel 0,-150,0;
+		Attrobj Attach "Contact" Done last 1 -1;       //-- Служебный объект
+		//-- Тип приставки - угловой
+		if (ТипКонт==2)
+		{
+			ldim 3ddim 0,0,0 0,d,0 parallel -150,0,0;
+			Attrobj Attach "Contact" Done last 1 -1;  //-- Служебный объект
+		}
+  }
+  //-- Ширина на фасаде
+  if (РазмПлан==0||p1==1)
+	{
+		text "Pos" done w/2+50 0 h+150 normal 0 1 0  w/2+50-1 0 h+150 ;
+		lwidth 0.2;
+		ldim 3ddim 0,0,h w,0,h parallel 0,0,h+250;
+		Attrobj Attach "Contact" Done last 1 -1;  //-- Служебный объект
+		//-- Тип приставки - угловой
+		if (ТипКонт==2)
+		{
+			ldim 3ddim 0,0,h 0,d,h parallel 0,0,h+250;
+			Attrobj Attach "Contact" Done last 1 -1;  //-- Служебный объект
+		}
+  }
+  //-- Глубина слева
+  if (p2==1)
+  {
+		text "Pos" done w/2+50 d/2 h+50 normal 0 0 1 w/2-1+50 d/2 h+50 ;
+		lwidth 0.2;
+		ldim 3ddim w,0,0 w,d,0 parallel w,0,-150;
+		Attrobj Attach "Contact" Done last 1 -1;       //-- Служебный объект
+	}
+  //-- Глубина справа
+  if ((p2==2)&&((ТипКонт!=2)||((p1!=0)&&(p1!=1))))
+  {
+		text "Pos" done w/2+50 d/2 h+50 normal 0 0 1 w/2-1+50 d/2 h+50 ;
+		lwidth 0.2;
+		ldim 3ddim 0,0,0 0,d,0 parallel 0,0,-150;
+		Attrobj Attach "Contact" Done last 1 -1;
+  }
+  //-- Высота слева
+  if (p3==1)
+  {
+		text "Pos" done w/2+50 d/2 h+50 normal 0 0 1 w/2-1+50 d/2 h+50 ;
+		lwidth 0.2;
+		ldim 3ddim w,d,0 w,d,h parallel w+150,d,0;
+		Attrobj Attach "Contact" Done last 1 -1;
+  }
+  //-- Высота справа
+  if (p3==2)
+  {
+		text "Pos" done w/2+50 d/2 h+50 normal 0 0 1 w/2-1+50 d/2 h+50 ;
+		lwidth 0.2;
+		ldim 3ddim 0,d,0 0,d,h parallel -150,d,0;
+		Attrobj Attach "Contact" Done last 1 -1;
+  }
+}
+//-- Объект верха
+else
+{
+  //-- Ширина на виде сверху
+	if (РазмПлан==1||p1==2)
+	{
+		text "Pos" done w/2+50 d/2 h+50 normal 0 0 1 w/2-1+50 d/2 h+50 ;
+		lwidth 0.2;
+		ldim 3ddim 0,0,0 w,0,0 parallel 0,-200,0;
+		Attrobj Attach "Contact" Done last 1 -1;  //-- Служебный объект
+		//-- Тип приставки - угловой
+		if (ТипКонт==2)
+		{
+			ldim 3ddim 0,0,0 0,d,0 parallel -200,0,0;
+			Attrobj Attach "Contact" Done last 1 -1;  //-- Служебный объект
+		}
+  }
+  //-- Ширина на фасаде
+  if (РазмПлан==0||p1==1)
+	{
+		text "Pos" done w/2+50 0 h+100 normal 0 1 0  w/2+50-1 0 h+100 ;
+		lwidth 0.2;
+		ldim 3ddim 0,0,h w,0,h parallel 0,0,h+150;
+		Attrobj Attach "Contact" Done last 1 -1;  //-- Служебный объект
+		//-- Тип приставки - угловой
+		if (ТипКонт==2)
+		{
+			ldim 3ddim 0,0,h 0,d,h parallel 0,0,h+150;
+			Attrobj Attach "Contact" Done last 1 -1;  //-- Служебный объект
+		}
+  }
+  //-- Глубина слева
+  if (p2==1)
+  {
+		text "Pos" done w/2+50 d/2 h+50 normal 0 0 1 w/2-1+50 d/2 h+50 ;
+		lwidth 0.2;
+		ldim 3ddim w,0,h w,d,h parallel w,0,h+150;
+		Attrobj Attach "Contact" Done last 1 -1;
+  }
+  //-- Глубина справа
+  if ((p2==2)&&((ТипКонт!=2)||((p1!=0)&&(p1!=1))))
+  {
+		text "Pos" done w/2+50 d/2 h+50 normal 0 0 1 w/2-1+50 d/2 h+50 ;
+		lwidth 0.2;
+		ldim 3ddim 0,0,h 0,d,h parallel 0,0,h+150;
+		Attrobj Attach "Contact" Done last 1 -1;
+  }
+  //-- Высота слева
+  if (p3==1)
+  {
+		text "Pos" done w/2+50 d/2 h+50 normal 0 0 1 w/2-1+50 d/2 h+50 ;
+		lwidth 0.2;
+		ldim 3ddim w,0,0 w,0,h parallel w+150,0,0;
+		Attrobj Attach "Contact" Done last 1 -1;
+  }
+  //-- Высота справа
+  if (p3==2)
+  {
+		text "Pos" done    w/2+50 d/2 h+50 normal 0 0 1 w/2-1+50 d/2 h+50 ;
+		lwidth 0.2;
+		ldim 3ddim 0,0,0 0,0,h parallel -150,0,0;
+		Attrobj Attach "Contact" Done last 1 -1;
+  }
+}
+grfcoeff arr[3];
+exit;

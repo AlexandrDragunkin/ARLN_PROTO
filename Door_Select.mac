@@ -1,0 +1,60 @@
+//-- Макрос установки двери с пиктограммы
+global ProtoPath;
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+PicturesPath=ProtoPath+"Pictures\\";
+defarr Ptype[10], altfl[10];
+
+altfl[1]=PicturesPath+"DoorSPL.jpg"
+altfl[2]=PicturesPath+"Doorugl.jpg"
+altfl[3]=PicturesPath+"Doordug.jpg"
+altfl[4]=PicturesPath+"Doorkar.jpg"
+altfl[5]=PicturesPath+"Doorsys.jpg"
+
+Ptype[1]="Прямые";
+Ptype[2]="Угловые";
+Ptype[3]="Дугообразные";
+Ptype[4]="Карусельные";
+Ptype[5]="Купе";
+
+#altnum
+  alternative
+  "Установка дверей"
+  picbox
+  text
+  center
+  "Тип дверей:"
+  done
+  default 1
+  Ptype[1]  altfl[1]
+  Ptype[2]  altfl[2]
+  Ptype[3]  altfl[3]
+  Ptype[4]  altfl[4]
+  Ptype[5]  altfl[5]
+done;
+if altnum==0
+{
+  cancel;
+}
+NULLOUT=GetSnap();
+if (altnum==1) 
+{
+	macro ProtoPath+"DoorSetDialog.mac" ;				//-- вызываем макро прямой двери
+}
+if (altnum==2) 
+{
+	macro ProtoPath+"Door_RUgl.mac" ;						//-- вызываем макро угловой двери
+}
+if (altnum==3) 
+{
+	macro ProtoPath+"Door_RDug.mac" ;						//-- вызываем макро дугообразной двери
+}
+if (altnum==4) 
+{
+	macro ProtoPath+"Door_RKar.mac" ;						//-- вызываем макро карусельной двери
+}
+if (altnum==5) 
+{
+	macro ProtoPath+"ZapDoor3.mac" ;						//-- вызываем макро системы дверей
+}
+NULLOUT=ReSnap();
+exit;

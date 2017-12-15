@@ -1,0 +1,55 @@
+//-- Создание навесной тумбы с ящиками для стола
+//-- Входные параметры:
+//-- xsek1, xsek2, ysek1, ysek2, zsek1, zsek2 - габаритные координаты области по сторонам
+//-- nbox - количество ящиков
+//-- BCMater - материал дна ящика
+//-- PrMater - материал корпуса ящика
+//-- Col_Kro - цвет кромки
+//-- Band - тип кромки
+//-- tpos - положение навесной тубы (1 - справа, 2 - слева)
+//-- Krep - тип крепежа стенок тумбы
+//-- boxtype - тип ящика
+//-- Krep1 - тип крепежа к столешнице
+//-- OpenBox - выдвинуть ящик
+global ProtoPath;		//-- Путь к папке с макропрограммами общей библиотеке прототипов
+getpar xsek1,xsek2,ysek1,ysek2,zsek1,zsek2,nbox,
+       BCMater,PrMater,Col_Kro,Band,tpos,Krep,boxtype,Krep1,OpenBox;
+
+sh=PriceInfo(PrMater,"Thickness",16);
+//-- Cтенка ниши для навесных ящиков
+macro ProtoPath+"SetMat.mac" PrMater ;
+macro ProtoPath+"SetKrom.mac" Col_Kro Band 0 Band Band ;
+macro ProtoPath+"SetFix.mac"  0 Krep1 0 0 ;
+macro ProtoPath+"MakePan.mac" xsek1 ysek1 zsek1 zsek2-zsek1 ysek2-ysek1 11;
+if (tpos==2)
+{
+  move last 1 done xsek2-xsek1-2*sh 0 0 nocopy;
+}
+//-- Низ
+macro ProtoPath+"SetKrom.mac" Col_Kro 0 0 0 Band ;
+macro ProtoPath+"SetFix.mac"  Krep Krep Krep 0 ;
+macro ProtoPath+"MakePan.mac" xsek1 ysek1+sh zsek1 xsek2-xsek1-2*sh ysek2-ysek1-sh 12;
+//-- Задняя панель
+macro ProtoPath+"SetKrom.mac" Col_Kro Band 0 0 0 ;
+macro ProtoPath+"SetFix.mac"  0 Krep1 Krep Krep ;
+macro ProtoPath+"MakePan.mac" xsek1 ysek1 zsek1 zsek2-zsek1 xsek2-xsek1-2*sh 14;
+if (tpos==1)
+{
+  move last 2 done sh 0 0 nocopy;
+}
+//-- Габариты ниши для ящиков
+if (tpos==1)
+{
+  xsek1=xsek1+sh;
+}
+else
+{
+  xsek2=xsek2-sh;
+}
+ysek1=ysek1+sh;
+zsek1=zsek1+sh;
+macro ProtoPath+"SetBox.mac" BcMater,3,0,boxtype ;
+macro ProtoPath+"SetOpenBox.mac" OpenBox;
+macro ProtoPath+"MakeBox.mac" xsek1, ysek1, zsek1,
+		xsek2-xsek1-sh, ysek2-ysek1, zsek2-zsek1-sh, nbox ;
+exit;

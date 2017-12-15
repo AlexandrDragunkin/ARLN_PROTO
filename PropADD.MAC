@@ -1,0 +1,58 @@
+//-- Рассчитать пропил
+global ProtoPath;
+defarr arr[24];
+
+switch autosingle on;
+selbyattr "(Left(FurnType,2)==\"01\"&&FurnType!=\"010000\")||Posit==11||Posit==12||Posit==13||Posit==14"
+  prompt "Укажите панель, образующую пропил:" : ;
+switch autosingle off;
+
+if (sysvar(61)==0)
+{
+  exit;
+}
+Panel=getselnum(1);
+//select stayblink Panel done;
+//macro ProtoPath+"PropAddp.mac" p1 ;
+
+//objident last 1 Panel;
+
+#ok_flag
+setvar
+"Врезка панели"
+//PicturesPath+"shkaf.wmf"
+//center
+"Задайте параметры увеличения панели"
+done
+
+real     default 8        "Врезка по В:"      	VrzB
+real     default 8        "Врезка по C:"      	VrzC
+real     default 8        "Врезка по D:"      	VrzD
+real     default 8        "Врезка по E:"      	VrzE
+
+done;
+if (ok_flag==0)
+{
+  exit;
+}
+
+// Добавить изменение типа панели (врезная)
+arr[1]=Panel;
+err=GetPan6Par(1,arr);
+arr[1]=0;
+arr[2]=1;   // врезная панель или нет ? 0 – не врезная, иначе – врезная
+g_OutPar=SetPan6Par(22,arr);  //-- Добавить признак врезной панели
+
+g_OutPar=GetPan6Par(6,arr);  //-- Прочитать параметры увеличения панели
+arr[1]=arr[1]-VrzD;
+arr[2]=arr[2]-VrzC;   //
+arr[3]=arr[3]-VrzE;   //
+arr[4]=arr[4]-VrzB;   //
+g_OutPar=SetPan6Par(6,arr);  //-- Добавить параметры увеличения панели
+//-- Перестроим панель
+MBPanel execute  Panel ;
+objident last 1 Panel;
+
+InciseSlots Create ;
+//select;
+exit;

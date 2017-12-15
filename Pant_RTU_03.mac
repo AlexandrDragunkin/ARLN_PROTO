@@ -1,0 +1,131 @@
+//--Макро пантографа RTU.
+global ProtoPath;
+KarkasNumb=getcarcnumb();
+getpar x y z w IDpant	//-- координаты, ширина, ID пантографа
+;
+K3FilePath=mpathexpand("<K3Files>\\");   //-- Папка K3File
+PantPath="Pantografs\\";
+textura=PriceInfo(IDpant,"Texture","Lb.pkm7_1_iml.#15");//-- Текстура
+H_pant=priceinfo(IDpant,"Height",0);			//-- Высота пантографа
+W_pant=priceinfo(IDpant,"Width",0);			//-- Ширина пантографа
+D_pant=priceinfo(IDpant,"Dept",0);			//-- Глубина пантографа
+T_Pant=priceinfo(IDpant,"ToleranceX",0);		//-- Максимальная ширина пантографа
+texturProf="Lb.pkm7_1_iml.#54";
+
+//-- Умолчания на К3 файлы для создания пантографа
+//-- Левая опора
+L_boxP="pant_sim1_korob_L.k3";
+L_profP="pant_sim1_prof_L.k3";
+L_ugolP="pant_sim1_ugol_L.k3";
+//-- Правая опора
+R_boxP="pant_sim1_korob_R.k3";
+R_profP="pant_sim1_prof_R.k3";
+R_ugolP="pant_sim1_ugol_R.k3";
+//-- Центральная ручка
+C_oporaP="pant_sim1_opora.k3";
+C_profP="pant_sim1_prof_C.k3";
+C_troyP="pant_sim1_troy.k3";
+ALLDo=sysvar(60);
+//-- Добавляем элементы левой опоры
+objDo=sysvar(60);
+#L_box append K3FilePath+PantPath+L_boxP x y z;
+chprop mapbypars last L_box done
+0, -1
+1, textura
+14, 1
+15, 1
+done;
+#L_prof append K3FilePath+PantPath+L_profP x y z;
+chprop mapbypars last L_prof done
+0, -1
+1, texturProf
+14, 1
+15, 1
+done;
+#L_ugol append K3FilePath+PantPath+L_ugolP x y z;
+chprop mapbypars last L_ugol done
+0, -1
+1, textura
+14, 1
+15, 1
+done;
+objPosle=sysvar(60)-objDo;
+move last objPosle done w 0 0;
+//-- Добавляем элементы правой опоры
+objDo=sysvar(60);
+#R_box append K3FilePath+PantPath+R_boxP x y z;
+chprop mapbypars last R_box done
+0, -1
+1, textura
+14, 1
+15, 1
+done;
+#R_prof append K3FilePath+PantPath+R_profP x y z;
+chprop mapbypars last R_prof done
+0, -1
+1, texturProf
+14, 1
+15, 1
+done;
+#R_ugol append K3FilePath+PantPath+R_ugolP x y z;
+chprop mapbypars last R_ugol done
+0, -1
+1, textura
+14, 1
+15, 1
+done;
+objPosle=sysvar(60)-objDo;
+//-- Добавляем элементы ручки-опоры
+objDo=sysvar(60);
+#C_opora append K3FilePath+PantPath+C_oporaP x y z;
+chprop mapbypars last C_opora done
+0, -1
+1, textura
+14, 1
+15, 1
+done;
+#C_prof append K3FilePath+PantPath+C_profP x y z;
+chprop mapbypars last C_prof done
+0, -1
+1, texturProf
+14, 1
+15, 1
+done;
+#C_troy append K3FilePath+PantPath+C_troyP x y z;
+chprop mapbypars last C_troy done
+0, -1
+1, textura
+14, 1
+15, 1
+done;
+objPosle=sysvar(60)-objDo;
+move last objPosle done w/2 0 0;
+
+//-- Атрибут Cinema
+group L_prof L_ugol R_prof R_ugol done;
+attrobj attach "$CinemaAssem" done last 1 "2, 2, 0.000000, 0.000000, 878.500000, 1, 0.000000, 0.000000, 83.000000" done;
+
+group C_troy C_prof C_opora  done;
+attrobj attach "$CinemaAssem" done last 1 "2, 0, 0.000000, 1.000000, 83.000000, 2, 0.000000, 0.000000, 878.500000" done;
+
+#Gro cylinder (w/2),0,1  (w/2),0,2  2;
+attrobj attach "$CinemaAssem" done last 1 "1, -1, 0.000000, 1.000000, 83.000000" done;
+macro ProtoPath+"SetCinMain.mac" ByRef scarr1, 1, 0, 20, 1; //-- Кто - хозяин
+WriteScratch(scarr1,"$CinemaScr",Gro);
+//-----------------
+AllPosle=sysvar(60)-ALLDo;
+#Gro group last AllPosle done;
+//-- Cinema для всего
+macro ProtoPath+"SetCinMain.mac" ByRef scarr, 2, 0, 20, 1; //-- Кто - хозяин
+macro ProtoPath+"SetCinMove.mac" scarr 0 795.5 -795.5 0 20 1;
+WriteScratch(scarr,"$CinemaScr",Gro);
+attrobj attach "$CinAsseGr" done last 1 1 done;
+//--Присваиваем атрибуты
+macro ProtoPath+"CompAttr.mac" Idpant 1;
+attrobj attach "PriceID" done last 1 IDpant; 
+attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 w D_pant H_pant ;
+attrobj attach "FurnType" done last 1 "042000";
+attrobj attach "GroupID" done last 1 33;
+final:
+exit;

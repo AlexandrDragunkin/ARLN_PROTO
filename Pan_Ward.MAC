@@ -1,0 +1,41 @@
+//--Макро создания шкафчика для гардеробных систем
+global ProtoPath;
+
+Mat=DbVar("Mater",281);			//-- Материал панели
+W=DbVar("W",600);			//-- Ширина
+D=DbVar("D",600);			//-- Глубина
+BAND_B=DbVar("BAND",3230);		//-- Кромка стороны B
+BAND_C=DbVar("BAND",3230);		//-- Кромка стороны С
+BAND_D=DbVar("BAND",3230);		//-- Кромка стороны D
+BAND_E=DbVar("BAND",3230);		//-- Кромка стороны E
+
+D_B=DbVar("D1",15);			//-- Отступ сзади для крепежа стороны В
+D_C=DbVar("D2",15);			//-- Отступ сзади для крепежа стороны С
+An_B=DbVar("An1",30);		
+An_C=DbVar("An2",30);		
+
+Type1=DbVar("Type1",0);			//-- Тип крепежа полки
+Type2=DbVar("Type2",0);			//-- Тип крепежа полки
+
+macro ProtoPath+"SetBand.mac" BAND_B BAND_C BAND_D BAND_E;
+macro ProtoPath+"SetMat.mac" Mat;
+macro ProtoPath+"SetPanWFix.mac" Type1 D_B An_B Type2 D_C An_C;
+macro ProtoPath+"MakePanWard.mac" 0 0 0 w d 12;
+
+FurnType="350800";
+Namescr="ProtoParams";
+NULLOUT=setvarinst(1,"FurnType",FurnType);
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"Mater",Mat);
+err=AddScratch(ScrMod,FurnType,"W",W);
+err=AddScratch(ScrMod,FurnType,"D",D);
+err=AddScratch(ScrMod,FurnType,"BAND",BAND_E);
+err=AddScratch(ScrMod,FurnType,"D1",D_B);
+err=AddScratch(ScrMod,FurnType,"D2",D_C);
+err=AddScratch(ScrMod,FurnType,"An1",An_B);
+err=AddScratch(ScrMod,FurnType,"An2",An_C);
+err=AddScratch(ScrMod,FurnType,"Type1",Type1);
+err=AddScratch(ScrMod,FurnType,"Type2",Type2);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+exit;          

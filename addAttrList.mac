@@ -1,0 +1,21 @@
+//-- Макропрограмма проверяет наличие атрибута attrname в файле со списком
+//-- атрибутов AttrList.rxt (список атрибутов, выгружаемых в мебельную базу).
+//-- Если указанного атрибута нет, то добавляет его.
+//-- Входные параметры:
+//-- attrname -имя атрибута
+
+global ProtoPath;
+getpar attrname;
+
+fname=protopath+"attrlist.txt"
+if (!FileExist(fname))
+{
+	Putmsg("Отсутствует файл "+fname,0);
+	exit;
+}
+posNo=FindString(fname,attrname,1,0);
+if (posNo==0)
+{
+	nullout=PutStr(fname,attrname,0)
+}
+exit;

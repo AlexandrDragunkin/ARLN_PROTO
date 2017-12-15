@@ -1,0 +1,40 @@
+//-- Сдвигает все мебельные изделия вдоль
+//-- положительного направления ос X от указанного объекта
+
+global ProtoPath;
+defarr xm[6];
+
+objident prompt "Укажите редактируемый объект" : obj;
+
+Tol=19; //-- Допуск для нахождения приставленных
+
+IsTop=getattr(obj,"PlaceType",-1);
+select attribute "left(FurnType,2)==\"10\"&&PlaceType=="+str(IsTop) remove obj done;  //-- Выбираем все изделия
+num=sysvar(61);
+defarr obs[num];
+macro ProtoPath+"Arrobj.mac" num, obs;
+
+NULLOUT=getsnap();
+setucs lcs obj;
+NULLOUT=objgab3(obj,xm);
+y0=xm[2];
+x0=xm[4];
+smart edit obj nodc done;
+objident last 1 obj;
+NULLOUT=objgab3(obj,xm);
+x1=xm[4];
+
+i=0;
+loop:
+i=i+1;
+NULLOUT=objgab3(obs[i],xm);
+if (abs(xm[2]-y0)<Tol&&xm[4]>x0)
+{
+  move obs[i] done x1-x0,0,0 nocopy;
+}
+if (i<num)
+{
+  goto loop;
+}
+NULLOUT=resnap();
+exit;

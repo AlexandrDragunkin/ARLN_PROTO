@@ -1,0 +1,225 @@
+//------------------------ Макрос для добавления scratch атрибута объекту --------------------------------------
+global ProtoPath;
+defarr error[10];
+NULLOUT=initarray(error,"");
+snam="";
+grname="";
+parname="";
+defarr parnames[100],grnames[100],partypes[100],parvals[100];
+ch=1;
+if (sysvar(60)==0)
+{
+  error[1]="Команда не может присвоить Scratch атрибут, если нет объектов.";
+  error[2]="Возможно, объекты не созданы,";
+  error[3]="или они погашены, или они находятся на недоступном слое.";
+  error[4]=" "
+  error[5]="Проверьте наличие объектов.";
+  error[6]="Убедитесь в том, что нужные объекты не погашены.";
+  error[7]="Убедитесь, что нужные объекты не находятся на недоступном слое.";
+  macro Protopath+"ShowSmartError.mac" "В сцене нет ни одного доступного объекта"
+  7 error;
+  exit;
+}
+pars=initscratch();
+if (pars==0)
+{
+  error[1]="Возможно, системе не хватает ресурсов для инициализации.";
+  error[2]=" ";
+  error[3]="Попробуйте повторить команду еще раз "
+  error[4]="Если ошибка будет повторяться перезапустите К3 и перезагрузите систему.";
+  macro Protopath+"ShowSmartError.mac" "Ошибка инициализации набора параметров"
+  4 error;
+  exit;
+}
+
+#ok_flag
+  setvar
+  "Имя атрибута"
+  ""
+  left
+  "Введите имя атрибута"
+  done
+  string    default snam    "Имя атрибута:"    snam
+  done;
+
+if (ok_flag==0)
+{
+	exit;
+}
+if (snam!=""&&IsAttrDef(snam)!=1)
+{
+  attribute create snam "Пользовательские параметры" text 10 20;
+}
+else
+{
+  error[1]="Убедитесь, что Вы ввели имя атрибута.";
+  error[2]="Попробуйте ввести другое имя атрибута."
+  error[3]="Убедитесь, что введенное Вами имя атрибута ссответствует правилам, описанным в документации";
+  macro Protopath+"ShowSmartError.mac" "Не задано имя атрибута или же атрибут с таким именем уже создан"
+  3 error;
+  exit;
+}
+
+objident : obj1;
+
+l=0;
+card1:
+#flag
+  setvar
+  "Параметры"
+  ""
+  left
+  "Введите значения"
+  done
+  string  default grname    "Имя группы параметров:"    grname
+  string  default parname   "Имя параметра:"    parname
+  str listonly
+  current
+	            "Числовой"
+	            "Строковый"
+              "Подстановка"
+  done
+	            "Тип параметра:"    partype
+  string default "" "Введите значение:"  parval
+   done;
+
+if (flag!=0)          //-- Если "OK"
+{
+	l=l+1;
+  partypes[ch]=partype;
+  parnames[ch]=parname;
+  grnames[ch]=grname;
+  if (partype!="Подстановка")       //-- Если тип не подстановка
+  {
+     if (partype=="Числовой")
+     {
+      parvals[ch]=val(parval);
+     }
+     else
+     {
+        parvals[ch]=parval;
+     }
+  }
+  else
+  {
+    i=1;
+    gosub card2;
+
+  }
+  ch=ch+1;
+  goto card1;
+}
+else                   //-- Если "Отмена"
+{
+  p=1;
+  c:
+  if (p<ch)
+  {
+    if (partypes[p]!="Подстановка")
+    {
+    AddScratch(pars,grnames[p],parnames[p],parvals[p]);
+    }
+    else
+    {
+      AddScratch(pars,grnames[p],parnames[p],parvalll,podnam);
+    }
+    p=p+1;
+    goto c;
+  }
+  if (l!=0)
+  {
+    WriteScratch(pars,snam,obj1);
+    NULLOUT=TermScratch(pars);   //-- Завершаем работу с набором параметров с индексом pars
+  }
+ exit;
+}
+//--------------------------------------------------------------------------------------------------------------------------------------
+card2:      //-- Для подстановки
+#card3
+  setvar
+  "Имя подстановки"
+  ""
+  left
+  "Введите имя подстановки"
+  done
+  str listonly
+  current
+	            "Числовой"
+	            "Строковый"
+  done
+	            "Тип параметра:"    partype
+  string    default ""   "Имя подстановки:"    podnam
+  done;
+
+if (ok_flag!=0)
+{
+if (podnam!="")
+{
+  if (partype=="Числовой")
+  {
+     part=1;
+  }
+  else
+  {
+    part=0;
+  }
+  addscratch(pars,podnam,part);
+  }
+  else
+  {
+    error[1]="Убедитесь, что Вы ввели имя подстановки.";
+    macro Protopath+"ShowSmartError.mac" "Не введено имя подстановки"
+    1 error;
+    exit;
+  }
+}
+if (ok_flag==0)       // Если "Отмена"
+{
+	return;
+}
+
+card4:
+#card
+setvar
+"Значения параметра"
+""
+left
+"Введите значения"
+done
+string default "" "Введите "+str(i)+"-ое значение:"  parvall
+string default "" "Введите имя "+str(i)+"-ого параметра:"  parnamm
+done;
+
+if (card!=0)        // Если "OK"
+{
+  if (part==1)
+  {
+    parvall=val(parvall);
+  }
+  else
+  {
+    parvall=str(parvall);
+  }
+
+  if ((IsUpper(left(parnamm,1))==0)&&(IsLower(left(parnamm,1))==0)&&(left(parnamm,1)!="$")&&(left(parnamm,1)!="_"))
+  {
+    error[1]="Убедитесь, что имя параметра не начинается с цифры, не содержит пробелов";
+    error[2]="или других запрещенных символов"
+    macro Protopath+"ShowSmartError.mac" "Имя параметра содержит недопустимые символы"
+    2 error;
+    exit;
+  }
+  AddScratch(pars,podnam,parnamm,parvall);
+
+  if (i==1)
+  {
+    parvalll=parvall;
+  }
+  i=i+1;
+  goto card4;
+}
+else                // Если "Отмена"
+{
+  return;
+}
+exit;

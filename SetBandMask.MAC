@@ -1,0 +1,10 @@
+//-- Установить параметры наложения кромки
+//-- Входные параметры:
+//-- mask - маска кромки на все стороны
+
+defarr g_flWork[8];
+
+getpar mask;
+NULLOUT=initarray(g_flWork,mask);
+NULLOUT=setarrinst(1,"g_flWork",g_flWork);
+exit;

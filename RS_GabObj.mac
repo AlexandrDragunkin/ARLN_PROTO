@@ -1,0 +1,123 @@
+//--Макро установки габаритных размеров на изделия
+global ProtoPath;	//--Путь к папке Proto
+
+NULLOUT=GetVarInst(2,"TolceVar",TolceVar,0);
+
+defarr gab[6];		//--Массив габаритов
+defarr gabt[6];		//--Массив габаритов
+defarr fr[3],to[3],wh[3]; //--Массив координат для размеров
+defarr arr[14];
+
+grfcoeff 10;		//--Графический коэффициент
+select prompt "Укажите объекты" : ;
+aaa=sysvar(61);
+
+defarr obj[aaa];
+macro ProtoPath+"Arrobj.mac" aaa, obj;
+//--Узнаем габариты первого объекта
+gab1=objgab3(obj[1],gab);
+if (aaa>1)
+{
+	i=1;
+	LOOP:
+	i=i+1;
+	gab2=objgab3(obj[i],gabt);
+	//--Проверка на минимальные координаты
+	gab[1]=min(gab[1],gabt[1]);	//--X1
+	gab[2]=min(gab[2],gabt[2]);	//--Y1
+	gab[3]=min(gab[3],gabt[3]);	//--Z1
+	//--Проверка на максимальные координаты
+	gab[4]=max(gab[4],gabt[4]);	//--X2
+	gab[5]=max(gab[5],gabt[5]);	//--Y2
+	gab[6]=max(gab[6],gabt[6]);	//--Z2
+	if (i<aaa)
+	{
+	 goto loop;
+	}
+}
+typeX=1;
+typeY=1;
+typeZ=1;
+ots=200;
+
+#ok_flag
+setvar
+"Простановка габаритов объектов"
+""
+"Введите параметры размеров" done
+real default ots "Отступ размерной линии" ots
+logical default typeX "Размер по ширине"        typeX
+logical default typeY "Размер по глубине"       typeY
+logical default typeZ "Размер по высоте"        typeZ
+done;
+if (ok_flag==0)
+{
+  exit;
+}
+If (typeX==1)           //По ширине (X)
+{
+		fr[1]=gab[1];
+		fr[2]=gab[2];
+		fr[3]=gab[6];
+		to[1]=gab[4];
+		to[2]=gab[2];
+		to[3]=gab[6];
+		wh[1]=gab[4];
+		wh[2]=gab[2];
+		wh[3]=gab[6]+ots;
+    gosub attr;
+}
+If (typeY==1)           //По глубине (Y)
+{
+		fr[1]=gab[1];
+		fr[2]=gab[2];
+		fr[3]=gab[6];
+		to[1]=gab[1];
+		to[2]=gab[5];
+		to[3]=gab[6];
+		wh[1]=gab[1];
+		wh[2]=gab[5];
+		wh[3]=gab[6]+ots;
+    gosub attr;
+}
+If (typeZ==1)           //По высоте (Z)
+{
+		fr[1]=gab[4];
+		fr[2]=gab[2];
+		fr[3]=gab[3];
+		to[1]=gab[4];
+		to[2]=gab[2];
+		to[3]=gab[6];
+		wh[1]=gab[4]+ots;
+		wh[2]=gab[2];
+		wh[3]=gab[6];
+    gosub attr;
+}
+
+
+exit;
+
+attr:
+#dst distance fr[1],fr[2],fr[3] to[1],to[2],to[3];
+if (tolcevar!=3)
+{
+	macro ProtoPath+"ToleranS.mac" dst ;
+}
+If (!IsAttrdef("AutoPlace"))
+{
+	Attribute Create "AutoPlace" "Тип установки" Real 5 0 ;
+}
+NULL=sysarr(43,arr);
+grfcur=arr[3];    // Текущий граф.коэффициент
+if (arr[3]<6)
+{
+  grfcoeff 6;
+  grfcur=6;
+}
+LDim 3DDim fr[1],fr[2],fr[3] to[1],to[2],to[3] parallel wh[1],wh[2],wh[3];
+If (!IsAttrdef("AutoPlace"))
+ { Attribute Create "AutoPlace" "Тип установки" Real 5 0 ; }
+Attrobj Attach  "AutoPlace"  Done Last 1 1;
+dimtext 0 "<> " ;
+grfcoeff arr[3];
+return;

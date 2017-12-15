@@ -1,0 +1,30 @@
+global ProtoPath;
+
+
+getpar IsRec  ;  // -- Куда записывать 0-объекту 1-оставляем в записи
+if IsRec==0
+{
+   getpar  pntFl ; // -- если объекту то какому PNT
+}
+//====================================================================================
+err=0;
+
+Namescr="ScrKompl";
+ScrMod=0;
+//ScrMod=InitScratch();
+if (!IsAttrdef(Namescr))
+{
+  attribute create Namescr "Параметры комплектующих 63" text 30 80;
+}
+//objident last 1 pnt;
+//writescratch(ScrMod,Namescr,pntFl);
+//NULLOUT=TermScratch(ScrMod);
+if !IsRec
+{
+ If (IsAssign(Namescr,0))
+ {
+  attrobj copy record Namescr done pntFL done;
+  }
+attrobj delete record Namescr done;
+}
+exit;

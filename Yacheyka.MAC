@@ -1,0 +1,218 @@
+// Выбор ячейки
+
+global IntP1 IntP2 IntP3;         // Точки углов ячейки
+////////////////////////////////////////
+//	для анализа и коррекции размеров
+//
+global YachP1 YachP2 YachP3 YachP4;
+////////////////////////////////////////
+defarr IntP1[3] IntP2[3] IntP3[3];
+defarr arr[16];
+defarr  xm1[6] xm2[6];
+defarr XPr[8], YPr[8] Zpr[8];
+defarr V1[3] V2[3] ;
+
+//object_2=sysvar(60);
+//i=0
+//lab_1:
+//i=i+1
+//If (i<=object_2) {
+//  point=getobjnum(i);
+//  name=getattr(point,"Posit",-1);
+//  If (name!=39) {
+//    Karkas=point;
+//    visible Karkas done;
+//    invisible Karkas done;
+//  }
+//  goto lab_1
+//}
+
+hdsp=16;
+  a=fltrparamobj(1,65);  // Фильтр по мебельному профилю
+  switch autosingle on;
+  select prompt "Укажите 1-й профиль" wholly : ;
+  if (sysvar(61)==0)    { cancel; }
+  p1=getselnum(1);
+  select stayblink p1 done;
+  select prompt "Укажите 2-й профиль" wholly : ;
+  if (sysvar(61)==0)    { cancel; }
+  p2=getselnum(1);
+  select stayblink p2 done;
+  select prompt "Укажите 3-й профиль" wholly : ;
+  if (sysvar(61)==0)    { cancel; }
+  p3=getselnum(1);
+  select prompt "Укажите 4-й профиль" wholly : ;
+  if (sysvar(61)==0)    { cancel; }
+  p4=getselnum(1);
+
+  switch autosingle off;
+  a=fltrparamobj(0);     // Выключили фильтр по мебельному профилю
+
+
+// Укажите 1 профиль
+//objident : p1 ;
+//chprop color p1 done 15;
+// Укажите 2 профиль
+//objident : p2 ;
+//chprop color p2 done 15;
+// Укажите 3 профиль
+//objident : p3 ;
+//chprop color p3 done 15;
+// Укажите 4 профиль
+//objident : p4 ;
+//chprop color p4 done 15;
+
+////////////////////////////////////////
+//	для анализа и коррекции размеров
+//
+YachP1=p1;
+YachP2=p2;
+YachP3=p3;
+YachP4=p4;
+////////////////////////////////////////
+Length=0 Po1=0 Po2=0 Sdx=0 Sdy=0 ;
+
+NULLOUT=GetSnap();
+  pnt1=p1;
+  gosub GetProfPar;
+
+   setucs lcs p1 ;
+  ptranscs(2,3,SdX,Sdy,Po1,xpr[1],ypr[1],zpr[1]);
+  ptranscs(2,3,SdX,Sdy,Length-Po2,xpr[2],ypr[2],zpr[2]);
+
+  pnt1=p2;
+  gosub GetProfPar;
+
+   setucs lcs p2 ;
+  ptranscs(2,3,SdX,Sdy,Po1,xpr[3],ypr[3],zpr[3]);
+  ptranscs(2,3,SdX,Sdy,Length-Po2,xpr[4],ypr[4],zpr[4]);
+
+  pnt1=p3;
+  gosub GetProfPar;
+
+   setucs lcs p3 ;
+  ptranscs(2,3,SdX,Sdy,Po1,xpr[5],ypr[5],zpr[5]);
+  ptranscs(2,3,SdX,Sdy,Length-Po2,xpr[6],ypr[6],zpr[6]);
+
+  pnt1=p4;
+
+   setucs lcs p4 ;
+  ptranscs(2,3,SdX,Sdy,Po1,xpr[7],ypr[7],zpr[7]);
+  ptranscs(2,3,SdX,Sdy,Length-Po2,xpr[8],ypr[8],zpr[8]);
+
+//  setucs gcs ;
+NULLOUT=ReSnap();
+
+  ptranscs(3,2,xpr[1],ypr[1],zpr[1],xpr[1],ypr[1],zpr[1]);
+  ptranscs(3,2,xpr[2],ypr[2],zpr[2],xpr[2],ypr[2],zpr[2]);
+  ptranscs(3,2,xpr[3],ypr[3],zpr[3],xpr[3],ypr[3],zpr[3]);
+  ptranscs(3,2,xpr[4],ypr[4],zpr[4],xpr[4],ypr[4],zpr[4]);
+  ptranscs(3,2,xpr[5],ypr[5],zpr[5],xpr[5],ypr[5],zpr[5]);
+  ptranscs(3,2,xpr[6],ypr[6],zpr[6],xpr[6],ypr[6],zpr[6]);
+  ptranscs(3,2,xpr[7],ypr[7],zpr[7],xpr[7],ypr[7],zpr[7]);
+  ptranscs(3,2,xpr[8],ypr[8],zpr[8],xpr[8],ypr[8],zpr[8]);
+N1=1
+N2=2
+N3=3
+N4=4
+gosub InterPoint;
+IntP1[1]=x_i;
+IntP1[2]=y_i;
+IntP1[3]=z_i;
+//color 14 ;
+//point x_i y_i z_i ;
+
+N1=5
+N2=6
+gosub InterPoint;
+IntP2[1]=x_i;
+IntP2[2]=y_i;
+IntP2[3]=z_i;
+//color 13 ;
+//point x_i y_i z_i ;
+N1=1
+N2=2
+N3=7
+N4=8
+gosub InterPoint;
+IntP3[1]=x_i;
+IntP3[2]=y_i;
+IntP3[3]=z_i;
+//color 12 ;
+//point x_i y_i z_i ;
+
+chprop color p1 p2 p3 p4 done 0;
+visible all ;
+
+exit;
+
+InterPoint:
+
+x1=XPr[N1];
+y1=YPr[N1];
+z1=ZPr[N1];
+x2=XPr[N2];
+y2=YPr[N2];
+z2=ZPr[N2];
+x3=XPr[N3];
+y3=YPr[N3];
+z3=ZPr[N3];
+x4=XPr[N4];
+y4=YPr[N4];
+z4=ZPr[N4];
+V1[1]=x2-x1;
+V1[2]=y2-y1;
+V1[3]=z2-z1;
+V2[1]=x4-x3;
+V2[2]=y4-y3;
+V2[3]=z4-z3;
+
+m1=V1[2]*V2[1]-V1[1]*V2[2];
+if abs(m1)>0.1 {
+  t2=((y3-y1)*V1[1]-(x3-x1)*V1[2])/m1; //v1[2]*(x1-V1[1]*(y2-y1))/m1;
+}
+else {
+  m2=V1[3]*V2[2]-V1[2]*V2[3];
+  if abs(m2)>0.1 {
+    t2=((z3-z1)*V1[2]-(y3-y1)*V1[3])/m2; //v1[3]*(y1-V1[2]*(z2-z1))/m2;
+  }
+  else {
+    m3=V1[1]*V2[3]-V1[3]*V2[1];
+    if abs(m3)>0.1 {
+    t2=((x3-x1)*V1[3]-(z3-z1)*V1[1])/m3 ; //v1[1]*(z1-V1[3]*(x2-x1))/m3;
+    }
+    else {
+      j=0
+      putmsg("Не нашли точек пересечения "+str(m1)+" "+str(m2)+" "+str(m3))
+      cancel;
+      return;
+    }
+  }
+}
+
+//if (t2>=0&&t2<=1) {
+  x_i=x3+V2[1]*t2;
+  y_i=y3+V2[2]*t2;
+  z_i=z3+V2[3]*t2;
+//}
+return;
+// Получить параметры профиля
+GetProfPar:
+    arr[1]=pnt1;
+    GetProf6Par(1,arr);
+    GetProf6Par(2,arr);
+
+    PrProf=arr[1];
+    arr[1]=0;
+    GetProf6Par(3,arr);
+    Po1=arr[2]
+    arr[1]=1;
+    GetProf6Par(3,arr);
+    Po2=arr[2]
+    GetProf6Par(4,arr);
+    SdX=arr[2]
+    Sdy=arr[3]
+    GetProf6Par(5,arr);
+    if (arr[1]!=0) { goto Loop; }
+    Length=arr[2];
+return;

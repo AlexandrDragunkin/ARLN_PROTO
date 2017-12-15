@@ -1,0 +1,143 @@
+// Программа рисования палочки для рисунка
+
+// Входные параметры:
+// type - тип палочки
+// d - размер сечения палочки
+// x1,y1 x2,y2 - координаты начала и конца палочки
+// Выходные параметры: g_stick - палочка
+
+global g_stick;
+getpar type,d,x1,y1,x2,y2;
+
+//type=9;
+//d=10;
+//x1=50;
+//y1=30;
+//x2=300;
+//y2=800;
+r=sqrt((x2-x1)*(x2-x1)+(y2-y1)*(y2-y1));
+//---------------------------------------------------------------------
+// Рисуем сдвигаемый элемент
+if (type==1)
+{
+   h=d;                 // Шаг будущего размножения элемента
+   box 0,0,0 d,r,d;
+   objident last 1 elem;
+   move elem done 2points 0,0,0 -d/2,0,-d/2 nocopy;
+   goto label2;
+}
+if (type==2)
+{
+   h=3*d/4;               // Шаг будущего размножения элемента
+   sphere 0,0,0 d/2;
+   objident last 1 elem;
+   goto label1;
+}
+if (type==3)
+{
+   h=3*d;                 // Шаг будущего размножения элемента
+   elipsoid 0,0,0 d/2,0,0 0,2*d,0 0,0,4*d/5;
+   objident last 1 elem;
+   goto label1;
+}
+if (type==4)
+{
+   h=1.5*d;                 // Шаг будущего размножения элемента
+   sphere 0,0,0 d/2;
+   objident last 1 elem;
+   cone 0,3*d/8,0 0,1.5*d,0 d/4 d/9;
+   #elem boolean union elem last 1 done;
+   goto label1;
+}
+if (type==5)
+{
+   h=1.5*d;                 // Шаг будущего размножения элемента
+   sphere 0,0,0 d/2;
+   objident last 1 elem;
+   cylinder 0,3*d/8,0 0,1.5*d,0 d/4;
+   #elem boolean union elem last 1 done;
+   goto label1;
+}
+if (type==6)
+{
+   h=d;                 // Шаг будущего размножения элемента
+   cylinder 0,0,0 0,r,0 d/2;
+   objident last 1 elem;
+   goto label2;
+}
+if (type==7)
+{
+   h=2*d;                 // Шаг будущего размножения элемента
+   sphere 0,0,0 d/2;
+   objident last 1 elem;
+   elipsoid 0,d,0 d/5,d,0 0,2*d,0 0,d,d/5;
+   #elem boolean union elem last 1 done;
+   goto label1;
+}
+if (type==8)
+{
+   h=2*d;                 // Шаг будущего размножения элемента
+   box 0,0,0 d,d,d;
+   objident last 1 elem;
+   move elem done 2points 0,0,0 -d/2,-d/2,-d/2 nocopy;
+   elipsoid 0,d,0 d/5,d,0 0,2*d,0 0,d,d/5;
+   #elem boolean union elem last 1 done;
+   goto label1;
+}
+if (type==9)
+{
+   h=d;                 // Шаг будущего размножения элемента
+   prism side 6 0,0,0 0,r,0 inside d/2;
+   objident last 1 elem;
+   goto label2;
+}
+if (type==10)
+{
+   h=1.5*d;                 // Шаг будущего размножения элемента
+   sphere 0,0,0 d/2;
+   objident last 1 elem;
+   pyramid 0,3*d/8,0 0,1.5*d,0 inside d/4 d/9;
+   #elem boolean union elem last 1 done;
+   goto label1;
+}
+
+//---------------------------------------------------------------------
+// Размножаем элемент нужное количество раз
+label1:
+
+n=int(r/h)+1;        // Коррекция
+h=r/n;
+k=log((n+1),2);
+//al=atan((y2-y1)/(x2-x1));
+
+//move elem done 2points 0,0,0 0,h,0 copy n;
+//boolean union full last n done;
+//objident last elem;
+i=0;
+label:
+move elem done 2points 0,0,0 0,h,0 copy 1;
+boolean union elem last 1 done;
+h=2*h;
+objident last 1 elem;
+i=i+1;
+if (i<k)
+{
+    goto label;
+}
+label2:
+objident last 1 elem;
+#al angle normal x1,y1,10 x1,y1,0 x1+10,y1,0 x2,y2,0;
+#b1 box 2*d,-d,0 -2*d,r+d,-2*d;
+#b2 box -2*d,0,-2*d 2*d,-2*d,2*d;
+#b3 box -2*d,r,-2*d 2*d,4*r+d,2*d;
+
+//#elem boolean sub elem b2 done;
+//#elem boolean sub elem b3 done;
+//#elem boolean sub elem b1 done;
+
+#elem boolean sub elem full b1 b2 b3 done;
+
+move elem done 2points 0,0,0 x1,y1,0 nocopy;
+rotate elem done 2points x1,y1,0 x1,y1,10 -90+al nocopy;
+objident elem g_stick;
+exit;

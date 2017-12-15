@@ -1,0 +1,312 @@
+//Создание чертежных видов
+global protopath;
+defarr xm[6];
+switch ndeflayer off ;
+WidthVis=0.4 ;//Толщина видимых линий
+WidthHid=0.2 ;//Толщина невидимых линий
+DimVid=100 ;
+
+NumVid=0 // 1 2 3 4  0-все 4   5-текущий
+Nvid=4 // число выводимых видов
+hideA=1  //невидимые выводить    1-да 0-нет
+visA=1  //видимые выводить      1-да 0-нет
+getpar NumVid Nvid HideA VisA;
+
+if NumVid==0 { Nvid=4 NumVid=4 }
+CurFile=SysVar(2);
+CurVid=SysVar(51); //текущий вид
+CurSh=SysVar(50);
+pathApp=MPathExpand("<appdata>")
+if NumVid==5 { NumVid=CurVid  }
+
+//===================
+defarr VidFilesH[4] VidFilesV[4] Gab[6] vid[10] DimFiles[14];
+global k ;
+k=0
+//===================
+VidFilesH[1]=pathApp+"\\Tv1hid.tmp"
+VidFilesV[1]=pathApp+"\\Tv1vis.tmp"
+VidFilesH[2]=pathApp+"\\Tv2hid.tmp"
+VidFilesV[2]=pathApp+"\\Tv2Vis.tmp"
+VidFilesH[3]=pathApp+"\\Tv3hid.tmp"
+VidFilesV[3]=pathApp+"\\Tv3Vis.tmp"
+VidFilesH[4]=pathApp+"\\Tv4hid.tmp"
+VidFilesV[4]=pathApp+"\\Tv4Vis.tmp"
+ DimFiles[1]=pathApp+"\\DimF1.tmp"
+ DimFiles[2]=pathApp+"\\DimF2.tmp"
+ DimFiles[3]=pathApp+"\\DimF3.tmp"
+ DimFiles[4]=pathApp+"\\DimF4.tmp"
+
+//===================
+gab[1]=0;
+gab[2]=0;
+gab[3]=0;
+gab[4]=0;
+gab[5]=0;
+gab[6]=0;
+layers new  "VidDim_1" ;
+layers new  "VidDim_2" ;
+layers new  "VidDim_3" ;
+layers new  "VidDim_4" ;
+layers new  "Am_Hid"   ;
+layers new  "Am_Vis"   ;
+layers new  "d_vid3@tmp"   ;
+
+//save auto : [ overwrite ] ;
+layers on "d_vid3@tmp" ;
+Layers set  "d_vid3@tmp" ;
+layers off  "VidDim_1" ;
+layers off  "VidDim_2" ;
+layers off  "VidDim_3" ;
+layers off  "VidDim_4" ;
+#grd_vid3 group all done ;
+chprop layer grd_vid3 done "d_vid3@tmp" ;
+layers on  "VidDim_1" ;
+layers on  "VidDim_2" ;
+layers on  "VidDim_3" ;
+layers on  "VidDim_4" ;
+i=NumVid-Nvid
+lab1:
+i=i+1
+//vport scheme 4;
+vport  i;
+vport zoom i ;
+zoom all;
+//regen i;
+//redraw i;
+SETUCS VCS;
+layers off "VidDim_1"
+layers off "VidDim_2"
+layers off "VidDim_3"
+layers off "VidDim_4"   ;
+if hideA==1 
+{
+ Nstr=GetCount("VidFilesH[i]") ;
+ objident last 1 pppt ;
+ err=objgab3(pppt,xm);
+ bp xm[1] xm[2] xm[3] ;
+ exp2d pic VidFilesH[i] [ overwrite ];
+}
+if visA==1 {
+   hide i;
+	Nstr=GetCount("VidFilesV[i]") ;
+	 objident last 1 pppt ;
+	 err=objgab3(pppt,xm);
+	 bp xm[1] xm[2] xm[3] ;
+	exp2d pic VidFilesV[i] [ overwrite ];
+}
+Layers on "VidDim_"+str(i) ;
+Layers set  "VidDim_"+str(i) ;
+Layers off "d_vid3@tmp" ;
+
+#ll1 line xm[1] xm[2] xm[3] xm[1] xm[2] xm[3]+0.1 ;
+ii=i
+i=i+1000
+gosub namedim ;
+i=ii
+setucs vcs ;
+#gr1 group all done ;
+
+gosub namedim ;
+vport zoom 3 ;
+setucs vcs ;
+//place last 1  ;
+
+if getCount(DimFiles[i])>0 { 
+	Save no select all done DimFiles[i]  ;  //overwrite
+}
+else { 
+	Save no select all done DimFiles[i] ; 
+}
+explode gr1 done ;
+layers on "d_vid3@tmp" ;
+Layers set  "d_vid3@tmp" ;
+if (i<(NumVid)) { goto lab1 ; }
+
+//===================
+//Open CurFile ;
+new;
+
+vport zoom 3 ;
+vport zoom on ;
+setucs vcs;
+i=NumVid-Nvid
+lab2:
+i=i+1
+//lwidth WidthVis;
+ltype 0 ; //3 ;
+color 237 ;
+vimage off;
+//import wmf no VidFilesH[i] 0 0 0;
+layers new str(i)+"|Am_Hid" ;
+layers set str(i)+"|Am_Hid" ;
+if hidea==1 { 
+    import pic no VidFilesH[i] 0 0 0;
+//vimage on;
+//redraw ,, ;
+
+chprop ltype all done 0 ; //3 ;
+
+//chprop color all done 11 ;
+
+//group all done;
+frame all done;
+objident last 1 hid ;
+vimage on ;
+redraw all;
+ltype 0 ;
+
+//hjk=objgab3(last 1 done,Gab);
+invisible last 1 done;
+}
+color 0 ;
+ltype 0 ;
+//lwidth WidthHid;
+lwidth WidthVis  ;
+vimage off ;
+//import wmf yes VidFilesV[i] 0 0 0 ;
+
+
+layers new str(i)+"|Am_Vis" ;
+layers set str(i)+"|Am_Vis" ;
+if visa==1 { import pic yes VidFilesV[i] 0 0 0 ; }
+
+append DimFiles[i] 0 0 0 ;
+//vimage on ;
+//redraw all;
+layers on "VidDim_"+str(i) ;
+if i>1 {
+   preVid=i
+   vport preVid ;
+   vport zoom on ;
+   setucs vcs ;
+   place last 1 ;
+   vport 3 ;
+   view cartesian none gcs 0,0,1 done
+   vport zoom on ;
+   setucs vcs ;
+   }
+place last 1 ;
+//chprop lwidth all done 3 ;
+//vimage on;
+layers off "VidDim_"+str(i) ;
+//group all done;
+//frame all done;
+objident last 1 viz ;
+vimage on ;
+redraw all;
+if hideA==1 { visible hid done; }
+group all done;
+
+objident last 1 vid[i] ;
+redraw all ;
+lwidth 0 ;
+invisible vid[i]  done;
+if (i<(NumVid)) { goto lab2 ; }
+
+layers off "VidDim_1"
+layers off "VidDim_2"
+layers off "VidDim_3"
+layers off "VidDim_4"   ;
+
+i=NumVid-Nvid
+labs1:
+if (i<(NumVid)) {
+  i=i+1
+  visible vid[i] ;
+  nullout=objgab3(vid[i],Gab);
+  layers on "VidDim_"+str(i) ;
+    k=i
+  //;macro getfilepath(sysvar(7))+"m_spec2.mac" "NameDim=="+str(k) ;
+  
+  selbyattr "NameDim=="+str(k) all done;
+  NDim=0
+  if sysvar(61)>0 {
+  NDim=getselnum(1);
+  }
+  //#grd group all remove vid[i] done ;
+  if i==1 { 
+			if nvid>1 { move vid[i] NDim done 2points gab[4] gab[2] 0 -DimVid  DimVid 0 nocopy ; }
+            explode ndim done ; k=i+1000
+            switch ndeflayer on ;
+            explode vid[i] done ;
+            group last 2 done ; objident last 1  vid[i] ;
+            switch ndeflayer off ;
+            //;macro getfilepath(sysvar(7))+"m_spec2.mac" "NameDim==k" ;
+			selbyattr "NameDim=="+str(k) all done;
+            if sysvar(61)>0 
+			{
+				lala=getselnum(1);
+				delete lala done ;
+			}
+            }
+  if i==2 { 
+			if nvid>1 { move vid[i] NDim done 2points gab[1] gab[2] 0  DimVid  DimVid 0 nocopy ; }
+            explode ndim done ; k=i+1000
+            switch ndeflayer on ;
+            explode vid[i] done ;
+            group last 2 done ; objident last 1  vid[i] ;
+            switch ndeflayer off ;
+            //;macro getfilepath(sysvar(7))+"m_spec2.mac" "NameDim==k" ;
+			selbyattr "NameDim=="+str(k) all done;
+            if sysvar(61)>0 
+			{
+				lala=getselnum(1);
+				delete lala done ;
+			}
+            }
+  if i==3 { 
+			if nvid>1 { move vid[i] NDim done 2points gab[4] gab[5] 0 -DimVid -DimVid 0 nocopy ; }
+            explode ndim done ; k=i+1000
+            switch ndeflayer on ;
+            explode vid[i] done ;
+            group last 2 done ; objident last 1  vid[i] ;
+            switch ndeflayer off ;
+            //;macro getfilepath(sysvar(7))+"m_spec2.mac" "NameDim==k" ;
+			selbyattr "NameDim=="+str(k) all done;
+            if sysvar(61)>0 
+			{
+				lala=getselnum(1);
+				delete lala done ;
+			}
+            }
+  if i==4 { 
+			if nvid>1 { move vid[i] NDim done 2points gab[1] gab[5] 0  DimVid -DimVid 0 nocopy ; }
+            explode ndim done ; k=i+1000
+            switch ndeflayer on ;
+            explode vid[i] done ;
+            group last 2 done ; objident last 1  vid[i] ;
+            switch ndeflayer off ;
+            //;macro getfilepath(sysvar(7))+"m_spec2.mac" "NameDim==k" ;
+			selbyattr "NameDim=="+str(k) all done;
+			if sysvar(61)>0 
+			{
+				lala=getselnum(1);
+				delete lala done ;
+			}
+            }
+  //explode grd done ;
+  layers off "VidDim_"+str(i) ;
+  goto labs1 ;
+ }
+layers set "0" ;
+layers on "d_vid3@tmp" ;
+visible all ;
+lwidth 0 ;
+setucs gcs ;
+switch ndeflayer on ;
+layers on "VidDim_1"
+layers on "VidDim_2"
+layers on "VidDim_3"
+layers on "VidDim_4"   ;
+zoom all ;
+vport zoom 3 ;
+vport zoom on ;
+exit;
+//==============================================
+
+NameDim:
+If (!IsAttrdef("NameDim"))
+ { Attribute Create "NameDim" "Номер вида" Real 5 2 ; }
+     Attrobj Attach "NameDim" Done  Last 1 i ;
+  return;

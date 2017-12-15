@@ -1,0 +1,122 @@
+//-- Полотно двери
+global TextLib;
+getpar  dt  //-- Тип двери
+lw          //-- Ширина
+hw          //-- Высота
+tw1         //-- Ширина
+glass       //-- Нужно ли стекло
+doorcolor   //-- Цвет двери (индекс материала в TextLib)
+glasscolor  //-- Цвет стекла (индекс материала в TextLib)
+Foto        //-- Признак фотографической двери
+tjugle      //-- Толщина стены
+nh          //-- Количество окошек по высоте
+nl          //-- Количество окошек по ширине
+;
+//------------------------------------------------------------------------------
+colob1=sysvar(60);
+tw=tw1*2;   //-- Толщина рамы равна половине толщины стены
+if (glass==1)
+{
+  tgl=3;    //-- Толщина стекла
+}
+else
+{
+  tgl=16;   //-- Толщина фанеры
+}
+//-- Дверь филенчатая
+if (dt==1)
+{
+  h1=(hw-tw*2-tw1*(nh-1))/nh;		//-- высота окошка
+  l1=(lw-tw*2-tw1*(nl-1))/nl;		//-- ширина окошка
+  if (tw*(nl+1)>lw||tw*(nh+1)>hw)
+  {
+    alternative "ВНИМАНИЕ!!!" msgbox
+    text "Ошибка в размерах!" done
+    " OK " done
+    exit;
+  }
+  #LL rectangle 3points 0,0,0 lw,0,0 lw,0,hw ;
+  #L2 rectangle 3points 0,0,0 l1,0,0 l1,0,h1 ;
+  move L2 done tw,0,tw nocopy;
+  move L2 done l1+tw1,0,0 copy nl-1;
+  move last nl done 0,0,h1+tw1 copy nh-1;
+  #Ram extrusion LL //-- Hама
+  let i=0
+  Loope:
+  if (i<nl*nh)
+  {
+    last 1
+    let i=i+1
+    goto Loope
+  }
+  done tw;
+  delete last 2+nl*nh remove Ram done;
+  chprop mapbypars last 1 done
+  0,  -1                        //-- Для всех секций
+  1,  TextLib+str(doorcolor)    //-- Меняем код материала на  материал в таблице материалов
+  ;
+  //-- Стекла
+  #B2 box 4points 0,0,0 l1,0,0 l1,0,h1 l1,tgl,h1;
+  chprop mapbypars last 1 done
+  0,  -1                        //-- Для всех секций
+  1,  TextLib+str(glasscolor)   //-- Меняем код материала на  материал в таблице материалов
+  ;
+  move B2 done tw,-tw/2,tw nocopy;
+  move B2 done l1+tw1,0,0 copy nl-1;
+  move last nl done 0,0,h1+tw1 copy nh-1;
+  goto end;
+}
+//-- Дверь балконная
+if (dt==2)
+{
+  h1=hw/3;
+  #LL rectangle 3points 0,0,0 lw,0,0 lw,0,hw ;
+  #L2 rectangle 3points tw,0,h1 lw-tw,0,h1 lw-tw,0,hw-tw;
+  #L3 rectangle 3points tw,0,tw lw-tw,0,tw lw-tw,0,h1-tw ;
+  extrusion LL L2 L3 done tw;	//-- Рама
+  chprop mapbypars last 1 done
+  0,  -1                        //-- Для всех секций
+  1,  TextLib+str(doorcolor)    //-- Меняем код материала на  материал в таблице материалов
+  ;
+  delete  LL L2 L3 done;
+  //-- Cтекла
+  #B2 box 4points tw,0,h1 lw-tw,0,h1 lw-tw,0,hw-tw tw,tgl,h1;
+  #B3 box 4points tw,0,tw lw-tw,0,tw lw-tw,0,h1-tw tw,tgl,tw;
+  move B2 B3 done 0,-tw/2,0 nocopy;
+  chprop mapbypars last 2 done
+  0,  -1                        //--Для всех секций
+  1,  TextLib+str(glasscolor)   //-- Меняем код материала на  материал в таблице материалов
+  ;
+  goto end;
+}
+//-- Тощий параллелепипед
+if (dt==3)
+{
+  if (Foto==1)
+  {
+    tw1=tjugle;
+  }
+  box 0,0,0 lw,tw1,hw;
+  chprop mapbypars last 1 done
+  0,  -1                        //-- Для всех секций
+  1,  TextLib+str(doorcolor)    //-- Меняем код материала на  материал в таблице материалов
+  14, 0
+  if (Foto==1)
+  {
+    0,  1                       //-- Для 1 секций
+    1,  TextLib+str(doorcolor)
+    14, 1                       //-- Текcтуру на весь объект
+    0,  2                       //-- Для 2 секций
+    14, 1                       //-- Тектуру на весь объект
+    1,  TextLib+str(doorcolor)
+  }
+  ;
+}
+//------------------------------------------------------------------------------
+end:
+colob2=sysvar(60)-colob1;
+if (colob2>0)
+{
+  group last colob2 done ;
+}
+exit;

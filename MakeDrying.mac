@@ -1,0 +1,56 @@
+//-- Макро создания посудосушителя
+global ProtoPath;
+getpar
+Drying,								//-- Тип посудосушителя
+w,                    //-- Ширина
+d,                    //-- Глубина
+h,                    //-- Высота
+Korp_Type,						//-- Тип корпуса (0-прямой, 1-угловой)
+ShelfCut,							//-- Заглубление полок
+R2,
+;
+//-- Умолчания на параметры
+H_Dry=0;				//-- общая высота посудосушителя
+//-- Читаем параметры
+MacroDry=priceinfo(Drying,"Macrofile","",2);
+ElemName=priceinfo(Drying,"Name","",2);
+//-- Вызываем макро построения
+objDo=sysvar(60);
+if (MacroDry!="")
+{
+	macro Protopath+MacroDry	
+	Drying,								//-- Тип посудосушителя
+	w,                    //-- Ширина
+	d,                    //-- Глубина
+	h,                    //-- Высота
+	Korp_Type,						//-- Тип корпуса (0-прямой, 1-угловой)
+	ShelfCut,							//-- Заглубление полок
+	R2,
+	;
+	objPosle=sysvar(60);
+	objAll=objPosle-objDo;
+	if (objPosle==objDo)
+	{
+		putmsg("Выбранный посудосушитель не подходит под размеры ниши")
+		goto end;
+	}
+	if (objAll>1)
+	{
+		group last objAll done;
+	}
+	NULLOUT=getvarinst(1,"H_Dry",H_Dry,0);
+	if (H_Dry==0)
+	{
+		goto end;
+	}
+	attrobj attach "ElemName" done last 1 ElemName;
+}
+else
+{
+	H_Dry=-1;
+	putmsg("У выбранного посудосушителя отсутствует макропрограмма установки")
+  goto end;
+}
+end:
+NULLOUT=setvarinst(1,"H_Dry",H_Dry);
+exit;

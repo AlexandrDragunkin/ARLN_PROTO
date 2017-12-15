@@ -1,0 +1,96 @@
+//Leader1auto.mac
+//
+//=======================================
+//
+// г.ƒубна апрель 2005-2008 г
+//
+//=======================================
+//
+// автоматическа€ простановка указателей позиций.
+//
+// требует установки в Global_s.Mac строк
+// global level ; //дл€ нумерации лидера
+// level=0 ;
+
+global ProtoPath g_colkrom g_mirrdrw g_dopInfKr;
+defarr first[3], second[3], next[3] dimarr[100];
+
+NULLOUT=GetSnap();
+layers new "VidDim_1" ;
+layers new "VidDim_2" ;
+layers new "VidDim_3" ;
+layers new "VidDim_4" ;
+
+#d1 Ldim 3ddim 0 0 0  100 0 0 parallel 50 20 0 ;
+NULLOUT=GetDimInfo(d1,dimarr);
+
+delete d1 ;
+getpar TypArs first[1] first[2] first[3]  second[1],second[2],second[3] ;
+//PutMsg(TypArs,1);
+
+ptranscs(0,1,first[1],first[2],first[3],first[1],first[2],first[3]);
+ptranscs(0,1,second[1],second[2],second[3],second[1],second[2],second[3]);
+setucs vcs ;
+if (second[1]<first[1]) { 
+  ArowL=0;
+  ArowR=-TypArs;
+}
+else { 
+  ArowL=-TypArs;
+  ArowR=0; 
+}
+xlev=first[1];
+ylev=first[2]; 
+zlev=first[3]; 
+hlev=40;
+if ArowL!=0||ArowR!=0 {
+	gosub metlevel ;
+}	
+NULLOUT=ReSnap();
+exit;
+
+metlevel:
+If (!IsAttrdef("AutoPlace")) { 
+  Attribute Create "AutoPlace" "“ип установки" Real 5 0 ; 
+}
+If (!IsAttrdef("VidDimPlace")) { 
+  Attribute Create "VidDimPlace" "Ќомер вида на котором определен размер" Real 5 0 ; 
+}
+CurrVi=SysVar(51)   ;
+CV="VidDim_"+Str(CurrVi) ;
+dimarrows ArowL ArowR // —трелки
+//PutMsg(ArowR,1);
+//PutMsg(ArowL,1);
+dimarrlen 6
+dimlnflags 7 ;
+dimtext 0 " " done
+objects=sysvar(60);
+//g_colkrom=iif(isvardef("g_colkrom")==0," ",g_colkrom);
+//putmsg(g_colkrom);
+
+if g_colkrom!=" " {
+   g_mirrdrw=iif(isvardef("g_mirrdrw")==0,1,g_mirrdrw);
+   #tx1 text g_colkrom done xlev ylev zlev normal 0 0 g_mirrdrw second[1] second[2] second[3]
+   //putmsg("g_mirrdrw="+str(g_mirrdrw),1);
+   rotate nocopy tx1 done 2points  xlev ylev zlev xlev ylev zlev+10 g_mirrdrw*90
+   setucs lcs tx1 ;
+   move nocopy tx1 done 6 3 0
+   setucs previous;
+   chprop lwidth last 1  done 0;
+}
+ldim 3ddim xlev ylev second[3] second[1] second[2] second[3] parallel vcs @ -0.02*ArowR+0.01 0.01 0
+
+ldim edit place lider 1 second[1] second[2] second[3] @ -0.02*ArowR+0.01 0 0 done //done
+
+chprop lwidth last 1  done 0;
+objects=sysvar(60)-objects;
+group last objects done ;
+dimarrows auto
+dimarrlen dimarr[35]
+dimlnflags 0
+dimtext 0 "<>" done
+chprop lwidth last 1 done  0 ;
+chprop layer last 1 done CV ;
+layers on CV ;
+
+return;

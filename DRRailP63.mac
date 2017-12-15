@@ -1,0 +1,115 @@
+//-- Программа создания каркаса дверной системы
+//-- Для версии 6.3
+//-- Добавлены варианты создания дверных систем мансардного типа
+
+nullout=getvarinst(2,"Doors63",Doors63,"Doors63.zmc|");
+nullout=getvarinst(2,"Doors64",Doors64,"Doors64.zmc|");
+
+global MacroSw koldv; // Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+MacroSw=0;
+global g_FurnType;
+global ProtoPath;
+KarkasNumb=getcarcnumb();                    //-- Порядковый номер каркаса в сцене
+global g_drp;        //-- ID каркаса дверной системы из Прайс-листа
+// global g_IDPrice
+
+NULLOUT=getVarinst(2,"g_x1",g_x1,0);
+NULLOUT=getVarinst(2,"g_y1",g_y1,0);
+NULLOUT=getVarinst(2,"g_z1",g_z1,0);
+nullout=getvarinst(1,"DoorSw",DoorSw,0);
+if DoorSw==1
+{
+	x=g_x1;
+	y=g_y1;
+	z=g_z1;
+	PrRail=g_drp;
+}
+else
+{
+	x=DbVar("x",1000);
+	y=DbVar("y",450)
+	z=DbVar("z",1870);
+	PrRail=DbVar("Syst",10); //-- ID Системы дверей
+}
+g_drp=iif(isvardef("g_drp")==0,PrRail,g_drp);
+n=sysvar(60);
+Macro ProtoPath+Doors64+"DRRail63.mac";
+nn=sysvar(60);
+if ((nn-n)<=0)
+{
+  point 0,0,0;
+  exit;
+}
+#Rails group last nn-n done;
+
+if (!IsAttrdef("NSysDoor"))
+{ Attribute Create "NSysDoor" "Дверная система" Real 5 0 ; }
+
+  If (IsAssign("NSysDoor",0)) {
+    attrobj copy record "NSysDoor" done Rails done
+  }
+  else {
+    Attrobj Attach "NSysDoor" Done Last 1 PrRail;
+  }
+position=getprotoid("Shkaf","Каркас дверной системы 63","PROTOMACRO","DRRailP63"); //-- ID прототипа в библиотеке прототипов
+	If (!IsAttrdef("Posit"))
+	{ Attribute Create "Posit" "Posit" Real 5 0 ; }
+	Attrobj Attach "Posit" Done Rails position;
+
+
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+If (IsAssign("KarkasNumb",0))
+{
+    attrobj copy record "KarkasNumb" done Rails done;
+}
+else
+{
+    attrobj Attach "KarkasNumb" Done  Rails KarkasNumb;
+}
+
+If (IsAttrdef("ElemName")) {
+  If (IsAssign("ElemName",0)) {
+    attrobj copy record "ElemName" done Last 1 done
+    Eln=getattr(0,"ElemName"," ");
+    if (Eln==" ") { goto Snam; }
+	if MacroSw==0 { goto Snam; }
+  }
+  else {
+Snam:
+    Attrobj Attach "ElemName" Done Last 1 "Каркас дверной системы";
+  }
+}
+If (IsAttrdef("HOldName")) {
+  If (IsAssign("HOldName",0)) {
+    attrobj copy record "HOldName" done Last 1 done
+  }
+}
+If (IsAttrdef("MoveDoor")) {
+  If (IsAssign("MoveDoor",0)) {
+    attrobj copy record "MoveDoor" done last 1 done
+  }
+}
+Attrobj Attach "XUnit" "YUnit" "ZUnit" Done last 1 x y z ; // размеры
+//Attrobj Attach "PriceID" Done last 1 g_IDPrice ; // Тип напрвляющих
+attrobj attach "FurnType" done last 1 g_FurnType;
+Attrobj Attach  "Assembly" Done Last 1 1;  // Добавим атрибут сборочной единицы
+  //Attrobj Attach "P1" Done last 1 koldv ; // Счетчик дверей
+// macro ProtoPath+Doors63+"KolDv.mac" ; // Счетчик дверей
+//-- Копирование значений сдвига
+if (isassign("MoveDoor",0))  //-- Если створка была сдвинута
+{
+  MoveDoor=getattr(0,"MoveDoor",0);
+  attrobj attach "MoveDoor" done last 1 MoveDoor;
+}
+if (isassign("MoveDoorX",0))  //-- Если створка была сдвинута
+{
+  MoveDoorX=getattr(0,"MoveDoorX",0);
+  attrobj attach "MoveDoorX" done last 1 MoveDoorX;
+}
+if (isassign("MoveDoorZ",0))  //-- Если створка была сдвинута
+{
+  MoveDoorZ=getattr(0,"MoveDoorZ",0);
+  attrobj attach "MoveDoorZ" done last 1 MoveDoorZ;
+}
+exit;
+

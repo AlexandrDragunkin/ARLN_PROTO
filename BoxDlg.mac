@@ -1,0 +1,66 @@
+//-- Макропрограмма запроса дополнительных параметров прототипа Группа ящиков
+defarr arr[3];
+
+BxBType=DbVar("dnotype",0);			//-- Тип дна ящика
+BxHandPlace=DbVar("Rpl_r",0);		//-- Расположение ручки
+BURight=DbVar("R_Fas",0);			//-- Зазор фасада утопленного ящика справа
+BULeft=DbVar("L_Fas",0);				//-- Зазор фасада утопленного ящика слева
+BUUp=DbVar("U_Fas",0);					//-- Зазор фасада утопленного ящика сверху
+BUDown=DbVar("D_Fas",0);				//-- Зазор фасада утопленного ящика снизу
+NBox=DbVar("Kbox",1);						//-- количество ящиков
+BoxOts=DbVar("ots",0);          //-- Отступ врезного дна ящика
+BxHandDouble=DbVar("Doub_r",0);//-- Две ручки
+BxHandX=DbVar("rx",0);          //-- Сдвиг ручки
+BxHandZ=DbVar("rz",0);          //-- Высота установки ручки
+BxHandAngle=DbVar("ra",0);  //-- Угол установки ручки
+B_Zdown=DbVar("Z_Sk",0)+BUDown;	//-- Расстояние между корпусом ящика и панелью снизу
+
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+warning="Группа ящиков"
+DefBType=str(getyadsubst(16))+"#"+str(BxBType) ;                    // Формируем строку умолчаний.
+DefHPlace=str(getyadsubst(35))+"#"+str(BxHandPlace) ;                    // Формируем строку умолчаний.
+#ok_flag
+setvar
+warning
+PicturesPath+"boxes.wmf"
+left
+"Введите значения параметров"
+done
+real default BUUp "Нахлест сверху" BUUp
+real default BUDown "Нахлест снизу" BUDown
+real default BULeft "Нахлест слева" BULeft
+real default BURight "Нахлест справа" BURight
+real default 1 "Количество ящиков" NBox
+
+string auto button 6 default DefHPlace     "Расположение ручки:" NHPlace
+
+string auto button 6 default DefBType     "Тип дна:" NBType
+real default BoxOts "Отступ врезного дна" BoxOts
+logical default BxHandDouble "Две ручки" BxHandDouble
+real default BxHandX "Сдвиг ручки" BxHandX
+real default BxHandZ "Высота установки ручки" BxHandZ
+real default BxHandAngle "Угол установки ручки" BxHandAngle
+done;
+if (ok_flag!=0)
+{
+	splitbydelim(NBType,"#",Arr);
+	BxBType=Arr[2];
+	splitbydelim(NHPlace,"#",Arr);
+	BxHandPlace=Arr[2];
+	B_Zdownt=B_Zdown-BUDown;
+
+	dummy=DbSetVar("R_Fas",BURight);
+  dummy=DbSetVar("L_Fas",BULeft);
+  dummy=DbSetVar("U_Fas",BUUp);
+  dummy=DbSetVar("D_Fas",BUDown);
+  dummy=DbSetVar("Kbox",NBox);
+  dummy=DbSetVar("Z_Sk",B_Zdownt);
+  dummy=DbSetVar("Doub_r",BxHandDouble);
+  dummy=DbSetVar("Rpl_r",BxHandPlace);
+  dummy=DbSetVar("rx",BxHandX);
+  dummy=DbSetVar("rz",BxHandZ);
+  dummy=DbSetVar("ra",BxHandAngle);
+  dummy=DbSetVar("dnotype",BxBType);
+  dummy=DbSetVar("ots",BoxOts);
+}
+exit;

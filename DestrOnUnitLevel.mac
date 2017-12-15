@@ -1,0 +1,171 @@
+//-- Макропрограмма разбирает одну сборочную единицу по уровню
+//-- Входные параметры:
+//-- obj - сборочная единица
+//-- Depth - глубина разбора. Если равно -1 - до конца разбираем
+
+global ProtoPath;
+g_MaxKarkas=getmcarcnumb();
+global g_result;
+
+NULLOUT=getvarinst(2,"Exclude",Exclude,2);
+//Exclude=2;  //-- 1 - Извлекать крепеж в комплекте, 0 - не извлекать, 2 - не спрашивать про немебельноые элементы
+
+getpar obj, depth;
+km=getcarcnumb();
+if (isvardef("obj")!=16)
+{
+  exit;
+}
+gosub IsNew;
+explode obj done;
+i=0;
+attrobj attach "KarkasNumb" done group
+lll:
+let i=i+1
+let ao=ss[i]
+if (isvardef("ao")==16)
+{
+  ao
+}
+if (i<NULLOUT)
+{
+  goto lll
+}
+done km;
+depth=depth-1;
+if (depth==0) //-- Продолжить ли разбор
+{
+  exit;
+}
+i=0;
+ll2:
+i=i+1;
+macro ProtoPath+"DestrOnUnitLevel.mac" ss[i], depth;
+if (i<NULLOUT)
+{
+  goto ll2;
+}
+exit;
+//---------------------------------------------------------------------
+//-- Проверяем, создан ли объект по новой технологии
+IsNew:
+NULLOUT=getcntobjg(obj);
+if (NULLOUT==0)
+{
+  exit;
+}
+defarr ss[NULLOUT];
+defarr in[NULLOUT];
+defarr nn[NULLOUT];
+NULLOUT=getarrobjg(obj,ss);
+i=0;
+j=0;
+k=0;
+loop:
+i=i+1;
+if (getobjvisual(ss[i])==0)
+{
+  j=j+1;
+  in[j]=ss[i];
+  ss[i]=0;
+  goto next;
+}
+ft=getattr(ss[i],"FurnType","");
+if (len(ft)==0||ft=="010000"||ft=="050000")
+//if (!isassign("$ProtoInfo",ss[i])&&(!(Left(ft,2)=="01"&&ft!="010000")&&ft!="020000"))
+{
+  k=k+1;
+  nn[k]=getattr(ss[i],"ElemName","<Без имени>");
+  if (nn[k]=="<Без имени>")
+  {
+    res=g_result;
+    macro ProtoPath+"GetRusName.mac" ss[i];
+    nn[k]=g_result+" "+nn[k];
+    g_result=res;
+  }
+  select stayblink partly ss[i];
+}
+next:
+if (i<NULLOUT)
+{
+  goto loop;
+}
+if (i==k+j) //-- Нет ни одного разборного объекта внутри
+{
+  select;
+  exit;
+}
+if (k>0)
+{
+  if (Exclude==1) //-- Просто исключаем крепеж в комплекте
+  {
+    sy=sysvar(60);
+    extract obj full attribute "IsAssign(\"FurnType\")&&FurnType!=\"010000\"&&FurnType!=\"050000\"" done;
+    sy=sysvar(60)-sy;
+    attrobj attach "KarkasNumb" done group last sy done km ;
+    exit ;
+  }
+  if (Exclude==2)
+  {
+    select;
+    exit;
+  }
+  i=0;
+  iiz=getattr(obj,"ElemName","<Без имени>");
+  #ok_flag
+  alternative "Сборочная единица '"+iiz+"' содержит немебельные элементы "
+  msgbox picture 2 beep 2 text left
+  "После разбора сборочной единицы в сцене появятся следующие немебельные элементы:"
+  lo:
+  let i=i+1
+  "     '"+nn[i]+"'"
+  if (i<k)
+  {
+    goto lo
+  }
+  "Эти элементы нельзя будет отредактировать."
+  " "
+  "Разобрать сборочную единицу?"
+  done
+  " Да " "Нет" "Разобрать по прототипу"
+  done;
+  if (ok_flag==2)
+  {
+    select;
+    exit;
+  }
+  if (ok_flag==3)
+  {
+    select;
+    macro ProtoPath+"destun01.mac" obj;
+    exit;
+  }
+}
+//-- Если ничего невидимого нет, выходим
+if (j==0)
+{
+  return;
+}
+//-- Удаляем все невидимые отрезки, надписи и пр.
+extract partly
+obj
+let i=0
+loo:
+let i=i+1
+in[i]
+if (i<j)
+{
+  goto loo
+}
+done;
+delete
+let i=0
+loo1:
+let i=i+1
+in[i]
+if (i<j)
+{
+  goto loo1
+}
+done;
+return;

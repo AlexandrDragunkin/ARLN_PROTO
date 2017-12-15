@@ -1,0 +1,55 @@
+//-- Создание объекта - длинной наклонной сетки
+//-- Входные параметры:
+//-- xbase - координата начала длинной сетки по оси X
+//-- x - длина длинной сетки
+//-- y,z, - координаты длинной сетки по осям y и z
+//-- twigID - ID прута длинной сетки
+
+global ProtoPath;
+
+getpar xbase,x,y,z,twigID;
+//--------------------------------------------------------
+Col_Prof=PriceInfo(twigID,"Texture",0);  //-- Цвет прута
+FurnType="070000";
+n=int((x-25)/25);        //-- Количество прутов в длинной сетке
+width=PriceInfo(twigID,"Width",310);   //-- Размер прута
+ElemName=priceinfo(twigID,"MatName","Сетка обувной полки");
+//------------------------------------------------------
+NULLOUT=pushinst(1);
+macro ProtoPath+"SetEnam.mac" ElemName ;
+macro ProtoPath+"SetECod.mac" "8501" ;
+
+accessory  "" twigID  0 ;
+objident last 1 p1;
+move nocopy p1 done xbase+25 y+5 z ;
+
+chprop mapbypars p1 done
+0,  -1          //-- Для всех секций
+1,  Col_Prof;   //-- Меняем код материала на материал в таблице материалов
+
+move p1 done 25 0 0 copy n-1;                 //-- Скопировали прутья
+#p2 cylinder xbase+10,y+8,z-4.5 xbase+x-10,y+8,z-4.5 3;
+#p3 cylinder xbase+10,y+width-1.2,z-5.5 xbase+x-10,y+width-1.2,z-5.5 3;
+#p4 cylinder xbase+10,y+width-33,z-4.5 xbase+x-10,y+width-33,z-4.5 3;
+#p5 cylinder xbase+10,y+width+0.5,z-37 xbase+x-10,y+width+0.5,z-37 3;
+mirror p2 p3 p4 p5 done 3points 0,0,z-4.5 10,0,z-4.5 0,10,z-4.5 nocopy;
+rotate p2 p3 p4 p5 done 2points 10,y+8,z-4.5 0,y+8,z-4.5 30 nocopy;
+chprop mapbypars p2 done
+0,  -1
+1,  Col_Prof;
+chprop mapbypars p3 done
+0,  -1
+1,  Col_Prof;
+chprop mapbypars p4 done
+0,  -1
+1,  Col_Prof;
+chprop mapbypars p5 done
+0,  -1
+1,  Col_Prof;
+#p1 group last n+4 done;
+
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+accessory Assign p1 FurnType twigID 0 yes;
+attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 x-10, width 0; //-- Размеры сетки
+NULLOUT=popinst(1);
+exit;

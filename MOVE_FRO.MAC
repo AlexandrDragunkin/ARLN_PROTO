@@ -1,0 +1,135 @@
+//-- Команда "поместить на расстоянии"
+defarr w1[3] w2[3] xm[6] p1[3] p2[3];
+global ProtoPath;
+getpar par;
+NULLOUT=GetSnap();
+
+object_2=sysvar(60);
+z=0;
+if object_2==0
+	{ 
+	  exit;
+	}
+if (par==1)
+{
+  objident prompt "Укажите объект для перемещения" : pnt ;
+	select stayblink pnt done;
+}
+if (par==2)
+{
+  macro Protopath+"DialFt.mac";
+	n=0;
+	n=sysvar(61);
+	if (n!=0) 
+	{
+	 pnt=getselnum(1); 
+	}
+  else
+  {
+    cancel;
+  }
+	obj_1=sysvar(60);
+	z=getobjhold(pnt,hgroup);
+	if (z==1)
+	{
+ 		extract partly hgroup pnt done;
+	}
+}
+
+rr=objgab2(pnt,xm);
+xsmin=xm[1];
+ysmin=xm[2];
+zsmin=xm[3];
+xsmax=xm[4];
+ysmax=xm[5];
+zsmax=xm[6];
+ptranscs(3,2,xsmin,ysmin,zsmin,w1[1],w1[2],w1[3]);
+ptranscs(3,2,xsmax,ysmax,zsmax,w2[1],w2[2],w2[3]);
+
+objident prompt "Укажите объект для измерения расстояния" : pnt2 ;
+select stayblink pnt2 pnt done;
+rr=objgab2(pnt2,xm);
+xsmin=xm[1];
+ysmin=xm[2];
+zsmin=xm[3];
+xsmax=xm[4];
+ysmax=xm[5];
+zsmax=xm[6];
+ptranscs(3,2,xsmin,ysmin,zsmin,p1[1],p1[2],p1[3]);
+ptranscs(3,2,xsmax,ysmax,zsmax,p2[1],p2[2],p2[3]);
+
+defx=0;
+defy=0;
+defz=0;
+
+iif(p1[1]>w2[1],defx=w2[1]-p1[1],defx=defx);
+iif(p2[1]<w1[1],defx=w1[1]-p2[1],defx=defx);
+
+iif(p1[2]>w2[2],defy=w2[2]-p1[2],defy=defy);
+iif(p2[2]<w1[2],defy=w1[2]-p2[2],defy=defy);
+
+iif(p1[3]>w2[3],defz=w2[3]-p1[3],defz=defz);
+iif(p2[3]<w1[3],defz=w1[3]-p2[3],defz=defz);
+
+#ok_flag
+setvar
+"Поместить на расстоянии"
+""
+left
+"Введите величину расстояния"
+done
+real     default defx	"Расстояние по ширине (X):"     	X_Copy
+real     default defy	"Расстояние по глубине (Y):"    	Y_Copy
+real     default defz	"Расстояние по высоте (Z):"     	Z_Copy
+done;
+
+if (ok_flag==0)
+{
+	goto finish;
+}
+
+vecx=0;
+vecy=0;
+vecz=0;
+if (X_Copy<0) 
+{
+  vecx=X_Copy-w2[1]+p1[1];
+}
+if (X_Copy>0) 
+{
+  vecx=X_Copy-w1[1]+p2[1];
+}
+if (Y_Copy<0) 
+{
+  vecy=Y_Copy-w2[2]+p1[2];
+}
+if (Y_Copy>0) 
+{
+  vecy=Y_Copy-w1[2]+p2[2];
+}
+if (Z_Copy<0) 
+{
+  vecz=Z_Copy-w2[3]+p1[3];
+}
+if (Z_Copy>0) 
+{
+  vecz=Z_Copy-w1[3]+p2[3];
+}
+move pnt done vecx, vecy, vecz nocopy;
+
+if (par==2)
+ {
+  if (z==1)
+  {
+   add partly hgroup pnt done;
+  }
+  obj_2=sysvar(60);
+  if (obj_2-obj_1>0&&z==1)
+  {
+   add partly hgroup last obj_2-obj_1 done;
+  }
+ }
+finish:
+select pnt2 pnt done;
+NULLOUT=ReSnap();
+exit;

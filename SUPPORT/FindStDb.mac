@@ -1,0 +1,20 @@
+          //=====
+//FindStDb.mac
+global
+CBDpath
+ ;
+
+
+fnk=CBDpath+"StDb.dbf"
+DbCreate rcdCBD, fnk,
+"NUM","N",3,0,             //00 Номер куска
+"PRICEID","N",6,0,         //01 прайсID столешницы
+"LENGTHST","N",5,0,        //02 длина
+"PRIZ","N",2,0,            //03 признак обработанного поля
+"PRIZST","N",5,0,          //04 признак штриховки столешницы
+"WDPLITA","N",4,2          // 05 толщина плиты столешницы
+;
+
+DbClose rcdCBD ;
+exit ;
+//===========

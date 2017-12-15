@@ -1,0 +1,23 @@
+global g_Scratch;
+global ProtoPath;
+getpar Namescr;
+
+err=0;
+g_Scratch=0;
+If (IsAssign(Namescr,0))  {
+  g_Scratch=ReadScratch(Namescr,0);   // Читаем из записи
+  err=1
+}
+else {
+  FileName=Namescr+".scr"
+
+  err=Fileexist(ProtoPath+FileName)
+  if (err==1) {
+    g_Scratch=FileToScrtch(ProtoPath+FileName);
+    if (!IsAttrdef(Namescr))
+           { Attribute Create Namescr "Параметры фасадов" text 30 80 ; }
+    WriteScratch(g_Scratch,Namescr,0);
+  }
+}
+
+exit;

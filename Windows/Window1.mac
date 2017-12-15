@@ -1,0 +1,50 @@
+//-- Создание окна №1
+global WindPath, TextLib;
+global ProtoPath;
+ProtoPath=GetProtoMac("Shkaf.ptl");   //-- Путь к папке с макропрограммами общей библиотеке прототипов
+WindPath=getprotomac("Windows.ptl");  //-- Путь к папке с прототипами
+TextLib="Lb.room3_iml.#";             //-- Имя библиотеки текстур
+//------------------------------------------------------------------------------
+hw=DbVar("Height",1200);	        //-- Высота окна
+lw=DbVar("Width",1200);		        //-- Ширина окна
+tjugle=DbVar("Thickness",200);    //-- Толщина стены
+hf=DbVar("F_Height",500);	        //-- Высота форточки
+lf=DbVar("F_Width",500);	        //-- Ширина форточки
+orient=DbVar("F_Left",0);	        //-- Форточка слева
+tw1=DbVar("CBeamWidth",50);       //-- Ширина перекладины между двумя рамами
+sill=DbVar("Sill",1);             //-- Есть подоконник или нет
+sdept=DbVar("S_Dept",400);        //-- Глубина подоконника
+d=DbVar("d",100);                 //-- Боковой выпуск подоконника
+sheight=DbVar("S_Thick",20);      //-- Толщина подоконника
+curtain=DbVar("Curtain",0);       //-- Тип занавеса
+HGard=DbVar("PlaceGar",200);      //-- Положение гардины над проемом
+doorcolor=DbVar("Windcolor",13);  //-- Цвет рамы
+Col_Glass=DbVar("glasscolor",9);  //-- Цвет стекла
+PicColor=DbVar("PicColor",72);    //-- Рисунок за окном
+HideFlag=DbVar("Flag3D",1);       //-- Отображение 3D
+//------------------------------------------------------------------------------
+ТолОтк=10;                        //-- Толщина отделки откоса
+hp=0;                             //-- Высота установки окна
+tgl=3;		                        //-- Толщина стекла
+tw=tw1*2;
+//------------------------------------------------------------------------------
+//-- Рисуем раму
+macro WindPath+"WDRama.mac" lw hw tw tw1  lf hf  orient doorcolor HideFlag;
+//-- Рисуем стекло
+macro WindPath+"WDGlass.mac" lw-2*tw, hw-2*tw, tgl, Col_Glass, PicColor HideFlag;
+move last 1 done tw,tw1, iif(HideFlag==0,0,tw) nocopy;
+calwin=sysvar(60);
+//------------------------------------------------------------------------------
+if (sill==1)         //-- Если нужен подоконник
+{
+  macro WindPath+"WDObnal.mac" lw hw tjugle ТолОтк sdept sheight doorcolor HideFlag d tw;
+}
+if (curtain!=0)     //-- Если нужна занавеска
+{
+  if (HideFlag==1)
+  {
+    macro WindPath+"WDZanav.mac" lw hw tjugle curtain  HGard ;
+  }
+}
+#okn group all done;
+exit;

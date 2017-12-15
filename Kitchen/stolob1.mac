@@ -1,0 +1,36 @@
+//-- Стол обеденный
+global MacroSw  ; //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global FindMatID; //-- Поиск элементов из прайс листа расходных материалов
+global ProtoPath;		//-- Путь к папке с макропрограммами общей библиотеке прототипов
+defarr error[10];
+NULLOUT=initarray(error,"");
+
+w=DbVar("Шир",1140);		//-- Ширина
+d=DbVar("Глуб",800);		//-- Глубина
+mat=dbvar("DeMater",496);	//-- Материал столешницы
+type_opor=dbvar("Ножка",790);	// -- Тип опоры
+type=dbvar("Type",1);		// -- Тип угла
+fasX=dbvar("Par1",100);		// -- Фаска X, радиус
+fasY=dbvar("Par2",100);		// -- Фаска Y
+xZag=dbvar("X",100);		// -- Заглубление опоры по X
+yZag=dbvar("Y",100);		// -- Заглубление опоры по Y
+krom=dbvar("ТипКромки",2374);	// -- Кромка
+prog=dbvar("F",0);		// -- Прогиб торцов
+
+//--------------------------------------------
+h_dsp=PriceInfo(mat,"Thickness",16); //-- Толщина материала столешницы
+h=priceinfo(type_opor,"Height",500);		//-- Высота опоры
+//--------------------------------------------
+macro ProtoPath+"SetInit.mac" ;
+macro ProtoPath+"SetMat.mac" mat;
+macro ProtoPath+"SetAnglKr.mac"  krom krom krom krom;
+macro ProtoPath+"SetBand.mac"  krom krom krom krom;
+macro ProtoPath+"SetFilet.mac" type fasx fasy  type fasx fasy  type fasx fasy  type fasx fasy ;
+macro ProtoPath+"SetBend.mac" prog prog prog prog 0 0 0 0;
+macro ProtoPath+"SetEnam.mac" "Столешница";
+macro ProtoPath+"MakePan.mac" 0 0 h w d 12;
+macro ProtoPath+"MakeLeg.mac" type_opor 1 xZag yZag 0 0 90 0;
+macro ProtoPath+"MakeLeg.mac" type_opor 1 w-xZag yZag 0 0 180 0;
+macro ProtoPath+"MakeLeg.mac" type_opor 1 xZag d-yZag 0 0 0 0;
+macro ProtoPath+"MakeLeg.mac" type_opor 1 w-xZag d-yZag 0 0 -90 0;
+exit;

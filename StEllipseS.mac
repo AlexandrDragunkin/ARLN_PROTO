@@ -1,0 +1,97 @@
+//-- Создание контура эллиптической столешницы
+//-- Входные параметры:
+//-- x - Длина
+//-- y - Ширина
+
+defarr geo1[15], geo2[15];
+
+getpar x,y;
+
+#el elipsoid 0,0,0 x/2,0,0 0,y/2,0 0,0,10;
+#pa cut el done 3points 0,0,0 10,0,0 0,10,0;
+delete el done;
+//goto end;
+if (max(x,y)/min(x,y)<1.5)
+{
+  //-- Отправляем на трехдужную оптимизацияю
+  gosub opt3a;
+  goto end;
+}
+if (max(x,y)/min(x,y)<3)
+{
+  //-- Отправляем на двухдужную оптимизацияю
+  gosub opt2a;
+  goto end;
+}
+end:
+#paa pline path pa;
+delete pa done;
+objident paa pa;
+exit;
+//--------------------------------------------------------------------
+//-- Далее идут жалкие попытки покрытия контура дугами
+//-- Двухдужная оптимизация
+opt2a:
+cou=getcntobjg(pa);
+defarr arr[cou];
+cou=getarrobjg(pa,arr);
+i=1;
+loop:
+NULLOUT=getobjgeo(arr[i],geo1);
+NULLOUT=getobjgeo(arr[i+1],geo2);
+arc geo1[1],geo1[2],geo1[3], geo2[4],geo2[5],geo2[6] geo1[4],geo1[5],geo1[6];
+i=i+2;
+if (i<cou)
+{
+  goto loop;
+}
+NULLOUT=getobjgeo(arr[cou],geo1);
+delete pa done;
+if (int(cou/2)==cou/2)
+{
+  #pa path select last cou/2 done last 1 done;
+}
+else
+{
+  #li line geo1[1],geo1[2],geo1[3], geo1[4],geo1[5],geo1[6] done;
+  #pa path select last int(cou/2) li done last 1 done;
+}
+return;
+//---------------------------------------------------------
+//-- Трехдужная оптимизация
+opt3a:
+cou=getcntobjg(pa);
+defarr arr[cou];
+cou=getarrobjg(pa,arr);
+i=1;
+loop1:
+NULLOUT=getobjgeo(arr[i],geo1);
+NULLOUT=getobjgeo(arr[i+2],geo2);
+arc geo1[1],geo1[2],geo1[3], geo2[4],geo2[5],geo2[6] geo1[4],geo1[5],geo1[6];
+i=i+3;
+if (i<cou-1)
+{
+  goto loop1;
+}
+NULLOUT=getobjgeo(arr[cou],geo1);
+NULLOUT=getobjgeo(arr[cou-1],geo2);
+delete pa done;
+if (int(cou/3)==cou/3)
+{
+  #pa path select last cou/3 done last 1 done;
+}
+else
+{
+  if (int(cou/3)+1==cou/3)
+  {
+    #li line geo1[1],geo1[2],geo1[3], geo1[4],geo1[5],geo1[6] done;
+    #pa path select last int(cou/3) li done last 1 done;
+  }
+  else
+  {
+    #li1 line geo1[1],geo1[2],geo1[3], geo1[4],geo1[5],geo1[6] done;
+    #li2 line geo2[1],geo2[2],geo2[3], geo2[4],geo2[5],geo2[6] done;
+    #pa path select last int(cou/3) li1 li2 done last 1 done;
+  }
+}
+return;

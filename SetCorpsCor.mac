@@ -1,0 +1,11 @@
+//-- Задание дополнительных параметров для углового корпуса
+//-- Входные параметры:
+//-- Widsth - Ширина стяжки
+//-- IsTop - Наличие крышки
+//-- MinDepthX - Размер меньшей стороны по оси X
+
+getpar Widsth, IsTop, MinDepthX;
+NULLOUT=setvarinst(1,"Widsth",Widsth);
+NULLOUT=setvarinst(1,"IsTop",IsTop);
+NULLOUT=setvarinst(1,"MinDepthX",MinDepthX);
+exit;

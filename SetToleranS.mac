@@ -1,0 +1,51 @@
+//////////////////////////////////
+//Подстановка в размеры допусков//
+//    по ГОСТ 6449.1-82         //
+//   (C) Драгункин А.Р.         //
+//        Дубна 2006 г.         //
+//////////////////////////////////
+
+Getpar
+Variant   // 0 1 2 3 4
+Value
+;
+If (Variant==0) 
+{
+	TolceTip=Value ; 
+	putmsg("Система - "+iif(Value=="val","\"Вал\"","\"Отверстие\""),1);
+	NULLOUT=SetVarInst(2,"TolceTip",TolceTip);
+}
+If (Variant==1) 
+{ 
+	TolceVal=Value ; 
+	putmsg("Квалитет - "+str(Value),1);
+	NULLOUT=SetVarInst(2,"TolceVal",TolceVal);
+}
+If (Variant==2) 
+{ 
+	TolcePol=Value;
+	putmsg("Поле допуска - "+Value,1);
+	NULLOUT=SetVarInst(2,"TolcePol",TolcePol);
+}
+If (Variant==3) 
+{ 
+	TolceVar=Value ; 
+	if (Value==0)
+	{
+		putmsg("Параметры допуска размера - значения допуска",1);
+	}
+	if (Value==1)
+	{
+		putmsg("Параметры допуска размера - обозначение поля допуска",1);
+	}
+	if (Value==2)
+	{
+		putmsg("Параметры допуска размера - обозначение + значение",1);
+	}
+	if (Value==3)
+	{
+		putmsg("Параметры допуска размера - без допуска",1);
+	}
+	NULLOUT=SetVarInst(2,"TolceVar",TolceVar);
+}
+exit;

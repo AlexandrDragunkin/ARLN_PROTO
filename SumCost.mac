@@ -1,0 +1,984 @@
+//-- Расчет стоимости изделия по макро
+
+global ProtoPath;
+con=adbCon(2);	// Главная база
+
+FactorCurL=1.3; // Увеличение стоимости для сложных панелей
+
+MoreQuery=0; // Ключ для возможности нескольких запросов базу
+
+defarr xm[6];
+defarr pan[26], SQLArr[14];
+defarr Arr[60];
+defarr MatProp[3], ValProp[3];
+nullout=initarray(pan,0);
+
+DecN=4;
+defarr DecorArr[DecN];
+DecorArr[1]=-1; // Пласть A и F
+DecorArr[2]=5; // Пласть A
+DecorArr[3]=6; // Пласть F
+DecorArr[4]=12; // Дополнение 2
+
+Ncount=5;
+defarr SCount[Ncount], SCountName[Ncount];
+defarr Query[3];
+nullout=initarray(Query,"");
+
+nullout=getvarinst(2,"ShiftBand",ShiftBand,20);
+// Профиль
+nullout=getvarinst(2,"SCMatPl",SCMatPl,"MaterialPl");
+// Площадь
+nullout=getvarinst(2,"SCMatSq",SCMatSq,"MaterialSq");
+// Фурнитура
+nullout=getvarinst(2,"SCElemFurn",SCElemFurn,"ElemFurn");
+// Двери-купе по таблице
+nullout=getvarinst(2,"SCDSDoor",SCDSDoor,"DSDoor");
+// Кромки
+nullout=getvarinst(2,"SCDBand",SCDBand,"Band_");
+// Отделки
+nullout=getvarinst(2,"SCDecor",SCDecor,"Decorate_");
+
+
+// nullout=getvarinst(2,"conArlBase",conArlBase,0);
+
+//-- Записи с прозрачностью
+nullout=getVarinst(2,"N_ArrTran",N_ArrTran,500);
+defarr ArrTran[N_ArrTran];
+nullout=getArrinst(2,"ArrTran",ArrTran);
+
+//-- Записи с признаком МДФ
+nullout=getVarinst(2,"N_ArrMDF",N_ArrMDF,500);
+defarr ArrMDF[N_ArrMDF];
+nullout=getArrinst(2,"ArrMDF",ArrMDF);
+
+// //-- Записи явно исключаемые из расчета стоимости
+nullout=getVarinst(2,"N_ArrESC",N_ArrESC,500);
+defarr ArrESC[N_ArrESC];
+nullout=getArrinst(2,"ArrESC",ArrESC);
+
+// nullout=getVarinst(2,"nvis",nvis,500);
+// if nvis>32767
+// {
+	// defarr ArrVis1[32767];
+	// defarr ArrVis2[iif(nvis>1000,iif(nvis>32767,32767,nvis),1000)];
+	// nullout=getArrinst(2,"isVis2",ArrVis2);
+// }
+// else
+// {
+	// defarr ArrVis1[nvis];
+// }
+// nullout=getArrinst(2,"isVis1",ArrVis1);
+// Корпуса ящиков
+nullout=getVarinst(2,"N_CorpBox",N_CorpBox,0);
+if N_CorpBox>0
+{
+	defarr ArrCorpBox[N_CorpBox];
+	nullout=getArrinst(2,"ArrCorpBox",ArrCorpBox);
+}
+
+// Дверь-купе
+nullout=getVarinst(2,"N_SysDoor",N_SysDoor,0);
+if N_SysDoor>0
+{
+	defarr ArrSysDoor[N_SysDoor];
+	nullout=getArrinst(2,"ArrSysDoor",ArrSysDoor);
+}
+
+getpar obj; //-- Получаем объект
+
+SumCost=0;
+NULLOUT=getvarinst(2,"AttrScrName",AttrScrName,"SumCostInfo");
+if !GetObjVisual(obj) // Если выключен
+{
+	// putmsg(IsAssign(AttrScrName,obj))
+	if IsAssign(AttrScrName,obj)
+	{
+		attrobj delete partly obj AttrScrName done;
+		DelAttrValG(obj,AttrScrName)
+	}
+	if IsAssign("SumCost",obj)
+	{
+		attrobj delete partly obj "SumCost" done;
+		DelAttrValG(obj,"SumCost")
+	}
+	goto fin;
+}
+
+ft=getattr(obj,"FurnType","");
+UnitCode=getattr(obj,"UnitCode","0000");
+curline=GetAttr(obj,"CurvePath",0);
+
+// UnitPos=GetAttr(obj,"UnitPos","");
+// putmsg(UnitPos)
+
+// ID=GetAttr(obj,"PriceID","");
+// putmsg(priceInfo(ID,"MATNAME",""))
+
+Hold=getobjhold(obj,Holder); //-- Найдем батю
+
+if Hold { fthold=getattr(Holder,"FurnType","000000"); }
+else { fthold="000000"; }
+	
+//- Проверим на наличие скрейча с доп.инфо и удалим его
+//- Исключим доп.элементы
+If isassign(AttrScrName,obj)&&ft!="999999"
+{
+	attrobj delete partly obj AttrScrName done;
+}
+
+// Все что задано свойством уберем сразу
+matID=GetAttr(obj,"PriceID",0);
+res=FindInArray(ArrESC,matID);
+// putmsg(res)
+if res>=1
+{
+	goto fin;
+}
+
+// Убрать всё, что находится в группе для расчета двери-купе по таблице
+PP=GetAttr(obj,"ParentPos",-1);
+if PP>0
+{
+	res1=FindInArray(ArrCorpBox,PP);
+	res2=FindInArray(ArrSysDoor,PP);
+	//putmsg(res)
+	if res1||res2>=1
+	{
+		goto fin;
+	}
+}
+
+// Исключаемые по атрибуту
+ExcSumCost=GetAttr(obj,"ExcSumCost",0);
+if ExcSumCost>0
+{
+	goto fin;
+}
+
+// // Пускать дальше, только если элемент видимый
+// UnitPos=GetAttr(obj,"UnitPos",0);
+// // putmsg(UnitPos)
+// if UnitPos>0
+// {
+	// result=FindInArray(ArrVis1,UnitPos);
+	// // if result>0 { putmsg(result) }
+	// if !result
+	// {
+		// goto fin;
+	// }
+	// if nvis>32767
+	// {
+		// result=FindInArray(ArrVis2,UnitPos);
+		// if !result
+		// {
+			// goto fin;
+		// }
+	// }
+// }
+
+//-- Панель
+if left(ft,2)=="01"
+{
+	// // Необходимо исключить панели без расчета стоимости
+	// if findinarray(ExcUC,UnitCode)
+	// {
+		// goto finpan;
+	// }
+	
+	//-- Инициализируем панель
+	pan[1]=obj;
+	NULLOUT=GetPan6Par(1,pan);
+	//-- Читаем материал панели
+	pan[1]=0;
+	NULLOUT=GetPan6Par(2,pan);
+	matID=pan[1];
+	
+	pan[1]=obj;
+	err=GetPan6Par(22,pan);
+	Type=pan[1];
+	
+	//-- Читаем размеры панели
+	pan[1]=0;
+	NULLOUT=GetPan6Par(11,pan);
+	TypeP=pan[1];
+	length=GetAttr(obj,"Xunit",0);
+	width=GetAttr(obj,"Yunit",0);
+	// putmsg(width)
+	// putmsg(length)
+	// И на всякий если атрибута нет
+	if length==0||width==0
+	{
+		if TypeP!=2 //-- Если панель не прямоугольная, читаем ее габариты
+		{
+			// Получаем размеры с модели панели
+			Thickness=PriceInfo(matID,"Thickness",0);
+			NULLOUT=objgab3(obj,xm);
+			
+			h[1]=int(xm[6]-xm[3]);
+			h[2]=int(xm[5]-xm[2]);
+			h[3]=int(xm[4]-xm[1]);
+			
+			x=0,y=0;
+			
+			ind=findinarray(h,Thickness)
+			if ind>0
+			{
+				ij=0;
+				nij:
+				ij=ij+1;
+				if ij<=3
+				{
+					if h[ij]!=h[ind]
+					{
+						if x==0 { length=h[ij]; }
+						else { width=h[ij]; }
+					}
+					goto nij;
+				}
+			}
+		}
+		else  //-- Иначе берем все их параметров
+		{
+			length=pan[2];
+			width=pan[3];
+			// Так же читаем обрезку сторон и вычитаем
+			pan[1]=obj;
+			err=getpan6par(6,pan);
+			D=pan[1];
+			C=pan[2];
+			E=pan[3];
+			B=pan[4];
+			
+			length=length-C-B;
+			width=width-D-E;
+		}
+	}
+	
+	MDFPan=0;
+	if findinarray(ArrMDF,matID)>0
+	{
+		MDFPan=1;
+	}
+	
+	KeyTransp=0;
+	transp=FindInArray(ArrTran,matID); // Прозрачность
+	if transp>=1	{ KeyTransp=1; }
+
+	// if curline { DS=FactorCurL; } // Добавляем %
+	// else { DS=1; }
+	DS=1;
+	
+	//------------
+	CostObj=PriceInfo(matID,"PRICE",0.01);
+	//------------
+	
+	QmatId=matID;
+	NmTpID=1;
+	ScrName=SCMatSq;
+	nullout=initarray(SCount,"");
+	nullout=initarray(SCountName,"");
+	SCountName[1]="Square";			SCount[1]=(length*width)/1000000;
+	SCountName[2]="Curline";		SCount[2]=DS;
+	SCountName[3]="SumCostMat";		SCount[3]=CostObj;		
+	macro ProtoPath+"SCAddInfoScr.mac" obj, NmTpID, QmatId, AttrScrName, ScrName, SCountName, SCount, NCount, ByRef SumCostRes;
+	
+	SumCost=SumCost+SumCostRes;
+	
+	//-- КРОМКА
+	
+	// Убираем из стоимости кромку по IncludeBand, остальное считаем
+	nullout=getvarinst(2,"IncludeBand",IncludeBand,5);
+	//------------
+	nullout=getvarinst(2,"CostBand",CostBand,3);
+	nullout=getvarinst(2,"CostCurBand",CostCurBand,5);
+	//------------
+
+	CostObj=CostBand;
+	if TypeP==2||TypeP==3
+	{
+		k_i=0;
+		nextk_i:
+		k_i=k_i+1;
+		if k_i<=8
+		{
+			// putmsg(k_i)
+			if k_i==IncludeBand&&Type!=14&&!KeyTransp
+			{
+				goto nextk_i;
+			}
+			pan[1]=k_i;
+			
+			nullout=GetPan6Par(3,pan);
+			IDBand=0;
+			LenKrom=pan[5];
+			if LenKrom>0
+			{
+				IDBand=pan[2];
+			}
+			// putmsg(IDBand)
+			if IDBand>0
+			{
+				if KeyTransp
+				{
+					initarray(pan,0);
+
+					// Переопределяем для углов
+					u_i=0;
+					if k_i==8 { u_i=1; }
+					if k_i==2 { u_i=2; }
+					if k_i==4 { u_i=3; }
+					if k_i==6 { u_i=4; }
+					
+					if u_i>0
+					{
+						pan[1]=u_i;
+						err=GetPan6Par(4,pan);
+						TypeU=pan[2];
+						// putmsg(TypeU)
+						if TypeU==2||TypeU==3||TypeU==4||TypeU==5
+						{
+							CostObj=CostBand+CostCurBand;
+						}
+					}
+				}
+				// else
+				// {
+					// CostObj=PriceInfo(IDBand,"PRICE",0.01);
+				// }
+				//--------Запись--------------
+				QmatId=IDBand;
+				ScrName=SCDBand+str(k_i)+"#"+"Кромка";
+				nullout=initarray(SCount,"");
+				nullout=initarray(SCountName,"");
+				SCountName[1]="Length";			SCount[1]=(LenKrom+ShiftBand)/1000;
+				SCountName[2]="SumCostMat";		SCount[2]=CostObj;
+				macro ProtoPath+"SCAddInfoScr.mac" obj, NmTpID, QmatId, AttrScrName, ScrName, SCountName, SCount, NCount, ByRef SumCostRes;
+				SumCost=SumCost+SumCostRes;
+			}
+			goto nextk_i;
+		}
+	}
+	
+	if TypeP==1 // По замкнутому контуру
+	{
+		pan[1]=0;
+		nullout=GetPan6Par(31,pan);
+		nKont=pan[2]; // Количество контуров в панели
+		// putmsg(nKont)
+		i_k=0;
+		nextkont:
+		i_k=i_k+1;
+		if i_k<=nKont
+		{
+			pan[1]=i_k; // Контур
+			pan[2]=0;
+			nullout=GetPan6Par(31,pan);
+			nElem=pan[3]; // Количество элементов контура
+			// putmsg(nElem)
+			
+			it=0;
+			looptor:
+			it=it+1;
+			if it<=nElem
+			{
+				if i_k==1
+				{
+					nt=9+it;
+				}
+				else { nt=it; }
+				// OneSCode="";
+				
+				pan[1]=i_k; // Контур
+				pan[2]=it;
+				nullout=GetPan6Par(31,pan);
+				
+				TypeKrom=pan[5];
+				if TypeKrom==2 { CostObj=CostCurBand; }
+				
+				pan[2]=nt;
+				nullout=GetPan6Par(10,pan);
+				// putmsg(pan[3])
+				IDBand=pan[3];
+				LenKrom=pan[6];
+				if IDBand>0&&LenKrom>0
+				{
+					//--------Запись--------------
+					QmatId=IDBand;
+					ScrName=SCDBand+str(it);
+					nullout=initarray(SCount,"");
+					nullout=initarray(SCountName,"");
+					SCountName[1]="Length";			SCount[1]=(LenKrom+ShiftBand)/1000;
+					SCountName[2]="SumCostMat";		SCount[2]=CostObj;
+					macro ProtoPath+"SCAddInfoScr.mac" obj, NmTpID, QmatId, AttrScrName, ScrName, SCountName, SCount, NCount, ByRef SumCostRes;
+					SumCost=SumCost+SumCostRes;
+				}
+				goto looptor;
+			}
+			goto nextkont;
+		}
+	}
+
+	
+	
+	//** ОТДЕЛКИ **
+	elem=obj;
+	gosub GetDecorate;
+
+	SumCost=SumCost+DecCost;
+	//***************
+	
+	
+	finpan:
+	//-- Очищаем структуру панели
+	NULLOUT=GetPan6Par(999,pan);
+	goto fin;
+}
+
+//-- Профиль
+if left(ft,2)=="02"
+{
+	// putmsg("Профиль");
+
+	//-- Инициализируем профиль
+	Arr[1]=obj;
+	NULLOUT=GetProf6Par(1,Arr);
+	//-- Читаем материал
+	nullout=getProf6Par(2,Arr);
+	matID=Arr[1];
+	// putmsg(matID);
+
+	length=getattr(obj,"Length",0);
+
+	QmatId=matID;
+	NmTpID=1;
+	CostObj=PriceInfo(matID,"PRICE",0.01);
+	
+	CreateAttrPr:
+	ScrName=SCMatPl;
+	nullout=initarray(SCount,"");
+	nullout=initarray(SCountName,"");
+	SCountName[1]="Length";			SCount[1]=length/1000;	
+	SCountName[2]="SumCostMat";		SCount[2]=CostObj;
+	macro ProtoPath+"SCAddInfoScr.mac" obj, NmTpID, QmatId, AttrScrName, ScrName, SCountName, SCount, NCount, ByRef SumCostRes;
+	
+	SumCost=SumCost+SumCostRes;
+	
+	width=PriceInfo(matID,"Thickness",0);
+	width=2*width;
+	gosub GetProfDecor;
+}
+
+if ft=="210999"&&(fthold=="210000"||fthold=="230200") // Дверь-купе группа расчета по таблице
+{
+	// putmsg("Дверь-купе");
+	Wdoor=getattr(Holder,"XUnit",0);
+	Hdoor=getattr(Holder,"YUnit",0);
+	NSysDoor=GetAttr(Holder,"NSysDoor",0); // Тип системы
+	if NSysDoor==0 { err=GetProtoVal(Holder,"Syst",Syst); }
+	// ObjType=GetAttr(obj,"ObjType",0);
+	// putmsg(Wdoor)
+	// putmsg(Hdoor)
+	// putmsg(NSysDoor)
+	PriceID=getattr(obj,"PriceID",0);
+	// putmsg(PriceID)
+	DoorGroup=PriceInfo(PriceID,"SCDoorGroup",0);
+	// putmsg(DoorGroup)
+	PrID=getattr(Holder,"Posit",0);
+	if PrID==0 { PrID=ProtoID(Holder); }
+
+	NumVst=1;
+	DelType=0;
+	KeyCurLDel=0; // Признак кривых делителей
+	// Тут еще признак мансарды понадобится
+	aFlap=Holder; ScrMod=0; NVst=0;
+	NameScr="ScrFlat";
+	
+	if (isassign(Namescr,aFlap))
+	{
+		ScrMod=readscratch(Namescr,aFlap);
+	}
+	if (ScrMod==0)
+	{
+		select stayblink partly Holder done;
+		UnitPos=GetAttr(obj,"UnitPos",0);
+
+		#ok_flag
+		alternative "Нет цены"
+		msgbox picture 3 beep 3 text "Отсутствует Scratch-запись стоимости для расчета по двери-купе UnitPos = "+str(UnitPos)
+		done
+		"  OK  "
+		done;
+		select last 1;
+		exit;
+	}
+	else
+	{
+		ParGroup="Вставка";
+		nullout=GetScratch(ScrMod,ParGroup,"Колво",NumVst,Suname);
+		
+		iV=0;
+		nextNV:
+		if iV<=NumVst
+		{
+			iV=iV+1;
+			
+			ParGroup="Угол начала";
+			nullout=GetScratch(ScrMod,ParGroup,"An"+str(iV),DelType,Suname);
+			if DelType!=0 { KeyCurLDel=1; }
+			// putmsg(DelType)
+		}
+	}
+	
+	nullout=NPGetByWhere(2,"[UnitID]="+str(NSysDoor)+" AND [ProtoID]="+str(PrID),"ArrTran",0);
+
+	if nullout==0
+	{
+		NoDS:
+		select stayblink partly Holder done;
+		UnitPos=GetAttr(obj,"UnitPos",0);
+
+		#ok_flag
+		alternative "Нет цены"
+		msgbox picture 3 beep 3 text "Отсутствует запись стоимости для расчета по двери-купе UnitPos = "+str(UnitPos)
+		"Данные для подбора:"
+		"Ширина = "+str(Wdoor)
+		"Группа = "+str(DoorGroup)
+		"Кол-во вставок = "+str(NumVst)
+		done
+		"  OK  "
+		done;
+		select last 1;
+		exit;
+	}
+	else
+	{
+		GoodsID=ArrTran[1];
+
+		if NumVst==0 { NumVst=1; }
+		KeyManyVst=0;
+		if NumVst>6 { NumVst=6; KeyManyVst=1; }
+		
+		// putmsg(NumVst);
+		
+		GoodsProp="SCDoorSys";
+		MatProp[1]="Width"
+		ValProp[1]=Wdoor;
+		MatProp[2]="SCDoorGroup";
+		ValProp[2]=DoorGroup;
+		MatProp[3]="VstNum";
+		ValProp[3]=NumVst;
+		
+		// IDNapr=NPGetByProps(GoodsID,GoodsProp,MatProp,ValProp,1,1,"[SCDoorGroup] = "+str(DoorGroup)+". AND [VstNum] = "+str(1.));
+		IDNapr=NPGetByProps(GoodsID,GoodsProp,MatProp,ValProp,3,1);
+		UnUsed=PriceInfo(IDNapr,"UnUsed",1);
+		if UnUsed==0
+		{
+			select stayblink partly Holder done;
+			UnitPos=GetAttr(obj,"UnitPos",0);
+			#ok_flag
+			alternative "Нет цены"
+			msgbox picture 3 beep 3 text "Нельзя сделать дверь-купе UnitPos = "+str(UnitPos)
+			"Данные для подбора: реальные / по таблице"
+			"Ширина = "+str(Wdoor)+" / по таблице = "+str(PriceInfo(IDNapr,"Width",0))
+			"Группа = "+str(DoorGroup)+" / по таблице = "+str(PriceInfo(IDNapr,"SCDoorGroup",0))
+			"Кол-во вставок = "+str(NumVst)+" / по таблице = "+str(PriceInfo(IDNapr,"VstNum",0))
+			done
+			"  OK  "
+			done;
+			select last 1;
+		}
+		// putmsg(IDNapr)
+		if IDNapr==0 { goto NoDS; }
+		
+		CostDoor=PriceInfo(IDNapr,"PRICE",1);
+		
+		HBotBorder=PriceInfo(GoodsID,"SCDS_HBotBorder",1300,2);
+		HBotBRate=PriceInfo(GoodsID,"SCDS_HBotBRate",0.5,2);
+		HTopBorder=PriceInfo(GoodsID,"SCDS_HTopBorder",2750,2);
+		HTopBRate=PriceInfo(GoodsID,"SCDS_HTopBRate",1.2,2);
+		ComplexRate=PriceInfo(GoodsID,"SCDS_ComplexRate",1.5,2);
+
+		Disc=1;
+		if Hdoor>HTopBorder { Disc=HTopBRate; }
+		if Hdoor<HBotBorder { Disc=HBotBRate; }
+		
+		if KeyCurLDel==1	{ if Disc<ComplexRate  { Disc=ComplexRate;}	}
+		if KeyManyVst==1	{ if Disc<1.15 { Disc=1.15;} } // Больше 6 вставок
+		
+		NmTpID=1;
+		QmatId=IDNapr;
+		ScrName=SCDSDoor;
+		nullout=initarray(SCount,"");
+		nullout=initarray(SCountName,"");
+		SCountName[1]="SumCostElem";	SCount[1]=CostDoor;
+		SCountName[2]="Curline";		SCount[2]=Disc;
+		SCountName[3]="Number";			SCount[3]=1;
+
+		macro ProtoPath+"SCAddInfoScr.mac" obj, NmTpID, QmatId, AttrScrName, ScrName, SCountName, SCount, NCount, ByRef SumCostRes;
+		SumCost=SumCost+SumCostRes;
+	}
+}
+
+if ft=="210998"&&(fthold=="300100") // Трек - группа расчета по таблице
+{
+	// putmsg("Трек")
+	
+	// NSysDoor=GetAttr(Holder,"NSysDoor",0); // Тип системы
+	// if NSysDoor==0 { err=GetProtoVal(Holder,"Syst",Syst); }
+	// // putmsg(NSysDoor)
+	// PriceID=getattr(obj,"PriceID",0);
+	// IdSysTrack=getattr(obj,"Posit",0);
+	// // putmsg(IdSysTrack)
+	// // putmsg(PriceID)
+	// DoorGroup=PriceInfo(PriceID,"SCDoorGroup",0);
+	// // putmsg(DoorGroup)
+	// PrID=getattr(Holder,"Posit",0);
+	// if PrID==0 { PrID=ProtoID(Holder); }
+
+	// nullout=NPGetByWhere(2,"[UnitID]="+str(NSysDoor)+" AND [SubstID]="+str(IdSysTrack)+" AND [ProtoID]="+str(PrID),"ArrTran",0);
+	// if nullout==0
+	// {
+		// NoDSTrack:
+		// select stayblink partly Holder done;
+		// UnitPos=GetAttr(obj,"UnitPos",0);
+		
+		// #ok_flag
+		// alternative "Нет цены"
+		// msgbox picture 3 beep 3 text "Отсутствует запись стоимости для расчета по трека UnitPos = "+str(UnitPos)
+		// "Данные для подбора:"
+		// "Группа = "+str(DoorGroup)
+		// done
+		// "  OK  "
+		// done;
+		// select last 1;
+		// exit;
+	// }
+	// else
+	// {
+		// GoodsID=ArrTran[1];
+
+		// GoodsProp="SCDoorSys";
+		// MatProp[1]="SCDoorGroup";
+		// ValProp[1]=DoorGroup;
+		
+		// // putmsg(GoodsID)
+		// IDNapr=NPGetByProps(GoodsID,GoodsProp,MatProp,ValProp,1,1);
+		// UnUsed=PriceInfo(IDNapr,"UnUsed",1);
+		// if UnUsed==0
+		// {
+			// select stayblink partly Holder done;
+			// UnitPos=GetAttr(obj,"UnitPos",0);
+			// #ok_flag
+			// alternative "Нет цены"
+			// msgbox picture 3 beep 3 text "Нельзя сделать трек UnitPos = "+str(UnitPos)
+			// "Данные для подбора: реальные / по таблице"
+			// "Группа = "+str(DoorGroup)+" / по таблице = "+str(PriceInfo(IDNapr,"SCDoorGroup",0))
+			// done
+			// "  OK  "
+			// done;
+			// select last 1;
+		// }
+		// // putmsg(IDNapr)
+		// if IDNapr==0 { goto NoDSTrack; }
+		
+		// CostDoor=PriceInfo(IDNapr,"PRICE",1);
+
+		// Disc=1;
+		// NmTpID=1;
+		// QmatId=IDNapr;
+		// ScrName=SCDSDoor;
+		// nullout=initarray(SCount,"");
+		// nullout=initarray(SCountName,"");
+		// SCountName[1]="SumCostElem";		SCount[1]=CostDoor;
+		// SCountName[2]="Curline";		SCount[2]=Disc;
+		// SCountName[3]="Number";			SCount[3]=1;
+
+		// macro ProtoPath+"SCAddInfoScr.mac" obj, NmTpID, QmatId, AttrScrName, ScrName, SCountName, SCount, NCount, ByRef SumCostRes;
+		// SumCost=SumCost+SumCostRes;
+	// }
+}
+
+if ft=="310999" // Корпус ящика
+{
+	// Разные способы расчета ящиков под кухни и шкафы
+	Wbox=getattr(obj,"Width",0);
+	// Lbox=getattr(obj,"Length",0);
+	Hbox=getattr(obj,"ZUnit",0);
+	Article=getattr(obj,"PriceID",0); // Article
+	
+	GoodsID=10050;
+
+	GoodsProp="ListMat";
+	MatProp[1]="Width";
+	ValProp[1]=Wbox;
+	MatProp[2]="Height";
+	ValProp[2]=Hbox;
+	
+	// putmsg(Wbox)
+	// putmsg(Hbox)
+	IDKorp=NPGetByProps(GoodsID,GoodsProp,MatProp,ValProp,1,2);
+	// putmsg(IDKorp)
+	CostBox=PriceInfo(IDKorp,"PRICE",1);
+	
+	QmatId=IDKorp;
+	if Article>0
+	{
+		NmTpID=1;
+		ScrName=SCDSDoor;
+		nullout=initarray(SCount,"");
+		nullout=initarray(SCountName,"");
+		SCountName[1]="SumCostElem";	SCount[1]=CostBox;
+		SCountName[2]="Curline";		SCount[2]=1;
+		SCountName[3]="Number";			SCount[3]=1;
+
+		macro ProtoPath+"SCAddInfoScr.mac" obj, NmTpID, QmatId, AttrScrName, ScrName, SCountName, SCount, NCount, ByRef SumCostRes;
+		
+		SumCost=SumCost+SumCostRes;
+		//putmsg(SumCost)
+	}
+}
+
+if left(ft,2)=="04" //-- Фурнитура
+{
+	if left(ft,4)=="0403" // Направляющая
+	{
+		PriceID=getattr(obj,"PriceID",0);
+		ParentID=PriceInfo(PriceID,"ParentID",0);
+		if ParentID==0
+		{
+			select stayblink partly Holder done;
+			UnitPos=GetAttr(obj,"UnitPos",0);
+			
+			#ok_flag
+			alternative "Ошибка в базе"
+			msgbox picture 3 beep 3 text "Отсутствует запись стоимости для расчета направляющей UnitPos = "+str(UnitPos)
+			done
+			"  OK  "
+			done;
+			select last 1;
+			exit;
+		}
+		else
+		{
+			ComplID=ParentID;
+			// putmsg(ComplID);
+			CostElem=PriceInfo(ComplID,"PRICE",0.01);
+			
+			NmTpID=1;
+			QmatId=ComplID;
+			ScrName=SCElemFurn;
+			nullout=initarray(SCount,"");
+			nullout=initarray(SCountName,"");
+			SCountName[1]="SumCostElem";		SCount[1]=CostElem;
+			SCountName[2]="Number";				SCount[2]=1;
+
+			macro ProtoPath+"SCAddInfoScr.mac" obj, NmTpID, QmatId, AttrScrName, ScrName, SCountName, SCount, NCount, ByRef SumCostRes;
+			
+			SumCost=SumCost+SumCostRes;
+			goto fin;
+		}
+	}
+	// putmsg("Furn")
+	matID=GetAttr(obj,"PriceID",0);
+	CostObj=PriceInfo(matID,"PRICE",0.01);
+	NmTpID=1;
+	QmatId=matID;
+	ScrName=SCElemFurn;
+	nullout=initarray(SCount,"");
+	nullout=initarray(SCountName,"");
+	SCountName[1]="SumCostElem";		SCount[1]=CostObj;
+	SCountName[2]="Number";				SCount[2]=1;
+
+	macro ProtoPath+"SCAddInfoScr.mac" obj, NmTpID, QmatId, AttrScrName, ScrName, SCountName, SCount, NCount, ByRef SumCostRes;
+	
+	SumCost=SumCost+SumCostRes;
+}
+
+if left(ft,2)=="06" //-- Фурнитура
+{
+	// putmsg("Furn_06")
+	matID=GetAttr(obj,"PriceID",0);
+	CostObj=PriceInfo(matID,"PRICE",0.01);
+	NmTpID=1;
+	QmatId=matID;
+	ScrName=SCElemFurn;
+	nullout=initarray(SCount,"");
+	nullout=initarray(SCountName,"");
+	SCountName[1]="SumCostElem";		SCount[1]=CostObj;
+	SCountName[2]="Number";				SCount[2]=1;
+
+	macro ProtoPath+"SCAddInfoScr.mac" obj, NmTpID, QmatId, AttrScrName, ScrName, SCountName, SCount, NCount, ByRef SumCostRes;
+	
+	SumCost=SumCost+SumCostRes;
+}
+if ft=="340201" //-- Обувная телескопическая полка
+{
+	gID=GetAttr(obj,"GoodsID",0);
+	matID=PriceInfo(gID,"AccessID",0,2);
+	CostObj=PriceInfo(matID,"PRICE",0.01);
+	NmTpID=1;
+	QmatId=matID;
+	ScrName=SCElemFurn;
+	nullout=initarray(SCount,"");
+	nullout=initarray(SCountName,"");
+	SCountName[1]="SumCostElem";		SCount[1]=CostObj;
+	SCountName[2]="Number";				SCount[2]=1;
+
+	macro ProtoPath+"SCAddInfoScr.mac" obj, NmTpID, QmatId, AttrScrName, ScrName, SCountName, SCount, NCount, ByRef SumCostRes;
+	
+	SumCost=SumCost+SumCostRes;
+}
+
+fin:
+NULLOUT=setvarinst(1,"SumCost",SumCost);
+exit;
+
+GetDecorate:
+// Читаем отделки панели
+
+PaintDecOn=0;
+DecCost=0;
+pan[1]=0;
+nDecor=GetPan6Par(28,pan);
+//putmsg(nDecor)
+if nDecor>0
+{
+	r=0;
+	dec=0;
+	nextr:
+	r=r+1;
+
+	if r<=DecN // Проходим по всем секциям
+	{
+		pan[1]=DecorArr[r];
+		DecRes=GetPan6Par(28,pan); // Ищем в секции отделку
+		// putmsg(DecRes)
+		if DecRes>0
+		{
+			q=0;
+			nextq:
+			if q<DecRes // Заполняем отделками массивы
+			{
+				DecorID=pan[q*3+3]; // ID материала отделки
+				TypeID=pan[q*3+2]; // ID варианта отделки
+				zp1="SELECT ID, Name FROM TProtoParType WHERE ID="+str(TypeID);
+				rcd=adbOpen(con,zp1);
+				total_s1=aDbRecCount(rcd);
+				if total_s1>0
+				{
+					err=aDbMoveFirst(rcd);
+					TypeName=adbGetValue(rcd,"Name",0);
+				}
+				else { TypeName=""; }
+				//putmsg(TypeID)
+				// if IDGroupPntGl==TypeID&&KeyNoPaint
+				// {
+					// PaintDecOn=1;
+					// q=q+1;
+					// goto nextq;
+				// }				
+				// putmsg(DecorID)
+				// nullout=initarray(Query,"");
+				// SumCPiece=PriceInfo(DecorID,"SumCPiece",0);
+				QmatId=DecorID;
+				// Query[1]="SELECT * FROM TDecorates WHERE KodK3 = "+str(QmatId);
+				// StrObj=iif(SumCPiece==1,"штуки","квадратного метра");
+				// defvar=0;
+				NmTpID=1;
+				// gosub QueryPrice;
+				
+				CostObj=PriceInfo(QmatId,"PRICE",0.01);
+				
+				DoubleDecor:
+				dec=dec+1;
+				ScrName=SCDecor+str(dec)+"#"+str(TypeName);
+				nullout=initarray(SCount,"");
+				nullout=initarray(SCountName,"");
+				SCountName[1]="SumCostMat";		SCount[1]=CostObj;
+				// if SumCPiece
+				// {
+					// SCountName[2]="Square";			SCount[2]=1;
+				// }
+				// else
+				// {
+					SCountName[2]="Square";			SCount[2]=(length*width)/1000000;
+					// Для "отделка всего" стоимость увеличим для двух пластей обработки
+					// SCountName[3]="SideNumber";		SCount[3]=iif(DecorArr[r]==-1,2,1);
+					SCountName[3]="SideNumber";		SCount[3]=1;
+				// }
+				macro ProtoPath+"SCAddInfoScr.mac" obj, NmTpID, QmatId, AttrScrName, ScrName, SCountName, SCount, NCount, ByRef SumCostRes;
+				
+				CurDecCost=SumCostRes;
+				
+				// Для "отделка всего" стоимость увеличим для двух пластей обработки
+				// CurDecCost=iif(DecorArr[r]==-1,2*CurDecCost,CurDecCost);
+				//putmsg("Decor_sumcost="+str(CurDecCost))
+				DecCost=DecCost+CurDecCost;
+				if DecorArr[r]==-1 { DecorArr[r]=0; goto DoubleDecor; }
+				
+				q=q+1;
+				dec=dec+1;
+				goto nextq;
+			}
+		}
+		goto nextr;
+	}
+}
+
+err=getpan6par(999,pan);
+return;
+
+GetProfDecor:
+// Считываем отделки профиля
+
+nullout=getProf6Par(7,Arr);
+nDecor=Arr[1];
+//putmsg(nDecor)
+if nDecor>0
+{
+	r=0;
+	dec=1;
+	DecCost=0;
+	nexto:
+	r=r+1;
+	if r<=nDecor // Проходим по всем секциям
+	{
+		DecorID=Arr[5*r-2]; // ID материала отделки
+		TypeID=Arr[5*r-3]; // ID варианта отделки
+		Map=Arr[5*r+1]; // Секция раскрашивания
+
+		// nullout=initarray(Query,"");
+		// QmatId=matID;
+		// Query[1]="SELECT * FROM TDecorates WHERE KodK3 = "+str(DecorID)+"";
+		// StrObj="квадратного метра";
+		// defvar=0;
+		// NmTpID=1;
+		QmatId=DecorID;
+		// gosub QueryPrice;
+		
+		CostObj=0;
+		
+		ScrName=SCDecor+str(dec);
+		nullout=initarray(SCount,"");
+		nullout=initarray(SCountName,"");
+		SCountName[1]="SumCostMat";		SCount[1]=CostObj;
+		SCountName[2]="Square";			SCount[2]=(length*width)/1000000;
+		// Для "отделка всего" стоимость увеличим для двух пластей обработки
+		SCountName[3]="SideNumber";		SCount[3]=iif(map==-1,2,1);
+		macro ProtoPath+"SCAddInfoScr.mac" obj, NmTpID, QmatId, AttrScrName, ScrName, SCountName, SCount, NCount, ByRef SumCostRes;
+
+		CurDecCost=SumCostRes;
+
+		DecCost=DecCost+CurDecCost;
+		
+		dec=dec+1;
+		goto nexto;
+	}
+	
+	SumCost=SumCost+DecCost;
+}
+return;
+
+
+// selbyattr "UnitPos==" stayblink partly all done

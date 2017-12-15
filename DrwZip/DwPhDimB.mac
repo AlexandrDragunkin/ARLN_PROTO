@@ -1,0 +1,184 @@
+//Простановка размеров по B   для контура
+//
+//Доработка DwPDimB.mac 23.10.2007   Александр Драгункин
+//
+//          Добавлен массив ортогональных кординат
+//
+//          Изменен тип размеров parallel на free
+//
+//          Проверка на 0-е значение размера
+//
+//                   D
+//          --------------------
+//          |                   |
+//          |                   |
+//        С |                   |В
+//          |                   |
+//          |                   |
+//          --------------------
+//                   E
+//
+ProtoPath=MPathExpand("<Proto>")+"\\";
+global DRWZPath key_b key_d;
+
+getpar
+iB                   //Число точек
+w1                   //массив минимумов   3 элемента  базовые координаты
+w2                   //массив максимумов  3 элемента  базовые координаты
+AriB                 //Массив координат точек по координате В
+AriB2                //Массив координат точек по координате ортогональной В
+BaseFlgB             //Размеры от базы ключ
+SdDim                //размер смещения
+BaseDE ;             //База слева Е  справа Д  (если стоять в центре габаритов и смотреть на сторону В)
+objs=sysvar(60)
+if (BaseDE=="D") { goto BaseD; }
+wyold=w1[1]
+i=iB+1; 	// счетчик размеров
+lab_DB1:
+i=i-1
+If (i>0) {
+  if abs(AriB[i]-w2[2])<0.1 { // Проверка на 0-е значение стартового размера
+     w1[1]=AriB2[i] ;
+     iB=iB-1          // Уменьшаем число точек
+     goto lab_DB1 ;   // Еще раз
+     }
+  if (i==iB) {
+  ldim 3ddim w1[1] w2[2] 0
+	     AriB2[i] AriB[i] 0
+    free  wyold-SdDim w2[2] 0 ; //стартовый размер
+    xT=AriB[i]
+    objident last 1 dm ;
+    //DRWZPath ProtoPath+"EditDim.mac" 1 dm ;
+    objident last 1 dm ;
+	objident last 1 dmstart ;
+  }
+  else {
+    if (AriB[i]>w1[2])&&(-AriB[i]+xT>0.1) {
+      if BaseFlgB==1 {
+        ldim base
+      }
+      else {
+        ldim continue
+      } 		
+	 AriB2[i] AriB[i] 0   //Размер в середине массива
+         xT=AriB[i]
+         objident last 1 dm ;
+         //DRWZPath ProtoPath+"EditDim.mac" 1 dm ;
+         objident last 1 dm ;
+    }
+  }
+  goto lab_DB1
+}
+//w1[1]=wyold
+//exit ; //если заключительный размер не ставить
+if (i!=iB) {
+    if (abs(w1[2]-xT)>0.1) {
+      if BaseFlgB==1 {
+        ldim base
+      }
+      else {
+        ldim continue
+      } 		
+	     w1[1] w1[2] 0 ; //Заключительный размер (вообщето не нужен)
+   }	
+}
+w1[1]=wyold
+objs=sysvar(60)-objs;
+if BaseFlgB==0&&Key_b==0&&objs>1
+{
+	if isvardef("dmstart")==16
+	{
+		ldim base select dmstart w1[1] w1[2] 0;
+	}
+	else
+	{
+		ldim 3ddim w1[1] w2[2] 0
+	      w1[1] w1[2] 0
+		free  wyold-SdDim w2[2] 0 ; //стартовый размер
+	}
+	objident last 1 dm ;
+	//DRWZPath ProtoPath+"EditDim.mac" 1 dm ;
+	objident last 1 dm ;
+	
+}
+key_b=1
+exit;
+
+BaseD:
+
+//--------------------------------------------------B
+
+i=0; 	// счетчик размеров
+wyold=w1[1]
+Ns=1
+lab_DB2:
+i=i+1
+If (i<=iB) {
+  if abs(AriB[i]-w1[2])<0.1 { // Проверка на 0-е значение стартового размера
+     w1[1]=AriB2[i] ;
+     Ns=Ns+1 ;          // Уменьшаем число точек
+     goto lab_DB2 ;   // Еще раз
+     }
+  if (i==Ns) {
+ ldim 3ddim w1[1] w1[2] 0
+	     AriB2[i] AriB[i] 0
+    free  wyold-SdDim w1[2] 0 ;
+    xT=AriB[i]
+    objident last 1 dm ;
+    //DRWZPath ProtoPath+"EditDim.mac" 1 dm ;
+    objident last 1 dm ;
+	objident last 1 dmstart ;
+    }
+  else {
+    if (AriB[i]<w2[2])&&(AriB[i]-xT>0.1) {
+      if BaseFlgB==1 {
+        ldim base
+      }
+      else {
+        ldim continue
+      } 		
+	     AriB2[i] AriB[i] 0
+             xT=AriB[i]
+             objident last 1 dm ;
+             //DRWZPath ProtoPath+"EditDim.mac" 1 dm ;
+             objident last 1 dm ;
+    }
+  }
+
+  goto lab_DB2
+}
+//w1[1]=wyold
+//exit ; //если заключительный размер не ставить
+if (i!=1)&&(isvardef("xT"))>0 {
+    if (abs(w2[2]-xT)>0.1) {
+      if BaseFlgB==1 {
+        //ldim base
+      }
+      else {
+        //ldim continue
+      } 		
+	     //w1[1] w2[2] 0 ;  //Заключительный размер (вообщето не нужен)
+   }	
+}
+w1[1]=wyold
+objs=sysvar(60)-objs;
+if BaseFlgB==0&&Key_b==0&&objs>1
+{
+	if isvardef("dmstart")==16
+	{
+		ldim base select dmstart w1[1] w2[2] 0;
+	}
+	else
+	{
+		ldim 3ddim w1[1] w1[2] 0
+			w1[1] w2[2] 0
+				free  wyold-SdDim w1[2] 0 ;
+	}
+	
+	objident last 1 dm ;
+	//DRWZPath ProtoPath+"EditDim.mac" 1 dm ;
+	objident last 1 dm ;
+	
+}
+Key_b=1
+exit;

@@ -1,0 +1,32 @@
+//-- Программа создания объекта - розетка
+global ProtoPath;
+
+ne=DbVar("ne",0); 			//--	число электрических
+np=DbVar("np",0); 			//--  телефонных и
+nc=DbVar("nc",0);			  //--  компьютерных розеток
+
+Macro ProtoPath+"ArchRoze.mac" ne, np, nc;
+#Roze group all done;
+//-- Присваиваем атрибуты
+If (!IsAttrdef("ObjType"))
+{
+	Attribute Create "ObjType" "Тип объекта в сцене" Real 5 0 ; 
+}
+If (!IsAttrdef("PlaceType"))
+{ 
+	Attribute Create "PlaceType" "Тип размещения объекта" Real 5 0 ; 
+}
+Attrobj	attach "Objtype"	done Last 1	4;
+Attrobj	attach "PlaceType"	done Last 1	1;
+ChProp MapByPars last 1 Done
+0,  -1        //Для всех секций
+1,  55    //Меняем код материала на  материал в таблице материалов
+2, 50          // Масштаб по U
+3, 50          // Масштаб по V
+4, 0         // Сдвиг по U
+5, 0         // Сдвиг по V
+6, 0     // Угол поворота тектуры
+7, 1          // Сглаживать
+9, 2          // Модулировать
+;
+exit;

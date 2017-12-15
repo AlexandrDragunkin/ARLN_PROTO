@@ -1,0 +1,17 @@
+//-- Обувная полка (стандартный образец)
+//-- Входные параметры:
+//-- x - Ширина секции
+//-- y, z - Координты нижнего дальнего угла обувной полки
+//-- ShoID - ID сетчатого материала в номенклатурном справочнике
+//-- N_clypse - Количество клипс
+//-- N_Kron - Количество кронштейнов
+
+global ProtoPath;
+getpar x,y,z,ShoID,N_clypse,N_Kron;
+//-----------------------------------------
+xbase=0;  //-- Координата обувной полки по оси x
+SShelfMat=priceinfo(ShoID,"AccessID",50,2);    //-- ID прута сетки
+//-----------------------------------------
+macro ProtoPath+"shbase2.mac" xbase,x,y,z,SShelfMat;
+macro ProtoPath+"shclypse2.mac" xbase,x,y,z,SShelfMat,N_clypse,N_Kron;
+exit;

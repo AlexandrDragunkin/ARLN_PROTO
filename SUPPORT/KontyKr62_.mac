@@ -1,0 +1,115 @@
+global
+IdKrom
+Ukas
+ElUkas
+CurentNum //текущий номер обрабатываемой столешницы
+TyZnak  //Номер значка кромки с 10 по 15
+L_SUPPORT
+;
+global ProtoPath;
+
+defarr Rez1l[4] Rez1r[4] Cut1[4] Gab1[6];
+defarr Rez2l[4] Rez2r[4] Cut2[4] Gab2[6];
+defarr arr[11] xm[6];
+//**************************************
+//ElUkas=0 //счетчик указателей на кромку
+//TyZnak=9
+//defarr IdKrom[10000] Ukas[20] ;
+//   i=0
+//   metElU:
+//   if i<20 {
+//      i=1+i
+//      if ukas[i]!=0 {
+//         Idkrom[ukas[i]]=0
+//         }
+//   goto metElU ;
+//   }
+
+//**************************************
+
+Getpar
+pnt1 ;
+
+If (!IsAttrdef("Kromznak"))  { Attribute Create "Kromznak" "Значок Кромка на чертеже" Real 12 5  ; }
+If (!IsAttrdef("Krom"))  { Attribute Create "Krom" "Кромка на чертеже" Real 12 5  ; }
+layers New "Krom" ;
+
+//Ищем центр габаритов куска
+setucs lcs pnt1 ;
+Err=ObjGab3(pnt1,xm) ;
+
+Xc=xm[1]+(xm[4]-xm[1])/2 ;
+Yc=xm[2]+(xm[5]-xm[2])/2 ;
+Zc=xm[3]+(xm[6]-xm[3])/2 ;
+
+
+Objects=Sysvar(60) ;
+ObjStart=Objects
+nkont=beginpanel(pnt1);
+  //putmsg("kont="+str(nkont))
+i=0
+L1:
+  i=i+1
+  nelem=GetNContPan(i)
+  //putmsg("elem="+str(nelem))
+  j=0;
+  L2:
+  j=j+1
+  type=GetPanelEl(j,i,0,arr);
+  //putmsg("type="+str(type))
+  att=GetPanElWrk(j,i,2);
+  //putmsg("att="+str(att),0);
+
+  L3:
+  if (att>0) {
+   setucs lcs pnt1 ;
+   if idKrom[att]==0 {
+         TyZnak=TyZnak+1
+         idKrom[att]=TyZnak
+         ElUkas=ElUkas+1 //Индекс указателя  0 присвоен в StDrawAll1
+         Ukas[ElUkas]=att //Указатель
+   }
+   if (type==1) {    // отрезок
+     line arr[1] arr[2] arr[3] arr[4] arr[5] arr[6] ;
+   }
+   else {
+    if (type==2) {    // дуга
+      arc arr[1] arr[2] arr[3] arr[4] arr[5] arr[6] arr[7] arr[8] arr[9];
+    }
+   }
+   path select last 1 done last 1 ;
+   objident last 1 znak ;
+   gosub KrZnak ;
+  }
+
+  if (j<nelem) { goto L2; }
+  objects=SysVar(60)-Objects
+  if Objects>0 {
+     //Path select last  Objects done last 1 ;
+   }
+  Objects=Sysvar(60)
+  if (i<nkont) { goto L1; }
+  Nnew=Objects-ObjStart
+  if Nnew>0 {
+  //group last nnew done ;
+  }
+err=endpanel();
+
+exit;
+
+ //*********************
+ Krznak:
+        //attrobj copy l1 all znak ;
+        
+        #LenCve clength znak ;
+        chprop layer znak done "krom" ;
+        attrobj attach "krom" "PriceID" "Length" done znak j att LenCve ;
+        // на каждый элемент контура обозначающего кромку надо поставить соответствующий значок
+        //Ставим значки
+        PtransCS(0,3,xc,yc,zc,xcg,ycg,zcg) ;
+        macro L_support+"postZ1auto.mac" idKrom[att] znak Xcg Ycg Zcg ;
+        attrobj attach "kromZNAK" done znak idKrom[att] ;
+
+        //delete l1 ;
+ return;
+

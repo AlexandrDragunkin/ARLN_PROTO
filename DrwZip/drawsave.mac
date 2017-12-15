@@ -1,0 +1,33 @@
+//-- Прграмма записывает сделанный чертеж
+
+global g_name, g_dorab, g_pict, g_scala;
+//PutMsg(g_scala,1);
+global g_h, g_w;
+
+F2000=DbVar("F2000",0);
+object_name=sysvar(2);
+numTxt=object_name-4+"_"+g_name+".k3";
+pict g_pict yes ;
+valcoeff absolute g_scala;
+grfcoeff absolute g_scala;
+save select all done numTxt [ overwrite ]
+open [ no ] numTxt ;
+zoom all ;
+If F2000 { exp2d wmf yes optimized yes numTxt-2+"wmf" [ overwrite ] }    //height g_h*100 width g_w*100
+else     { exp2d wmf yes  optimized yes numTxt-2+"wmf" [ overwrite ] }  // height g_h*100 width g_w*100
+if (g_dorab==1)
+{
+    setvar
+    "Чертеж сохранен"
+    numTxt-2+"wmf"
+    left
+    " в файл: "+numTxt
+    done
+    logical  default 0  "Доработать чертеж?"  Wflag
+    done
+    if (Wflag==1)
+    {
+			g_dorab=2;
+    }
+}
+exit;

@@ -1,0 +1,141 @@
+//////////////////////////////////
+//Подстановка в размеры допусков//
+//    по ГОСТ 6449.1-82         //
+//   (C) Драгункин А.Р.         //
+//        Дубна 2006 г.         //
+//////////////////////////////////
+global ProtoPath;
+NULLOUT=GetVarInst(2,"TolceTip",TolceTip,0);	//Val Otv  Lin
+NULLOUT=GetVarInst(2,"TolceVal",TolceVal,0);	//квалитет  10...18
+NULLOUT=GetVarInst(2,"TolcePol",TolcePol,0);	//Н h k Js  Натяг    (с зазором=-1 Переходная=0 с натягом=1)
+NULLOUT=GetVarInst(2,"TolceVar",TolceVar,0);	//Вариант отображения      0 1 2 3
+
+getpar DimVal;
+TolsTx=TolcePol+str(TolceVal)+" ";
+
+LimUpD=""
+LimDnD=""
+TolceValOld=TolceVal ;
+//подключаем dbf
+BaseName="6446"+TolceTip+".dbf"
+//BaseName="1"+".dbf"
+fnk=ProtoPath+BaseName
+if GetCount(fnk) {  DbOpen BaseTS,fnk;   //открыли базу
+   n=DbFldCount(BaseTS) ;//ОПРЕДЕЛИЛИ ЧИСЛО ЗАПИСЕЙ В ОТКРЫТОЙ БАЗЕ
+   if n<1 { #ok_flag alternative "Внимание!!" msgbox text "Записи в базе с именем "+fnk+" не обнаружены." done "Ок" done ; exit ; }
+   //=n
+   //=BaseTS
+   //=fnk
+   //=dimval
+   DbMoveFirst BaseTS;
+MET1:
+   DbFilter BaseTS,"" ;  //
+   DbFilter BaseTS,"VALUED>DimVal" ;  //
+   n1=DbRecCount(BaseTS) ;//ОПРЕДЕЛИЛИ ЧИСЛО ЗАПИСЕЙ В ОТКРЫТОМ НАБОРЕ
+   //=n1
+         if n1>0 {
+         //=n1
+         DbMoveFirst BaseTS;                  // Встали на последнюю запись
+         //Считали
+         NameZap=TolcePol+str(TolceVal)  ;
+         NameZapUp=NameZap+"MAX"
+         NameZapDn=NameZap+"MIN"
+         //=NameZapUp
+
+         GoSub FindPole ; //ищем  NameZapUp NameZapDn среди полей базы если их нет выводим сообщение
+         LimUp=DbGetValue(BaseTS,NameZapUp,-99)  ;
+         LimDn=DbGetValue(BaseTS,NameZapDn,-99)  ;
+         if LimUp>-0.001 { LimUpD="+" }
+         if LimDn>-0.001 { LimDnD="+" }
+         }
+         else { // Размер превышает максимальное значение принятое по ГОСТ 6449.1-82
+              DimVal=9999 ;
+              goto met1 ;
+         }
+}
+else {  //Если файла с таким именем нет, то возвращается 0.
+#ok_flag alternative "Внимание!!" msgbox text "Файл с именем "+fnk+" не обнаружен." done "Ок" done;  exit ;
+}
+//Подбираем допуск по заданным параметром для заданной величины
+    //=LimUp   =LimDn
+IF (LimUp>999)||(LimDn>999) {
+   TolceVal=TolceVal+1 ;
+   TolsTx=TolcePol+str(TolceVal)+" "   ;
+   LimUpD=""
+   LimDnD=""
+   GOTO MET1 ; }
+//Меняем шаблон текста в размере
+If TolceVar==0 { TolsTx="" }    //только значение допуска
+dimtext 0 "<>"+TolsTx LimUpD+str(LimUp) LimDnD+str(LimDn) done ;
+dimtext 2 "R<>"+TolsTx LimUpD+str(LimUp) LimDnD+str(LimDn) done ;
+dimtext 3 "%%c<>"+TolsTx LimUpD+str(LimUp) LimDnD+str(LimDn) done ;
+If TolceVar==1 {       //если только поле допуска
+   dimtext 0 "<> "+TolsTx   done ;
+   dimtext 2 "R<>"+TolsTx   done ;
+   dimtext 3 "%%c<>"+TolsTx done ;
+        }
+DbClose BaseTS ;
+TolceVal=TolceValOld ;
+exit
+;
+///////////////////////////
+FindPole:
+Npol=DbFldCount(BaseTS)  ; //Кол-во полей
+i=0
+metFP:
+if i<Npol {
+
+   NamePole=DbFieldName(BaseTS,i) ; //Считываем имя поля с номером i
+
+   if (Upper(NamePole)==Upper(NameZapUp))||(Upper(NamePole)==Upper(NameZapDn)) {  //Сравниваем имя поля с заданными значениями
+      RETURN ; // Такое поле есть работаем дальше
+   }
+   i=i+1
+   goto metFP ;
+}
+//Таких полей нет выводим сообщение
+=TolceTip
+if TolceTip=="val" {
+#ok_flag alternative "Внимание!!"
+info "Для "+str(TolceVal)+" квалитета отклонение ["+str(TolcePol)+"] в системе вал не существует."
+"Выберите другой квалитет или основное отклоненение из допустимых."
+"ГОСТ 6449.1-82 Система вал"
+"Квалитет   Основное отклонение  Диапазон размера  "
+"_________________________________________________"
+"  10               h,js                        св 1250  до 10000"
+"  11               h,js,k                      св   50  до 10000"
+"  12               b,c                         св    0  до  3150"
+"  12               h,js,k                      св    0  до 10000"
+"  12               za,zc                       св    0  до   120"
+"  12               ze                          св    0  до    50"
+"  13               a,b                         св    0  до  3150"
+"  13               h,js,k                      св    0  до 10000"
+"  13               t                           св   50  до   500"
+"  13               y                           св   18  до   500"
+"  13               za                          св    0  до   250"
+"  13               zc                          св    0  до   120"
+"  13               ze                          св    0  до    50"
+"  14               a,b                         св    0  до   500"
+"  14,15,16,17      h,js,k                      св    0  до 10000"
+"  18               h,js                        св    0  до   500"
+"_________________________________________________"
+done ;
+}
+else {
+#ok_flag alternative "Внимание!!"
+info "Для "+str(TolceVal)+" квалитета отклонение ["+str(TolcePol)+"] в системе отверстие не существует."
+"Выберите другой квалитет или основное отклоненение из допустимых."
+"ГОСТ 6449.1-82 Система отверстие"
+"Квалитет   Основное отклонение  Диапазон размера  "
+"_________________________________________________"
+"  10               H,JS               св 1250  до 10000"
+"  11               H,JS               св   50  до 10000"
+" 12,13,"
+" 14,15,            H,JS               св    0  до 10000"
+" 16,17,"
+"  18               H,JS               св    0  до   500"
+"_________________________________________________"
+done ;
+}
+exit;
+return;

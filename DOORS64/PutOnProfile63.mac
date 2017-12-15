@@ -1,0 +1,461 @@
+//-- Макропрограмма установки дополнительных элементов на профиль.
+//-- Входные данные:
+//-- IDProf - ID профиля из таблицы (из таблицы DSFlapProfile базы данных DoorSys63.mdb)
+//-- x1,y1,z1 - координаты начальной точки профиля
+//-- x2,y2,z2 - координаты конечной точки профиля
+//-- g_Syst - ID системы дверей из таблицы  базы данных DoorSys63.mdb
+
+infopop=0;
+
+nullout=getvarinst(2,"Doors64",Doors64,"Doors64.zmc|");
+
+defarr DSComment[100];
+initarray(DSComment,"");
+nullout=getVarinst(2,"N_DSComm",N_DSComm,0);
+nullout=getArrinst(2,"DSComment",DSComment);
+
+defarr GroupElems[500];
+nullout=getArrinst(2,"GroupElems",GroupElems);
+nullout=getVarinst(2,"NGrElems",NGrElems,0);
+// putmsg("Putonprofile")
+// putmsg(GroupElems,1,1,10)
+global g_ExName g_ExVal g_ExInf IDSGeo g_IDKomp g_UIDKomp; // массивы дополнительных параметров  системы
+global g_tab_place, g_keyDS63,g_Doorscon g_FurnType ;
+global ProtoPath,g_Syst,g_drp;
+global g_ProfColor; //-- ID цвет профиля
+defarr CodNam[200] arStrTab[10];
+
+getpar IDProf x1,y1,z1 x2,y2,z2;
+
+//================Проверяем и открываем доступ к базе=================================
+C_key=0
+if g_keyDS63!=1
+{
+   macro ProtoPath+"CrtSysDoor63.mac" ;
+   C_key=1 // Признак что база открыта в этом макро
+}
+//====================================================================================
+str_tab="SELECT * FROM Type_Komp;"
+SysRs=adbOpen(g_DoorsCon,str_tab);
+ij=adbRecCount(SysRs);
+NULLOUT=adbMoveFirst(SysRs);
+i=0
+labTK:
+if i<ij
+{
+	i=i+1
+	IDSET=adbGetValue(SysRs,"ID");
+	ECOD=adbGetValue(SysRs,"ECOD");
+	CodNam[IDSET]=ECOD;
+	NULLOUT=adbMoveNext(SysRs);
+
+	goto labTK;
+}
+SysRs=adbClose(SysRs);
+//====================================================================================
+// Ищем комплектующие относящиеся к устанавливаемому профилю профилю
+str_tab="SELECT * FROM DSSystemFlap WHERE ID="+str(g_drp);
+SysRs=adbOpen(g_DoorsCon,str_tab);
+ij=adbRecCount(SysRs);
+NULLOUT=adbMoveFirst(SysRs);
+IDType=adbGetValue(SysRs,"TypeFlap"); //Тип открывания(раздвижная, распашная)
+NameSys=adbGetValue(SysRs,"NameSys");
+
+SysRs=adbClose(SysRs);
+// Определяем соответствующее описание в таблице DSGabProfile
+// putmsg(IDProf)
+str_tab="SELECT * FROM DSFlapProfile WHERE ID="+str(IDProf) ;
+ProfRs=adbOpen(g_DoorsCon,str_tab);
+ij=adbRecCount(ProfRs);
+NULLOUT=adbMoveFirst(ProfRs);
+IDSGeo=adbGetValue(ProfRs,"PSYSTEM"); // DSGabProfile.ID
+ProfRs=adbClose(ProfRs);
+
+if infopop
+{
+	// Определяем соответствующее описание в таблице DSGabProfile
+	str_tab="SELECT * FROM DSGabProfile WHERE ID="+str(IDSGeo) ;
+	ProfRs=adbOpen(g_DoorsCon,str_tab);
+	ij=adbRecCount(ProfRs);
+	if ij>0
+	{
+		NULLOUT=adbMoveFirst(ProfRs);
+		NameGroup=adbGetValue(ProfRs,"NameGroup");
+		ProfRs=adbClose(ProfRs);
+	}
+}
+
+arStrTab[1]="SELECT DSFlapSostav.IDSyst, DSFlapSostav.IDProf, DSProfSostav.IDKompl, DSProfSostav.IsCalc"
+arStrTab[2]=" FROM DSProfSostav INNER JOIN DSFlapSostav ON DSProfSostav.IDSysProf = DSFlapSostav.ID"
+arStrTab[3]=" WHERE (((DSFlapSostav.IDSyst)="+str(g_drp)+") AND ((DSFlapSostav.IDProf)="+str(IDSGeo)+"));";
+
+//str_tab="SELECT  * FROM DSProfSostav WHERE IDGAb="+str(IDSGeo)+" AND IDSyst="+str(g_drp);
+ProfKomp=adbOpen(g_DoorsCon,arStrTab,3);
+ij=adbRecCount(ProfKomp);
+if infopop
+{
+	putmsg("==============================")
+	putmsg("PutOnProfile.mac g_drp="+str(g_drp)+" - "+str(NameSys),1);
+	putmsg("PutOnProfile.mac IDSGeo="+str(IDSGeo)+" - "+str(NameGroup),1);
+	putmsg("PutOnProfile.mac Кол-во записей="+str(ij),1);
+}
+if ij==0
+{
+ goto end;
+}
+NULLOUT=adbMoveFirst(ProfKomp);
+i=0
+lab1:
+if i<ij
+{
+	i=i+1
+
+	IDKompl=adbGetValue(ProfKomp,"IDKompl");
+	IsCalc=adbGetValue(ProfKomp,"IsCalc");
+	NULLOUT=adbMoveNext(ProfKomp);
+
+	// if IDKompl==46 { infopop=1; }
+	// else { infopop=0; }
+	GOSUB SET;
+
+	goto lab1;
+}
+ProfKomp=adbClose(ProfKomp);
+nullout=setVarinst(2,"NGrElems",NGrElems);
+// putmsg(GroupElems,1,1,10)
+nullout=setArrinst(2,"GroupElems",GroupElems);
+end:
+
+//====================================================================================
+if C_key==1
+{
+ macro ProtoPath+"ClosSysDoor63.mac";
+}
+exit;
+//------------------------------------------------------------------------------
+//-- процедура читает ID установки дополнительного элемента
+//-- и принимает решение об установке или неустановке того или иного элемента
+//-- Входные параметры:
+//-  ID - ID дополнительного элемента из таблицы Profiles базы DoorSys.mdb
+//-- IDType - ID типа системы дверей из таблицы System базы DoorSys.mdb
+
+set:
+
+if infopop
+{
+	putmsg("==============================")
+	putmsg("DSGabKomplect_IDKompl="+str(IDKompl),1);
+}
+str_tab="SELECT * FROM DSGabKomplect WHERE ID="+str(IDKompl) ;
+KompRs=adbOpen(g_DoorsCon,str_tab);
+nij=adbRecCount(KompRs);
+if infopop {  putmsg("DSGabKomplect_nij="+str(nij),1); }
+if (nij<1)
+{
+  KompRs=adbClose(KompRs);
+  return;
+}
+NULLOUT=adbMoveFirst(KompRs);
+IDSet=adbGetValue(KompRs,"IDSet");
+if infopop { putmsg("IDSet="+str(IDSet),1); }
+
+Shift=adbGetValue(KompRs,"Shift");
+Coeff=adbGetValue(KompRs,"Coeff");
+MacroSet=adbGetValue(KompRs,"MacroSet");
+MacroExtra=adbGetValue(KompRs,"MacroExtra");
+KompRs=adbClose(KompRs);
+
+str_tab="SELECT * FROM DSFlapKompl WHERE PSYSTEM="+str(IDKompl) ;
+T_KompID=adbOpen(g_DoorsCon,str_tab);
+ij1=adbRecCount(T_KompID);
+if infopop { putmsg("PutOnProfile63.mac DSFlapKompl_ij1="+str(ij1),1); }
+if (ij1<1)
+{
+  T_KompID=adbClose(T_KompID);
+  return;
+}
+
+NULLOUT=adbMoveFirst(T_KompID);
+IDPrice=adbGetValue(T_KompID,"IDKompl");
+if infopop
+{
+	ID=adbGetValue(T_KompID,"ID");
+	putmsg("DSFlapKompl_ID="+str(ID));
+}
+g_IDKomp=IDKompl;
+nullout=setvarinst(1,"g_IDKomp",g_IDKomp);
+macro ProtoPath+DOORS64+"ScrKomplGetSub.mac" ;
+if ij1>1
+{
+	// g_IDKomp=IDKompl;
+	// macro ProtoPath+Doors64+"ScrKomplGetSub.mac" ;
+	dIDPrice=IDPrice;
+	IDPrice=g_UIDKomp;
+	// putmsg("****g_UIDKomp="+str(g_UIDKomp),1);
+	// putmsg("PutOnProfile63.mac IDPrice="+str(IDPrice),1);
+	// putmsg("PutOnProfile63.mac NameNom="+str(priceinfo(IDPrice,"MATNAME","")),1)
+	// if infopop { putmsg("****IDKompl="+str(IDKompl),1); }
+	if isvardef("IDPrice")==6
+	{ 
+		IDPrice=0;
+	}
+	if IDPrice==0
+	{
+		return;
+	}
+	
+	if IDPrice==-1  // Если активен подбор цвета комплектующих
+	{
+		// putmsg("g_ProfColor="+str(g_ProfColor),1); // находим текущий IDColor профиля
+		// Ищем комплектующее нужного цвета для известного IDProf и IDcolor
+		initarray(arStrTab,"");
+		arStrTab[1]="SELECT DSFlapKompl.PSYSTEM, DSCLProfAndKompl.IDClKompl, NNomenclature.ID, DSFlapKompl.IDKompl "
+		arStrTab[2]="FROM ((DSFlapKompl INNER JOIN DSCLProfAndKompl ON DSFlapKompl.Color = DSCLProfAndKompl.IDClKompl) "
+		arStrTab[3]="INNER JOIN DSColorProfile ON DSCLProfAndKompl.IDClProf = DSColorProfile.ID) INNER JOIN NNomenclature "
+		arStrTab[4]="ON DSColorProfile.COLOR = NNomenclature.ID "
+		arStrTab[5]="WHERE (((DSFlapKompl.PSYSTEM)="+str(IDKompl)+") AND ((NNomenclature.ID)="+str(g_ProfColor)+"));";
+		CKompRs=adbOpen(g_DoorsCon,arStrTab,5);
+		nicl=adbRecCount(CKompRs);
+		
+		// Сюда добавить доп условия, если будут подбираться другие элементы
+		if DbVar("ShlegType",-1)>0
+		{
+			IDPrice=DbVar("ShlegType",0);
+			putmsg(IDPrice);
+		}
+		else
+		{
+			if (nicl>0)
+			{
+				NULLOUT=adbMoveFirst(CKompRs);
+				//IDColor=adbGetValue(CKompRs,"IDClKompl");
+				IDPrice=adbGetValue(CKompRs,"IDKompl");
+			}
+		}
+		// Если это не подбор цвета
+		if nicl==0
+		{
+			// putmsg("test");
+			nullout=getvarinst(1,"xsysdoor",xsysdoor,max(x2-x1,x1-x2));
+			// putmsg(xsysdoor)
+			
+			// CKompRs=adbOpen(g_DoorsCon,"SELECT min(GabW) AS mG FROM DSFlapKompl WHERE (PSYSTEM="+str(IDKompl)+" AND GabW>"+str(xsysdoor)+")");
+			// nls=adbRecCount(CKompRs);
+			// putmsg(nls)
+			// if (nls>0)
+			// {
+				// NULLOUT=adbMoveFirst(CKompRs);
+				// mG=adbGetValue(CKompRs,"mG");
+				// putmsg(mG)
+			// }
+			
+			initarray(arStrTab,"");
+			// putmsg(IDKompl)
+			arStrTab[1]="SELECT IDKompl, Comment FROM DSFlapKompl WHERE (PSYSTEM="+str(IDKompl)+" AND GabW = "
+			arStrTab[2]="(SELECT min(GabW) FROM DSFlapKompl WHERE (PSYSTEM="+str(IDKompl)+" AND GabW>"+str(xsysdoor)+")))"
+			CKompRs=adbOpen(g_DoorsCon,arStrTab,2);
+			nl=adbRecCount(CKompRs);
+			if (nl>0)
+			{
+				NULLOUT=adbMoveFirst(CKompRs);
+				IDPrice=adbGetValue(CKompRs,"IDKompl");
+				Comment=adbGetValue(CKompRs,"Comment");
+				if findinarray(DSComment,Comment)==0
+				{
+					DSComment[N_DSComm+1]=Comment;
+					nullout=setArrinst(2,"DSComment",DSComment);
+					nullout=setVarinst(2,"N_DSComm",N_DSComm+1);
+				}
+			}
+			else
+			{
+				IDPrice=dIDPrice;
+			}
+			// putmsg(IDPrice)
+		}
+		
+		// if (nicl<1)
+		// {
+		  	// arStrTab[1]="SELECT DSFlapKompl.PSYSTEM, DSCLProfAndKompl.IDClKompl, NNomenclature.ID, DSFlapKompl.IDKompl, DSFlapKompl.POS "
+			// arStrTab[2]="FROM ((DSFlapKompl INNER JOIN DSCLProfAndKompl ON DSFlapKompl.Color = DSCLProfAndKompl.IDClKompl) "
+			// arStrTab[3]="INNER JOIN DSColorProfile ON DSCLProfAndKompl.IDClProf = DSColorProfile.ID) INNER JOIN NNomenclature ON DSColorProfile.COLOR = NNomenclature.ID "
+			// arStrTab[4]="WHERE (((DSFlapKompl.PSYSTEM)="+str(IDKompl)+")) ORDER BY DSFlapKompl.POS;";
+			// CKompRs=adbOpen(g_DoorsCon,arStrTab,4);
+			// nicl=adbRecCount(CKompRs);
+			// if (nicl>0)
+			// {
+				// NULLOUT=adbMoveFirst(CKompRs);
+				// //IDColor=adbGetValue(CKompRs,"IDClKompl");
+				// IDPrice=adbGetValue(CKompRs,"IDKompl");
+			// }
+			// else
+			// {
+				// IDPrice=dIDPrice;
+			// }
+		// }
+		// CKompRs=adbClose(CKompRs);
+	}
+}
+
+T_KompID=adbClose(T_KompID);
+
+str_tab="SELECT * FROM Type_Komp WHERE ID="+str(IDSet) ;
+T_KompRs=adbOpen(g_DoorsCon,str_tab);
+ij1=adbRecCount(T_KompRs);
+//putmsg("PutOnProfile63.mac ij1/2="+str(ij1),1);
+if (ij1<1)
+{
+  T_KompRs=adbClose(T_KompRs);
+  return;
+}
+NULLOUT=adbMoveFirst(T_KompRs);
+Code=adbGetValue(T_KompRs,"Code");
+Name=adbGetValue(T_KompRs,"Name");
+g_FurnType=adbGetValue(T_KompRs,"FurnType");
+T_KompRs=adbClose(T_KompRs);
+
+if infopop
+{ 
+	putmsg("PutOnProfile63.mac IDPrice="+str(IDPrice),1);
+	putmsg("PutOnProfile63.mac NameNom="+str(priceinfo(IDPrice,"MATNAME","")),1);
+}
+// Так как для каждого типа открывания в DSFlapSostav мы задаем соответствия конкретным профилям и по
+// ID этих соответствий определяем комплектующие, то засовывать в самый конец установки еще один фильтр
+// это считаю не нужным архаизмом от прошлых дверных систем
+
+// Оставлено, чтобы отключить элементы, которые в перпективе омгут появиться, но пока не нужны
+// putmsg(Code)
+gosub binary;
+// putmsg(sbin)
+ss=left(right(sbin,IDType),1); //-- Извлекаем число в IDType-овой позиции
+if infopop { putmsg("PutOnProfile63.mac ss="+str(ss),0); }
+if (ss=="0") //-- Не рисуем дополнительный элемент
+{
+	return;
+}
+
+//===================================
+// Мы знаем ID системы, сечения профиля, группы комплектующего
+// в соответствии с этими данными требуется найти все необходимые параметры для установки
+// заданного комплектующего у которого может быть куча дополнительных параметров которые надо учесть и передать
+// для этого используем массивы g_ExName g_ExVal g_ExInf
+
+gosub getExtraPar;
+
+if (len(MacroSet)>0)   //-- Устанавливает элемент
+{
+	// macro ProtoPath+"SetECod" "DR"+str(IDSet);
+	macro ProtoPath+"SetECod.mac" CodNam[IDSet];
+	// macro ProtoPath+"SetENam.mac" "Мой элемент";
+	if infopop
+	{ 
+		putmsg("СТАВИМ",1);
+		putmsg("PutOnProfile63.mac MacroSet="+str(MacroSet),1);
+		putmsg("PutOnProfile63.mac Name="+str(Name),1);
+		putmsg("PutOnProfile63.mac g_FurnType="+str(g_FurnType),1);
+	}
+	
+	objs=sysvar(60);
+	macro ProtoPath+Doors64+MacroSet x1,y1,z1 x2,y2,z2 IDPrice,Name,Shift,Coeff,MacroExtra;
+	objf=sysvar(60);
+	if IsCalc==0
+	{
+		if (objf-objs)>0
+		{
+			attrobj attach "P1" done group last objf-objs done 1;
+		}
+	}
+	macro ProtoPath+"SetECod.mac" " ";
+	if infopop { putmsg("====================================================================",1); }
+}
+
+return;
+//------------------------------------------------------------------------------
+//-- Подпрограмма формирует строку - двоичное представление числа
+//-- Входные параметры:
+//-- Code - число
+//-- Sbin - строка
+binary:
+Sbin="";
+loopb:
+NCode=Code-int(Code/2)*2;
+if (NCode==1)
+{
+  Sbin="1"+Sbin;
+}
+else
+{
+  Sbin="0"+Sbin;
+}
+Code=int(Code/2);
+if (Code==0)
+{
+  sbin="0"*10+sbin;
+  return;
+}
+goto loopb;
+//=====================
+// Считать дополнительные параметры  системы
+getExtraPar:
+//=====================
+// Считать дополнительные параметры  системы
+
+// if infopop
+// { 
+	// putmsg("PutOnProfile63.mac g_drp="+str(g_drp),1);
+	// putmsg("PutOnProfile63.mac IDProf="+str(IDProf),1);
+	// putmsg("PutOnProfile63.mac IDSGeo="+str(IDSGeo),1);
+	// putmsg("PutOnProfile63.mac IDKompl="+str(IDKompl),1);
+// }
+// putmsg("================================",1);
+
+g_IDKomp=IDKompl;
+NULLOUT=initarray(g_ExName,"");
+NULLOUT=initarray(g_ExVal,0);
+NULLOUT=initarray(g_ExInf,0);
+//str_tab="SELECT * FROM DSExtraParams INNER JOIN ExParamsName ON DSExtraParams.ParamName = ExParamsName.ParamName WHERE (((DSExtraParams.UnitPos)="+str(PRM)+"));";
+//-- IDSGeo / UnitPos	-	DSGabProfile.ID
+//-- IDKompl / Hold1	-	DSGabKomplect.ID
+//-- g_drp / Hold2	-	DSSystemFlap.ID
+
+arStrTab[1]="SELECT * FROM DSExtraParams INNER JOIN ExParamsName ON DSExtraParams.ParamName = ExParamsName.ParamName "
+arStrTab[2]="WHERE (UnitPos="+str(IDSGeo)+" AND Hold1="+str(IDKompl)+" AND Hold2="+str(g_drp)+")";
+ExFlapRs=adbOpen(g_DoorsCon,arStrTab,2);
+//putmsg("PutOnProfile63.mac ExFlapRs= "+str(ExFlapRs),1);
+exij=adbRecCount(ExFlapRs);
+if infopop { putmsg("PutOnProfile63.mac ExFlapRs.exij= "+str(exij),1); }
+if (exij>0)
+{
+	NULLOUT=adbMoveFirst(ExFlapRs);
+	iex=0;
+	exlab1:
+	//putmsg("adbIsEOF(ExFlapRs)=  "+str(adbIsEOF(ExFlapRs)),0);
+	if !adbIsEOF(ExFlapRs)
+	{
+		iex=iex+1;
+		ExNm=adbGetValue(ExFlapRs,"DSExtraParams.ParamName");
+		ExTyp=adbGetValue(ExFlapRs,"ParamType");
+		ExInf=adbGetValue(ExFlapRs,"InfName");
+		if ExTyp==0 { ExVal=adbGetValue(ExFlapRs,"NumValue"); }
+		else        { ExVal=adbGetValue(ExFlapRs,"StrValue"); }
+		g_ExName[iex]=ExNm;
+		g_ExVal[iex]=ExVal;
+		g_ExInf[iex]=ExInf;
+		NULLOUT=adbMoveNext(ExFlapRs);
+		if infopop
+		{ 
+			putmsg("PutOnProfile63.mac ExFlapRs.ExNm= "+str(ExNm),1);
+			putmsg("PutOnProfile63.mac ExFlapRs.ExVal= "+str(ExVal),1);
+			putmsg("PutOnProfile63.mac ExFlapRs.ExInf= "+str(ExInf),1);
+		}
+
+		goto exlab1;
+	}
+	//putmsg("iex=  "+str(iex),0);
+}
+
+ExFlapRs=adbClose(ExFlapRs)
+
+//===================================
+return;
+//=======================================================================

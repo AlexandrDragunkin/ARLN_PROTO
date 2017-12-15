@@ -1,0 +1,250 @@
+//-- Макропрограмма рисования определенного количества объектов шагом вдоль прямой
+//-- Входные параметры:
+//-- x1,y1,z1 - координаты начала профиля, по которому расставлять комплектующие
+//-- x2,y2,z2 - координаты конца профиля
+//-- IDPrice - ID комплектующего из прайса
+//-- Name - название типа комплектующего из таблицы Types_Komp базы DoorSys.mdb
+//-- Shift - величина начального и конечного сдвига комплектующего по профилю
+//-- Coeff - количество объектов
+//-- MacroExtra - имя макропрограммы дополнительных преобразований
+//-- Макропрограмма устанавливает заданное количество комплектующих по профилю
+//-- равномерно распрtделяя их по длине минус Shift
+//-- Если количество объектов отрицательное - размещает их с конца отрезка прямой
+
+nullout=getvarinst(2,"Doors64",Doors64,"Doors64.zmc|");
+
+//global g_DRP IDSGeo g_IDKomp g_UserVar g_InstOpt ;
+global ProtoPath g_UserVar g_InstOpt g_symx g_symy  g_holder g_Ntrack;
+global g_ExName g_ExVal g_ExInf ; // массивы дополнительных параметров  системы
+global
+PrfP_1   // Подрез начальной точки
+PrfP_2   // Подрез конечной точки
+PrfSd_X  // Сдвиг по Х ЛСК
+PrfSd_Y  // Сдвиг по У ЛСК
+PrfAngle // Угол поворота вокруг оси (град)
+PrfAng_1 // Угол подрезки 1 стороны
+PrfAng_2 // Угол подрезки 2 стороны
+;
+
+defarr aUnitC[20] xm[6];
+defarr trans[16], in[3], out[3]; // Задаем массивы
+NULLOUT=Ohcunit(trans);          // Задаем единичную матрицу преобразований
+
+
+getpar x1,y1,z1 x2,y2,z2 IDPrice,Name,Shift,Coeff,MacroExtra;
+
+if (Coeff==0)
+{
+	exit
+}
+
+defarr Groups[10]; //-- Группы элементов
+global g_result;
+//-- Умолчания на направления оси OY
+xp3=x1;
+yp3=(y1+y2)/2+10;
+zp3=z1;
+
+//setucs save "OBJUCS" ;
+nulout=GetSnap();
+setucs x1,y1,z1 oz x2,y2,z2 done ; // setucs x1,y1,z1 x2,y2,z2 xp3,yp3,zp3;
+//-- Находим количество элементов
+dx=x1-x2;
+dy=y1-y2;
+dz=z1-z2;
+lenght=sqrt(dx*dx+dy*dy+dz*dz);
+nk=coeff;
+Step=0;
+if (lenght<=2*shift)
+{
+  Shift=Lenght/2;
+}
+else
+{
+  if (nk>1)
+  {
+    Step=(lenght-2*Shift)/(nk-1);
+  }
+}
+
+posx=0; //shift;
+posy=0;
+posz=0;
+posz=shift;
+//- углы поворота
+AnX=0
+AnY=0
+AnZ=0
+//-
+if (Coeff<0)
+{
+  posz=lenght-posz;
+  Step=-Step;
+}
+macro ProtoPath+"SetEnam.mac" Name ;
+nulout=initarray(aUnitC,"*");
+//- Обрабатываем ситуацию когда надо крутить вокруг оси сечения например прищепки для шлегеля
+parName="PrcX";
+gosub SetExParam;
+SdvX=parVal*iif(g_symx==1,(-1),1)
+parName="PrcY";
+gosub SetExParam;
+SdvY=parVal*iif(g_symy==1,(-1),1)
+parName="PrcZ";
+gosub SetExParam;
+SdvZ=parVal;
+parName="NumAcs";
+gosub SetExParam;
+NumAcs=parVal;    // Номер оси поворота
+//- Параметр ifUnitCode строка со списком допустимых значений атрибута UnitCode  разделенных запятой
+parName="ifUnitCode";
+gosub SetExParam;
+vUnitC=parVal;
+//- Ситуация обязательной установки. Нужен признак ставить не ставить возможны варианты InstallOption
+// 0-всегда 1-никогда 2-вариант пользователя
+//- В ряде случаев надо выбирать из всех возвожных вариантов какой то один из всех предложенных в IfUnitCode
+//- так при устанвке замка  есть три варианта (к стати для ручек таже песня)
+//" |- замок справа-|"
+//" |- замок слева-|"
+//" |- 2 замка -|"
+//- вариант может определять система или пользователь
+//- изначально мы можем поставить замок на обе стороны дверки  vUnitC=6302,6304  если vUnitC=6302-слева или vUnitC=6304-справа
+//- заметим, что это условие касается характеристики положения профиля в створке и не касается его геометрических характеристик
+//- Наличие параметра InstallOption говорит о неоднозначности установки комплектующего если его нет то ставим везде где можем vUnitC=6302,6304
+//- в противном случае необходимо создать запись для редактирования через скрейч установки комплектующего g_UserVar
+//- смотрим в скрейче наличие записи InstallOption
+parName="InstallOption";
+gosub SetExParam;
+g_InstOpt=parVal;
+macro Protopath+Doors64+"ScrKomplGetSub.mac" ;
+
+//======================================================
+if g_InstOpt==1
+{
+   goto end;
+}
+if g_InstOpt==2
+{
+   if isvardef("g_UserVar")==0
+   {
+      goto end;
+   }
+   vUnitC=g_UserVar;
+}
+//======================================================
+UnitC=Getattr(g_holder,"UnitCode","*");
+vUnitC=str(vUnitC);
+//putmsg("len(vUnitC)="+str(len(vUnitC)),0);
+if len(vUnitC)>1
+{
+   Nulout=SplitByDelim(vUnitC,",",aUnitC);
+   fPos=findinarray(aUnitC,val(UnitC));
+}
+else
+{
+   fPos=1;
+}
+if fpos==0
+{
+   goto end;
+}
+
+
+NULLOUT=Otdrot(trans,3,PrfAngle);     // Заносим в эту матрицу поворот относительно оси Z на
+out[1]=SdvX*trans[1]+SdvY*trans[2]+0*trans[3]+trans[4];   // Вычисляем координаты
+out[2]=SdvX*trans[5]+SdvY*trans[6]+0*trans[7]+trans[8];
+out[3]=SdvX*trans[9]+SdvY*trans[10]+0*trans[11]+trans[12];
+//macro ProtoPath+"SetProfC.mac" IDPrice Shift Shift PrfSd_X+out[1] PrfSd_Y+out[2] PrfAngle 0 0 0;   //*iif(g_symx==1,1,-1)
+//- Ситуация когда надо учитывать зеркальность профиля например для замка
+parName="MirrY"
+gosub SetExParam;
+MirrY=parVal;
+parName="MirrZ"
+gosub SetExParam;
+MirrZ=parVal;
+parName="IsNTrack"
+gosub SetExParam;
+IsNTrack=parVal;
+//putmsg("g_NTrack="+str(g_NTrack),1);
+if (IsNTrack!=0)
+{
+   g_Ntrack=iif(isvardef("g_Ntrack")==0,0,g_Ntrack);
+   if (g_Ntrack!=IsNTrack) { goto end; }
+}
+
+Macro ProtoPath+"find_ind_gr.mac" IDPrice, Groups;
+//putmsg("numbrotmac IDPrice="+str(IDPrice),1);
+//putmsg("numbrotmac Groups[1]="+str(Groups[1]),1);
+if (Groups[1]==0)
+{
+	putmsg("В Numb.mac для ID="+str(IDPrice)+" отказ в установке. Без группы");
+	goto end;
+}
+macro ProtoPath+"GetMake.mac" Groups[2];
+
+macro ProtoPath+"MakeElem.mac" g_result,IDPrice, posx+out[1],posy+out[2],posz+out[3] mirrZ*180,iif(g_symx,mirrY,0)*180,iif(g_symx,mirrZ,0)*180;
+objident last 1 obj;
+rotate obj done 2points 0 0 0  0 0 1  PrfAngle nocopy ;
+if (len(MacroExtra)!=0)
+{
+  macro ProtoPath+MacroExtra obj;
+}
+
+if (nk>1)
+{
+  move obj done 0,0,step copy nk-1;
+  objident last 1 pnt;
+  //nulout=objgab3(pnt,xm);
+  //Xp=xm[1]+(xm[4]-xm[1])/2;
+  //Yp=xm[2]+(xm[5]-xm[2])/2;
+  // Zp=xm[6];
+  //SEtucs lcs pnt;
+  //Xp=0
+  //Yp=0
+  //Zp=0
+  //rotate pnt done 2points Xp Yp Zp iif(NumAcs==1,1,0) iif((NumAcs==2)||(NumAcs==0),1,0) iif(NumAcs==3,1,0) 180 nocopy ;
+}
+if coeff==-1
+{
+  objident last 1 pnt;
+  //nulout=objgab3(pnt,xm);
+  //Xp=xm[1]+(xm[4]-xm[1])/2;
+  //Yp=xm[2]+(xm[5]-xm[2])/2;
+  // Zp=xm[6];
+  //SEtucs lcs pnt;
+  //Xp=0
+  //Yp=0
+  //Zp=0
+  //rotate pnt done 2points Xp Yp Zp iif(NumAcs==1,1,0) iif((NumAcs==2)||(NumAcs==0),1,0) iif(NumAcs==3,1,0) 180 nocopy ;
+}
+end:
+macro Protopath+Doors64+"ScrKomplAddSub.mac"  ;
+nulout=ReSnap();
+exit;
+//========================================================
+SetExParam:
+        pos=FindInArray(g_ExName,parName);
+        if pos>0
+        {
+                parVal=g_ExVal[pos];
+
+        }
+        else
+        {
+                parVal=0;
+        }
+return;
+debug:
+putmsg("numbrotmac PrfSd_X="+str(PrfSd_X),1);
+putmsg("numbrotmac out[1]="+str(out[1]),1);
+putmsg("numbrotmac posx="+str(posx),1);
+putmsg("numbrotmac sdvx="+str(sdvx),1);
+putmsg("numbrotmac PrfSd_X+out[1]+posx+sdvx="+str(PrfSd_X+out[1]+posx+sdvx),1);
+putmsg("numbrotmac PrfSd_Y="+str(PrfSd_Y),1);
+putmsg("numbrotmac out[2]="+str(out[2]),1);
+putmsg("numbrotmac posy="+str(posy),1);
+putmsg("numbrotmac sdvy="+str(sdvy),1);
+putmsg("numbrotmac PrfSd_y+out[2]+posy+sdvy="+str(PrfSd_y+out[2]+posy+sdvy),1);
+return;
+
+

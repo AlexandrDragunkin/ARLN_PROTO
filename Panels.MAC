@@ -1,0 +1,283 @@
+// Полка, 
+
+defarr Fixt[4], Band[4], Type[4], Param[8];
+defarr Ff[4] Fd[4] ;
+defarr Props[45] ;
+xsec=DbVar("x",1000);
+y=DbVar("y",450)
+
+Type_pan=DbVar("Type_pan",12);
+
+//FF=DbVar("FF",0);
+P_E=DbVar("P_E",0);
+P_D=DbVar("P_D",0);
+P_C=DbVar("P_C",0);
+P_B=DbVar("P_B",0);
+PrMater=DbVar("PrMater",0);
+
+sh=PriceInfo(PrMater,"Thickness",DbVar("HDSP",16)) 
+Col_DSP=PriceInfo(DbVar("PrMater",0),"Texture",DbVar("colo",1)) ;
+
+Face_col=DbVar("Face_col",1);
+Col_Kro=Face_col;
+
+Mater=PriceInfo(PrMater,"MATTYPE",128); 
+
+Type[1]=DbVar("Type1",2);
+Type[2]=DbVar("Type2",2);
+Type[3]=DbVar("Type3",2);
+Type[4]=DbVar("Type4",2);
+
+Param[1]=DbVar("Par1",100);
+Param[2]=DbVar("Par2",100);
+Param[3]=DbVar("Par3",100);
+Param[4]=DbVar("Par4",100);
+Param[5]=DbVar("Par5",100);
+Param[6]=DbVar("Par6",100);
+Param[7]=DbVar("Par7",100);
+Param[8]=DbVar("Par8",100);
+
+if (y<=P_E+P_D) {
+
+  #ok_flag   
+  setvar
+  "Сообщение об ошибке"            // Заголовок окна
+  ""             	        // Имя файла иллюстрации
+  // Пояснительный текст
+  left         //с выравниванием слева
+  " Отступ не должен превышать глубину! "
+  done          // конец пояснительного текста
+  done
+  exit;
+}
+
+Band[3]=DbVar("Band_D",0);
+Band[2]=DbVar("Band_C",0);
+Band[1]=DbVar("Band_B",0);
+Band[4]=DbVar("Band_E",0);
+//Typ_Kro=Band[4];
+
+Fixt[3]=DbVar("Fit_D",0);
+Fixt[2]=DbVar("Fit_C",1);
+Fixt[4]=DbVar("Fit_E",0);
+Fixt[1]=DbVar("Fit_B",1);
+
+Ff[1]=DbVar("Ff_B",0);
+Ff[2]=DbVar("Ff_C",0);
+Ff[3]=DbVar("Ff_D",0);
+Ff[4]=DbVar("Ff_E",0);
+
+Fd[1]=DbVar("Fd_1",0);
+Fd[2]=DbVar("Fd_2",0);
+Fd[3]=DbVar("Fd_3",0);
+Fd[4]=DbVar("Fd_4",0);
+Vector=DbVar("Nshp",1);;
+
+ProtoPath=DbVar("ProtoPath",GetFilePath(SysVar(7)))
+WMFPath=DbVar("WMFPath","")
+
+global ModelPath;
+defarr p_1[3] p_2[3] p_3[3] p_4[3];
+
+DataPath=ProtoPath
+ModelPath=ProtoPath;
+DialogFlag=1;
+
+//----------------------------------------- Полка в секции
+color 0
+
+p_1[1]=P_B;
+p_1[2]=P_D;
+p_1[3]=0;
+p_2[1]=xsec-P_C;
+p_2[2]=P_D;
+p_2[3]=0;
+p_3[1]=xsec-P_C;
+p_3[2]=y-P_E;
+p_3[3]=0;
+p_4[1]=P_B;
+p_4[2]=y-P_E;
+p_4[3]=0;
+
+box 4points p_1[1] p_1[2] p_1[3] p_2[1] p_2[2] p_2[3]
+p_3[1] p_3[2] p_3[3] p_4[1] p_4[2] p_4[3]+sh ;
+#shell group all done;
+;chprop MapByPars shell done
+	0 -1
+	1 Col_DSP
+	done
+
+	Attrobj Attach "FurnType" Done  shell "010100";
+
+exit;
+
+
+
+macro ModelPath+"p_4.mac" Type_pan
+p_1,p_2,p_3,p_4,Vector,sh,Type,Param,Band,Fixt,Col_DSP,Face_col,fd,ff; 
+
+objident last 1 Pan ;
+goto NewPr;
+//------------------------------- Обработка старого пропила
+If (IsAttrdef("CPropilAF")) {
+  If (IsAssign("CPropilAF",0)) {
+    AF=getattr(0,"CPropilAF","");
+    BD=getattr(0,"CPropilBD","");
+    CPR=getattr(0,"CPropilR",6);
+    CPW=getattr(0,"CPropilW",4);
+    CPD=getattr(0,"CPropilD",4);
+    x1=0 y1=0 z1=0
+    x2=100 y2=100 z2=100
+    if (AF=="A") {
+      z1=p_4[3]+sh-CPD ;
+      z2=p_4[3]+sh+CPD ;
+    }
+    if (AF=="F") {
+      z1=p_4[3]+CPD ;
+      z2=p_4[3]-CPD ;
+    }
+    if (BD=="B") {
+      x1=p_1[1]+CPR ;
+      x2=p_1[1]+CPR+CPW ;
+      y1=p_1[2]-10
+      y2=p_3[2]+10;
+    }
+    if (BD=="D") {
+      y1=p_1[2]+CPR ;
+      y2=p_1[2]+CPR+CPW ;
+      x1=p_1[1]-10
+      x2=p_2[1]+10;
+    }
+   #BBox1 box x1 y1 z1 x2 y2 z2 ;
+  #pan  bool sub Pan BBox1 done ;
+  }
+}
+//------------------------------- Конец обработки старого пропила
+NewPr:
+setucs gcs ;
+//------------------------------- Обработка Нового пропила
+
+If (IsAttrdef("CNPropil")) {
+  If (IsAssign("CNPropil",0)) {
+    Propil=getattr(0,"CNPropil","");
+    macro GetFilePath(SysVar(7))+"DecList.mac" Propil, "," Props;
+    nums=Props[1]
+    if (nums==0) { goto Final; }
+    k=0;
+NexProp:
+    CPR=Props[k*7+4];  //     Пропил - расстояние от стороны
+    CPW=Props[k*7+5];  //     Пропил - ширина паза
+    CPD=Props[k*7+6];  //     Пропил - глубина паза
+    CPS=Props[k*7+7];  //     Пропил - отступа паза
+    CPL=Props[k*7+8];  //     Пропил - длина паза
+    if (CPL==0) { CPL=max(p_3[2]-p_1[2],p_2[1]-p_1[1])*2 ; CPS=min(p_1[2],p_1[1]) ; }
+    x1=0 y1=0 z1=0
+    x2=100 y2=100 z2=100
+    if (Props[k*7+2]==1) {  // сторона А
+      z1=sh-CPD ;
+      z2=sh+CPD ;
+    }
+    else {              // сторона F
+      z1=CPD ;
+      z2=-CPD ;
+    }
+    if (Props[k*7+3]==1) {  // паралл C     Пропил - параллельно
+      x1=CPR ;
+      x2=CPR+CPW ;
+      y1=CPS
+      y2=CPS+CPL;
+    }
+    else {              // паралл D
+      y1=CPR ;
+      y2=CPR+CPW ;
+      x1=CPS
+      x2=CPS+CPL;
+    }
+    
+   #BBox1 box x1 y1 z1 x2 y2 z2 ;
+   #Pan bool sub Pan BBox1 done ;
+   k=k+1
+   if (k<Nums) {   goto NexProp;  }
+  }
+}
+//------------------------------- Конец обработки Нового пропила
+Final:
+//setucs gcs ;
+if (Type_pan==11) { // Стойка
+  rotate last 1 done 2points 0 0 0 0 y 0 -90 nocopy
+    move last 1 done sh 0 0 nocopy ;
+}
+if (Type_pan==14) { // Стенка
+  rotate last 1 done 2points 0 0 0 0 y 0  -90 nocopy
+  rotate last 1 done 2points 0 0 0 0 0 0+10 -90 nocopy
+}
+
+
+//objident last 1 shell ;
+#shell group all done;
+
+    attrobj copy record 
+	 "Facer_B" "Facer_C" "Facer_D" "Facer_E" 
+    done shell done
+
+position=Type_pan;
+	If (!IsAttrdef("Posit"))
+	{ Attribute Create "Posit" "Posit" Real 5 0 ; }
+	Attrobj Attach "Posit" Done shell position;
+
+//  Сохраняем информацию о пропиле
+If (IsAttrdef("CPropilAF")) {
+  If (IsAssign("CPropilAF",0)) {
+    attrobj copy record "CPropilAF" "CPropilBD" "CPropilR" "CPropilW" "CPropilD" done shell done
+  }
+}
+If (IsAttrdef("CNPropil")) {
+  If (IsAssign("CNPropil",0)) {
+    attrobj copy record "CNPropil" done shell done
+  }
+}
+
+If (IsAttrdef("ElemName")) {
+  If (IsAssign("ElemName",0)) {
+    attrobj copy record "ElemName" done shell done
+  }
+}
+If (IsAttrdef("HOldName")) {
+  If (IsAssign("HOldName",0)) {
+    attrobj copy record "HOldName" done shell done
+  }
+}
+
+
+// Присваиваем атрибуты
+if (!IsAttrdef("Objtype"))
+{ Attribute Create "Objtype" "Objtype" Real 5 0 ; }
+
+if (!IsAttrdef("PlaceType"))
+{ Attribute Create "PlaceType" "PlaceType" Real 5 0 ; }
+Attrobj Attach "Objtype" "PlaceType" Done Last 1 0 0;
+//  Сохраняем информацию об ориентации крепежа
+If (IsAttrdef("FixOver")) {
+  If (IsAssign("FixOver",0)) {
+    attrobj copy record "FixOver" done last 1 done
+  }
+}
+exit;
+//====================================================
+Attrobj Attach "PrMater" Done shell PrMater;
+Attrobj Attach "Mater" Done shell Mater;
+    attrobj copy record  "BandType" "BandCol" "PlateCol"  
+	   "Area"  "Width" "Depth" "HDSP" done shell done
+
+    attrobj copy record "Fixator_B" "Fixator_C" "Fixator_D" "Fixator_E"
+	"BandType_B" "BandType_C" "BandType_D" "BandType_E"
+	"FixType_B" "FixType_C" "FixType_D" "FixType_E"
+	"FixMove_B" "FixMove_C" "FixMove_D" "FixMove_E"
+    done shell done
+
+
+
+//macro GetFilePath(SysVar(7))+"ReSnapPr.mac" ;
+
+exit;
+

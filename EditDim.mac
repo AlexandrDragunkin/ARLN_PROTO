@@ -1,0 +1,19 @@
+//-- Редактирование размера и полочки-выноски
+
+onerror metend;
+NULLOUT=fltrtype("");       //-- Чистим фильтр
+NULLOUT=fltrtype("Dim");    //-- Фильтра по размерам
+NULLOUT=fltrtype("Note");   //-- Фильтра по полочкам-выноскам
+objident prompt "Укажите размер" : pnt;
+TypPnt=getobjtype(pnt) ;
+metend:
+offerror;
+NULLOUT=fltrtype("");       //-- Чистим фильтр
+if (TypPnt==-15)            //-- Если редактируем полочку-выноску
+{
+  editobject pnt
+}
+else                        //-- Если редактируем размер
+{
+  dimedit pnt
+}

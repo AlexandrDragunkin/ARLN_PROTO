@@ -1,0 +1,84 @@
+//-- Создание контура фигурной
+//-- Входные параметры:
+//-- Rad1 - Радиус 1
+//-- Rad2 - Радиус 2
+//-- Length - Длина
+//-- Width - Ширина
+//-- LeftFlag - Левая ориентация
+//-- Angle - Угол стыковки радиусов
+
+defarr arr[5];
+getpar Rad1, Rad2, Length, Width, LeftFlag, Angle;
+
+Angle1=Radian(Angle);
+
+if ((Rad1+Rad2)*cos(Angle1)>=Width)
+{
+  ordi=Width;
+  sq=(Rad1+Rad2)*cos(Angle1)-Width;
+  sq1=Rad2*Rad2-sq*sq;
+  if (sq1<0)
+  {
+    putmsg("Невозможно построить фигурную столешницу по заданным параметрам",0);
+    cancel;
+  }
+  absc=-(Rad1+Rad2)*sin(Angle1)-Sqrt(sq1)
+  indi=1;
+}
+else
+{
+  ordi=(Rad1+Rad2)*cos(Angle1);
+  absc=-(Rad1+Rad2)*sin(Angle1)-Rad2;
+  indi=0;
+}
+
+#L1 line Length,0,0 Length,Rad1,0 done;
+#L2 arc Length,Rad1,0 Length-Rad1*sin(Angle1),Rad1*cos(Angle1),0
+  Length-Rad1*sin(Angle1/2),Rad1*cos(Angle1/2) 0;
+//#L2 arc center Length,0,0 Length,Rad1,0 Length-Rad1*sin(Angle1),Rad1*cos(Angle1),0;
+#L3 arc continue Length+absc ordi 0;
+
+//#L3 arc Length-Rad1*sin(Angle1),Rad1*cos(Angle1),0 Length-absc,ordi,0
+//negative absc ordi 0;
+//#L3 arc center -(Rad1+Rad2)*sin(Angle1) (Rad1+Rad2)*cos(Angle1) 0
+//  -Rad1*sin(Angle1) Rad1*cos(Angle1) 0 negative absc ordi 0;
+
+
+if (indi!=1)
+{
+  #L4 line Length+absc ordi 0 Length+absc Width 0 done;
+}
+#L5 line Length+absc Width 0 0 Width 0 done;
+#L6 line 0,Width,0 0,0,0 done;
+#l7 line 0,0,0 Length,0,0 done;
+
+if (indi!=1)
+{
+  if (leftflag==1)
+  {
+    rotate last 7 done 2points Length/2,0,0 Length/2,10,0 180 nocopy;
+  }
+  #pa path select last 7 done L7 done;
+}
+else
+{
+  if (leftflag==1)
+  {
+    rotate last 6 done 2points Length/2,0,0 Length/2,10,0 180 nocopy;
+  }
+  #pa path select last 6 done L7 done;
+}
+NULLOUT=contstatus(pa,arr);
+if (NULLOUT!=0)
+{
+  if (Arr[3]==0)
+  {
+    putmsg("Невозможно построить фигурную столешницу по заданным параметрам",0);
+    delete pa done;
+    cancel;
+  }
+}
+#paa pline path pa;
+delete pa done;
+objident paa pa;
+exit;

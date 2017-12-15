@@ -1,0 +1,63 @@
+//-- Программа принимает параметры элемента и в зависимости от его ID
+//-- ищет группу, в которой он находится.
+//-- Входные параметры
+//-- ID - номер элемента в "прайс-листе"
+//-- Выходные параметры
+//-- Groups[] - массив с номерами групп. Первый элемент - количество групп,
+//-- в которые вхордит элемент
+
+global Protopath;
+//-- Описание массивов групп, их составляющих и кол. элементов
+//------------------------------------------------------------------------------
+// // Выбор деталей крепежа из базы прототипов
+// global S_Fix I_Fix N_Fix ;
+// //-- Выбор типов и деталей крепежа из базы прототипов
+// global Fix_typs,Fix_ID,N_Fix;
+// //-- Выбор типов ручек, ножек и петель из базы прототипов
+// global Hand_typs Hand_ID N_Hand ;
+// global Pet_typs Pet_ID N_Pet ;
+// global Leg_typs Leg_ID N_Leg ;
+// //-- Выбор комплектующих из базы прототипов
+// global g_CompTypes g_CompID g_CompN ;
+// //------------------------------------------------------------------------------
+//-- Анализ по полученному ID элемента
+getpar ID, Groups;
+Groups[1]=0;
+
+NULLOUT=getmplsubst(42,"Leg_ID","Leg_typs");
+NULLOUT=getmplsubst(21,"Pet_ID","Pet_typs");
+NULLOUT=getmplsubst(12,"Hand_ID","Hand_typs");
+NULLOUT=getmplsubst(13,"Fix_ID","Fix_typs");
+NULLOUT=getmplsubst(22,"CompID","CompTypes");
+
+ind=FindInArray(Leg_ID,ID); //-- Ножки
+if (ind!=0)
+{
+	Groups[1]=Groups[1]+1;
+	Groups[Groups[1]+1]=67;
+}
+ind=FindInArray(Pet_ID,ID); //-- Петли
+if (ind!=0)
+{
+  Groups[1]=Groups[1]+1;
+  Groups[Groups[1]+1]=32;
+}
+ind=FindInArray(Hand_ID,ID); //-- Ручки
+if (ind!=0)
+{
+  Groups[1]=Groups[1]+1;
+  Groups[Groups[1]+1]=23;
+}
+ind=FindInArray(Fix_ID,ID); //-- Элементы крепежа
+if (ind!=0)
+{
+  Groups[1]=Groups[1]+1;
+  Groups[Groups[1]+1]=24;
+}
+ind=FindInArray(CompID,ID); //-- Комплектующие
+if (ind!=0)
+{
+  Groups[1]=Groups[1]+1;
+  Groups[Groups[1]+1]=33;
+}
+exit;

@@ -1,0 +1,137 @@
+// Список переменных для работы. В случае изменений в БД внести здесь. 
+
+global ProtoPath;
+
+// Слой для хранения дополнительных элементов
+SCLayName="AdditionalElements";
+nullout=setvarinst(2,"SCLayName",SCLayName);
+
+FixVBp=110; // VB35+пр
+nullout=setvarinst(2,"FixVBp",FixVBp);
+// FixVBnp=115; // VB35+б_п
+// nullout=setvarinst(2,"FixVBnp",FixVBnp);
+// FixKonf=150; // конфирмат
+// nullout=setvarinst(2,"FixKonf",FixKonf);
+// FixUgl=190; // уголок
+// nullout=setvarinst(2,"FixUgl",FixUgl);
+
+//-- Умолчания ID отделок
+IDGroupPVH=103;
+nullout=setvarinst(2,"IDGroupPVH",IDGroupPVH);
+IDGroupPnt=94;
+nullout=setvarinst(2,"IDGroupPnt",IDGroupPnt);
+// IDGroupPat=205;
+// nullout=setvarinst(2,"IDGroupPat",IDGroupPat);
+// IDGroupSkin=106;
+// nullout=setvarinst(2,"IDGroupSkin",IDGroupSkin);
+// IDGroupVin=136;
+// nullout=setvarinst(2,"IDGroupVin",IDGroupVin);
+// IDGroupFrez=98;
+// nullout=setvarinst(2,"IDGroupFrez",IDGroupFrez);
+
+maxWbox=900; // Максимальная ширина корпуса ящика
+nullout=setvarinst(2,"maxWbox",maxWbox);
+
+// IDMatMDF19=3108; 
+// nullout=setvarinst(2,"IDMatMDF19",IDMatMDF19);
+// IDMatMDF25=3111; 
+// nullout=setvarinst(2,"IDMatMDF25",IDMatMDF25);
+
+FolderDS=1;
+if FolderDS
+{
+	Doors63="DOORS63\\";
+	Doors64="DOORS64\\";
+}
+else
+{
+	Doors63="Doors63.zmc|";
+	Doors64="Doors64.zmc|";
+}
+nullout=setvarinst(2,"Doors63",Doors63);
+nullout=setvarinst(2,"Doors64",Doors64);
+
+ShiftBand=20;
+nullout=setvarinst(2,"ShiftBand",ShiftBand);
+
+passzip 1601,"A"
+
+ProtoArl="A__A.ar|"; // Архив+пароль
+
+if FolderExist(ProtoPath+"\\Arline") { ProtoArl="Arline\\"; }
+nullout=setvarinst(2,"ProtoArl",ProtoArl);
+// putmsg(ProtoArl)
+
+//-- ID фасадов из сборочных единиц
+FasadSpl=318; // ID сплошного фасада
+nullout=setvarinst(2,"FasadSpl",FasadSpl);
+FasadCompact=4000; // ID Compact
+nullout=setvarinst(2,"FasadCompact",FasadCompact);
+
+// Связь переменных для scratch-фасадов
+
+n_scrFas=10;
+defarr SrcFasGroup[n_scrFas]; // ID группы отделки
+defarr SrcFasName[n_scrFas]; // Название группы отделки
+defarr SrcFasEntF[n_scrFas]; // Пользовательские умолчания тыл
+defarr SrcFasEntA[n_scrFas]; // Пользовательские умолчания лицо
+
+SrcFasGroup[1]=335; SrcFasEntF[1]="u69_FoilBMF"; SrcFasEntA[1]="u69_FoilBMA"; SrcFasName[1]="Эмаль";
+SrcFasGroup[2]=338; SrcFasEntF[2]="u69_FoilORF"; SrcFasEntA[2]="u69_FoilORA"; SrcFasName[2]="Лак";
+SrcFasGroup[3]=337; SrcFasEntF[3]="u69_FoilBLF"; SrcFasEntA[3]="u69_FoilBLA"; SrcFasName[3]="Тонировка";
+SrcFasGroup[4]=340; SrcFasEntF[4]="u69_FoilEFF"; SrcFasEntA[4]="u69_FoilEFA"; SrcFasName[4]="Фрезеровка";
+SrcFasGroup[5]=341; SrcFasEntF[5]="u69_FoilPTF"; SrcFasEntA[5]="u69_FoilPTA"; SrcFasName[5]="Патина";
+SrcFasGroup[6]=336; SrcFasEntF[6]="u69_FoilFPF"; SrcFasEntA[6]="u69_FoilFPA"; SrcFasName[6]="Фотопечать";
+SrcFasGroup[7]=339; SrcFasEntF[7]="u69_FoilTPF"; SrcFasEntA[7]="u69_FoilTPA"; SrcFasName[7]="Трафаретная печать";
+SrcFasGroup[8]=346; SrcFasEntF[8]="u69_FoilFMF"; SrcFasEntA[8]="u69_FoilFMA"; SrcFasName[8]="Пленка";
+SrcFasGroup[9]=347; SrcFasEntF[9]="u69_FoilSKF"; SrcFasEntA[9]="u69_FoilSKA"; SrcFasName[9]="Кожа";
+SrcFasGroup[10]=98; SrcFasEntF[10]="u69_FoilPS"; SrcFasEntA[10]="u69_FoilPS"; SrcFasName[10]="Пескоструй";
+
+nullout=setArrinst(2,"SrcFasGroup",SrcFasGroup);
+nullout=setArrinst(2,"SrcFasName",SrcFasName);
+nullout=setArrinst(2,"SrcFasEntF",SrcFasEntF);
+nullout=setArrinst(2,"SrcFasEntA",SrcFasEntA);
+nullout=setVarinst(2,"n_scrFas",n_scrFas);
+
+// Заполним еденицы измерения
+res=adbopen(adbcon(2),"SELECT UnitsID, UnitsName FROM TUnits");
+if (res==0)
+{
+	defarr UnitsID[7];
+	defarr UnitsName[7];
+	UnitsID[1]=1;	UnitsName[1]="п/м";
+	UnitsID[2]=2;	UnitsName[2]="кв.м";
+	UnitsID[3]=3;	UnitsName[3]="куб.м";
+	UnitsID[4]=4;	UnitsName[4]="шт";
+	UnitsID[5]=9;	UnitsName[5]="кг";
+	UnitsID[6]=10;	UnitsName[6]="компл.";
+	UnitsID[7]=11;	UnitsName[7]="н/и";
+}
+else
+{
+	total_s=adbRecCount(res);
+	defarr UnitsID[total_s];
+	defarr UnitsName[total_s];
+	adbmovefirst(res);
+	p=0;
+	LC:
+	if (p<total_s)
+	{
+	  p=p+1;
+	  UnitsID[p]=aDbGetValue(res,0);
+	  UnitsName[p]=aDbGetValue(res,1);
+	  adbmovenext(res);
+	  goto LC;
+	}
+	res=adbclose(res);
+}
+
+nullout=setArrinst(2,"UnitsID",UnitsID);
+nullout=setArrinst(2,"UnitsName",UnitsName);
+nullout=setVarinst(2,"n_units",n_units);
+
+// Умолчания по расчету стоимости
+macro ProtoPath+"A_Defaults_SumCost.mac";
+
+macro ProtoPath+"addFolderToSysPath.py";
+exit;

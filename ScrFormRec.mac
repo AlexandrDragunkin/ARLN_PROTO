@@ -1,0 +1,19 @@
+//-- ћакропрограмм формирует Scratch атрибут
+//-- дл€ €щиков и записывает его в файл
+global ProtoPath;
+getpar BTypeX FasTyp, Kbox;
+Namescr="ScrBox";
+scr=InitScratch();
+i=1;
+err=AddScratch(scr,"ящик"," олво",Kbox); 	//  оличество €щиков по факту
+LoopS:
+if (i<=Kbox) 
+{
+  err=AddScratch(scr,"“ип","ящ"+str(i),BTypeX[i]);	// “ип €щика
+  err=AddScratch(scr,"“ип‘ас","ящ"+str(i),FasTyp[i]);	// “ип €щика
+  i=i+1;
+  goto LoopS;
+}
+NULLOUT=ScrtchToFile(scr,ProtoPath+Namescr+".scr");
+NULLOUT=TermScratch(scr);
+exit;

@@ -1,0 +1,130 @@
+//
+//Установка значка на элемент контура
+//
+//
+ProtoPath=MPathExpand("<Proto>")+"\\";
+global DRWZPath;
+global NextPS g_sigV;
+NextPS=0
+GETPAR
+//Wdkrom // значение толщины
+sTY //ВАРИАНТ ЗНАЧКА
+//sHY //шТРИХОВКА ЗНАЧКА
+pnt
+Xc Yc Zc
+;
+g_sigV=iif(isvardef("g_sigV")==0,1,g_sigV);
+Objects=SysVar(60)
+setucs gcs ;
+defarr xm[6] xobj[6] xs[15];
+flags=0 //указатель наличия дуги
+Dzn=3*SysVar(76)
+
+if SysVar(61)<1 { exit }  //Программа в цикле пока выбираем объекты для выхода щелкнуть по пустому полю
+Type=GetObjType(pnt) ;
+if type==5
+{
+N=Getcntobjg(pnt);
+if n<1 { exit }
+NextPS=1
+defarr obj[N] ;
+Scang(pnt,obj);
+}
+if type==2||type==4||type==3
+{
+ n=1
+ NextPS=1
+ defarr obj[N] ;
+ obj[1]=pnt;
+}
+
+PN=0
+DisMin=999999999
+i=0
+met:
+if i<N {
+   i=i+1
+   //#DisC Dist  ^x1 y1 z1 perpend Obj[i] ;
+   //if DisC<DisMin { DisMin=DisC Pn=i
+   //}
+   pn=i
+
+Type=GetObjType(Obj[pn]) ;
+nulout=getObjgeo(Obj[pn],xs) ;
+PrZ=1
+lenppn=0
+=type
+if Type==2
+{ //отрезок
+   PrZ=1
+   A1=1 A2=2 A3=3
+   x1=xs[1]+(xs[4]-xs[1])/2
+   y1=xs[2]+(xs[5]-xs[2])/2
+   z1=xs[3]+(xs[6]-xs[3])/2
+   #lenppn dist xs[1] xs[2] xs[3] xs[4] xs[5] xs[6] ;
+}
+if Type==4||Type==3
+{ //дуга
+   PrZ=-1
+   A1=5 //8
+   A2=6 //9
+   A3=7 //10
+   lenppn=xs[1]*iif(type==4,xs[15],2*pi());
+            OX=iif(type==4,cos(xs[14]+xs[15]/2),cos(pi()+(pi()/4)/2));
+            OY=iif(type==4,sin(xs[14]+xs[15]/2),sin(pi()+(pi()/4)/2));
+            setucs save "ucs158" ;
+            setucs vcs ;
+            PTransCS(3,2,xs[5],xs[6],xs[7],arcx,arcy,arcz);
+            PTransCS(3,2,xs[2],xs[3],xs[4],xs[2],xs[3],xs[4]);
+            setucs move arcx arcy,arcz ;
+            flags=1
+            if xs[4]==-1 { setucs rotate 2points 0 0 0 1 0 0 180 ; }
+            PTransCS(2,3,xs[1]*ox,xs[1]*oy,0,x1,y1,z1);
+            setucs restore "ucs158" ;
+            setucs delete "ucs158" ;
+}
+
+if lenppn<3 { goto met ; }
+//setucs  mid Obj[pn] xs[A1] xs[A2] xs[A3]   :       //Если по середине
+
+setucs  x1 y1 z1 xs[A1] xs[A2] xs[A3]  ^Xc Yc Zc ; // @1 1 0 ;
+if flags==1 {
+   setucs rotate 2points 0 0 0 0 0 1 xs[4]*90 ;
+   flags=0
+}
+if sgn(lenppn)==-1 
+{
+   setucs rotate 2points 0 0 0 0 0 1 180 ;
+}
+
+
+//IF sTY==0 { Circle 0 0 0 Dzn ;
+//   line 0 0 0 polar Dzn 45
+//        0 0 0 polar Dzn 135
+//        0 0 0 polar Dzn 225
+//        0 0 0 polar Dzn -45 ;
+//        group last 5 done ;
+//}
+
+//IF sTY==1 {
+g_sigV=iif(isvardef("g_sigV")==0,1,g_sigV);
+ macro DRWZPath+"leader1auto.mac" StY 0 0 0 0.01 g_sigV*PrZ*10 0 ;
+
+//}
+
+objects2=SysVar(60)
+//N1=objects2-objects
+//group last N1 done ;
+attrobj attach "kromznak" done last 1 i ;
+setucs gcs ;
+bpoint 0 0 0 ;
+
+goto met ;
+}
+//..Цифра
+
+exit
+
+
+
+

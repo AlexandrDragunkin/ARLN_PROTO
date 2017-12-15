@@ -1,0 +1,6 @@
+//-- Установить текущий материал панелей
+global PanMater; //-- Материал панелей
+getpar Mater;
+PanMater=Mater;
+NULLOUT=setvarinst(1,"PanMater",PanMater);
+exit;

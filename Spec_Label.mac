@@ -1,0 +1,34 @@
+//-- Создание отчета "Этикетки"
+global ProtoPath;
+
+Project="Этикетка";  //-- Имя отчета
+pref1="Reports\\";              //-- Имя папки внутри папки проекта для создания отчетов
+
+ProjPath=getfilepath(sysvar(2));
+ReportPath=mpathexpand("<Reports>\\");              //-- Метапуть к шаблонам отчетов
+BaseName=ProjPath+getfiletitle(sysvar(2))-3+".mdb"; //-- Имя будущей базы
+ProjPath=ProjPath+pref1;
+Report=ReportPath+"Label.frx";
+BaseParam1="ADODataBase1="+BaseName;
+BaseParam2="ADODataBase2="+ProtoPath+"RParams71.mdb";
+BaseParam=BaseParam1+","+BaseParam2;
+ReportParam="prmPathProject='"+getfilepath(BaseName)+"'";
+Project=Project+".fpx";
+NULLOUT=freport(Report,ProjPath+Project,BaseParam,ReportParam);
+if (NULLOUT==0) //-- Если отчет не создан
+{
+  #ok_flag
+  alternative "Ошибка создания отчета"
+  msgbox picture 1 beep 1 text left
+  "В процессе создания отчета произошла ошибка"
+  "Отчет 'Этикетки' не создан!"
+  done
+  "  OK  "
+  done;
+}
+else
+{
+  //-- Регистрируем отчет
+	regreport(17,0,"Этикетка");
+}
+exit;

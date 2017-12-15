@@ -1,0 +1,39 @@
+//--Макро создания конечной подпорки полки для трубчатой системы Komandor.
+global ProtoPath;
+getpar GoodsID MatID;
+//--Читаем свойства сборочной единицы
+IDFix1=PriceInfo(GoodsID,"NomID1",1,2);			//-- Подпорка полки		..54-1402-MS..
+NameFix1=PriceInfo(IDFix1,"MatName","",1);	
+IDFix2=PriceInfo(GoodsID,"NomID2",1,2);			//-- Скоба подпорки		..54-1401-MS..
+NameFix2=PriceInfo(IDFix2,"MatName","",1);	
+IDFix3=PriceInfo(GoodsID,"NomID3",1,2);			//-- Шуруп М4х20		..59-0723..
+NameFix3=PriceInfo(IDFix3,"MatName","",1);
+
+obj_do=sysvar(60); 
+//-- Добавляем подпорку полки
+macro ProtoPath+"MakeAcce.mac" IDFix1 "040000" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameFix1;
+rotate last 1 done 2points 0 0 0 0 0 1 -90 nocopy;
+//-- Добавляем скобу подпорки
+macro ProtoPath+"MakeAcce.mac" IDFix2 "040000" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameFix2;
+rotate last 1 done 2points 0 0 0 0 0 1 -90 nocopy;
+//-- Добавляем шуруп М4х20
+macro ProtoPath+"MakeAcce.mac" IDFix3 "040400" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameFix3;
+rotate last 1 done 2points 0 0 0 0 1 0 -90 nocopy;
+move last 1 done 16 17.5 0 nocopy;
+//-- Добавляем шуруп М4х20
+macro ProtoPath+"MakeAcce.mac" IDFix3 "040400" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameFix3;
+rotate last 1 done 2points 0 0 0 0 1 0 -90 nocopy;
+move last 1 done 16 -17.5 0 nocopy;
+obj_posle=sysvar(60);
+kol=obj_posle-obj_do;
+move last kol done 0 0 8 nocopy;
+group last kol done;
+FurnType=PriceInfo(GoodsID,"FurnType","350000",2);
+NameEl=PriceInfo(GoodsID,"Name","",2);
+attrobj attach "FurnType" done last 1 FurnType;
+attrobj attach "ElemName" Done last 1 NameEl;
+exit;

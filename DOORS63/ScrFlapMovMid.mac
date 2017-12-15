@@ -1,0 +1,229 @@
+//ScrFlapMovMid.mac
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+// перемещение теоретической линии в створке раздвижной двери
+// по указанию
+
+nullout=getvarinst(2,"Doors64",Doors64,"Doors64.zmc|");
+
+
+defarr obj[100] alinxn[30] alinzn[30] alinxk[30] alinzk[30];
+global g_Zsize g_Xsize;
+
+
+
+global ProtoPath;
+global
+       gs_IdMid             // -- Id Разделительных профилей
+       gs_MidHV             // -- Массив с парметрами эквидистанты для расчета вставок в районе средних профилей
+       gs_XmidS  gs_ZmidS   // -- координаты начальных точек разделительных профилей в створке
+       gs_XmidE  gs_ZmidE   // -- координаты конечных  точек разделительных профилей в створке
+       gs_AngS   gs_AngE    // -- Углы подрезки профиля вначале и в конце разделительного профиля
+       gs_FlMater           // -- материалы вставок
+       gs_FlNshp            // -- направление текстуры шпона вставок
+       gs_IdFl              // -- Cчетчик обработанных в объекте вставок
+       gs_IdMpr             // -- Cчетчик обработанных в объекте средних профилей
+       gs_KFL               // -- Количество вставок из скретча
+       gs_KMpr              // -- Количество средних профилей из скретча
+       ;
+global
+       gs_ProfX1               //-- массив с координатами X начала толстых профилей
+       gs_ProfZ1               //-- массив с координатами Z начала толстых профилей
+       gs_ProfX2               //-- массив с координатами X конца толстых профилей
+       gs_ProfZ2               //-- массив с координатами Z конца толстых профилей
+       gs_ProfHM               //-- Массив с парметрами эквидистанты для расчета средних профилей
+       gs_ProfHV               //-- Массив с парметрами эквидистанты для расчета вставок
+       gs_NProf                //-- число толстых профилей, участвующих в построении максимально их может быть 8. 4-е стороны+4-е вставки
+       ;
+global
+       gs_TlinX1               //-- массив с координатами X начала теоретических линий(осей)
+       gs_TlinZ1               //-- массив с координатами Z начала теоретических линий(осей)
+       gs_TlinX2               //-- массив с координатами X конца теоретических линий(осей)
+       gs_TlinZ2               //-- массив с координатами Z конца теоретических линий(осей)
+       gs_TlinHM               //-- Массив с парметрами эквидистанты для расчета средних профилей
+       gs_TlinHV               //-- Массив с парметрами эквидистанты для расчета вставок
+       gs_NTLin                //-- число теоретических линий(осей)
+       ;
+global g_CLTop  g_CLDown  g_CLMid  g_CLDer  g_CLVer g_CLVerR g_CLVerL g_DRP g_hmida g_hmidz ;
+//========================================================================================================
+defarr
+      arGrafPx[100] //-- массив координат X точек
+      arGrafPy[100] //-- массив координат Y точек
+      arTypeOb[100] //-- массив типов элементов графа 1-линия 2-дуга
+      arGrafEq[100] //-- массив велечин смещения 4-й параметр  AddEdgeGraph
+;
+defarr
+      arObjPar[10,5] //-- массив частей при делении для FindObjParts
+      arEquidi[100]  //-- массив указателей эквидистант
+      arGrafCu[6]   //-- массив точек для AddEdgeGraph
+;
+
+//========================================================================================================
+
+NobjGraf=0
+Namescr="ScrFlat";
+
+//getpar auto ;
+auto=0
+if auto==0
+{
+   Beg:
+   objident prompt "Укажите створку" : pnt ;
+   beg1:
+
+   if (isattrdef("ScrFlat"))    //-- Если определен ScrFlat
+   {
+      if (isassign("ScrFlat",pnt)) //-- Если он есть в объекте - копируем в "запись"
+      {
+         attrobj copy pnt "ScrFlat"  done  record done ;
+      }
+      else
+      {
+       goto Beg;
+      }
+   }
+   else
+   {
+    exit;
+   }
+   Na=0
+
+   smart edit list pnt ;
+   objident last 1 pnt ;
+
+   //'osnap autosnap
+   //gosub GetProf;
+
+}
+else
+{
+
+}
+//====================================================================
+defarr
+   TlinX1[gs_NTLin]
+   TlinZ1[gs_NTLin]
+   TlinX2[gs_NTLin]
+   TlinZ2[gs_NTLin]
+   TlinHM[gs_NTLin]
+   TlinHV[gs_NTLin]
+;
+ next:
+ gosub GetProf;
+
+Hmin=999999;
+Xgn=0
+Zgn=0
+Xgk=0
+Zgk=0
+numReb=0
+//;Macro ProtoPath+Doors64+"ScrFlapGet63.mac" 1 ;
+KFL=gs_KFL               //-- Количество вставок из скретча
+KMpr=gs_KMpr             //-- Количество средних профилей из скретча
+NProf=gs_NProf           //--  число толстых профилей
+NTLin=gs_NTLin           //--  число теоретических линий(осей)
+i=0
+lMt1:
+if i<NTLin
+{
+   i=i+1
+   GOSUB FindRgrMin;
+   goto lMt1;
+}
+//putMsg("numReb="+str(numreb),1);
+
+i=0
+lMt2:
+if i<NTLin
+{
+   i=i+1
+   TlinX1[i]=gs_TlinX1[i]                    //-- массив с координатами X начала теоретических линий(осей)
+   TlinZ1[i]=gs_TlinZ1[i]                    //-- массив с координатами Z начала теоретических линий(осей)
+   TlinX2[i]=gs_TlinX2[i]                    //-- массив с координатами X конца теоретических линий(осей)
+   TlinZ2[i]=gs_TlinZ2[i]                    //-- массив с координатами Z конца теоретических линий(осей)
+   TlinHM[i]=gs_TlinHM[i]                    //-- Массив с парметрами эквидистанты для расчета средних профилей
+   TlinHV[i]=gs_TlinHV[i]
+   goto lMt2;
+}
+
+i=0
+j=0
+lMt3:
+if j<NTLin
+{
+   j=j+1
+   if j==numReb
+   {
+      TlinZ1[j]=TlinZ1[j]+g_Zsize
+      TlinZ2[j]=TlinZ2[j]+g_Zsize
+      TlinX1[j]=TlinX1[j]+g_Xsize
+      TlinX2[j]=TlinX2[j]+g_Xsize
+
+   }
+   i=i+1
+   gs_TlinX1[i]=TlinX1[j]                    //-- массив с координатами X начала теоретических линий(осей)
+   gs_TlinZ1[i]=TlinZ1[j]                    //-- массив с координатами Z начала теоретических линий(осей)
+   gs_TlinX2[i]=TlinX2[j]                    //-- массив с координатами X конца теоретических линий(осей)
+   gs_TlinZ2[i]=TlinZ2[j]                    //-- массив с координатами Z конца теоретических линий(осей)
+   gs_TlinHM[i]=TlinHM[j]                    //-- Массив с парметрами эквидистанты для расчета средних профилей
+   gs_TlinHV[i]=TlinHV[j]
+   goto lMt3;
+}
+//gs_NTLin=gs_NTLin-1       //-- число теоретических линий(осей)
+macro ProtoPath+Doors64+"ScrFlatatr63.mac" 0 pnt;
+   smart edit list pnt ;
+   objident last 1 pnt ;
+   putmsg("ReSnap_ScrFlapMovMid_180")
+   SnapPt=ReSnap();
+   goto next;
+exit;
+
+
+//======================== S U B R O U T I N E ========================
+FindRgrMin:
+// Ищем ближайшее ребро
+      //Находим площадь треугольника
+      //#dsa dist arGrafCu[1] arGrafCu[2] 0 Pxn Pzn 0 ;
+      //#dsb dist arGrafCu[3] arGrafCu[4] 0 Pxn Pzn 0 ;
+      #dsa dist gs_TlinX1[i] gs_TlinZ1[i] 0 Pxn Pzn 0 ;
+      #dsb dist gs_TlinX2[i] gs_TlinZ2[i] 0 Pxn Pzn 0 ;
+      //LenLc=sqrt(Pow((arGrafCu[1]-arGrafCu[3]),2)+Pow((arGrafCu[2]-arGrafCu[4]),2));
+      LenLc=sqrt(Pow((gs_TlinX1[i]-gs_TlinX2[i]),2)+Pow((gs_TlinZ1[i]-gs_TlinZ2[i]),2));
+      Per=(dsa+dsb+LenLc)/2
+      Fp=sqrt(per*(per-dsa)*(per-dsb)*(per-LenLc));
+      Hp=2*Fp/LenLc // высота треугольника и расстояние от точки до ребра графа
+      if Hmin>Hp
+      {
+       Hmin=Hp
+       //Xgn=arGrafCu[1]
+       //Zgn=arGrafCu[2]
+       //Xgk=arGrafCu[3]
+       //Zgk=arGrafCu[4]
+       Xgn=gs_TlinX1[i]
+       Zgn=gs_TlinZ1[i]
+       Xgk=gs_TlinX2[i]
+       Zgk=gs_TlinZ2[i]
+       numReb=i
+      }
+
+return;
+GetProf:
+putmsg("GetSnap_ScrFlapMovMid")
+SnapPt=GetSnap();
+
+   get "Укажите профиль " point missing  PXn pp PZn   :
+   g_Zsize=iif(isvardef("g_Zsize")==0,100,g_Zsize);
+   #Z_Size getvar "Задайте смещение по вертикали" default g_Zsize : // Задайте размер проема
+   g_Zsize=Z_Size
+   g_Xsize=iif(isvardef("g_Xsize")==0,0,g_Xsize);
+   #X_Size getvar "Задайте смещение по горизонтали" default g_Xsize : // Задайте размер проема
+   g_Xsize=X_Size
+   ptranscs(0,3,PXn,pp,PZn,PXn,pp,PZn);
+   setucs lcs pnt ;
+   ptranscs(3,0,PXn,pp,PZn,PXn,pp,PZn);
+return;
+

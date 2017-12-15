@@ -1,0 +1,323 @@
+//-- Программа записывает сделанный чертеж
+
+global g_name, g_dorab, g_pict, l_support, g_nameFK3, g_nameFWMF FileNameSP;
+
+global
+g_DirDrawLn           //Все файлы чертежей длинномеров размещать в отдельной папке 0-нет 1-да
+g_DrawBlank           //Чертежи на бланках 0-нет 1-да
+g_DrawSpec            //Формировать спецификацию 0-нет 1-да
+g_DrawCod             //Способ обозначения чертежа 0-относительный по первому вхождению 1-абстрагированный код
+g_DrawStamp           //Ключ запроса информации для штампа бланка из файла stamp.dbf и из файла ZAKAZ.dbf =0 только stamp.dbf =1
+g_FormStamp           //Ключ запроса формы штампа 0-не запрашивать 1-регулярно
+g_PgFileDraw          //Каждый лист чертежа в отдельном файле 0-нет 1-да
+g_PgFileSpec          //Каждый лист спецификации в отдельном файле 0-нет 1-да
+g_GroupDoc            //Формировать групповой чертеж по всем документам 0-нет 1-да
+g_DrawTaile
+Pl_Obozn
+;
+
+global g_aDraw; // массив имен файлов сохраненных видов
+if isvardef("g_aDraw")!=3 {
+	defarr g_aDraw[100];
+}
+Defarr xm[6]  ;
+
+getpar ltype ;
+
+DopSimb=""
+if (g_DrawTaile!=0) {  //Если рисуем деталировку
+   DopSimb="_t"
+}
+pathApp=MPathExpand("<appdata>")
+FileNameSP=iif(isvardef("FileNameSP")==0,"_",FileNameSP);
+
+
+object_name=sysvar(2);
+ProjPath=getfilepath(sysvar(2));
+FileName=GetFileTitle(object_name);
+if (right(FileName,4)=="t.k3")
+{
+  FileName=FileName-4+".k3";
+}
+
+ // Все сохраняем в папку проекта 
+
+FolderName=ProjPath+"Reports"+g_nameFWMF;
+if !FolderExist(FolderName) 
+{
+	Err=CreateFolder(FolderName) ;
+}
+FolderName=ProjPath+"Reports"+g_nameFK3;
+if !FolderExist(FolderName) 
+{
+	Err=CreateFolder(FolderName) ;
+}
+
+numTxt=FolderName+FileName-3+"_"+g_name+DopSimb+".k3";
+pict g_pict yes ;
+if g_GroupDoc>-1 
+{
+   #DocGr Group all done ;
+   =Objgab3(DocGr,xm) ;
+   X1=Xm[4]   Y1=Xm[5]   Z1=Xm[3]
+   explode DocGr ;
+   objects=Sysvar(60)
+   if FileExist(FileNameSP)&&(g_DrawSpec!=0) {
+   //PutMsg(FileNameSP,1);
+		ipos=findinarray(g_aDraw,0);	
+		if ipos>0 {
+			g_aDraw[ipos]=FileNameSP;
+		}
+      append FileNameSP 0 0 0 ;
+      objects=Sysvar(60)-Objects
+      if Objects>0 {
+         #SpGr group last Objects done ;
+         =Objgab3(SpGr,xm) ;
+         Move SpGr done 2points Xm[1] Xm[5] Xm[3]  X1   Y1   0  nocopy ;		 
+         explode SpGr done ;
+		 
+      }
+      if g_DirDrawLn!=0 {
+         if FileExist(FileNameSP)&&FolderExist(FolderName) {
+            FnewSp=FolderName+GetFileTitle(FileNameSP)
+            err=MoveFile(FileNameSP,FnewSp);
+         }
+      }
+   }
+}
+
+save select all done numTxt [ overwrite ]
+
+// fName=numTxt
+// gosub addFName;
+title=getfiletitle(numTxt)-3
+numWmf=ProjPath+"Reports"+g_nameFWMF+title+".wmf"
+
+   exp2d wmf
+         header yes
+         mono no
+         inscribe yes
+         optimized no
+         numWmf [ overwrite ]
+open [ no ] numTxt ;
+zoom all ;
+
+//exp2d wmf no numTxt-2+"wmf" [ overwrite ]
+gosub FindStamp ;
+
+visible  attribute "IPRLN"+str(Ltype)+">="+str(0)  ;
+visible  attribute "IPRLNDW"+str(Ltype)+">="+str(0)  ;
+zoom all ;
+//g_dorab=1;
+onerror merr;
+//vimage off;
+g_PgFileDraw==1
+{
+	
+	selbyattr "IPRLNDW"+str(Ltype)+">="+str(0) partly all done;
+	ndw=sysvar(61);
+	selbyattr "IPRLN"+str(Ltype)+">="+str(0) partly all done;
+	nln=sysvar(61);
+	
+	ndrw=max(ndw,nln)
+	i=0
+	metPgd:
+	if i<ndrw
+	{
+		i=i+1;
+		selbyattr "IPRLNDW"+str(Ltype)+">="+str(i) partly all done;
+		n1=sysvar(61)
+		if n1>0 { objdr1=getselnum(1); }
+		selbyattr "IPRLN"+str(Ltype)+">="+str(i) partly all done;
+		n2=sysvar(61)
+		if n2>0 { objdr2=getselnum(1); }
+		
+		title=getfiletitle(numTxt)-3
+		numWmf1=ProjPath+"Reports"+g_nameFWMF+title+"_"+str(i)+".wmf"
+		obAn=sysvar(60)-sysvar(63);
+		if n1>0
+		{
+			if n2>0
+			{
+				if obAn>2 { invisible all remove   objdr1    objdr2 done ; }
+				fName=numTxt-3+"_"+str(i)+".k3"
+				gosub addFName;
+				
+			}
+			else
+			{
+				if obAn>1 { ;invisible all remove   objdr1    done   ; }
+				fName=numTxt-3+"_"+str(i)+".k3"
+				gosub addFName;
+				
+			}
+		}
+		else
+		{
+			if n2>0
+			{
+				if obAn>1 { invisible all remove    objdr2   done; }
+				fName=numTxt-3+"_"+str(i)+".k3"
+				gosub addFName;
+				
+			}	
+		}		
+		
+		//vimage on;
+		regen all;
+		zoom all ;
+	   // exp2d wmf
+			 // header yes
+			 // mono no
+			 // inscribe yes
+			 // optimized no
+			 // numWmf1 [ overwrite ]
+			 //vimage off;
+		visible  attribute "IPRLN"+str(Ltype)+">="+str(0)  ;
+		visible  attribute "IPRLNDW"+str(Ltype)+">="+str(0)  ;
+		zoom all ;	
+	
+		goto metPgd;	 
+	}
+	merr:
+	offerror;
+	//vimage on;
+}
+
+if (g_dorab==1)
+{
+    setvar
+    "Чертеж сохранен"
+    numWmf
+    left
+    " в файл: "+numTxt
+	if g_PgFileDraw==1
+	{
+		"Также создано "+str(i)+" файла на отдельных бланках"
+		let ji=0
+		mj:
+		if ji<i
+		{
+			let ji=ji+1
+			"   "+numTxt-3+"_"+str(ji)+".k3"
+			goto mj
+			
+		}
+	}
+    done
+    logical  default 0  "Доработать чертеж?"  Wflag
+    done
+    if (Wflag==1)
+    {
+	g_dorab=2;
+    }
+}
+lBend:
+//=msglevel(2);
+//offerror;
+
+fName=numTxt-3+".~k3"; 
+gosub sDelBackF;
+fName=numWmf-3+"~wmf"
+gosub sDelBackF;
+fName=numTxt; 
+gosub sDelBackF;
+exit;
+//=====================================================================================================================================
+
+FindStamp:
+;macro L_SUPPORT+"select_attribute.mac" "IPRLN"+str(Ltype)+">0" ;
+SelN=SysVar(61);
+If SelN>0 { defarr objBlank[SelN] objDraw[SelN] ; }
+   visible  attribute "IPRLN"+str(Ltype)+">0";
+   visible  attribute "IPRLNDW"+str(Ltype)+">0";
+   selbyattr "IPRLN"+str(Ltype)+">0" all  ;
+   //selbyattr "IPRLNDW"+str(Ltype)+">0" all  ;
+i=0
+mets1:
+If SelN>0&&i<selN
+{
+   i=i+1
+   objDraw[i]=GetSelNum(i);
+   //=i
+   //=Ltype
+   //NmIPR="IPRLN"+str(Ltype);
+   //=NmIPR
+   //NumDw=GetAttr(objDraw[i],NmIPR,0);
+   //selbyattr "IPRLNDW"+str(Ltype)+"=="+str(i) all  ;
+   //objBlank[i]=GetSelNum(1);
+   goto mets1;
+}
+i=0
+mets2:
+If SelN>0&&i<selN
+{
+   i=i+1
+   selbyattr "IPRLNDW"+str(Ltype)+"=="+str(i) all  ;
+   if sysvar(61)>0 { objBlank[i]=GetSelNum(1); }
+   goto mets2;
+}
+i=0
+met:
+If SelN>0&&i<selN {
+   i=i+1
+   if sysvar(60)-sysvar(63)>0 { invisible all  done ; } 
+   //;macro GetProtoMac("Shkaf.ptl")+Support+"select_attribute.mac" "IPRLN"+str(Ltype)+"==i||IPRLNDW"+str(Ltype)+"==i" ;
+   //visible  attribute "IPRLN"+str(Ltype)+"=="+str(i)  ;
+   //visible  attribute "IPRLNDW"+str(Ltype)+"=="+str(i)  ;
+	prs1=0;
+   if isvardef("objBlank["+str(i)+"]")==16 { visible objBlank[i] done ; prs1=1; }
+   if isvardef("objDraw["+str(i)+"]")==16  { visible objDraw[i] done ; prs1=prs1+1;}
+
+
+   zoom all ;
+   if prs1>0
+   {
+	   if g_PgFileDraw!=0
+	   {
+			fName=numTxt-3+str(i)+".k3"
+			gosub addFName;
+		  
+	   }
+	   title=getfiletitle(numTxt)-3+str(i)
+		numWmf=ProjPath+"Reports"+g_nameFWMF+title+".wmf" 
+		// exp2d wmf
+			 // header yes
+			 // mono no
+			 // inscribe yes
+			 // optimized no
+			 // numWmf [ overwrite ]
+			 
+	}			
+   goto met ;
+ }
+ return ;
+ //--удаляет файл с именем fName
+sDelBackF:
+if FileExist(fName)
+{
+	Nullout=RemoveFile(fName)
+}
+return;
+
+addFName:
+	Save Select all done fName [ overwrite ]
+
+	ttitle=getfiletitle(fName)-3
+	tnumWmf=ProjPath+"Reports"+g_nameFWMF+ttitle+".wmf"
+
+
+	   exp2d wmf
+			 header yes
+			 mono no
+			 inscribe yes
+			 optimized no
+			 tnumWmf [ overwrite ]
+	ipos=findinarray(g_aDraw,0);
+	//putmsg(ipos);
+	if ipos>0 {
+		g_aDraw[ipos]=fName;
+		delete all done;
+	}
+return;
+

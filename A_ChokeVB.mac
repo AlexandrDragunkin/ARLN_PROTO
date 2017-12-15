@@ -1,0 +1,65 @@
+global ProtoPath;
+defarr arr[2];
+
+NULLOUT=infinitepb(1,"");  //-- Включаем ProgressBar
+onerror final;
+selbyattr "(Left(FurnType,2)==\"01\"&&FurnType!=\"010000\")"
+  prompt "Укажите панель:" partly : ;
+a=sysvar(61);
+if (a==0)
+{
+  exit;
+}
+
+TypeCh=-100;
+TypeE=5449;
+
+TypeCh=GetAttr(GetSelNum(1),"ChokeID",TypeCh);
+TypeE=GetAttr(GetSelNum(1),"VBE",TypeE);
+
+// objects1=sysvar(60)-(objectS);
+// attrobj attach "TypeCh" done group last objects1-1 done 1 
+// attrobj attach "TypeE" done group last objects1-1 done 1 
+
+#aaa
+setvar
+"Задать цвета эксцентриков и заглушки у выбранных панелей"
+""
+left
+"Введите параметры"
+"Умолчания взяты с первой выбранной панели"
+done
+
+string button 6 auto default "343#"+str(TypeCh) 
+"Заглушка" ChMater
+
+string button 6 auto default "342#"+str(TypeE) 
+"Эксцентрик VB" ExMater
+
+done;
+
+if (aaa==0) { exit; }
+
+initarray(arr,0);
+nullout=splitbydelim(ChMater,"#",arr,1);
+ChMater=arr[2];
+
+initarray(arr,0);
+nullout=splitbydelim(ExMater,"#",arr,1);
+ExMater=arr[2];
+
+b=0;
+next:
+b=b+1;
+if b<=a
+{
+  attrobj attach "ChokeID" done GetSelNum(b) ChMater;
+  attrobj attach "VBE" done GetSelNum(b) ExMater;
+  NULLOUT=infinitepb(2,"");  //-- наращиваем счетчик ProgressBar
+  goto next;
+}
+
+//------------------------------------------------------------------------------
+final:
+NULLOUT=infinitepb(3,"");  //-- Выключаем ProgressBar
+exit;

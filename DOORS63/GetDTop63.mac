@@ -1,0 +1,178 @@
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+//-- Программа заполняет массив названиями дизайна верхнего профиля створки в соответствии со строкой фильтра
+//-- Входные параметры:
+//-- SQLStr - SQL строка фильтра
+//-- Массив g_DR...N - массив названий  профилей
+//-- Массив g_DR...I - массив ID
+//-- g_DR...Numb - количество записей в массиве
+//-- Данные берутся из QDS...FlapSt поля NameGroup базы данных DoorSys63.mdb              g_DRP
+
+global ProtoPath;
+global g_tab_place, g_keyDS63,g_Doorscon;
+
+global g_DRTopD,g_DRTopN,g_DRTopI,g_DRTopNumb;
+global g_DRDownD,g_DRDownN,g_DRDownI,g_DRDownNumb;
+global g_DRMidD,g_DRMidN,g_DRMidI,g_DRMidNumb;
+global g_DRDerD,g_DRDerN,g_DRDerI,g_DRDerNumb;
+global g_DRVerD,g_DRVerN,g_DRVerI,g_DRVerNumb;
+
+// isvardef("g_DRTopN")==0
+// {
+ // defarr g_DRTopD[50],g_DRTopN[50],g_DRTopI[50];
+ // defarr g_DRDownD[50],g_DRDownN[50],g_DRDownI[50];
+ // defarr g_DRMidD[50],g_DRMidN[50],g_DRMidI[50];
+ // defarr g_DRDerD[50],g_DRDerN[50],g_DRDerI[50];
+ // defarr g_DRVerD[50],g_DRVerN[50],g_DRVerI[50];
+// }
+
+defarr arrD[50] arrN[50] arrI[50];
+
+getpar SQLVer SQLTop SQLDown SQLMid SQLDer;
+
+nullout=getvarinst(1,"KeyFas",KeyFas,0);
+noputmsg=0;
+
+if g_keyDS63!=1
+{
+   macro ProtoPath+"CrtSysDoor63.mac" ;
+}
+res=adbChkMdbTbl(g_tab_place,"DSFlapSostav");
+//res=adbChkMdbTbl(g_tab_place,"QDSTopPrFlap");
+//res=adbChkMdbTbl(g_tab_place,"QDSDownPrFlap");
+//res=adbChkMdbTbl(g_tab_place,"QDSMidPrFlap");
+//res=adbChkMdbTbl(g_tab_place,"QDSDerPrFlap");
+if res==0
+{
+gosub errSostav;
+}
+if (res==0)
+{
+gosub StopErr;
+}
+//============
+
+nameTyp="верхний";
+SysRs=adbOpen(g_Doorscon,SQLtop);
+if !KeyFas
+{ gosub getQDS; }
+else
+{ ij=1; }
+g_DRTopNumb=ij;
+defarr g_DRTopD[g_DRTopNumb],g_DRTopN[g_DRTopNumb],g_DRTopI[g_DRTopNumb];
+err=CopyArray(g_DRTopD,1,arrD,1);
+err=CopyArray(g_DRTopN,1,arrN,1);
+err=CopyArray(g_DRTopI,1,arrI,1);
+SysRs=adbClose(SysRs);
+//============
+nameTyp="нижний";
+SysRs=adbOpen(g_Doorscon,SQLDown);
+if !KeyFas
+{ gosub getQDS; }
+else
+{ ij=1; }
+g_DRDownNumb=ij;
+defarr g_DRDownD[g_DRDownNumb],g_DRDownN[g_DRDownNumb],g_DRDownI[g_DRDownNumb];
+err=CopyArray(g_DRDownD,1,arrD,1);
+err=CopyArray(g_DRDownN,1,arrN,1);
+err=CopyArray(g_DRDownI,1,arrI,1);
+SysRs=adbClose(SysRs);
+//============
+nameTyp="вертикальный";
+// putmsg(SQLVer)
+SysRs=adbOpen(g_Doorscon,SQLVer);
+gosub getQDS;
+// if !KeyFas
+// { gosub getQDS; }
+// else
+// { ij=1; }
+// putmsg(ij);
+g_DRVerNumb=ij;
+defarr g_DRVerD[g_DRVerNumb],g_DRVerN[g_DRVerNumb],g_DRVerI[g_DRVerNumb];
+err=CopyArray(g_DRVerD,1,arrD,1);
+err=CopyArray(g_DRVerN,1,arrN,1);
+err=CopyArray(g_DRVerI,1,arrI,1);
+SysRs=adbClose(SysRs);
+//============
+nameTyp="разделительный";
+SysRs=adbOpen(g_Doorscon,SQLMid);
+if !KeyFas
+{ gosub getQDS; }
+else
+{ ij=1; }
+g_DRMidNumb=ij;
+defarr g_DRMidD[g_DRMidNumb],g_DRMidN[g_DRMidNumb],g_DRMidI[g_DRMidNumb];
+err=CopyArray(g_DRMidD,1,arrD,1);
+err=CopyArray(g_DRMidN,1,arrN,1);
+err=CopyArray(g_DRMidI,1,arrI,1);
+SysRs=adbClose(SysRs);
+//============
+nameTyp="накладной декоративный";
+SysRs=adbOpen(g_Doorscon,SQLDer);
+noputmsg=1;
+if !KeyFas
+{ gosub getQDS; }
+else
+{ ij=1; }
+g_DRDerNumb=ij;
+if g_DRDerNumb>0
+{
+	g_DRDerNumb=ij;
+}
+g_DRDerNumb==0 { g_DRDerNumb=1; }
+defarr g_DRDerD[g_DRDerNumb],g_DRDerN[g_DRDerNumb],g_DRDerI[g_DRDerNumb];
+err=CopyArray(g_DRDerD,1,arrD,1);
+err=CopyArray(g_DRDerN,1,arrN,1);
+err=CopyArray(g_DRDerI,1,arrI,1);
+
+SysRs=adbClose(SysRs);
+
+//============
+exit;
+
+//================================ SUB==============================
+//******************************************************************
+getQDS:
+ij=adbRecCount(SysRs);
+err=initarray(arri,0);
+err=initarray(arrN,"");
+err=initarray(arrD,"");
+if (ij<1)
+{
+	if !noputmsg
+	{
+		PutMsg("Профиль "+nameTyp+" в составе створки неопределен.",0);
+	}
+  //SysRs=adbClose(SysRs);
+  goto endqds;
+}
+NULLOUT=adbMoveFirst(SysRs);
+i=1;
+LC:
+arrI[i]=adbGetValue(SysRs,"IDProf");
+arrN[i]=adbGetValue(SysRs,"NameGroup");
+arrD[i]=adbGetValue(SysRs,"Drawing");
+if (i<ij)
+{
+  i=i+1;
+  NULLOUT=adbMoveNext(SysRs);
+  goto LC;
+}
+endqds:
+return;
+//=================================
+errSostav:
+       putMsg("Таблица DSFlapSostav отсутствует",0);
+return;
+//=================================
+StopErr:
+ if g_keyDS63!=0
+ {
+   macro ProtoPath+"ClosSysDoor63.mac" ;
+ }
+  exit;
+return;

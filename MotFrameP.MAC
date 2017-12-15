@@ -1,0 +1,58 @@
+//-- Прототип "Выдвижная рамка для навесных элементов"
+
+global ProtoPath;
+//------------------------------------------------------------------------
+w=DbVar("w",450);					//-- Ширина
+d=DbVar("d",450);					//-- Глубина
+typeF=DbVar("typeF",0);					//-- Тип рамки
+H_Frame=priceinfo(typeF,"Height",0,2);			//-- Высота рамки
+Kr_Frame=priceinfo(typeF,"ToleranceZ",0,2);			//-- Высота рамки вместе с кронштейном
+if (Kr_Frame>0)
+{
+	H_Frame=Kr_Frame;
+}
+FurnType=priceinfo(typeF,"FurnType","000000",2);
+position=getprotoid("Shkaf","Рамка выдвижная для навесных элементов","ProtoMacro","MotFrameP");  //-- ID прототипа
+Namescr="ProtoParams";
+ElemName="Выдвижная рамка";
+HoldName=" ";
+KarkasNumb=getcarcnumb();    //-- Текущий номер каркаса
+//----------------------------------------------------------------------
+NULLOUT=pushinst(1);
+macro ProtoPath+"SetEnam.mac" " ";
+sy=sysvar(60);
+macro ProtoPath+"MotFrame.mac";	//-- Макрос создания рамки
+sy=sysvar(60)-sy;
+if (sy==0)
+{
+  exit;
+}
+objident last sy  obj;
+Namescr="ProtoParams";
+//-- Присваиваем атрибуты
+attrobj attach "Posit" done Last 1 position;
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done last 1 done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done Last 1 KarkasNumb;
+}
+if (isassign("HoldName",0))
+{
+  attrobj copy record "HoldName" done Last 1 done;
+}
+if (isassign("UnitName",0))
+{
+  attrobj copy record "UnitName" done Last 1 done;
+}
+attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 w d H_Frame; //-- Размеры 
+  
+attrobj attach "FurnType" done last 1 FurnType;
+attrobj attach "GoodsID" done last 1 typeF; 
+attrobj attach "Assembly" done last 1 1;
+attrobj attach "ElemName" done last 1 ElemName;
+attrobj copy record Namescr done last 1 done;
+NULLOUT=popinst(1);
+exit;

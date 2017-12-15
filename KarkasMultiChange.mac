@@ -1,0 +1,237 @@
+//-- программа групповой замены в каркасных изделиях
+global ProtoPath;
+global pnt, iPNT, iPanME;
+defarr pnt[2000];
+getpar
+nid				//-- Значение параметра для замены
+IdGroup		//-- номер группы подстановки
+pnt_o				//-- ссылка на объект
+T_pod;		//-- номер заменяемого параметра (из макроса MultiChange)
+
+karkasn=getattr(pnt_o,"KarkasNumb",-1);				//-- номер каркаса
+if (udgetentity("CarcasesAspect",ValType,ca,sVal)==0) //-- Менять ли ракурс у каркаса
+{
+  ca=0;
+}
+if (ca==1)
+{
+  udsetentity("CarcasesAspect",0);
+}
+if (udgetentity("CarcasesAspectGabs",ValType1,ca1,sVal1)==0) //-- Вписывать ли каркас в окно
+{
+  ca1=0;
+}
+if (ca1==1)
+{
+  udsetentity("CarcasesAspectGabs",0);
+}
+NULLOUT=GetSnap();
+// macromode undo off;
+onerror ERROR;
+mbcarcase current pnt_o;
+
+//-- Замена ручки
+if (T_pod==1)
+{
+  select attribute  "Left(FurnType,2)==\"23\"||Left(FurnType,2)==\"31\"" done;
+	iPNT=sysvar(61);
+	if (iPNT==0)
+	{
+	 goto ERROR;
+	}
+	i=0;
+	defarr PNTM[iPNT];
+	macro ProtoPath+"Arrobj.mac" iPNT PNTM ;
+  Loop1:
+  if (i<iPNT)
+  {
+    i=i+1;
+    pnt1=PNTM[i];
+		protoobj edit list pnt1 nodc "HanType" nid[1] ;
+    goto Loop1;
+  }
+}
+//-- Замена типа ящика
+if (T_pod==4)
+{
+  select attribute  "Left(FurnType,2)==\"31\"" done;
+	iPNT=sysvar(61);
+	if (iPNT==0)
+	{
+	  goto ERROR;
+	}
+	i=0;
+	defarr PNTM[iPNT];
+	macro ProtoPath+"Arrobj.mac" iPNT PNTM ;
+  Loop4:
+  if (i<iPNT)
+  {
+    i=i+1;
+    pnt1=PNTM[i];
+		protoobj edit list pnt1 nodc "BxType" nid[1] ;
+    goto Loop4;
+  }
+}
+//-- Замена типа фасада
+if (T_pod==3)
+{
+  select attribute  "Left(FurnType,2)==\"31\"||Left(FurnType,2)==\"23\"" done;
+	iPNT=sysvar(61);
+	if (iPNT==0)
+	{
+	 goto ERROR;
+	}
+	i=0;
+	defarr PNTM[iPNT];
+	macro ProtoPath+"Arrobj.mac" iPNT PNTM ;
+  Loop3:
+  if (i<iPNT)
+  {
+    i=i+1;
+    pnt1=PNTM[i];
+		furn=getattr(pnt1,"FurnType",-1);
+		if (left(Furn,4)=="2301"||left(Furn,4)=="2302"||left(Furn,4)=="2303")
+		{
+			protoobj edit list pnt1 nodc "Fasrtype" nid[1] ;
+		}
+		if (left(Furn,4)=="2304")
+		{
+			protoobj edit list pnt1 nodc "Fasrtype" nid[2] ;
+		}
+		if (left(Furn,4)=="2305")
+		{
+			protoobj edit list pnt1 nodc "Fasrtype" nid[3] ;
+		}
+		if (left(Furn,2)=="31")
+		{
+			protoobj edit list pnt1 nodc "Fstype" nid[4] ;
+		}
+    goto Loop3;
+  }
+}
+//-- Замена материала корпуса
+if (T_Pod==5)
+{
+	iyf=getyadfixing();
+	if (iyf==1)  //-- Если крепеж включен, выключаем его.
+	{
+		NULLOUT=setyadfixing(0);
+		holes delall all done;
+		fixing delauto all done;
+		fixing hide all done;
+	}
+  select attribute "(FurnType==\"010100\"||Furntype==\"010200\"||Furntype==\"010300\")&&KarkasNumb=="+str(karkasn) done;
+	iPNT=sysvar(61);
+	if (iPNT==0)
+	{
+	 goto ERROR;
+	}
+	i=0;
+	macro ProtoPath+"Arrobj.mac" iPNT pnt;
+	Loop5:
+	if (i<iPNT)
+	{
+		i=i+1;
+		iPanME=i;
+		pnt1=pnt[i];
+		OldMat=getattr(pnt1,"PriceID",0);
+		//-- Толщина текущего и нового материалов
+		ThOldMat=PriceInfo(OldMat,"Thickness",16);
+		ThE_col=PriceInfo(nid[1],"Thickness",16);
+		macro ProtoPath+"ChangePanMat.mac" pnt1 ThOldMat ThE_col 0;
+		#pnt1 MBPanel item pnt1 1 nid[1] 0 ;
+		pnt[i]=pnt1;
+		goto Loop5;
+	}
+	if (iyf==1)  //-- Если крепеж выключали, включаем его.
+	{
+		fixing create all done;
+	}
+}
+//-- Замена материала фасада
+if (T_Pod==6)
+{ 
+  select attribute  "Left(FurnType,2)==\"23\"||Left(FurnType,2)==\"31\"" done;
+	iPNT=sysvar(61);
+	if (iPNT==0)
+	{
+	 goto ERROR;
+	}
+	i=0;
+	defarr PNTM[iPNT];
+	macro ProtoPath+"Arrobj.mac" iPNT PNTM ;
+  Loop6:
+  if (i<iPNT)
+  {
+    i=i+1;
+    pnt1=PNTM[i];
+		furn=getattr(pnt1,"FurnType",-1);
+		if (left(Furn,2)=="23")
+		{
+			protoobj edit list pnt1 nodc "PrMater" nid[1] ;
+		}
+    if (left(Furn,2)=="31")
+		{
+			protoobj edit list pnt1 nodc "FsMater" nid[2] ;
+		}
+    goto Loop6;
+  }
+}
+//-- Замена материала вставки в  фасад
+if (T_Pod==8)
+{ 
+  select attribute  "Left(FurnType,2)==\"23\"||Left(FurnType,2)==\"31\"" done;
+	iPNT=sysvar(61);
+	if (iPNT==0)
+	{
+	 goto ERROR;
+	}
+	i=0;
+	defarr PNTM[iPNT];
+	macro ProtoPath+"Arrobj.mac" iPNT PNTM ;
+  Loop8:
+  if (i<iPNT)
+  {
+    i=i+1;
+    pnt1=PNTM[i];
+		protoobj edit list pnt1 nodc "PrMatVs1" nid[1] ;
+    goto Loop8;
+  }
+}
+//-- Замена опор
+if (T_Pod==2)
+{ 
+  select attribute  "Left(FurnType,2)==\"04\"" done;
+	iPNT=sysvar(61);
+	if (iPNT==0)
+	{
+	 goto ERROR;
+	}
+	i=0;
+	defarr PNTM[iPNT];
+	macro ProtoPath+"Arrobj.mac" iPNT PNTM ;
+  Loop2:
+  if (i<iPNT)
+  {
+    i=i+1;
+    pnt1=PNTM[i];
+		setucs lcs pnt1;
+		delete pnt1;
+		Macro ProtoPath+"MakeLeg.mac" nid[1] 0   0 0 0 0 0 0;
+    goto Loop2;
+  }
+}
+ERROR:
+offerror;
+// macromode undo on ;
+mbcarcase groupall;
+NULLOUT=resnap();
+if (ca==1)
+{
+  udsetentity("CarcasesAspect",ca);
+}
+if (ca1==1)
+{
+  udsetentity("CarcasesAspectGabs",ca1);
+}
+exit;

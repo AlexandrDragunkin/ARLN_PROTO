@@ -1,0 +1,124 @@
+//-- Заполнение ячейки
+//================================
+// Габариты ниши:
+global IntP1 IntP2 IntP3;         // Точки углов ячейки
+//================================
+global IndexP;  // Для PutPoint.mac
+global ProtoPath;
+ defarr arr[3];
+ 
+OnError Final1;
+macro ProtoPath+"Yacheyka.mac" ;
+
+NULLOUT=getvarinst(2,"PrMater",PrMater,0);          //-- Умолчание для материалов
+DefFasDMat=str(getyadsubst(2))+"#"+str(PrMater) ;                    // Формируем строку умолчаний.
+
+N=3;
+#ok_flag
+setvar
+"Заполнение ячейки"
+""
+left
+"Определите параметры заполнения"
+done
+
+string auto button 6 default DefFasDMat     "Материал:" NDMat				
+done;
+if ok_flag==0 { exit }
+splitbydelim(NDMat,"#",Arr);
+PrMater=Arr[2];
+
+  h_dsp=PriceInfo(PrMater,"Thickness",16);
+
+NULLOUT=GetSnap();
+
+setucs IntP1[1] IntP1[2] IntP1[3] IntP2[1] IntP2[2] IntP2[3] IntP3[1] IntP3[2] IntP3[3] ;
+#Lx distance IntP1[1] IntP1[2] IntP1[3] IntP2[1] IntP2[2] IntP2[3] ;
+#Ly distance IntP1[1] IntP1[2] IntP1[3] IntP3[1] IntP3[2] IntP3[3] ;
+xbase1=0,ybase1=0,zbase1=0;
+xAx=0,yAx=0,zAx=0;
+xOx=0,yOx=0,zOx=0;
+  ptranscs(2,3,0.,0.,0.,xbase1,ybase1,zbase1);
+  ptranscs(2,3,0.,0.,1.,xAx,yAx,zAx);
+  ptranscs(2,3,1.,0.,0.,xOx,yOx,zOx);
+
+xsek1=min(min(IntP1[1],IntP2[1]),IntP3[1]);
+ysek1=min(min(IntP1[2],IntP2[2]),IntP3[2]);
+zsek1=min(min(IntP1[3],IntP2[3]),IntP3[3]);
+
+//setucs gcs ;
+NULLOUT=ReSnap();
+
+  ptranscs(3,2,xbase1,ybase1,zbase1,xbase1,ybase1,zbase1);
+  ptranscs(3,2,xAx,yAx,zAx,xAx,yAx,zAx);
+  ptranscs(2,3,xOx,yOx,zOx,xOx,yOx,zOx);
+
+xAx=abs(xAx-xbase1)
+yAx=abs(yAx-ybase1)
+zAx=abs(zAx-zbase1)
+xOx=abs(xOx-xbase1)
+yOx=abs(yOx-ybase1)
+zOx=abs(zOx-zbase1)
+
+MacroMode Undo Off;
+  macro ProtoPath+"SetMat.mac" PrMater ;
+if (xAx>yAx)&&(xAx>zAx) {  // Вертикаль вдоль X (стойка)
+  macro ProtoPath+"MakePan.mac" xsek1-h_dsp/2 ysek1 zsek1		    //-- Правый нижний дальний угол
+  if (yOx<zOx) {
+       Lx                               //-- Размер по D и B
+       Ly
+  }
+  else {
+       Ly
+       Lx
+  }
+   11;	  //-- Тип (полка, стойка стенка)
+}
+else {
+  if (yAx>zAx) {		// Вертикаль вдоль Y (стенка)
+
+  macro ProtoPath+"MakePan.mac" xsek1 ysek1-h_dsp/2 zsek1		    //-- Правый нижний дальний угол
+  if (xOx<zOx) {
+       Lx                               //-- Размер по D и B
+       Ly
+  }
+  else {
+       Ly
+       Lx
+  }
+   14;	  //-- Тип (полка, стойка стенка)
+
+  }
+  else {			// Вертикаль вдоль Z (полка)
+  macro ProtoPath+"MakePan.mac" xsek1-h_dsp/2 ysek1 zsek1		    //-- Правый нижний дальний угол
+  if (xOx>yOx) {
+       Lx                               //-- Размер по D и B
+       Ly
+  }
+  else {
+       Ly
+       Lx
+  }
+   12;	  //-- Тип (полка, стойка стенка)
+}
+}
+
+/////////////////////////////////////////////////////
+// последний объект - это созданная панель
+//
+objident Last 1 Panel ;
+macro ProtoPath+"YachCorr.mac" Panel;
+/////////////////////////////////////////////////////
+ObjIdent last 1 hobj;
+MacroMode Undo On "Заполнение ячейки" hobj;
+
+exit
+
+// Обработка Ecs   ==========================================
+Final1:
+
+  switch autosingle off;
+  a=fltrparamobj(0);     // Выключили фильтр по мебельным объектам
+
+//NULLOUT=ReSnap();
+exit;

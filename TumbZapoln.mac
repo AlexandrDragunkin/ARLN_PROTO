@@ -1,0 +1,83 @@
+// заполнение тумба
+global ProtoPath;		//-- ѕуть к папке с макропрограммами общей библиотеке прототипов
+global LocalPath;		//-- ѕуть к папке с макропрограммами локальной библиотеке прототипов
+global DfPetl;                  // ”молчание дл€ типов петель
+
+Ќакладн=1;
+—дв–уч=20;
+–учЌиз¬ер=3;
+ƒвеƒвери=0;
+znach="987654321";
+obj1=sysvar(60);
+
+getpar Namescr NamescrUp pnt;
+
+ScrMod=0;
+ScrMod=readscratch(NamescrUp,pnt);
+#res CalcVarScr  ScrMod  "√абариты";
+#res CalcVarScr  ScrMod  "”становки";
+NULLOUT=TermScratch(ScrMod);
+
+ScrMod=0;
+ScrMod=readscratch(Namescr,pnt);
+#res CalcVarScr  ScrMod  "“ип заполнени€";
+#res CalcVarScr  ScrMod  "√абариты";
+#res CalcVarScr  ScrMod  "”становки";
+NULLOUT=TermScratch(ScrMod);
+// боковые стойки
+macro ProtoPath+"SetMat.mac"  орпћат;
+macro ProtoPath+"SetKrom.mac" ÷в ром 0 “ип ром 0 “ип ром;
+macro ProtoPath+"SetFix.mac"  0 0 0 0;
+Macro ProtoPath+"MakePan.mac" 0 —вес рыш 0 zsek ysek 11 ;
+Macro ProtoPath+"MakePan.mac" xsek-h_dsp —вес рыш 0 zsek ysek 11 ;
+// крышка
+macro ProtoPath+"SetKrom.mac" ÷в ром 0 0 0 “ип ром;
+macro ProtoPath+"SetFix.mac"   реп  реп 0 0;
+Macro ProtoPath+"MakePan.mac" h_dsp —вес рыш zsek-h_dsp xsek-2*h_dsp ysek 12 ;
+Macro ProtoPath+"MakePan.mac" h_dsp —вес рыш ¬ыс÷ок xsek-2*h_dsp ysek 12 ;
+// стенка
+macro ProtoPath+"SetKrom.mac" ÷в ром 0 0 0 0;
+macro ProtoPath+"SetFix.mac"   реп  реп  реп  реп;
+Macro ProtoPath+"MakePan.mac" h_dsp —вес рыш ¬ыс÷ок+h_dsp zsek-¬ыс÷ок-2*h_dsp xsek-2*h_dsp 14 ;
+
+macro ProtoPath+"aЌиша.mac"
+h_dsp
+—вес рыш+h_dsp
+¬ыс÷ок+h_dsp
+xsek-h_dsp
+—вес рыш+ysek
+zsek-h_dsp
+«аполнение
+ олящ
+“ип‘ас
+«аглуб
+ орпћат
+‘асћат
+ƒноћатящ
+“ипящ
+¬ставкаћат1
+“ипќткр
+“ип–уч
+¬ыс–уч
+”гол–уч
+–учЌиз¬ер
+ƒвеƒвери
+ќткр
+—дв–уч
+DfPetl
+Ќакладн
+÷в ром
+“ип ром
+ реп«ап
+;
+obj2=sysvar(60);
+
+group last obj2-obj1 done;
+attrobj attach "FurnType" done Last 1 znach done;
+if (!IsAttrdef("ZapolnType"))
+{
+ Attribute Create "ZapolnType" "ѕараметр заполнени€" text 30 80 ;
+}
+attrobj attach "ZapolnType" done Last 1 Namescr done;
+
+exit

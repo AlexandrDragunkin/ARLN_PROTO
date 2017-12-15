@@ -1,0 +1,149 @@
+//Простановка размеров по B   для контура
+//
+//Доработка DwPDimB.mac 23.10.2007   Александр Драгункин
+//
+//          Добавлен массив ортогональных кординат
+//
+//          Изменен тип размеров parallel на free
+//
+//          Проверка на 0-е значение размера
+//
+//                   D
+//          --------------------
+//          |                   |
+//          |                   |
+//        С |                   |В
+//          |                   |
+//          |                   |
+//          --------------------
+//                   E
+//
+
+global L_SUPPORT ;
+
+getpar
+iB                   //Число точек
+w1                   //массив минимумов   3 элемента  базовые координаты
+w2                   //массив максимумов  3 элемента  базовые координаты
+AriB                 //Массив координат точек по координате В
+AriB2                //Массив координат точек по координате ортогональной В
+BaseFlgB             //Размеры от базы ключ
+SdDim                //размер смещения
+BaseDE ;             //База слева Е  справа Д  (если стоять в центре габаритов и смотреть на сторону В)
+
+
+
+
+
+if (BaseDE=="D") { goto BaseD; }
+wyold=w1[1]
+i=iB+1; 	// счетчик размеров
+lab_DB1:
+i=i-1
+If (i>0) {
+  if abs(AriB[i]-w2[2])<0.1 { // Проверка на 0-е значение стартового размера
+     w1[1]=AriB2[i] ;
+     iB=iB-1          // Уменьшаем число точек
+     goto lab_DB1 ;   // Еще раз
+     }
+  if (i==iB) {
+  ldim 3ddim w1[1] w2[2] 0
+	     AriB2[i] AriB[i] 0
+    free  wyold-SdDim w2[2] 0 ; //стартовый размер
+    xT=AriB[i]
+    objident last 1 dm ;
+    ;macro L_Support+"EditDim.mac" 1 dm ;
+    objident last 1 dm ;
+  }
+  else {
+    if (AriB[i]>w1[2])&&(-AriB[i]+xT>0.1) {
+      if BaseFlgB==1 {
+        ldim base
+      }
+      else {
+        ldim continue
+      } 		
+	 AriB2[i] AriB[i] 0   //Размер в середине массива
+         xT=AriB[i]
+         objident last 1 dm ;
+         ;macro L_Support+"EditDim.mac" 1 dm ;
+         objident last 1 dm ;
+    }
+  }
+  goto lab_DB1
+}
+//w1[1]=wyold
+//exit ; //если заключительный размер не ставить
+if (i!=iB) {
+    if (abs(w1[2]-xT)>0.1) {
+      if BaseFlgB==1 {
+        ldim base
+      }
+      else {
+        ldim continue
+      } 		
+	     w1[1] w1[2] 0 ; //Заключительный размер (вообщето не нужен)
+   }	
+}
+w1[1]=wyold
+exit;
+
+BaseD:
+
+//--------------------------------------------------B
+
+i=0; 	// счетчик размеров
+wyold=w1[1]
+Ns=1
+lab_DB2:
+i=i+1
+If (i<=iB) {
+  if abs(AriB[i]-w1[2])<0.1 { // Проверка на 0-е значение стартового размера
+     w1[1]=AriB2[i] ;
+     Ns=Ns+1 ;          // Уменьшаем число точек
+     goto lab_DB2 ;   // Еще раз
+     }
+  if (i==Ns) {
+ ldim 3ddim w1[1] w1[2] 0
+	     AriB2[i] AriB[i] 0
+    free  wyold-SdDim w1[2] 0 ;
+    xT=AriB[i]
+    objident last 1 dm ;
+    ;macro L_Support+"EditDim.mac" 1 dm ;
+    objident last 1 dm ;
+    }
+  else {
+    if (AriB[i]<w2[2])&&(AriB[i]-xT>0.1) {
+      if BaseFlgB==1 {
+        ldim base
+      }
+      else {
+        ldim continue
+      } 		
+	     AriB2[i] AriB[i] 0
+             xT=AriB[i]
+             objident last 1 dm ;
+             ;macro L_Support+"EditDim.mac" 1 dm ;
+             objident last 1 dm ;
+    }
+  }
+
+  goto lab_DB2
+}
+//w1[1]=wyold
+//exit ; //если заключительный размер не ставить
+if (i!=1) {
+    if IsVarDef("xT")!=5 { goto metend ; }
+    if (abs(w2[2]-xT)>0.1) {
+      if BaseFlgB==1 {
+        ldim base
+      }
+      else {
+        ldim continue
+      } 		
+	     w1[1] w2[2] 0 ;  //Заключительный размер (вообщето не нужен)
+   }	
+}
+metend:
+w1[1]=wyold
+exit;

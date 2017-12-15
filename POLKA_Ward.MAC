@@ -1,0 +1,206 @@
+//-- Макропрограмма устанавливает гардеробную полку
+defarr basep[3];
+defarr gab[6];
+defarr ArrFurn[3];
+global ProtoPath;
+NULLOUT=getsnap();
+NULLOUT=pushinst(1);
+onerror ERROR;
+karkas_kol=GetMCarcNumb();
+karkas_num=GetCarcNumb();
+if (karkas_kol==0)
+{
+ putmsg("Сначала надо создать мебельный каркас",0);
+ cancel;
+}
+if (karkas_kol==1)
+{
+ #karkas MBCarcase set yes;
+}
+if (karkas_kol>1&&karkas_num==0)
+{
+ #karkas MBCarcase set no yes :
+}
+macro ProtoPath+"SetInit.mac" ;
+KarkNumb=GetCarcNumb();
+//-- Устанавливаем параметры
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));	//-- Путь к папке с макропрограммами
+NULLOUT=setvarinst(2,"MacroSw",1);					//-- Текущий способ построения
+NULLOUT=getvarinst(2,"WardPanMat",Mat,0);	//-- Материал гардеробной полки
+NULLOUT=getvarinst(2,"WardPanBand",Bands,0);	//-- Материал кромки гардеробной полки
+NULLOUT=getvarinst(2,"WardStType",Type,0);	//-- Тип гардеробной стойки
+// NULLOUT=getvarinst(2,"WardPanFixB",Type1,0);	//-- Тип крепежа полки по стороне B
+// NULLOUT=getvarinst(2,"WardPanFixC",Type2,0);	//-- Тип крепежа полки по стороне B
+Type1=2428;
+Type2=2428;
+//--Общие параметры
+ProfXL=0;					//-- Ширина профиля стойки слева
+ProfXR=0;					//-- Ширина профиля стойки справа
+ProfYL=0;					//-- Глубина профиля стойки слева
+ProfYR=0;					//-- Глубина профиля стойки справа
+d1=0;
+d2=0;
+Dg1=0;
+Dg2=0;
+L_ots=0;
+R_ots=0;
+h_pol=priceinfo(Mat,"Thickness",16,1);		//-- Толщина материала полки
+ArrFurn[1]="350700";
+ArrFurn[2]="350800";
+ArrFurn[3]="100000";
+macro ProtoPath+"SetNicheElems.mac" 3 ArrFurn;	//-- Выбиваем какие объекты ограничат нишу
+//----------------------------------------------------------------------------------------------------------
+defarr Arr[3];
+NULLOUT=getarrinst(1,"FurnTypeNich",Arr);
+defarr arrin[3], arrout[14];
+arrin[1]=h_pol;
+mbget "Укажите положение гардеробной полки:" shell arrin arrout :
+basep[1]=arrout[1];
+basep[2]=arrout[2];
+basep[3]=arrout[3];
+xgab=arrout[4];
+ygab=arrout[5];
+Numb=arrout[6];
+Shift=arrout[7];
+//-- Проверка на наличие профилей вокруг полки.
+StoykaId=getprotoid("Shkaf","Стойка гардеробная","ProtoMacro","Stoy_WardP");  //-- ID прототипа
+selbyattr "Posit=="+str(StoykaId) all done;
+k_all=sysvar(61);
+if (k_all>0)
+{
+ defarr ArrObj[k_all];
+ gosub Prov;
+}
+//-- Строим полку
+// putmsg("d1="+str(d1+R_ots))
+// putmsg("d2="+str(d2+L_ots))
+// putmsg("An1="+str(Dg1))
+// putmsg("An2="+str(Dg2))
+NicheId=getprotoid("Shkaf","Полка гардеробная","ProtoMacro","Pan_WardP");  //-- ID прототипа
+protoobj create "Shkaf.ptl" NicheId
+    "Type1"	Type1
+    "Type2"	Type2
+    "Mater"	Mat
+	"Band" Bands
+    "W"		xgab+ProfXL/2+ProfXR/2
+    "D"		ygab
+    "d1"	d1+R_ots
+    "d2"	d2+L_ots
+    // "An1"	Dg1-d1
+    // "An2"	Dg2-d2
+    "An1"	Dg1+R_ots
+    "An2"	Dg2+L_ots
+    done
+basep[1]-(ProfXR/2) basep[2] basep[3]
+;
+objident last 1 polka;
+attrobj attach "KarkasNumb" done polka KarkNumb;
+macro ProtoPath+"SetNichePars.mac" polka 0 0 0 xgab+ProfXL/2 ygab h_pol;
+if (Numb>1)
+{
+  move multicopy Numb-1 polka done 0 0 shift;
+}
+NULLOUT=resnap();
+NULLOUT=popinst(1);
+macro ProtoPath+"SetNicheElems.mac" 0 ArrFurn;	//-- Обнуляем ограничения на выбор ниши
+exit;
+ERROR:
+offerror;
+NULLOUT=resnap();
+NULLOUT=popinst(1);
+macro ProtoPath+"SetNicheElems.mac" 0 ArrFurn;	//-- Обнуляем ограничения на выбор ниши
+exit;
+/////////////////////////////////////////// Проверка на пересечение со стойкой ///////////////////////////////////////////////
+Prov:
+// putmsg("Prov");
+macro ProtoPath+"ArrObj.mac" k_all ArrObj;
+i=0;
+LOOP:
+i=i+1;
+stoyka=getselnum(i);
+NULLOUT=objgab3(stoyka,gab);
+// putmsg(gab[1])
+if (gab[1]<(basep[1]+xgab+50)&&gab[1]>(basep[1]+xgab-50))	//-- проверка на пересечение по минимальному габариту стойки (слева от полки)
+{
+	// putmsg("min");
+ err=getprotoval(stoyka,"dwall",d2);		//--Читаем отступ профиля из параметров стойки
+ // err=getprotoval(stoyka,"d1",dw2);		//--Читаем отступ профиля из параметров стойки
+ err=getprotoval(stoyka,"d1",Dg2);
+ err=getprotoval(stoyka,"Type",Type);		//--Читаем тип стойки
+ ProfID=priceinfo(Type,"nomID1",0,2);		//-- Тип профиля стойки
+ ProfXL=priceinfo(ProfID,"ProfX",0.1,1);	//-- Ширина профиля стойки
+ ProfYL=priceinfo(ProfID,"ProfY",0.1,1);	//-- Глубина профиля стойки
+ adaptL=PriceInfo(Type,"WardPostType",0,2);	//-- Тип гардеробной стойки
+ // if (adaptL!=4)
+ // {
+  // d2=0;
+ // }
+ if (adaptL==1)
+ {
+	Dg2=0;
+ }
+ if (adaptL==3)
+ {
+	D2=0;
+ }
+ 
+ // if (adaptL==2||adaptL==5)
+ // {
+  // d2=0;
+ // }
+ // if (adaptL==3)
+ // {
+  // d2=Dg2;
+  // ProfYL=0;
+ // }
+ // if (adaptL==4)
+ // {
+  // ProfYL=0;
+ // }
+  // L_ots=gab[2]+ProfYL/2;				//--Отступ до стойки по глубине
+  L_ots=ProfYL/2;
+}
+//-- проверка на пересечение по максимальному габариту стойки (справа от полки)
+if (gab[4]>(basep[1]-50)&&gab[4]<(basep[1]+50))	
+{
+// putmsg("max");
+ err=getprotoval(stoyka,"dwall",d1);		//--Читаем отступ профиля из параметров стойки
+ err=getprotoval(stoyka,"d1",Dg1);		
+ err=getprotoval(stoyka,"Type",Type);		//--Читаем тип стойки
+ ProfID=priceinfo(Type,"nomID1",0,2);		//-- Тип профиля стойки
+ ProfXR=priceinfo(ProfID,"ProfX",0.1,1);	//-- Ширина профиля стойки
+ ProfYR=priceinfo(ProfID,"ProfY",0.1,1);	//-- Глубина профиля стойки
+ adaptR=PriceInfo(Type,"WardPostType",0,2);	//-- Тип гардеробной стойки
+ // if (adaptR!=4)
+ // {
+  // d1=0;
+ // }
+ if (adaptR==1)
+ {
+	Dg1=0;
+ }
+ if (adaptR==3)
+ {
+	D1=0;
+ }
+ // if (adaptR==2||adaptR==5)
+ // {
+  // d1=0;
+ // }
+ // if (adaptR==3)
+ // {
+  // d1=Dg1;
+  // ProfYR=0;
+ // }
+ // if (adaptR==4)
+ // {
+  // ProfYR=0;
+ // }
+  // R_ots=gab[2]+ProfYR/2;				//--Отступ до стойки по глубине
+  R_ots=ProfYR/2;
+}
+if (i<k_all)
+{
+ goto LOOP;
+}
+return;

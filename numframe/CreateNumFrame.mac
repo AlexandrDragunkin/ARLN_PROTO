@@ -1,0 +1,1561 @@
+//-- Макро по входным даннам расставляем текст на выноски в виде рамки.
+global ProtoPath gabScene;
+getpar
+gabO							//-- массив габаритов объекта
+ElemPointX				//-- массив координат X точек
+ElemPointY				//-- массив координат Y точек
+ElemNum						//-- массив номеров объектов и прочего текста выносок (не должен превышать 3х символов)
+ElemRef						//-- массив ссылок на объекты
+colPoint					//-- количество точек
+SizeText					//-- параметр определяет способ расчета размеров выносок 
+									//-- (0 - берем по умолчанию, 1 - расчет по коэффициенту 9.6 (для нумерации)). 
+VarNumSide				//-- способ распределения выносок по рамке вцелом: 
+									//-- 1 - равномерно, 
+									//-- 2 - количество выносок по количеству точек в секторе
+									//-- 3 - равномерно, если выноски не убираются в размер рамки, по количеству точек, если убариются.
+;
+//-- Проверка входных данных
+if ((getdimarray(ElemPointX)!=getdimarray(ElemPointY))||(getdimarray(ElemPointX)!=getdimarray(ElemNum)))
+{
+	putmsg("Разные размеры массивов координат и номеров",0);
+	exit;
+}
+if (getdimarray(ElemPointX)==0)
+{
+	exit;
+}
+onerror error;
+//-- Параметры
+Sec4Down=0;								//-- определяет где ставить текст на выносках нижнего (4-ого) сектора: 0-сверху полки, 1-снизу полки
+arrowtype=3;							//-- тип стрелки
+typenote=0;								//-- тип полки-выноски
+VarCN=1;									//-- способ распределения выносок по одной из сторон: 1-равномерно от углов, 2- последовательно от углов (номера максимально близко друг к другу)
+ZazR=120;									//-- минимальный отступ от габаритов объекта до нумерации 
+InObj=0;									//-- нужно ли добавлять номер в группу объекта (лучше не надо)
+//-- Массивы
+ars=getdimarray(ElemNum);	//-- размерность для массивов точек и номеров
+defarr gabR[6];						//-- массив размеров рамки
+defarr Sec1[ars];					//-- массив признака использования точки (1-используем, 0-не используем) в секторе 1
+defarr Sec1X[ars];				//-- массив координат X точек в секторе 1
+defarr Sec1Y[ars];				//-- массив координат Y точек в секторе 1
+defarr Sec1Num[ars];			//-- массив номеров объектов в секторе 1
+defarr Sec1Obj[ars];			//-- массив объектов в секторе 1
+
+defarr Sec2[ars];					//-- массив признака использования точки (1-используем, 0-не используем) в секторе 2
+defarr Sec2X[ars];				//-- массив координат X точек в секторе 2
+defarr Sec2Y[ars];				//-- массив координат Y точек в секторе 2
+defarr Sec2Num[ars];			//-- массив номеров объектов в секторе 2
+defarr Sec2Obj[ars];			//-- массив объектов в секторе 2
+
+defarr Sec3[ars];					//-- массив признака использования точки (1-используем, 0-не используем) в секторе 3
+defarr Sec3X[ars];				//-- массив координат X точек в секторе 3
+defarr Sec3Y[ars];				//-- массив координат Y точек в секторе 3
+defarr Sec3Num[ars];			//-- массив номеров объектов в секторе 3
+defarr Sec3Obj[ars];			//-- массив объектов в секторе 3
+
+defarr Sec4[ars];					//-- массив признака использования точки (1-используем, 0-не используем) в секторе 4
+defarr Sec4X[ars];				//-- массив координат X точек в секторе 4
+defarr Sec4Y[ars];				//-- массив координат Y точек в секторе 4
+defarr Sec4Num[ars];			//-- массив номеров объектов в секторе 4
+defarr Sec4Obj[ars];			//-- массив объектов в секторе 4
+
+defarr Ram1[ars];					//-- массив координат точек установки выносок по стороне 1 рамки
+defarr Ram1Sec[ars];			//-- массив использования точек рамки 1 рамки
+defarr Ram2[ars];					//-- массив координат точек установки выносок по стороне 2 рамки
+defarr Ram2Sec[ars];			//-- массив использования точек рамки 1 рамки
+defarr Ram3[ars];					//-- массив координат точек установки выносок по стороне 3 рамки
+defarr Ram3Sec[ars];			//-- массив использования точек рамки 1 рамки
+defarr Ram4[ars];					//-- массив координат точек установки выносок по стороне 4 рамки
+defarr Ram4Sec[ars];			//-- массив использования точек рамки 1 рамки
+
+defarr Sys43Arr[15];			//-- массив для определения состояний создаваемой выноски
+defarr NotePar[20];				//-- массив для чтения параметров выноски
+
+err=initarray(Sec1,0);		//-- инициализируем массивы. 0-элемент пустой
+err=initarray(Sec2,0);
+err=initarray(Sec3,0);
+err=initarray(Ram1Sec,0);
+err=initarray(Ram2Sec,0);
+err=initarray(Ram3Sec,0);
+err=initarray(Ram4Sec,0);
+
+colPoint1=0;
+colPoint2=0;
+colPoint3=0;
+colPoint4=0;
+
+ColNum1=0;
+ColNum2=0;
+ColNum3=0;
+ColNum4=0;
+
+NULLOUT=sysarr(43,Sys43Arr);
+NULLOUT=GetNoteInfo(typenote,NotePar);
+CurrVi=SysVar(51)   ;
+CV="VidDim_"+Str(CurrVi) ;
+//-- Определяем размеры рамки и номеров выносок
+if (SizeText==0)
+{
+	grcoef=Sys43Arr[3];							//-- текущий графический масштаб
+	TextHei=NotePar[15];						//-- высота шрифта выноски
+	NoteY=(TextHei+0.25)*grcoef;		//-- размер выности по Y
+	NoteX=NoteY;										//-- размер выноски по X для высоты шрифта 20
+	ZazN=0.25*grcoef;								//-- минимальный зазор между выносками
+}
+if (SizeText==1)
+{
+	grcoef=9.6;
+	TextHei=5;											//-- высота шрифта выноски
+	NoteY=(TextHei+0.25)*grcoef;		//-- размер выности по Y
+	NoteX=NoteY;										//-- размер выноски по X для высоты шрифта 20
+	ZazN=0.25*grcoef;								//-- минимальный зазор между выносками
+}
+XMR=gabO[4]-gabO[1]+ZazR*2;			//-- минимальные размеры рамки
+YMR=gabO[5]-gabO[2]+ZazR*2;
+
+gabR[1]=gabO[1]-ZazR;						//-- габариты рамки
+gabR[2]=gabO[2]-ZazR;
+gabR[3]=0;
+gabR[4]=gabO[4]+ZazR;
+gabR[5]=gabO[5]+ZazR;
+gabR[6]=0;
+//rectangle gabO[1] gabO[2] gabO[3] gabO[4] gabO[5] gabO[6];
+//-- Строим выноски вокруг изделия.
+gosub ColPointSec;				//-- Определение количества точек в секторах.
+if (VarNumSide==1)				//-- если выноски распределяются про всему периметру рамки
+{
+	gosub NumSideVar1;			//-- Определения количества номеров по секторам и размеры рамки
+	gosub ColNumGet;				//-- Определение точек положения выносок на сторонах рамки 
+	gosub PlusMinPoint;			//-- Корректируем массивы точек секторов в соответствии с кол-ом выносок вокруг изделия
+}
+if (VarNumSide==2)				//-- если выноски распределяются по количеству точек в секторе (сколько точек в секторе, столько и выносок)
+{
+	gosub NumSideVar2;			//-- Определения количества номеров по секторам и размеры рамки
+	gosub ColNumGet;				//-- Определение точек положения выносок на сторонах рамки 
+}
+if (VarNumSide==3)				//-- равномерно, если выноски не убираются в размер рамки, по количеству точек, если убариются.
+{
+	gosub NumSideVar3;			//-- Определения количества номеров по секторам и размеры рамки
+	gosub ColNumGet;				//-- Определение точек положения выносок на сторонах рамки 
+	if (NeedRecPoint==1)
+	{
+		gosub PlusMinPoint;			//-- Корректируем массивы точек секторов в соответствии с кол-ом выносок вокруг изделия
+	}
+}
+gosub NoteSec1;						//-- Проставляем остальные выноски
+gosub NoteSec2;
+gosub NoteSec3;
+gosub NoteSec4;
+error:
+offerror;
+exit;
+
+////////////////////////////-- Подпрограмма определения количества точек в секторах 1,2,3,4 --////////////////////////////////
+ColPointSec:
+	defarr arrSecX[3], arrSecY[3];
+	//-- Сектор 1
+	arrSecX[1]=gabO[1];
+	arrSecY[1]=gabO[2];
+	arrSecX[2]=gabO[1];
+	arrSecY[2]=gabO[5];
+	arrSecX[3]=(gabO[4]/2);
+	arrSecY[3]=(gabO[5]/2);
+	//line arrSecX[1],arrSecY[1],0 arrSecX[2],arrSecY[2],0 arrSecX[3],arrSecY[3],0 close;
+	iS1=0;
+	s1=1;
+	LOOPS1:
+	iS1=iS1+1;
+	macro ProtoPath+"numframe\\GetPointSector.mac" 0 ElemPointX[iS1] ElemPointY[iS1] 3 arrSecX arrSecY byref YN1;	//-- определяем попадает ли точка в сектор
+	if (YN1==1)		//-- если точка попала в сектор, записываем ее порядковый номер и данные в массивы
+	{
+		Sec1[s1]=1;											//-- массив порядкового номера из общего массива
+		Sec1X[s1]=ElemPointX[iS1];				//-- массив координат X точек в секторе 1
+		Sec1Y[s1]=ElemPointY[iS1];				//-- массив координат Y точек в секторе 1
+		Sec1Num[s1]=ElemNum[iS1];					//-- массив номеров объектов в секторе 1
+		Sec1Obj[s1]=ElemRef[iS1];					//-- массив номеров объектов в секторе 1
+		colPoint1=s1;
+		s1=s1+1;
+	}
+	if (iS1<colPoint)
+	{
+	 goto LOOPS1;
+	}
+
+	//-- Сектор 2
+	arrSecX[1]=gabO[1];
+	arrSecY[1]=gabO[5];
+	arrSecX[2]=gabO[4];
+	arrSecY[2]=gabO[5];
+	arrSecX[3]=(gabO[4]-gabO[1])/2;
+	arrSecY[3]=(gabO[5]-gabO[2])/2;
+	//line arrSecX[1],arrSecY[1],0 arrSecX[2],arrSecY[2],0 arrSecX[3],arrSecY[3],0 close;
+	iS2=0;
+	s2=1;
+	LOOPS2:
+	iS2=iS2+1;
+	macro ProtoPath+"numframe\\GetPointSector.mac" 0 ElemPointX[iS2] ElemPointY[iS2] 3 arrSecX arrSecY byref YN2;	//-- определяем попадает ли точка в сектор
+	if (YN2==1)		//-- если точка попала в сектор, записываем ее порядковый номер и данные в массивы
+	{
+		Sec2[s2]=1;											//-- массив порядкового номера из общего массива
+		Sec2X[s2]=ElemPointX[iS2];				//-- массив координат X точек в секторе 2
+		Sec2Y[s2]=ElemPointY[iS2];				//-- массив координат Y точек в секторе 2
+		Sec2Num[s2]=ElemNum[iS2];					//-- массив номеров объектов в секторе 2
+		Sec2Obj[s2]=ElemRef[iS2];					//-- массив номеров объектов в секторе 2
+		colPoint2=s2;
+		s2=s2+1;
+	}
+	if (iS2<colPoint)
+	{
+	 goto LOOPS2;
+	}
+
+	//-- Сектор 3
+	arrSecX[1]=gabO[4];
+	arrSecY[1]=gabO[5];
+	arrSecX[2]=gabO[4];
+	arrSecY[2]=gabO[2];
+	arrSecX[3]=(gabO[4]-gabO[1])/2;
+	arrSecY[3]=(gabO[5]-gabO[2])/2;
+	//line arrSecX[1],arrSecY[1],0 arrSecX[2],arrSecY[2],0 arrSecX[3],arrSecY[3],0 close;
+	iS3=0;
+	s3=1;
+	LOOPS3:
+	iS3=iS3+1;
+	macro ProtoPath+"numframe\\GetPointSector.mac" 0 ElemPointX[iS3] ElemPointY[iS3] 3 arrSecX arrSecY byref YN3;	//-- определяем попадает ли точка в сектор
+	if (YN3==1)		//-- если точка попала в сектор, записываем ее порядковый номер и данные в массивы
+	{
+		Sec3[s3]=1;											//-- массив порядкового номера из общего массива
+		Sec3X[s3]=ElemPointX[iS3];				//-- массив координат X точек в секторе 3
+		Sec3Y[s3]=ElemPointY[iS3];				//-- массив координат Y точек в секторе 3
+		Sec3Num[s3]=ElemNum[iS3];					//-- массив номеров объектов в секторе 3
+		Sec3Obj[s3]=ElemRef[iS3];					//-- массив номеров объектов в секторе 3
+		colPoint3=s3;
+		s3=s3+1;
+	}
+	if (iS3<colPoint)
+	{
+	 goto LOOPS3;
+	}
+
+	//-- Сектор 4
+	arrSecX[1]=gabO[4];
+	arrSecY[1]=gabO[2];
+	arrSecX[2]=gabO[1];
+	arrSecY[2]=gabO[2];
+	arrSecX[3]=(gabO[4]-gabO[1])/2;
+	arrSecY[3]=(gabO[5]-gabO[2])/2;
+	//line arrSecX[1],arrSecY[1],0 arrSecX[2],arrSecY[2],0 arrSecX[3],arrSecY[3],0 close;
+	iS4=0;
+	s4=1;
+	LOOPS4:
+	iS4=iS4+1;
+	macro ProtoPath+"numframe\\GetPointSector.mac" 0 ElemPointX[iS4] ElemPointY[iS4] 3 arrSecX arrSecY byref YN4;	//-- определяем попадает ли точка в сектор
+	if (YN4==1)		//-- если точка попала в сектор, записываем ее порядковый номер и данные в массивы
+	{
+		Sec4[s4]=1;											//-- массив порядкового номера из общего массива
+		Sec4X[s4]=ElemPointX[iS4];				//-- массив координат X точек в секторе 4
+		Sec4Y[s4]=ElemPointY[iS4];				//-- массив координат Y точек в секторе 4
+		Sec4Num[s4]=ElemNum[iS4];					//-- массив номеров объектов в секторе 4
+		Sec4Obj[s4]=ElemRef[iS4];					//-- массив номеров объектов в секторе 4
+		colPoint4=s4;
+		s4=s4+1;
+	}
+	if (iS4<colPoint)
+	{
+	 goto LOOPS4;
+	}
+return;
+////////////////////////////-- Подпрограмма равномерного распределения выносок по сторонам рамки 1,2,3,4 --////////////////////////
+NumSideVar1:
+	//-- Распределяем номера вокруг изделия равномерно. В зависимости от масштабов рамки.
+	//-- Определяем количество номеров по сторонам.
+	kolmax1=ceil(colPoint/4);												//-- количество номеров по 1-й большей стороне
+	kolmax2=floor((colPoint)/4);										//-- количество номеров по 2-й большей стороне
+	kolmin1=iif(colPoint-kolmax1-kolmax2<=0,0,ceil((colPoint-kolmax1-kolmax2)/2));					//-- количество номеров  по 1-й меньшей стороне
+	kolmin2=iif(colPoint-kolmax1-kolmax2<=0,0,floor((colPoint-kolmax1-kolmax2)/2));					//-- количество номеров  по 2-й меньшей стороне
+	if (XMR!=YMR)
+	{
+		koe1=max(XMR,YMR)/min(XMR,YMR);	//-- соотношение сторон рамки
+		if (koe1>=2)
+		{
+			kolmax1=ceil((colPoint/koe1));										//-- количество номеров по 2-м большим сторонам
+			kolmax2=floor((colPoint/koe1));										//-- количество номеров по 2-м большим сторонам
+			kolmin1=iif(colPoint-kolmax1-kolmax2<=0,0,ceil((colPoint-kolmax1-kolmax2)/2));				//-- остаток номеров по 1-й меньшей стороне
+			kolmin2=iif(colPoint-kolmax1-kolmax2<=0,0,floor((colPoint-kolmax1-kolmax2)/2));				//-- остаток номеров по 2-й меньшей стороне 
+		}
+		if (koe1<2)
+		{
+			kolmax1=ceil(kolmax1*koe1);										//-- количество номеров по 2-м большим сторонам
+			kolmax2=floor(kolmax2*koe1);										//-- количество номеров по 2-м большим сторонам
+			kolmin1=iif(colPoint-kolmax1-kolmax2<=0,0,ceil((colPoint-kolmax1-kolmax2)/2));				//-- остаток номеров по 1-й меньшей стороне
+			kolmin2=iif(colPoint-kolmax1-kolmax2<=0,0,floor((colPoint-kolmax1-kolmax2)/2));				//-- остаток номеров по 2-й меньшей стороне 
+		}
+	 
+		ColNum1=iif(max(XMR,YMR)==YMR,kolmax1,kolmin1);
+		ColNum2=iif(max(XMR,YMR)==XMR,kolmax1,kolmin1);
+		ColNum3=iif(max(XMR,YMR)==YMR,kolmax2,kolmin2);
+		ColNum4=iif(max(XMR,YMR)==XMR,kolmax2,kolmin2);
+	}
+	else
+	{
+		koe1=1;			//-- если стороны рамки одинаковы
+		ColNum1=kolmax1;
+		ColNum2=kolmax2;
+		ColNum3=kolmin1;
+		ColNum4=kolmin2;
+	}
+	//-- Проверяем подходит ли размер рамки
+	PerRam=XMR*2+YMR*2;
+	PerNote=(max(NoteX,NoteY)+ZazN)*colPoint;
+	if (PerRam<PerNote)
+	{
+		//--пересчитываем рамку!!!!
+		coefY=XMR/YMR;
+		YMRn=ceil(PerNote/(2+2*coefY));
+		XMRn=ceil(YMRn*coefY);
+		gabR[1]=gabR[1]-(XMRn-XMR)/2;
+		gabR[4]=gabR[4]+(XMRn-XMR)/2;
+		gabR[2]=gabR[2]-(YMRn-YMR)/2;
+		gabR[5]=gabR[5]+(YMRn-YMR)/2;
+		YMR=YMRn;
+		XMR=XMRn;
+	}
+return;
+////////////////////////////-- Подпрограмма распределения выносок по сторонам рамки в количеству точек в секторах 1,2,3,4 --////////////////////////
+NumSideVar2:
+	//-- Проверяем подходит ли размер рамки
+	PerRam=XMR*2+YMR*2;
+	coefY=XMR/YMR;
+	coefX=YMR/XMR;
+	SizeNote1=(max(NoteX,NoteY)+ZazN)*colPoint1;
+	SizeNote2=(max(NoteX,NoteY)+ZazN)*colPoint2;
+	SizeNote3=(max(NoteX,NoteY)+ZazN)*colPoint3;
+	SizeNote4=(max(NoteX,NoteY)+ZazN)*colPoint4;
+	if (SizeNote1>YMR||SizeNote3>YMR)			//-- если по сторонам 1 и 3 выноски не убираются в рамку
+	{
+		//--пересчитываем рамку!!!!
+		YMRn=max(SizeNote1,SizeNote3);
+		gabR[2]=gabR[2]-(YMRn-YMR)/2;
+		gabR[5]=gabR[5]+(YMRn-YMR)/2;
+		YMR=YMRn;
+	}
+	if (SizeNote2>XMR||SizeNote4>XMR)			//-- если по сторонам 1 и 3 выноски не убираются в рамку
+	{
+		//--пересчитываем рамку!!!!
+		XMRn=max(SizeNote2,SizeNote4);
+		gabR[1]=gabR[1]-(XMRn-XMR)/2;
+		gabR[4]=gabR[4]+(XMRn-XMR)/2;
+		XMR=XMRn;
+	}
+	ColNum1=colPoint1;
+	ColNum2=colPoint2;
+	ColNum3=colPoint3;
+	ColNum4=colPoint4;
+return;
+////////////////////////////-- Подпрограмма распределения выносок по сторонам рамки в количеству точек в секторах 1,2,3,4 --////////////////////////
+NumSideVar3:
+	//-- Проверяем подходит ли размер рамки
+	SizeNote1=(max(NoteX,NoteY)+ZazN)*colPoint1;
+	SizeNote2=(max(NoteX,NoteY)+ZazN)*colPoint2;
+	SizeNote3=(max(NoteX,NoteY)+ZazN)*colPoint3;
+	SizeNote4=(max(NoteX,NoteY)+ZazN)*colPoint4;
+	if (SizeNote1>YMR||SizeNote3>YMR||SizeNote2>XMR||SizeNote4>XMR)			//-- если по сторонам выноски не убираются в рамку
+	{
+		gosub NumSideVar1;	//-- равномерно распределяем выноски по сторонам рамки
+		NeedRecPoint=1;			//-- ставим признак, что нужно корректировать массивы точек
+	}
+	else 
+	{
+		NeedRecPoint=1;			//-- ставим признак, что не нужно корректировать массивы точек
+		ColNum1=colPoint1;
+		ColNum2=colPoint2;
+		ColNum3=colPoint3;
+		ColNum4=colPoint4;
+	}
+return;
+/////////////////////////////////-- Определяем точки положения выносок на сторонах рамки--//////////////////////////////////////////////
+ColNumGet:
+	//-- Способ 1. Выноски расставляются по часовой стрелке с угла 1-ого сектора. Принцип: выноска-отстут-выноска [n]__[n]__
+	//-- Сектор 1
+	if (ColNum1!=0)
+	{
+		if (VarCN==1)
+		{
+			ZazN1=(YMR-ColNum1*NoteY)/ColNum1;	//-- Новый зазор между выносками
+		}
+		if (VarCN==2)
+		{
+			ZazN1=ZazN;	//-- Новый зазор между выносками
+		}
+		//-- Записываем координаты точек выносок в массив
+		i1CN=0;
+		iC1L:
+		i1CN=i1CN+1;
+		if (i1CN==1)
+		{
+			Ram1[i1CN]=gabR[2];
+			Ram1Sec[i1CN]=1;
+		}
+		else
+		{
+			Ram1[i1CN]=Ram1[i1CN-1]+ZazN1+NoteY; 
+			Ram1Sec[i1CN]=1;
+		}
+		//point gabR[1] Ram1[i1CN] 0;
+		if (i1CN<ColNum1)
+		{
+			goto iC1L;
+		}
+	}
+	//-- Сектор 2
+	if (ColNum2!=0)
+	{
+		if (VarCN==1)
+		{
+			ZazN2=(XMR-ColNum2*NoteX)/ColNum2;	//-- Новый зазор между выносками
+		}
+		if (VarCN==2)
+		{
+			ZazN2=ZazN;	//-- Новый зазор между выносками
+		}
+		//-- Записываем координаты точек выносок в массив
+		i2CN=0;
+		iC2L:
+		i2CN=i2CN+1;
+		if (i2CN==1)
+		{
+			Ram2[i2CN]=gabR[1];
+			Ram2Sec[i2CN]=1;
+		}
+		else
+		{
+			Ram2[i2CN]=Ram2[i2CN-1]+ZazN2+NoteX; 
+			Ram2Sec[i2CN]=1;
+		}
+		//point Ram2[i2CN] gabR[5] 0;
+		if (i2CN<ColNum2)
+		{
+			goto iC2L;
+		}
+	}
+	//-- Сектор 3
+	if (ColNum3!=0)
+	{
+		if (VarCN==1)
+		{
+			ZazN3=(YMR-ColNum3*NoteY)/ColNum3;	//-- Новый зазор между выносками
+		}
+		if (VarCN==2)
+		{
+			ZazN3=ZazN;	//-- Новый зазор между выносками
+		}
+		//-- Записываем координаты точек выносок в массив
+		i3CN=0;
+		iC3L:
+		i3CN=i3CN+1;
+		if (i3CN==1)
+		{
+			Ram3[i3CN]=gabR[5];
+			Ram3Sec[i3CN]=1;
+		}
+		else
+		{
+			Ram3[i3CN]=Ram3[i3CN-1]-ZazN3-NoteY; 
+			Ram3Sec[i3CN]=1;
+		}
+		//point gabR[4] Ram3[i3CN] 0;
+		if (i3CN<ColNum3)
+		{
+			goto iC3L;
+		}
+	}
+	//-- Сектор 4
+	if (ColNum4!=0)
+	{
+		if (VarCN==1)
+		{
+			ZazN4=(XMR-ColNum4*NoteX)/ColNum4;	//-- Новый зазор между выносками
+		}
+		if (VarCN==2)
+		{
+			ZazN4=ZazN;	//-- Новый зазор между выносками
+		}
+		//-- Записываем координаты точек выносок в массив
+		i4CN=0;
+		iC4L:
+		i4CN=i4CN+1;
+		if (i4CN==1)
+		{
+			Ram4[i4CN]=gabR[4];
+			Ram4Sec[i4CN]=1;
+		}
+		else
+		{
+			Ram4[i4CN]=Ram4[i4CN-1]-ZazN4-NoteX;
+			Ram4Sec[i4CN]=1;
+		}
+		//point Ram4[i4CN] gabR[2] 0;
+		if (i4CN<ColNum4)
+		{
+			goto iC4L;
+		}
+	}
+return;
+////////////////////////////-- Корректируем массивы точек секторов в соответствии с точками рамки --///////////////////////////////////////
+PlusMinPoint:
+	//-- Определяем сектор с меньшим числом точек по стороне. В сектор, где не хватает точек переносим ближайшие точки из других секторов.
+	MinSec=max(ColNum1-colPoint1,ColNum2-colPoint2,ColNum3-colPoint3,ColNum4-colPoint4);		//-- порядок заполнения начиная с секции с меньшим числом точек
+	CGP1=1;		//-- признаки того, что можно брать из сектора точки
+	CGP2=1;
+	CGP3=1;
+	CGP4=1;
+	//putmsg("///// ОТЛАДКА /////")
+	//putmsg("Cектор 1; Точек="+str(ColPoint1)+"; Полок-"+str(ColNum1)+"; разница="+str(ColNum1-ColPoint1)+"")
+	//putmsg("Cектор 2; Точек="+str(ColPoint2)+"; Полок-"+str(ColNum2)+"; разница="+str(ColNum2-ColPoint2)+"")
+	//putmsg("Cектор 3; Точек="+str(ColPoint3)+"; Полок-"+str(ColNum3)+"; разница="+str(ColNum3-ColPoint3)+"")
+	//putmsg("Cектор 4; Точек="+str(ColPoint4)+"; Полок-"+str(ColNum4)+"; разница="+str(ColNum4-ColPoint4)+"")
+	gosub GetPointS;	//-- проверка, можно ли брать точки из секторов
+	//-- Перекидываем точки с секторов
+		if (ColNum1-colPoint1==MinSec)
+		{
+			gosub PointRec1;
+			if (max(ColNum2-colPoint2,ColNum3-colPoint3,ColNum4-colPoint4)==ColNum2-colPoint2) 
+			{
+				gosub PointRec2;
+				if (max(ColNum3-colPoint3,ColNum4-colPoint4)==ColNum3-colPoint3) 
+				{
+					gosub PointRec3;
+					gosub PointRec4;
+				}
+				else
+				{
+					gosub PointRec4;
+					gosub PointRec3;
+				}
+			}
+			if (max(ColNum2-colPoint2,ColNum3-colPoint3,ColNum4-colPoint4)==ColNum3-colPoint3) 
+			{
+				gosub PointRec3;
+				if (max(ColNum2-colPoint2,ColNum4-colPoint4)==ColNum2-colPoint2) 
+				{
+					gosub PointRec2;
+					gosub PointRec4;
+				}
+				else
+				{
+					gosub PointRec4;
+					gosub PointRec2;
+				}
+			}
+			if (max(ColNum2-colPoint2,ColNum3-colPoint3,ColNum4-colPoint4)==ColNum4-colPoint4) 
+			{
+				gosub PointRec4;
+				if (max(ColNum3-colPoint3,ColNum2-colPoint2)==ColNum3-colPoint3) 
+				{
+					gosub PointRec3;
+					gosub PointRec2;
+				}
+				else
+				{
+					gosub PointRec2;
+					gosub PointRec3;
+				}
+			}
+			goto nextFunc;
+		}
+		if (ColNum2-colPoint2==MinSec)
+		{
+			gosub PointRec2;
+			if (max(ColNum1-colPoint1,ColNum3-colPoint3,ColNum4-colPoint4)==ColNum1-colPoint1) 
+			{
+				gosub PointRec1;
+				if (max(ColNum3-colPoint3,ColNum4-colPoint4)==ColNum3-colPoint3) 
+				{
+					gosub PointRec3;
+					gosub PointRec4;
+				}
+				else
+				{
+					gosub PointRec4;
+					gosub PointRec3;
+				}
+			}
+			if (max(ColNum1-colPoint1,ColNum3-colPoint3,ColNum4-colPoint4)==ColNum3-colPoint3) 
+			{
+				gosub PointRec3;
+				if (max(ColNum1-colPoint1,ColNum4-colPoint4)==ColNum1-colPoint1) 
+				{
+					gosub PointRec1;
+					gosub PointRec4;
+				}
+				else
+				{
+					gosub PointRec4;
+					gosub PointRec1;
+				}
+			}
+			if (max(ColNum1-colPoint1,ColNum3-colPoint3,ColNum4-colPoint4)==ColNum4-colPoint4) 
+			{
+				gosub PointRec4;
+				if (max(ColNum3-colPoint3,ColNum1-colPoint1)==ColNum3-colPoint3) 
+				{
+					gosub PointRec3;
+					gosub PointRec1;
+				}
+				else
+				{
+					gosub PointRec1;
+					gosub PointRec3;
+				}
+			}
+			goto nextFunc;
+		}
+		if (ColNum3-colPoint3==MinSec)
+		{
+			gosub PointRec3;
+			if (max(ColNum2-colPoint2,ColNum1-colPoint1,ColNum4-colPoint4)==ColNum2-colPoint2) 
+			{
+				gosub PointRec2;
+				if (max(ColNum1-colPoint1,ColNum4-colPoint4)==ColNum1-colPoint1) 
+				{
+					gosub PointRec1;
+					gosub PointRec4;
+				}
+				else
+				{
+					gosub PointRec4;
+					gosub PointRec1;
+				}
+			}
+			if (max(ColNum2-colPoint2,ColNum1-colPoint1,ColNum4-colPoint4)==ColNum1-colPoint1) 
+			{
+				gosub PointRec1;
+				if (max(ColNum2-colPoint2,ColNum4-colPoint4)==ColNum2-colPoint2) 
+				{
+					gosub PointRec2;
+					gosub PointRec4;
+				}
+				else
+				{
+					gosub PointRec4;
+					gosub PointRec2;
+				}
+			}
+			if (max(ColNum2-colPoint2,ColNum1-colPoint1,ColNum4-colPoint4)==ColNum4-colPoint4) 
+			{
+				gosub PointRec4;
+				if (max(ColNum1-colPoint1,ColNum2-colPoint2)==ColNum1-colPoint1) 
+				{
+					gosub PointRec1;
+					gosub PointRec2;
+				}
+				else
+				{
+					gosub PointRec2;
+					gosub PointRec1;
+				}
+			}
+			goto nextFunc;
+		}
+		if (ColNum4-colPoint4==MinSec)
+		{
+			gosub PointRec4;
+			if (max(ColNum2-colPoint2,ColNum3-colPoint3,ColNum1-colPoint1)==ColNum2-colPoint2) 
+			{
+				gosub PointRec2;
+				if (max(ColNum3-colPoint3,ColNum1-colPoint1)==ColNum3-colPoint3) 
+				{
+					gosub PointRec3;
+					gosub PointRec1;
+				}
+				else
+				{
+					gosub PointRec1;
+					gosub PointRec3;
+				}
+			}
+			if (max(ColNum2-colPoint2,ColNum3-colPoint3,ColNum1-colPoint1)==ColNum3-colPoint3) 
+			{
+				gosub PointRec3;
+				if (max(ColNum2-colPoint2,ColNum1-colPoint1)==ColNum2-colPoint2) 
+				{
+					gosub PointRec2;
+					gosub PointRec1;
+				}
+				else
+				{
+					gosub PointRec1;
+					gosub PointRec2;
+				}
+			}
+			if (max(ColNum2-colPoint2,ColNum3-colPoint3,ColNum1-colPoint1)==ColNum1-colPoint1) 
+			{
+				gosub PointRec1;
+				if (max(ColNum3-colPoint3,ColNum2-colPoint2)==ColNum3-colPoint3) 
+				{
+					gosub PointRec3;
+					gosub PointRec2;
+				}
+				else
+				{
+					gosub PointRec2;
+					gosub PointRec3;
+				}
+			}
+			goto nextFunc;
+		}
+	nextFunc:
+	//putmsg("///// итог /////")
+	//putmsg("Cектор 1; Точек="+str(ColPoint1)+"; Полок-"+str(ColNum1)+"")
+	//putmsg("Cектор 2; Точек="+str(ColPoint2)+"; Полок-"+str(ColNum2)+"")
+	//putmsg("Cектор 3; Точек="+str(ColPoint3)+"; Полок-"+str(ColNum3)+"")
+	//putmsg("Cектор 4; Точек="+str(ColPoint4)+"; Полок-"+str(ColNum4)+"")
+return;
+///////////////////////-- Подпрограмма ищет ближайшие точки секторов 2,3,4 и приписывает их к сектору 1 --///////////////////////////////
+PointRec1:
+	//putmsg("PointRec1")
+	if (ColNum1==0)			//-- если номеров с этой стороны не нужно
+	{
+		goto exNS1;
+	}
+	if (ColNum1==colPoint1)
+	{
+		CGP1=0;
+		goto exNS1;
+	}
+	if (ColNum1<colPoint1)	//-- если номеров по стороне меньше, чем точек в секторе
+	{
+		putmsg("Выносок меньше, чем точек 1");
+		goto exNS1;
+	}
+	x1ns=0;
+	razn=ColNum1-colPoint1;
+	x1nsL:
+	x1ns=x1ns+1;
+	if (CGP2==1)
+	{	
+		//-- Ищем ближайшую точку в секторе 2
+		macro ProtoPath+"numframe\\GetClosePoint.mac" 
+		(gabO[4]-gabO[1])/2 //gabR[1]										//-- координата X точки от которой идет отсчет
+		(gabO[5]-gabO[2])/2 //(gabR[5]-gabR[2])/2				//-- координата Y точки от которой идет отсчет
+		gabO[1] //(gabR[4]-gabR[1])/2 //gabR[1]										//-- Х координата вектора отсчета
+		gabO[5] //(gabR[5]-gabR[2])/2 //gabR[5]										//-- Y координата вектора отсчета
+		Sec2X											//-- массив Х координат точек области
+		Sec2Y											//-- массив Y координат точек области
+		Sec2											//-- массив с признаком, какие точки можно использовать
+		-1												//-- количество точек области		(если -1, то берется размерность одного из массивов)
+		byref resX2								//-- возвращаемое значение, X координата ближайшей точки
+		byref resY2								//-- возвращаемое значение, Y координата ближайшей точки
+		byref resn2								//-- порядковый номер точки в массиве
+		0;		
+	}
+	else 	{	resn2=-1;	}
+	if (CGP3==1)
+	{
+		//-- Ищем ближайшую точку в секторе 3
+		macro ProtoPath+"numframe\\GetClosePoint.mac" 
+		(gabO[4]-gabO[1])/2 //(gabR[4]-gabR[1])/2				//-- координата X точки от которой идет отсчет
+		(gabO[5]-gabO[2])/2 //gabR[5]										//-- координата Y точки от которой идет отсчет
+		0 //(gabR[4]-gabR[1])/2				//-- Х координата вектора отсчета
+		0 //(gabR[5]-gabR[2])/2				//-- Y координата вектора отсчета
+		Sec3X											//-- массив Х координат точек области
+		Sec3Y											//-- массив Y координат точек области
+		Sec3											//-- массив с признаком, какие точки можно использовать
+		-1												//-- количество точек области		(если -1, то берется размерность одного из массивов)
+		byref resX3								//-- возвращаемое значение, X координата ближайшей точки
+		byref resY3								//-- возвращаемое значение, Y координата ближайшей точки
+		byref resn3								//-- порядковый номер точки в массиве
+		1;		
+	}
+	
+
+	else	{ resn3=-1;	}
+	if (CGP4==1)
+	{
+		//-- Ищем ближайшую точку в секторе 4
+		macro ProtoPath+"numframe\\GetClosePoint.mac" 
+		(gabO[4]-gabO[1])/2 //gabR[1]										//-- координата X точки от которой идет отсчет
+		(gabO[5]-gabO[2])/2 //(gabR[5]-gabR[2])/2				//-- координата Y точки от которой идет отсчет
+		gabO[1] //(gabR[4]-gabR[1])/2 //gabR[1]										//-- Х координата вектора отсчета
+		gabO[2] //(gabR[5]-gabR[2])/2 //gabR[2]										//-- Y координата вектора отсчета
+		Sec4X											//-- массив Х координат точек области
+		Sec4Y											//-- массив Y координат точек области
+		Sec4											//-- массив с признаком, какие точки можно использовать
+		-1												//-- количество точек области		(если -1, то берется размерность одного из массивов)
+		byref resX4								//-- возвращаемое значение, X координата ближайшей точки
+		byref resY4								//-- возвращаемое значение, Y координата ближайшей точки
+		byref resn4								//-- порядковый номер точки в массиве
+		0;		
+	}
+	else	{ resn4=-1;	}
+	if (resn2==-1&&resn3==-1&&resn4==-1)		//-- дальше сканировать не нужно
+	{	
+		goto exNS1;
+	}
+	else		
+	{
+		//PXplus=min(resX2,resX3,resX4);
+
+		if (resn2!=-1&&resn3!=-1&&resn4!=-1) {	PXplus=min(resX2,resX3,resX4);	}
+		if (resn2==-1&&resn3!=-1&&resn4!=-1) {	PXplus=min(resX3,resX4);	}
+		if (resn2!=-1&&resn3==-1&&resn4!=-1) {	PXplus=min(resX2,resX4);	}
+		if (resn2!=-1&&resn3!=-1&&resn4==-1) {	PXplus=min(resX2,resX3);	}
+
+		if (resn2!=-1&&resn3==-1&&resn4==-1) {	PXplus=resX2;	}
+		if (resn2==-1&&resn3!=-1&&resn4==-1) {	PXplus=resX3;	}
+		if (resn2==-1&&resn3==-1&&resn4!=-1) {	PXplus=resX4;	}
+
+		if (resn2!=-1)
+		{
+			if (resX2==PXplus)
+			{
+				//-- Переписываем точку из соседнего сектора в этот
+				s1=s1+1;
+				Sec1X[s1]=Sec2X[resn2];					
+				Sec1Y[s1]=Sec2Y[resn2];					
+				Sec1[s1]=1;
+				Sec1Num[s1]=Sec2Num[resn2];			
+				Sec1Obj[s1]=Sec2Obj[resn2];	
+				//-- В соседнем секторе "обнуляем" точку
+				Sec2[resn2]=0;			
+				colPoint2=colPoint2-1;
+				colPoint1=colPoint1+1;
+				goto nextc1;			
+			}
+		}
+		if (resn4!=-1)
+		{
+			if (resX4==PXplus)
+			{
+				//-- Переписываем точку из соседнего сектора в этот
+				s1=s1+1;
+				Sec1X[s1]=Sec4X[resn4];					
+				Sec1Y[s1]=Sec4Y[resn4];	
+				Sec1[s1]=1;
+				Sec1Num[s1]=Sec4Num[resn4];			
+				Sec1Obj[s1]=Sec4Obj[resn4];
+				//-- В соседнем секторе "обнуляем" точку
+				Sec4[resn4]=0;	
+				colPoint4=colPoint4-1;
+				colPoint1=colPoint1+1;
+				goto nextc1;			
+			}
+		}
+		if (resn3!=-1)
+		{
+		 if (resX3==PXplus)
+		 {
+				//-- Переписываем точку из соседнего сектора в этот
+				s1=s1+1;
+				Sec1X[s1]=Sec3X[resn3];					
+				Sec1Y[s1]=Sec3Y[resn3];			
+				Sec1[s1]=1;
+				Sec1Num[s1]=Sec3Num[resn3];		
+				Sec1Obj[s1]=Sec3Obj[resn3];
+				//-- В соседнем секторе "обнуляем" точку
+				Sec3[resn3]=0;	
+				colPoint3=colPoint3-1;
+				colPoint1=colPoint1+1;
+				goto nextc1;
+		 }
+		}
+	}
+	nextc1:
+	if (x1ns<razn)
+	{
+		goto x1nsL;
+	}
+	CGP1=0;			//-- признак, что из сектора точки брать нельзя
+	exNS1:
+	gosub GetPointS;	//-- проверка, можно ли брать точки из секторов
+return;
+///////////////////////-- Подпрограмма ищет ближайшие точки секторов 1,3,4 и приписывает их к сектору 2 --///////////////////////////////
+PointRec2:
+	//putmsg("PointRec2")
+	if (ColNum2==0)			//-- если номеров с этой стороны не нужно
+	{
+		goto exNS2;
+	}
+	if (ColNum2==colPoint2)
+	{
+		CGP2=0;
+		goto exNS2;
+	}
+	if (ColNum2<colPoint2)	//-- если номеров по стороне меньше, чем точек в секторе
+	{
+		putmsg("Выносок меньше, чем точек 2");
+		goto exNS2;
+	}
+	//-- Сканируем сектор 2
+	x2ns=0;
+	razn=ColNum2-colPoint2;
+	x2nsL:
+	x2ns=x2ns+1;
+	if (CGP1==1)
+	{
+		//-- Ищем ближайшую точку в секторе 1
+		macro ProtoPath+"numframe\\GetClosePoint.mac" 
+		(gabO[4]-gabO[1])/2 //(gabR[4]-gabR[1])/2										//-- координата X точки от которой идет отсчет
+		(gabO[5]-gabO[2])/2 //gabR[5]				//-- координата Y точки от которой идет отсчет
+		gabO[1] //(gabR[4]-gabR[1])/2 //gabR[1]										//-- Х координата вектора отсчета
+		gabO[5] //(gabR[5]-gabR[2])/2 //gabR[5]										//-- Y координата вектора отсчета
+		Sec1X											//-- массив Х координат точек области
+		Sec1Y											//-- массив Y координат точек области
+		Sec1											//-- массив с признаком, какие точки можно использовать
+		-1												//-- количество точек области		(если -1, то берется размерность одного из массивов)
+		byref resX1								//-- возвращаемое значение, X координата ближайшей точки
+		byref resY1								//-- возвращаемое значение, Y координата ближайшей точки
+		byref resn1								//-- порядковый номер точки в массиве
+		0;		
+	}
+	else	{ resn1=-1;	}
+	if (CGP3==1)
+	{
+		//-- Ищем ближайшую точку в секторе 3
+		macro ProtoPath+"numframe\\GetClosePoint.mac" 
+		(gabO[4]-gabO[1])/2 //(gabR[4]-gabR[1])/2									//-- координата X точки от которой идет отсчет
+		(gabO[5]-gabO[2])/2 //gabR[5]				//-- координата Y точки от которой идет отсчет
+		gabO[4] //(gabR[4]-gabR[1])/2 //gabR[4]										//-- Х координата вектора отсчета
+		gabO[5] //(gabR[5]-gabR[2])/2 //gabR[5]										//-- Y координата вектора отсчета
+		Sec3X											//-- массив Х координат точек области
+		Sec3Y											//-- массив Y координат точек области
+		Sec3											//-- массив с признаком, какие точки можно использовать
+		-1												//-- количество точек области		(если -1, то берется размерность одного из массивов)
+		byref resX3								//-- возвращаемое значение, X координата ближайшей точки
+		byref resY3								//-- возвращаемое значение, Y координата ближайшей точки
+		byref resn3								//-- порядковый номер точки в массиве
+		0;		
+	}
+	else	{ resn3=-1;	}
+	if (CGP4==1)
+	{
+		//-- Ищем ближайшую точку в секторе 4
+		macro ProtoPath+"numframe\\GetClosePoint.mac" 
+		(gabO[4]-gabO[1])/2 //gabR[4]										//-- координата X точки от которой идет отсчет
+		(gabO[5]-gabO[2])/2 //gabR[5]										//-- координата Y точки от которой идет отсчет
+		0 //(gabR[4]-gabR[1])/2				//-- Х координата вектора отсчета
+		0 //(gabR[5]-gabR[2])/2				//-- Y координата вектора отсчета
+		Sec4X											//-- массив Х координат точек области
+		Sec4Y											//-- массив Y координат точек области
+		Sec4											//-- массив с признаком, какие точки можно использовать
+		-1												//-- количество точек области		(если -1, то берется размерность одного из массивов)
+		byref resX4								//-- возвращаемое значение, X координата ближайшей точки
+		byref resY4								//-- возвращаемое значение, Y координата ближайшей точки
+		byref resn4								//-- порядковый номер точки в массиве
+		1;		
+	}
+	else	{ resn4=-1;	}
+	if (resn1==-1&&resn3==-1&&resn4==-1)		//-- дальше сканировать не нужно
+	{	
+		goto exNS2;
+	}
+	else		
+	{
+		//PYplus=max(resY1,resY3,resY4);
+
+		if (resn1!=-1&&resn3!=-1&&resn4!=-1) {	PYplus=max(resY1,resY3,resY4);	}
+		if (resn1==-1&&resn3!=-1&&resn4!=-1) {	PYplus=max(resY3,resY4);	}
+		if (resn1!=-1&&resn3==-1&&resn4!=-1) {	PYplus=max(resY1,resY4);	}
+		if (resn1!=-1&&resn3!=-1&&resn4==-1) {	PYplus=max(resY1,resY3);	}
+
+		if (resn1!=-1&&resn3==-1&&resn4==-1) {	PYplus=resY1;	}
+		if (resn1==-1&&resn3!=-1&&resn4==-1) {	PYplus=resY3;	}
+		if (resn1==-1&&resn3==-1&&resn4!=-1) {	PYplus=resY4;	}
+
+		if (resn3!=-1)
+		{
+			if (resY3==PYplus)
+			{
+				//-- Переписываем точку из соседнего сектора в этот
+				s2=s2+1;
+				Sec2X[s2]=Sec3X[resn3];					
+				Sec2Y[s2]=Sec3Y[resn3];	
+				Sec2[s2]=1;
+				Sec2Num[s2]=Sec3Num[resn3];			
+				Sec2Obj[s2]=Sec3Obj[resn3];
+				//-- В соседнем секторе "обнуляем" точку
+				Sec3[resn3]=0;
+				colPoint3=colPoint3-1;
+				colPoint2=colPoint2+1;
+				goto nextc2;			
+			}
+		}
+		if (resn1!=-1)
+		{
+			if (resY1==PYplus)
+			{
+				//-- Переписываем точку из соседнего сектора в этот
+				s2=s2+1;
+				Sec2X[s2]=Sec1X[resn1];					
+				Sec2Y[s2]=Sec1Y[resn1];		
+				Sec2[s2]=1;
+				Sec2Num[s2]=Sec1Num[resn1];		
+				Sec2Obj[s2]=Sec1Obj[resn1];
+				//-- В соседнем секторе "обнуляем" точку
+				Sec1[resn1]=0;	
+				colPoint1=colPoint1-1;
+				colPoint2=colPoint2+1;
+				goto nextc2;			
+			}
+		}
+		if (resn4!=-1)
+		{
+			if (resY4==PYplus)
+			{
+				//-- Переписываем точку из соседнего сектора в этот
+				s2=s2+1;
+				Sec2X[s2]=Sec4X[resn4];					
+				Sec2Y[s2]=Sec4Y[resn4];	
+				Sec2[s2]=1;
+				Sec2Num[s2]=Sec4Num[resn4];	
+				Sec2Obj[s2]=Sec4Obj[resn4];
+				//-- В соседнем секторе "обнуляем" точку
+				Sec4[resn4]=0;		
+				colPoint4=colPoint4-1;
+				colPoint2=colPoint2+1;
+				goto nextc2;			
+			}
+		}
+	}
+	nextc2:
+	if (x2ns<razn)
+	{
+		goto x2nsL;
+	}	
+	CGP2=0;			//-- признак, что из сектора точки брать нельзя
+	exNS2:
+	gosub GetPointS;	//-- проверка, можно ли брать точки из секторов
+return;
+///////////////////////-- Подпрограмма ищет ближайшие точки секторов 1,2,4 и приписывает их к сектору 3 --///////////////////////////////
+PointRec3:
+	//putmsg("PointRec3")
+	if (ColNum3==0)			//-- если номеров с этой стороны не нужно
+	{
+		goto exNS3;
+	}
+	if (ColNum3==colPoint3)
+	{
+		CGP3=0;
+		goto exNS3;
+	}
+	if (ColNum3<colPoint3)	//-- если номеров по стороне меньше, чем точек в секторе
+	{
+		putmsg("Выносок меньше, чем точек 3");
+		goto exNS3;
+	}
+	//-- Сканируем сектор 3
+	x3ns=0;
+	razn=ColNum3-colPoint3;
+	x3nsL:
+	x3ns=x3ns+1;
+	if (CGP1==1)
+	{
+		//-- Ищем ближайшую точку в секторе 1
+		macro ProtoPath+"numframe\\GetClosePoint.mac" 
+		(gabO[4]-gabO[1])/2 //gabR[1]										//-- координата X точки от которой идет отсчет
+		(gabO[5]-gabO[2])/2 //gabR[5]										//-- координата Y точки от которой идет отсчет
+		0 //(gabR[4]-gabR[1])/2				//-- Х координата вектора отсчета
+		0 //(gabR[5]-gabR[2])/2				//-- Y координата вектора отсчета
+		Sec1X											//-- массив Х координат точек области
+		Sec1Y											//-- массив Y координат точек области
+		Sec1											//-- массив с признаком, какие точки можно использовать
+		-1												//-- количество точек области		(если -1, то берется размерность одного из массивов)
+		byref resX1								//-- возвращаемое значение, X координата ближайшей точки
+		byref resY1								//-- возвращаемое значение, Y координата ближайшей точки
+		byref resn1								//-- порядковый номер точки в массиве
+		1;		
+	}
+	else	{	resn1=-1;	}
+	if (CGP2==1)
+	{
+		//-- Ищем ближайшую точку в секторе 2
+		macro ProtoPath+"numframe\\GetClosePoint.mac" 
+		(gabO[4]-gabO[1])/2 //gabR[4]										//-- координата X точки от которой идет отсчет
+		(gabO[5]-gabO[2])/2 //(gabR[5]-gabR[2])/2				//-- координата Y точки от которой идет отсчет
+		gabO[4] //(gabR[4]-gabR[1])/2 //gabR[4]										//-- Х координата вектора отсчета
+		gabO[5] //(gabR[5]-gabR[2])/2 //gabR[5]										//-- Y координата вектора отсчета
+		Sec2X											//-- массив Х координат точек области
+		Sec2Y											//-- массив Y координат точек области
+		Sec2											//-- массив с признаком, какие точки можно использовать
+		-1												//-- количество точек области		(если -1, то берется размерность одного из массивов)
+		byref resX2								//-- возвращаемое значение, X координата ближайшей точки
+		byref resY2								//-- возвращаемое значение, Y координата ближайшей точки
+		byref resn2								//-- порядковый номер точки в массиве
+		0;		
+	}
+	else	{	resn2=-1;	}
+	if (CGP4==1)
+	{
+		//-- Ищем ближайшую точку в секторе 4
+		macro ProtoPath+"numframe\\GetClosePoint.mac" 
+		(gabO[4]-gabO[1])/2 //gabR[4]										//-- координата X точки от которой идет отсчет
+		(gabO[5]-gabO[2])/2 //(gabR[5]-gabR[2])/2				//-- координата Y точки от которой идет отсчет
+		gabO[4] //(gabR[4]-gabR[1])/2 //gabR[4]										//-- Х координата вектора отсчета
+		gabO[2] //(gabR[5]-gabR[2])/2 //gabR[2]										//-- Y координата вектора отсчета
+		Sec4X											//-- массив Х координат точек области
+		Sec4Y											//-- массив Y координат точек области
+		Sec4											//-- массив с признаком, какие точки можно использовать
+		-1												//-- количество точек области		(если -1, то берется размерность одного из массивов)
+		byref resX4								//-- возвращаемое значение, X координата ближайшей точки
+		byref resY4								//-- возвращаемое значение, Y координата ближайшей точки
+		byref resn4								//-- порядковый номер точки в массиве
+		0;	
+	}
+	else	{	resn4=-1;	}
+	if (resn1==-1&&resn2==-1&&resn4==-1)		//-- дальше сканировать не нужно
+	{	
+		goto exNS3;
+	}
+	else		
+	{
+		//PXplus=max(resX1,resX2,resX4);
+
+		if (resn2!=-1&&resn1!=-1&&resn4!=-1) {	PXplus=max(resX2,resX1,resX4);	}
+		if (resn2==-1&&resn1!=-1&&resn4!=-1) {	PXplus=max(resX1,resX4);	}
+		if (resn2!=-1&&resn1==-1&&resn4!=-1) {	PXplus=max(resX2,resX4);	}
+		if (resn2!=-1&&resn1!=-1&&resn4==-1) {	PXplus=max(resX2,resX1);	}
+
+		if (resn2!=-1&&resn1==-1&&resn4==-1) {	PXplus=resX2;	}
+		if (resn2==-1&&resn1!=-1&&resn4==-1) {	PXplus=resX1;	}
+		if (resn2==-1&&resn1==-1&&resn4!=-1) {	PXplus=resX4;	}
+
+		if (resn4!=-1)
+		{
+			if (resX4==PXplus)
+			{
+				//-- Переписываем точку из соседнего сектора в этот
+				s3=s3+1;
+				Sec3X[s3]=Sec4X[resn4];					
+				Sec3Y[s3]=Sec4Y[resn4];					
+				Sec3[s3]=1;
+				Sec3Num[s3]=Sec4Num[resn4];			
+				Sec3Obj[s3]=Sec4Obj[resn4];
+				//-- В соседнем секторе "обнуляем" точку
+				Sec4[resn4]=0;		
+				colPoint4=colPoint4-1;
+				colPoint3=colPoint3+1;
+				goto nextc3;			
+			}
+		}
+		if (resn2!=-1)
+		{
+			if (resX2==PXplus)
+			{
+				//-- Переписываем точку из соседнего сектора в этот
+				s3=s3+1;
+				Sec3X[s3]=Sec2X[resn2];					
+				Sec3Y[s3]=Sec2Y[resn2];		
+				Sec3[s3]=1;
+				Sec3Num[s3]=Sec2Num[resn2];			
+				Sec3Obj[s3]=Sec2Obj[resn2];
+				//-- В соседнем секторе "обнуляем" точку
+				Sec2[resn2]=0;		
+				colPoint2=colPoint2-1;
+				colPoint3=colPoint3+1;
+				goto nextc3;			
+			}
+		}
+		if (resn1!=-1)
+		{
+			if (resX1==PXplus)
+			{
+				//-- Переписываем точку из соседнего сектора в этот
+				s3=s3+1;
+				Sec3X[s3]=Sec1X[resn1];					
+				Sec3Y[s3]=Sec1Y[resn1];	
+				Sec3[s3]=1;
+				Sec3Num[s3]=Sec1Num[resn1];		
+				Sec3Obj[s3]=Sec1Obj[resn1];
+				//-- В соседнем секторе "обнуляем" точку
+				Sec1[resn1]=0;		
+				colPoint1=colPoint1-1;
+				colPoint3=colPoint3+1;
+				goto nextc3;			
+			}
+		}
+	}
+	nextc3:
+	if (x3ns<razn)
+	{
+		goto x3nsL;
+	}
+	CGP3=0;			//-- признак, что из сектора точки брать нельзя
+	exNS3:
+	gosub GetPointS;	//-- проверка, можно ли брать точки из секторов
+return;s
+///////////////////////-- Подпрограмма ищет ближайшие точки секторов 1,2,3 и приписывает их к сектору 4 --///////////////////////////////
+PointRec4:
+	//putmsg("PointRec4")
+	if (ColNum4==0)			//-- если номеров с этой стороны не нужно
+	{
+		goto exNS4;
+	}
+	if (ColNum4==colPoint4)
+	{
+		CGP4=0;
+		goto exNS4;
+	}
+	if (ColNum4<colPoint4)	//-- если номеров по стороне меньше, чем точек в секторе
+	{
+		putmsg("Выносок меньше, чем точек 4");
+		goto exNS4;
+	}
+	//-- Сканируем сектор 4
+	x4ns=0;
+	razn=ColNum4-colPoint4;
+	x4nsL:
+	x4ns=x4ns+1;
+	if (CGP1==1)
+	{
+		//-- Ищем ближайшую точку в секторе 1
+		macro ProtoPath+"numframe\\GetClosePoint.mac" 
+		(gabO[4]-gabO[1])/2 //(gabR[4]-gabR[1])/2				//-- координата X точки от которой идет отсчет
+		(gabO[5]-gabO[2])/2 //gabR[2]										//-- координата Y точки от которой идет отсчет
+		gabO[1] //(gabR[4]-gabR[1])/2 //gabR[1]										//-- Х координата вектора отсчета
+		gabO[2] //(gabR[5]-gabR[2])/2 //gabR[2]										//-- Y координата вектора отсчета
+		Sec1X											//-- массив Х координат точек области
+		Sec1Y											//-- массив Y координат точек области
+		Sec1											//-- массив с признаком, какие точки можно использовать
+		-1												//-- количество точек области		(если -1, то берется размерность одного из массивов)
+		byref resX1								//-- возвращаемое значение, X координата ближайшей точки
+		byref resY1								//-- возвращаемое значение, Y координата ближайшей точки
+		byref resn1								//-- порядковый номер точки в массиве
+		0;			
+	}
+	else	{  resn1=-1;	}
+	if (CGP2==1)
+	{
+		//-- Ищем ближайшую точку в секторе 2
+		macro ProtoPath+"numframe\\GetClosePoint.mac" 
+		(gabO[4]-gabO[1])/2 //gabR[1]										//-- координата X точки от которой идет отсчет
+		(gabO[5]-gabO[2])/2 //gabR[2]										//-- координата Y точки от которой идет отсчет
+		0 //(gabR[4]-gabR[1])/2										//-- Х координата вектора отсчета
+		0 //(gabR[5]-gabR[2])/2										//-- Y координата вектора отсчета
+		Sec2X											//-- массив Х координат точек области
+		Sec2Y											//-- массив Y координат точек области
+		Sec2											//-- массив с признаком, какие точки можно использовать
+		-1												//-- количество точек области		(если -1, то берется размерность одного из массивов)
+		byref resX2								//-- возвращаемое значение, X координата ближайшей точки
+		byref resY2								//-- возвращаемое значение, Y координата ближайшей точки
+		byref resn2								//-- порядковый номер точки в массиве
+		1;		
+	}
+	else	{  resn2=-1;	}
+	if (CGP3==1)
+	{
+		//-- Ищем ближайшую точку в секторе 3
+		macro ProtoPath+"numframe\\GetClosePoint.mac" 
+		(gabO[4]-gabO[1])/2 //(gabR[4]-gabR[1])/2				//-- координата X точки от которой идет отсчет
+		(gabO[5]-gabO[2])/2 //gabR[2]										//-- координата Y точки от которой идет отсчет
+		gabO[4] //(gabR[4]-gabR[1])/2 //gabR[4]										//-- Х координата вектора отсчета
+		gabO[2] //(gabR[5]-gabR[2])/2 //gabR[2]										//-- Y координата вектора отсчета
+		Sec3X											//-- массив Х координат точек области
+		Sec3Y											//-- массив Y координат точек области
+		Sec3											//-- массив с признаком, какие точки можно использовать
+		-1												//-- количество точек области		(если -1, то берется размерность одного из массивов)
+		byref resX3								//-- возвращаемое значение, X координата ближайшей точки
+		byref resY3								//-- возвращаемое значение, Y координата ближайшей точки
+		byref resn3								//-- порядковый номер точки в массиве
+		0;		
+	}
+	else	{  resn3=-1;	}
+	if (resn1==-1&&resn2==-1&&resn3==-1)		//-- дальше сканировать не нужно
+	{	
+		goto exNS4;
+	}
+	else		
+	{
+		//PYplus=min(resY1,resY2,resY3);
+
+		if (resn1!=-1&&resn3!=-1&&resn2!=-1) {	PYplus=min(resY1,resY3,resY2);	}
+		if (resn1==-1&&resn3!=-1&&resn2!=-1) {	PYplus=min(resY3,resY2);	}
+		if (resn1!=-1&&resn3==-1&&resn2!=-1) {	PYplus=min(resY1,resY2);	}
+		if (resn1!=-1&&resn3!=-1&&resn2==-1) {	PYplus=min(resY1,resY3);	}
+
+		if (resn1!=-1&&resn3==-1&&resn2==-1) {	PYplus=resY1;	}
+		if (resn1==-1&&resn3!=-1&&resn2==-1) {	PYplus=resY3;	}
+		if (resn1==-1&&resn3==-1&&resn2!=-1) {	PYplus=resY2;	}
+
+		if (resn1!=-1)
+		{
+			if (resY1==PYplus)
+			{
+				//-- Переписываем точку из соседнего сектора в этот
+				s4=s4+1;
+				Sec4X[s4]=Sec1X[resn1];					
+				Sec4Y[s4]=Sec1Y[resn1];	
+				Sec4[s4]=1;
+				Sec4Num[s4]=Sec1Num[resn1];		
+				Sec4Obj[s4]=Sec1Obj[resn1];
+				//-- В соседнем секторе "обнуляем" точку
+				Sec1[resn1]=0;		
+				colPoint1=colPoint1-1;
+				colPoint4=colPoint4+1;
+				goto nextc4;			
+			}
+		}
+		if (resn3!=-1)
+		{
+			if (resY3==PYplus)
+			{
+				//-- Переписываем точку из соседнего сектора в этот
+				s4=s4+1;
+				Sec4X[s4]=Sec3X[resn3];					
+				Sec4Y[s4]=Sec3Y[resn3];		
+				Sec4[s4]=1;
+				Sec4Num[s4]=Sec3Num[resn3];		
+				Sec4Obj[s4]=Sec3Obj[resn3];
+				//-- В соседнем секторе "обнуляем" точку
+				Sec3[resn3]=0;	
+				colPoint3=colPoint3-1;
+				colPoint4=colPoint4+1;
+				goto nextc4;	
+			}
+		}
+		if (resn2!=-1)
+		{
+			if (resY2==PYplus)
+			{
+				//-- Переписываем точку из соседнего сектора в этот
+				s4=s4+1;
+				Sec4X[s4]=Sec2X[resn2];					
+				Sec4Y[s4]=Sec2Y[resn2];	
+				Sec4[s4]=1;
+				Sec4Num[s4]=Sec2Num[resn2];		
+				Sec4Obj[s4]=Sec2Obj[resn2];
+				//-- В соседнем секторе "обнуляем" точку
+				Sec2[resn2]=0;	
+				colPoint2=colPoint2-1;
+				colPoint4=colPoint4+1;
+				goto nextc4;			
+			}
+		}
+	}
+	nextc4:
+	if (x4ns<razn)
+	{
+		goto x4nsL;
+	}
+	CGP4=0;			//-- признак, что из сектора точки брать нельзя
+	exNS4:
+	gosub GetPointS;	//-- проверка, можно ли брать точки из секторов
+return;
+//-- Проверка, можно ли брать точки из секторов
+GetPointS:
+	if (ColNum1-colPoint1==0)	{	CGP1=0;	}//	else {CGP1=1;}
+	if (ColNum2-colPoint2==0)	{	CGP2=0;	}	//else {CGP1=1;}
+	if (ColNum3-colPoint3==0)	{	CGP3=0;	} //	else {CGP1=1;}
+	if (ColNum4-colPoint4==0)	{	CGP4=0;	}//	else {CGP1=1;}
+return;
+///////////////////////-- Подпрограмма простановки выносок стороны 1 (сектор 1) --///////////////////////////////
+//-- Выноски по стороне 1
+NoteSec1:
+	if (ColNum1==0||colPoint1==0)			//-- если номеров с этой стороны не нужно и точек в секторе нет, то ничего не делаем
+	{
+		goto extNS1;
+	}
+	//-- Сканируем
+	//-- Цикл по точкам сектора
+	n1=0;
+	LN1:
+	n1=n1+1;
+	if (Ram1Sec[n1]==1)
+	{
+		//-- Находим минимальную точку для сектора по оси Y
+		macro ProtoPath+"numframe\\GetClosePoint.mac" 
+			gabR[1]										//-- координата X точки от которой идет отсчет
+			Ram1[n1]									//-- координата Y точки от которой идет отсчет
+			gabR[1]										//-- Х координата вектора отсчета
+			Ram1[n1]-5									//-- Y координата вектора отсчета
+			Sec1X											//-- массив Х координат точек области
+			Sec1Y											//-- массив Y координат точек области
+			Sec1											//-- массив с признаком, какие точки можно использовать
+			-1												//-- количество точек области		(если -1, то берется размерность одного из массивов)
+			byref xxx1								//-- возвращаемое значение, X координата ближайшей точки
+			byref yyy1								//-- возвращаемое значение, Y координата ближайшей точки
+			byref nnn1								//-- порядковый номер точки в массиве
+			0;	
+		if (nnn1!=-1)
+		{
+			#nnn note normal  0 0 1 arrow arrowtype type typenote str(Sec1Num[nnn1]) "" xxx1 yyy1 gabScene[6] gabR[1] Ram1[n1] gabScene[6] gabR[1]-1 Ram1[n1] gabScene[6];
+			attrobj attach "NumType" done nnn 1;
+			Attrobj Attach  "AutoPlace"  Done Last 1 1;
+			Attrobj Attach  "VidDimPlace"  Done Last 1 CurrVi;
+			chprop layer last 1 done CV ;
+			Sec1[nnn1]=0;								//-- признак того, что она уже проставлена.
+			Ram1Sec[n1]=0;							//-- признак что точка выноски проставлена.
+			if (SizeText==1)
+			{
+				chprop grfcoeff nnn done grcoef;
+			}
+			if (InObj==1)		//-- добавляем в объект
+			{
+				add partly Sec1Obj[nnn1] nnn done;
+			}
+		}
+	}
+	if (n1<ColNum1)
+	{	
+		goto LN1;
+	}
+	extNS1:
+return;
+///////////////////////-- Подпрограмма простановки выносок стороны 2 (сектор 2) --///////////////////////////////
+//-- Выноски по стороне 2
+NoteSec2:
+	if (ColNum2==0||colPoint2==0)			//-- если номеров с этой стороны не нужно и точек в секторе нет, то ничего не делаем
+	{
+		goto extNS2;
+	}
+	//-- Сканируем
+	//-- Цикл по точкам сектора
+	n2=0;
+	LN2:
+	n2=n2+1;
+	//-- Находим минимальную точку для сектора по оси Y
+	macro ProtoPath+"numframe\\GetClosePoint.mac" 
+		Ram2[n2]									//-- координата X точки от которой идет отсчет
+		gabR[5]										//-- координата Y точки от которой идет отсчет
+		Ram2[n2]-5								//-- Х координата вектора отсчета
+		gabR[5]										//-- Y координата вектора отсчета
+		Sec2X											//-- массив Х координат точек области
+		Sec2Y											//-- массив Y координат точек области
+		Sec2											//-- массив с признаком, какие точки можно использовать
+		-1												//-- количество точек области		(если -1, то берется размерность одного из массивов)
+		byref xxx2								//-- возвращаемое значение, X координата ближайшей точки
+		byref yyy2								//-- возвращаемое значение, Y координата ближайшей точки
+		byref nnn2								//-- порядковый номер точки в массиве
+		0;	
+	if (nnn2!=-1)
+	{
+		#nnn note normal  0 0 1 arrow arrowtype type typenote str(Sec2Num[nnn2]) "" xxx2 yyy2 gabScene[6] Ram2[n2] gabR[5] gabScene[6]  Ram2[n2]-1 gabR[5] gabScene[6];
+		attrobj attach "NumType" done nnn 1;
+		Attrobj Attach  "AutoPlace"  Done Last 1 1;
+		Attrobj Attach  "VidDimPlace"  Done Last 1 CurrVi;
+		chprop layer last 1 done CV ;
+		Sec2[nnn2]=0;				//-- выставляем точке данное значение как признак того, что она уже проставлена.
+		Ram2Sec[n2]=0;							//-- признак что точка выноски проставлена.
+		if (SizeText==1)
+		{
+			chprop grfcoeff nnn done grcoef;
+		}
+		if (InObj==1)		//-- добавляем в объект
+		{
+			add partly Sec2Obj[nnn2] nnn done;
+		}
+	}
+	if (n2<ColNum2)
+	{	
+		goto LN2;
+	}
+	extNS2:
+return;
+///////////////////////-- Подпрограмма простановки выносок стороны 3 (сектор 3) --///////////////////////////////
+//-- Выноски по стороне 3
+NoteSec3:
+	if (ColNum3==0||colPoint3==0)			//-- если номеров с этой стороны не нужно и точек в секторе нет, то ничего не делаем
+	{
+		goto extNS3;
+	}
+	//-- Сканируем
+	//-- Цикл по точкам сектора
+	n3=0;
+	LN3:
+	n3=n3+1;
+	//-- Находим минимальную точку для сектора по оси Y
+	macro ProtoPath+"numframe\\GetClosePoint.mac" 
+		gabR[4]										//-- координата X точки от которой идет отсчет
+		Ram3[n3]									//-- координата Y точки от которой идет отсчет
+		gabR[4]										//-- Х координата вектора отсчета
+		Ram3[n3]+5									//-- Y координата вектора отсчета
+		Sec3X											//-- массив Х координат точек области
+		Sec3Y											//-- массив Y координат точек области
+		Sec3											//-- массив с признаком, какие точки можно использовать
+		-1												//-- количество точек области		(если -1, то берется размерность одного из массивов)
+		byref xxx3								//-- возвращаемое значение, X координата ближайшей точки
+		byref yyy3								//-- возвращаемое значение, Y координата ближайшей точки
+		byref nnn3								//-- порядковый номер точки в массиве
+		0;	
+	if (nnn3!=-1)
+	{
+		#nnn note normal  0 0 1 arrow arrowtype type typenote str(Sec3Num[nnn3]) "" xxx3 yyy3 gabScene[6] gabR[4] Ram3[n3] gabScene[6] gabR[4]+1 Ram3[n3] gabScene[6];
+		attrobj attach "NumType" done nnn 1;
+		Attrobj Attach  "AutoPlace"  Done Last 1 1;
+		Attrobj Attach  "VidDimPlace"  Done Last 1 CurrVi;
+		chprop layer last 1 done CV ;
+		Sec3[nnn3]=0;				//-- выставляем точке данное значение как признак того, что она уже проставлена.
+		Ram3Sec[n3]=0;							//-- признак что точка выноски проставлена.
+		if (SizeText==1)
+		{
+			chprop grfcoeff nnn done grcoef;
+		}
+		if (InObj==1)		//-- добавляем в объект
+		{
+			add partly Sec3Obj[nnn3] nnn done;
+		}
+	}
+	if (n3<ColNum3)
+	{	
+		goto LN3;
+	}
+	extNS3:
+return;
+///////////////////////-- Подпрограмма простановки выносок стороны 4 (сектор 4) --///////////////////////////////
+//-- Выноски по стороне 4
+NoteSec4:
+	if (ColNum4==0||colPoint4==0)			//-- если номеров с этой стороны не нужно и точек в секторе нет, то ничего не делаем
+	{
+		goto extNS4;
+	}
+	//-- Сканируем
+	//-- Цикл по точкам сектора
+	n4=0;
+	LN4:
+	n4=n4+1;
+	//-- Находим минимальную точку для сектора по оси Y
+	macro ProtoPath+"numframe\\GetClosePoint.mac" 
+		Ram4[n4]									//-- координата X точки от которой идет отсчет
+		gabR[2]										//-- координата Y точки от которой идет отсчет
+		Ram4[n4]+5								//-- Х координата вектора отсчета
+		gabR[2]										//-- Y координата вектора отсчета
+		Sec4X											//-- массив Х координат точек области
+		Sec4Y											//-- массив Y координат точек области
+		Sec4											//-- массив с признаком, какие точки можно использовать
+		-1												//-- количество точек области		(если -1, то берется размерность одного из массивов)
+		byref xxx4								//-- возвращаемое значение, X координата ближайшей точки
+		byref yyy4								//-- возвращаемое значение, Y координата ближайшей точки
+		byref nnn4								//-- порядковый номер точки в массиве
+		0;	
+	if (nnn4!=-1)
+	{
+		
+		if (xxx4<=Ram4[n4])
+		{
+			#nnn note normal  0 0 1 arrow arrowtype type typenote iif(Sec4Down==0,str(Sec4Num[nnn4])," ") iif(Sec4Down==1,str(Sec4Num[nnn4]),"") xxx4 yyy4 gabScene[6] Ram4[n4] gabR[2] gabScene[6]  Ram4[n4]+1 gabR[2] gabScene[6];
+		}
+		else
+		{
+			#nnn note normal  0 0 1 arrow arrowtype type typenote iif(Sec4Down==0,str(Sec4Num[nnn4])," ") iif(Sec4Down==1,str(Sec4Num[nnn4]),"") xxx4 yyy4 gabScene[6] Ram4[n4] gabR[2] gabScene[6]  Ram4[n4]-1 gabR[2] gabScene[6];
+		}
+		attrobj attach "NumType" done nnn 1;
+		Attrobj Attach  "AutoPlace"  Done Last 1 1;
+		Attrobj Attach  "VidDimPlace"  Done Last 1 CurrVi;
+		chprop layer last 1 done CV ;
+		Sec4[nnn4]=0;				//-- выставляем точке данное значение как признак того, что она уже проставлена.
+		Ram4Sec[n4]=0;							//-- признак что точка выноски проставлена.
+		if (SizeText==1)
+		{
+			chprop grfcoeff nnn done grcoef;
+		}
+		if (InObj==1)		//-- добавляем в объект
+		{
+			add partly Sec4Obj[nnn4] nnn done;
+		}
+	}
+
+	if (n4<ColNum4)
+	{	
+		goto LN4;
+	}
+	extNS4:
+return;

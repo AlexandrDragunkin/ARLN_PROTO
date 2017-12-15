@@ -1,0 +1,53 @@
+//-- Макро находит и выделяет объект по UnitPos
+
+NULLOUT=getvarinst(2,"FailColor",FailColor,12);      //-- Цвет объектов, не прошедших провеору
+
+#aaa
+setvar
+"Поиск объектов по номеру"
+""
+""
+done
+real auto default 1
+"Введите номер объекта" var
+
+done;
+
+if (aaa==0)       // Если "Отмена"
+{
+ exit;
+}
+
+select stayblink partly attribute "UnitPos=="+str(var) done;
+obj=sysvar(61);
+if (obj==0)		//-- Если объектов нет
+{
+	#bbb alternative
+	"Поиск объектов по номеру"
+  msgbox picture 3 beep 3
+	text left
+	"Объекты с номером "+str(var)+" не найдены"
+  done
+	"ОК"
+	done;
+  exit;
+}
+//-- Если объекты нашли
+#ok_flag
+alternative "Поиск объектов по номеру"
+msgbox picture 4 beep 4 text left
+"Объекты с номером "+str(var)+" выделены мерцанием"
+""
+"Отключить мерцание найденных объектов?"
+done
+"Да"  "Нет" "Изменить цвет"
+done;
+if (ok_flag==1)
+{
+  select all done;
+}
+if (ok_flag==3)
+{
+  chprop color partly previous done FailColor ;
+}
+exit;

@@ -1,0 +1,85 @@
+//-- Сканер объектов внутри группы
+//-- Входные параметры:
+//-- pnt - объект
+//-- Level - уровень вложенности
+//-- PreMac - имя процедуры преобработки
+//-- PostMac - имя процедуры постобработки
+//-- dataref[10] - пользовательские данные (по ссылке)
+//-- dataval - пользовательские данные (по значению)
+//-- Выходные параметры:
+//-- g_resscan - код возврата
+//--          =0 - продолжать сканирование
+//--          =1 - пропустить оставшиеся объекты
+//--          =2 - пропустить данный объект верхнего уровня
+//--          =3 - закончить сканирование всех объектов
+//--          =-1 - ошибка. прервать работу
+
+global Protopath;
+global g_resscan;
+defarr ObInGr[100];
+getpar pnt, level, PreMac, PostMac, dataref, dataval;
+
+gosub GetResult;
+//------------------------------------------------------------------------
+//-- Преобработка
+if (len(PreMac)>0)
+{
+	macro ProtoPath+PreMac pnt,level,dataref,dataval ;
+}
+//------------------------------------------------------------------------
+ot=getobjtype(pnt);
+if (ot!=5&&ot!=7)  //-- Объект - не контур и не группа
+{
+	gosub GetResult;
+	exit;
+}
+KObGr=GetArrObjg(pnt,ObInGr); // Прочитали указатели на объекты в группе
+i=1;
+lab1:
+if (i<=KObGr) 
+{
+  TypeOb=GetObjType(ObInGr[i]);
+  if (TypeOb==7||TypeOb==5) //-- Если объект - группа или контур
+	{ 
+		macro ProtoPath+"ScanGroup.mac" ObInGr[i],level+1, PreMac, PostMac, dataref, dataval;
+	} 
+	i=i+1;
+	goto lab1;
+}
+//------------------------------------------------------------------------
+//-- Постобработка
+if (len(PostMac)>0)
+{
+	macro ProtoPath+PostMac pnt,level,dataref,dataval ;
+}
+//------------------------------------------------------------------------
+gosub GetResult;
+exit;
+//-------------------------------------------------------
+GetResult:
+if (g_resscan==-1)
+{
+	cancel;
+}
+if (g_resscan==0)
+{
+	return;
+}
+if (g_resscan==1)
+{
+	g_resscan=0;
+	exit;
+}
+if (g_resscan==2)
+{
+	if (level==0)
+	{
+		g_resscan=0;	
+	}
+	exit;
+}
+if (g_resscan==3)
+{
+	exit;
+}
+return;

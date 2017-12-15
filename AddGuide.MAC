@@ -1,0 +1,35 @@
+
+NULLOUT=GetSnap();
+defarr  xm[6] ;
+
+КолОб=sysvar(60);  // количество объектов сцены
+if (КолОб!=0) {
+// Выберите объект
+  Objident : pnt ;
+  setucs lcs pnt;
+  rr=objgab3(pnt,xm)  // В ПСК
+  XD=xm[4]-xm[1]  YD=xm[5]-xm[2];  ZD=xm[6]-xm[3];
+  if  (ZD<XD)&&(ZD<YD) {
+    setucs  xm[1] xm[2] xm[6]  xm[4] xm[2] xm[6]   xm[4] xm[5] xm[6] ;
+  }
+  if  (XD<ZD)&&(XD<YD) {
+    setucs  xm[4] xm[2] xm[3]  xm[4] xm[5] xm[3]   xm[4] xm[5] xm[6] ;
+  }
+  if  (YD<ZD)&&(YD<XD) {
+    setucs  xm[1] xm[5] xm[6]  xm[4] xm[5] xm[6]   xm[4] xm[5] xm[3] ;
+  }
+}
+bpoint 0 0 0 ;
+
+get "Точка установки" point missing  x1 y1 z1 :
+
+setucs  x1 y1 z1 x1 y1 z1+1 x1+1 y1 z1 ;
+
+// Делаю 135 объект, т.е. направляющие
+protoobj create "Shkaf.ptl" 135
+  "Numbs" 1
+done
+0 0 0 ;
+protoobj edit last 1 nodc;
+NULLOUT=ReSnap();
+exit;

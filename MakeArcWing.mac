@@ -1,0 +1,82 @@
+//-- Создание створки распашной двери с ручкой и петлями
+global ProtoPath;
+global
+DoorKonst               //  Тип конструкции двери
+DoorMater,              //-- Материал панелей двери
+DoorPict,    // тип фасада(рисунка)
+;
+global		            //-- Для ручек
+HandleType,           //-- Тип ручки
+HandleX,              //-- Сдвиг ручки по x
+HandleZ,              //-- Сдвиг ручки по z
+HandleA,              //-- Поворот ручки
+HandleD,	            //-- Двойная или одиночная ручка
+HandleR;	            //-- Тип положения ручки (0-свободно 1-по центру 3-сверху 4-снизу)
+
+getpar
+		x1,y1,z1, //-- Положение
+		W1, D1, H1,   //-- Размер по ширине, глубине и высоте
+                DY            // Прогиб
+                R_Fas         // Изменения фасада: справа
+                L_Fas         // Слева
+                U_Fas         // Сверху
+                D_Fas         //  Снизу
+		Variant                 // вариант расположения
+;
+//------------------------------------------------------------------------------
+//h_fas=priceinfo(DoorMater,"Thickness",16);
+ElemDoorName=priceinfo(DoorPict,"NAME"," ",2); //-- Имя фасада из прайс-листа
+if (ElemDoorName!=" ")
+{
+  ElemDoorName="Фасад '"+ElemDoorName+"'";
+}
+//object_1=sysvar(60);
+macro ProtoPath+"SetEnam.mac" ElemDoorName;
+
+macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+macro ProtoPath+"SetFasdV.mac" abs(Variant);
+macro ProtoPath+"SetFasPlas.mac"
+                R_Fas         // Изменения фасада: справа
+                L_Fas         // Слева
+                U_Fas         // Сверху
+                D_Fas         //  Снизу
+;
+macro ProtoPath+"MakeGnuFas.mac" x1,y1,z1
+ 		W1, D1, H1,   //-- Размер по ширине, глубине и высоте
+                DY             // Прогиб
+                0              // Резерв
+                0              // Резерв
+;
+
+if (variant>=0)
+{
+  macro Protopath+"DoorHing.Mac"	x1,y1,z1 W1  H1
+		R_Fas L_Fas U_Fas D_Fas	Variant  ;
+}
+//if (DoorKonst!=0)
+
+AutoHan:
+HND_mac="";
+
+if (HandleType!=0)
+{
+  HND_mac=PriceInfo(DoorKonst,"HNDMac",PriceInfo(DoorPict,"HNDMac","",2),2);
+  if (Len(HND_Mac)!=0)
+  {
+	  //-- Особенная установка ручки
+    macro Protopath+HND_Mac
+		  x1,y1,z1,         //-- Базовый угол двери
+		  W1,DY,H1,abs(Variant)           //-- Ширина, высота и сторона открывания двери
+      HandleType,HandleX,HandleZ,HandleA;  //-- Тип ручки и параметры положения
+ }
+  else
+  {
+	  //-- Установка ручки по-умолчанию
+    macro Protopath+"vip_hnd.mac"
+		  x1,y1,z1,         //-- Базовый угол двери
+		  W1,DY,H1,abs(Variant)           //-- Ширина, высота и сторона открывания двери
+      HandleType,HandleX,HandleZ,HandleA;  //-- Тип ручки и параметры положения
+
+  }
+}
+exit;

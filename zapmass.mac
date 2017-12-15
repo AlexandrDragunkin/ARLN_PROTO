@@ -1,0 +1,62 @@
+//-- Макропрограмма заполняет массив объектами для группововй замены
+//-- и последовательно меняет параметры каждого объекта в массиве
+//-- Входные параметры:
+//-- nid - ID материала для замены
+
+global ProtoPath;
+getpar nid IdGroup;
+NULLOUT=getvarinst(2,"T_Pod_MC",T_pod,-1);
+if (T_pod==9||T_pod==10||T_pod==7)
+{
+	selbyattr "(Posit!=0)&&(Left(FurnType,4)==\"1000\")" prompt "Укажите объекты:" wholly : ;
+}
+else
+{
+	selbyattr "(Left(FurnType,4)==\"1000\")" prompt "Укажите объекты:" wholly : ;
+}
+
+a=sysvar(61);
+if (a==0)
+{
+  exit;
+}
+b=0;
+defarr c[a];
+next:
+b=b+1;
+c[b]=GetSelNum(b); //-- Массив объектов прототипов
+if (b<a)
+{
+  goto next;
+}
+NULLOUT=infinitepb(1,"");  //-- Включаем ProgressBar
+b=0;
+nnext:
+b=b+1;
+pnt=c[b];
+NULLOUT=infinitepb(2,"");  //-- наращиваем счетчик ProgressBar
+Param=IdGroup[1];
+if (isvardef("Param")==6)
+{
+  macro ProtoPath+"ChGroupGab.mac" nid IdGroup pnt;
+}
+else
+{
+  //-- Если объект не прототип (если есть KarkasNumb)
+  if (isassign("KarkasNumb",pnt))
+  {
+   macro ProtoPath+"KarkasMultiChange.mac" nid IdGroup pnt T_pod;
+  }
+  else
+  {
+    macro ProtoPath+"zapmas.mac" nid IdGroup pnt;
+  }
+}
+
+if (b<a)
+{
+  goto nnext;
+}
+//------------------------------------------------------------------------------
+NULLOUT=infinitepb(3,"");  //-- Выключаем ProgressBar
+exit;

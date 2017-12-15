@@ -1,0 +1,90 @@
+//-- Макропрограмма формирования Scratch параметров фасада  для версии 7.1
+global ProtoPath;
+defarr yarr[1];
+global gs_Nfasad;     //-- Счетчик фасадов в объекте
+// putmsg("scrFasCheck");
+
+// Из умолчаний читаем соответствия
+nullout=getVarinst(2,"n_scrFas",n_scrFas,0);
+if n_scrFas>0
+{
+	defarr SrcFasGroup[n_scrFas];
+	nullout=getArrinst(2,"SrcFasGroup",SrcFasGroup);
+	defarr SrcFasName[n_scrFas];
+	nullout=getArrinst(2,"SrcFasName",SrcFasName);
+	defarr SrcFasEntF[n_scrFas];
+	nullout=getArrinst(2,"SrcFasEntF",SrcFasEntF);
+	defarr SrcFasEntA[n_scrFas];
+	nullout=getArrinst(2,"SrcFasEntA",SrcFasEntA);
+}
+
+getpar FasCode, scr;
+
+// DfDec=0;
+// DfDecPan=0;
+  // subst=getyadsubst(6);          // Группа Типы отделки профиля
+  // kol1=npgetbywhere(1,"","yarr",subst);
+  // if (kol1>0) {
+    // DfDec=yarr[1];               // В качестве умолчания берем первый из подстановки
+  // }
+  // subst=getyadsubst(3);          // Группа Типы отделки панелей
+  // kol1=npgetbywhere(1,"","yarr",subst);
+  // if (kol1>0) {
+    // DfDecPan=yarr[1];            // В качестве умолчания берем первый из подстановки
+  // }
+// //-------------------------------------------------------------------------------
+
+Suname=""; tmpvar="";
+Nfas=0;
+
+err=getscratch(Scr,FasCode,"Nfas",Nfas,Suname);
+if !err { err=addscratch(Scr,FasCode,"Nfas",gs_Nfasad); Nfas=gs_Nfasad; }	//-- Число фасадов
+
+// putmsg(Nfas)
+// putmsg(n_scrFas)
+
+// v=0;
+// ilbf=0
+// lab_f:
+// if ilbf<Nfas
+// {
+	// ilbf=ilbf+1;
+	ilbf=gs_Nfasad;
+	// putmsg(ilbf)
+	i=0;
+	lab_i:
+	i=i+1;
+	if i<=n_scrFas
+	{
+		// putmsg(i)
+		err=getscratch(Scr,FasCode,"АГрпОтд"+str(i)+str(ilbf),tmpvar,Suname);
+		if !err { 
+			err=addscratch(Scr,FasCode,"АГрпОтд"+str(i)+str(ilbf),SrcFasGroup[i]);
+		}
+		err=getscratch(Scr,FasCode,"АМатОтд"+str(i)+str(ilbf),tmpvar,Suname);
+		if !err { 
+			nullout=getvarinst(1,SrcFasEntA[i],v,0)
+			err=addscratch(Scr,FasCode,"АМатОтд"+str(i)+str(ilbf),v);	//-- материал отделки 
+		}
+		err=getscratch(Scr,FasCode,"FГрпОтд"+str(i)+str(ilbf),tmpvar,Suname);
+		if !err { 
+			err=addscratch(Scr,FasCode,"FГрпОтд"+str(i)+str(ilbf),SrcFasGroup[i]);
+		}
+		err=getscratch(Scr,FasCode,"FМатОтд"+str(i)+str(ilbf),tmpvar,Suname);
+		if !err { 
+			nullout=getvarinst(1,SrcFasEntF[i],v,0)
+			err=addscratch(Scr,FasCode,"FМатОтд"+str(i)+str(ilbf),v);	//-- материал отделки 
+		}
+		goto lab_i;
+	}
+
+	// Отделка на профиль фасада
+	if lower(FasCode)=="fasad_wood"||lower(FasCode)=="fasad_compact"
+	{
+		
+	}
+// }
+
+WriteScratch(scr,"FasadPar",0);
+
+exit;

@@ -1,0 +1,147 @@
+//-- Установить (добавить) торцевую обработку
+global ProtoPath;
+
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+
+MBPanel panmark   :  5
+
+exit;
+//=============================================================
+defarr w[33]; //-- Параметры всех торцевых обработок
+
+Side=1;       //-- Сторона 1 - B
+TypeFr=0;     //-- Тип обработки торца 1 - паз, 2 - угол
+ShiftK=0.5;   //-- Смещение от стороны А в долях толщины
+Dept=4;       //-- Глубина паза или смещение в мм для скоса
+Width=7;      //-- Ширина паза или угол скоса в градусах
+Rz1=0;        //-- Резерв
+Rz2=0;        //-- Резерв
+Rz3=0;        //-- Резерв
+
+switch autosingle on;
+selbyattr "(Left(FurnType,2)==\"01\"&&FurnType!=\"010000\")||Posit==11||Posit==12||Posit==13||Posit==14"
+  prompt "Укажите панель:" : ;
+switch autosingle off;
+
+if (sysvar(61)==0)
+{
+  select;
+  exit;
+}
+p1=getselnum(1);
+macro Protopath+"PropTrGet.mac"  w p1 ;
+select stayblink p1 done;
+
+#Side
+alternative "Торцевая обработка панели"
+msgbox picture 2 beep 2 text "Укажите сторону торцевой обработки"
+done
+" В " " C " " D " " E " "Отмена"
+done;
+
+if (Side>4)
+{
+  select;
+  exit;
+}
+
+TypeFr=w[(Side-1)*7+1];
+ShiftK=w[(Side-1)*7+2];
+Dept=w[(Side-1)*7+3];
+Width=w[(Side-1)*7+4];
+Rz1=w[(Side-1)*7+5];
+Rz2=w[(Side-1)*7+6];
+Rz3=w[(Side-1)*7+7];
+
+#ok_flag
+setvar
+"Торцевая обработка панели"
+""
+center
+"Укажите тип торцевой обработки панели по стороне '"+iif(Side==1,"B",iif(Side==2,"C",iif(Side==3,"D","E")))+"'"
+done
+str 	listonly
+	if (TypeFr==0) { current } "Нет"
+	if (TypeFr==1) { current } "Прямоугольный паз"
+	if (TypeFr==2) { current } "Скос"
+//-- Новые обозначения торцевых пазов включать сюда
+	done	       "Тип обработки:"      	TType
+done;
+
+if (ok_flag==0)
+{
+  select p1 done;
+  exit;
+}
+//-- Создание диалоговых окон обработок
+if (TType=="Нет")
+{
+  TypeFr=0;
+  goto Final;
+}
+//-----------------------------------------------------------------------------
+if (TType=="Прямоугольный паз")
+{
+  if (TypeFr==0)
+  {
+    ShiftK=0.5;   //-- Смещение от А в долях толщины
+    Dept=4;       //-- Глубина паза или смещение в мм для угла
+    Width=7;      //-- Ширина паза или угол в градусах
+  }
+  TypeFr=1;
+
+  #ok_flag
+  setvar
+  "Торцевая обработка панели"
+  PicturesPath+"TrPaz.wmf"
+  center
+  "Параметры прямоугольно паза по стороне'"+iif(Side==1,"B",iif(Side==2,"C",iif(Side==3,"D","E")))+"'"
+  done
+  real default ShiftK	"Отступ паза:"  ShiftK
+  real default Width	"Ширина паза:"  Width
+  real default Dept	  "Глубина паза:" Dept
+  done;
+  if (ok_flag==0)
+  {
+    select p1 done;
+    exit;
+  }
+}
+//-----------------------------------------------------------------------------
+if (TType=="Скос")
+{
+  TypeFr=2;
+  #ok_flag
+  setvar
+  "Торцевая обработка панели"
+  PicturesPath+"TrPaz.wmf"
+  center
+  "Параметры скоса по стороне'"+iif(Side==1,"B",iif(Side==2,"C",iif(Side==3,"D","E")))+"'"
+  done
+  real default ShiftK	 "Отступ в долях толщины:" ShiftK
+  real default Dept	   "Отступ от края в мм:"    Dept
+  real default Width	 "Угол скоса (+/-):"       Width
+  done;
+  if (ok_flag==0)
+  {
+    select p1 done;
+    exit;
+  }
+}
+//-----------------------------------------------------------------------------
+//-- Диалоги для других типов торцевых обработок вставлять сюда
+Final:
+select p1 done;
+macro Protopath+"PropTrSN.mac"
+      Side  // Сторона 1 - B
+      TypeFr  // Тип обработки торца 1 - паз, 2 - угол
+      ShiftK  // Смещение от А в долях толщины
+      Dept    // Глубина паза или смещение в мм для угла
+      Width   // Ширина паза или угол в градусах
+      Rz1     // Резерв
+      Rz2     // Резерв
+      Rz3     // Резерв
+      p1 ;    // Указатель на объект
+
+protoobj edit list p1 nodc ;
+exit;

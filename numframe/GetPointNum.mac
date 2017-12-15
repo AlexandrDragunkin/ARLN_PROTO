@@ -1,0 +1,57 @@
+//-- Макропрограмма возвращает массив координат точек объектов и массив номеров этих объектов
+global ProtoPath;
+getpar
+par1					//-- способ определения точек  0 - центр объекта
+par2					//-- какие объекты нумеровать 0 - только панели 1 - панели и фурнитуру
+ElemPointX		//-- массив координат Х точек на панели
+ElemPointY		//-- массив координат Y точек на панели
+ElemNum				//-- массив номеров панелей
+ElemRef				//-- массив ссылок на объекты
+colPoint;			//-- возвращаемое значение - количество точек.
+
+//-- Условия выбора
+if (par2==0)		//-- панели
+{
+	strselect="(Left(FurnType,4)==\"0101\"||Left(FurnType,4)==\"0102\"||Left(FurnType,4)==\"0103\"||Left(FurnType,4)==\"0104\")";
+}
+if (par2==1)		//-- фурнитура
+{
+	strselect="(Left(FurnType,2)==\"04\")";
+}
+if (par2==2)		//-- профили
+{
+	strselect="(Left(FurnType,2)==\"02\")";
+}
+if (par2==3)		//-- крепеж
+{
+	strselect="(Left(FurnType,2)==\"06\")";
+}
+
+//-- Выбираем объекты
+	selbyattr strselect partly all done;
+	colPoint=sysvar(61);
+	if (colPoint<1)
+	{
+		errmes="Нет объектов нужного типа";
+		goto errend;
+	}
+	defarr pabGab[6];
+	//-- Заносим координаты панели в массивы
+	i=0;
+	Loop1:
+	i=i+1;
+	pan=getselnum(i);
+	objgab3(pan,pabGab);
+  ElemNum[i]=getattr(pan,"CommonPos",0); //-- номер объекта помещаем в массив
+	ElemPointX[i]=(pabGab[4]-pabGab[1])/2+pabGab[1];		//-- координата x в массив
+	ElemPointY[i]=(pabGab[5]-pabGab[2])/2+pabGab[2];		//-- координата y в массив
+	//point ElemPointX[i] ElemPointY[i];
+	if (i<colPoint)
+	{
+		goto Loop1;
+	}
+macro ProtoPath+"Arrobj.mac" colPoint ElemRef;
+exit;
+errend:
+putmsg(errmes,0);
+exit;

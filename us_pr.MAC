@@ -1,0 +1,50 @@
+//-- Макропрограмма формирует рамку прямого фасада
+//-- Входные параметры:
+//-- xn,yn,zn - коогдинаты правого нижнего дальнего угла рамки
+//-- w,h - ширина и высота рамки
+//-- Prof - ID профиля рамки
+//-- ColProf - Цвет профиля рамки
+
+global MacroSw; //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global ProtoPath;
+
+getpar xn,yn,zn,w,h,Prof,ColProf;
+
+macro ProtoPath+"SetECod.mac" "2501" ;
+// macro ProtoPath+"SetKCod.mac" "ПРОФ" h  0 ;
+//macro ProtoPath+"SetEnam.mac" "Профиль для фасада" ;
+
+macro ProtoPath+"SetProfC.mac" Prof 0 0 0 0 180 45 45 ColProf;
+macro ProtoPath+"MakeProf.mac" xn	yn	zn xn	yn	zn+h ;
+
+macro ProtoPath+"SetECod.mac" "2502" ;
+// macro ProtoPath+"SetKCod.mac" "ПРОФ" w  0 ;
+//macro ProtoPath+"SetEnam.mac" "Профиль для фасада" ;
+macro ProtoPath+"SetProfC.mac" Prof 0 0 0 0 -90 45 45 ColProf;
+macro ProtoPath+"MakeProf.mac" xn	yn	zn+h 	xn+w	yn	zn+h ;
+
+macro ProtoPath+"SetECod.mac" "2501" ;
+// macro ProtoPath+"SetKCod.mac" "ПРОФ" h  0 ;
+//macro ProtoPath+"SetEnam.mac" "Профиль для фасада" ;
+macro ProtoPath+"SetProfC.mac" Prof 0 0 0 0 0 45 45 ColProf;
+macro ProtoPath+"MakeProf.mac" xn+w	yn	zn+h xn+w	yn	zn ;
+
+macro ProtoPath+"SetECod.mac" "2502" ;
+// macro ProtoPath+"SetKCod.mac" "ПРОФ" w  0 ;
+//macro ProtoPath+"SetEnam.mac" "Профиль для фасада" ;
+macro ProtoPath+"SetProfC.mac" Prof 0 0 0 0 90 45 45 ColProf;
+macro ProtoPath+"MakeProf.mac" xn+w	yn zn xn yn zn;
+//-- Для того, чтобы формировалась группа "Рамка" нужно добавить в макрос создания фасада
+//-- следующие строки:
+// if (MacroSw==0) 
+// {
+  // group last 4 done
+  // Name="Рамка фасада";   //-- Имя
+  // UnitCode="2100";
+  // GrId=0;                //-- GroupId
+  // PrId=0;                //-- PriceID
+  // KonsCod=" ";
+  // PropCod=" ";
+  // macro ProtoPath+"EndFrame.mac" w h Name UnitCode GrId PrId KonsCod PropCod;
+// }
+exit;

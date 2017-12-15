@@ -1,0 +1,21 @@
+//-- Установить текущие параметры для фасадов и дверей
+global
+FsMater,        //-- Материал панелей двери
+DoorMater,      //-- Материал панелей двери (дублируется)
+DoorPict,       //-- Рисунок фасада
+DoorBCol,       //-- Цвет кромки фасада
+DoorBand,       //-- Тип кромки фасада
+DoorMatVS1,     //-- Материал первой вставки фасада
+DoorMatVS2;     //-- Материал второй вставки фасада
+
+getpar P1,P2,P3,P4,P5,P6;
+
+DoorMater=P1;
+// putmsg(DoorMater)
+FsMater=P1;
+DoorPict=P2;
+DoorBCol=P3;
+DoorBand=P4;
+DoorMatVS1=P5;
+DoorMatVS2=P6;
+exit;

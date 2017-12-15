@@ -1,0 +1,120 @@
+//-- Макропрограмма устанавливает выдвижную корзину
+global ProtoPath;
+global TypeMotFlasG;
+defarr basep[3];
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами
+res=IsvarDef("TypeMotFlasG");
+if (res==0) 
+{
+	NULLOUT=getvarinst(2,"MotFlasType",TypeMotFlasG,0);				//-- Умолчание на корзину
+}
+DefFlas=str(getyadsubst(80))+"#"+str(TypeMotFlasG) ;			//-- Формируем строку умолчаний.
+onerror final;
+NULLOUT=getsnap();
+NULLOUT=pushinst(1);
+defarr arr[10];
+
+#ok_flag
+setvar
+"Параметры выдвижной корзины"
+//PicturesPath+"PantRas.jpg"
+//center
+"Задайте параметры корзины"
+done
+string auto button 6 default DefFlas
+     "Тип корзины:" TypeMotFlasG
+str listonly current  "Справа"
+											"Слева"
+                 done "Установка корзины:" BLt
+
+logical default 0 "Наличие расширителя:" F_Width
+logical default 0 "Наличие лотка:" Tray
+done;
+if (ok_flag==0)
+{
+  goto final;
+}
+//----------------------------------------
+if (BLt=="Справа") { RV=1;}
+if (BLt=="Слева") { RV=0;}
+//----------------------------------------
+splitbydelim(TypeMotFlasG,"#",Arr);
+TypeMotFlasG=Arr[2];
+ShiftY=priceinfo(TypeMotFlasG,"ShiftY",0,2);						//-- Отступ спереди
+typeKor=priceinfo(TypeMotFlasG,"NomID1",0,2);
+H_Flas=priceinfo(typeKor,"Height",86);			//-- Высота корзины
+if (Tray==1)
+{
+  Lot=priceinfo(TypeMotFlasG,"NomID3",0,2);						//-- Лоток
+  if (Lot>0)
+  {
+    SZL=priceinfo(Lot,"ShiftZ",0);							//-- Отступ по Z
+		H_Flas=H_Flas+SZL;
+  }
+}
+D_Flas=priceinfo(typeKor,"ToleranceY",86);			//-- Глубина корзины
+W_Flas=priceinfo(typeKor,"ToleranceX",86);						//-- Ширина корзины
+if (F_Width==1)
+{
+ RasT=priceinfo(TypeMotFlasG,"NomID2",0,2);
+ ots=priceinfo(RasT,"Width",0);									//-- Ширина расширителя
+ if (ots>0)
+ {
+  W_Flas=W_Flas+ots;
+ }
+}
+
+//-- Запрос ниши
+defarr arrin[3], arrout[14];
+arrin[1]=H_Flas;  // Высота резиновой панели
+mbget "Укажите положение корзины:" shell arrin arrout :
+basep[1]=arrout[1];
+basep[2]=arrout[2];
+basep[3]=arrout[3];
+xgab=arrout[4];
+ygab=arrout[5];
+zgab=arrout[14];
+Numb=arrout[6];
+Shift=arrout[7];
+
+//-- Проверки
+//--Если не подходит по ширине
+if (xgab<W_Flas)
+{
+ putmsg("Ширина ниши меньше допустимой",0);
+ putmsg("Допустимая ширина "+str(W_Flas),0);
+ putmsg("Ширина ниши "+str(xgab),0);
+ goto final;
+}
+//--Если не подходит по глубине
+if (ygab<D_Flas)
+{
+ putmsg("Глубина ниши меньше допустимой",0);
+ putmsg("Допустимая глубина "+str(D_Flas),0);
+ putmsg("Глубина ниши "+str(ygab),0);
+ goto final;
+}
+//--Если не подходит по высоте
+if (zgab<H_Flas)
+{
+ putmsg("Высота ниши меньше высоты выбранной корзины",0);
+ putmsg("Высота корзины "+str(H_Flas),0);
+ putmsg("Высота ниши "+str(zgab),0);
+ goto final;
+}
+position=getprotoid("Shkaf","Выдвижная корзина/полка","ProtoMacro","MotFlasP");  //-- ID прототипа
+protoobj create "Shkaf.ptl" position
+   "W"			 xgab
+   "TypeF"	 TypeMotFlasG
+   "F_Width" F_Width
+	 "RV"			 RV
+	 "Tray"		 Tray
+   done
+basep[1], basep[2]+ygab-ShiftY, basep[3]+H_Flas;
+
+final:
+offerror;
+NULLOUT=resnap();
+NULLOUT=popinst(1);
+exit;

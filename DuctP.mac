@@ -1,0 +1,74 @@
+//-- Прототип "Вырез под короб"
+global ProtoPath;
+KarkasNumb=getcarcnumb();  //-- Порядковый номер каркаса в сцене
+
+WidthDuct=DbVar("WidthDuct",100);     //-- Ширина выреза
+DepthDuct=DbVar("DepthDuct",100);     //-- Глубина выреза
+HeightDuct=DbVar("HeightDuct",1000);  //-- Высота выреза
+MaterDuct=DbVar("MaterDuct",0);       //-- Материал панелей
+FixDuct=DbVar("FixDuct",0);           //-- Крепеж панелей выреза
+TypeBp=DbVar("TypeBp",0);             //-- Тип задней стенки
+FixBp=DbVar("FixBp",0);               //-- Крепеж задней стенки
+DepthBp=DbVar("DepthBp",0);           //-- Сдвиг врезной задней стенки
+InCutBp=DbVar("InCutBp",0);           //-- Глубина врезки
+MatBp=DbVar("MatBp",0);               //-- Материал задней стенки
+ConfDuct=DbVar("ConfDuct",4);         //-- Конфигурация выреза
+
+macro ProtoPath+"PutDuct.mac" ConfDuct, 0, 0, WidthDuct, DepthDuct, HeightDuct, MaterDuct, FixDuct, TypeBp, FixBp, DepthBp, InCutBp, MatBp;
+#obj group all done;
+//-- Присваиваем атрибуты
+position=259;
+Namescr="ProtoParams";
+FurnType="111100";
+
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"WidthDuct",WidthDuct);
+err=AddScratch(ScrMod,FurnType,"DepthDuct",DepthDuct);
+err=AddScratch(ScrMod,FurnType,"HeightDuct",HeightDuct);
+err=AddScratch(ScrMod,FurnType,"MaterDuct",MaterDuct);
+err=AddScratch(ScrMod,FurnType,"FixDuct",FixDuct);
+err=AddScratch(ScrMod,FurnType,"TypeBp",TypeBp);
+err=AddScratch(ScrMod,FurnType,"FixBp",FixBp);
+err=AddScratch(ScrMod,FurnType,"DepthBp",DepthBp);
+err=AddScratch(ScrMod,FurnType,"InCutBp",InCutBp);
+err=AddScratch(ScrMod,FurnType,"MatBp",MatBp);
+err=AddScratch(ScrMod,FurnType,"ConfDuct",ConfDuct);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+
+
+attrobj attach "Posit" done last 1 position;
+attrobj attach "Objtype" "PlaceType" done last 1 0 0;
+
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done last 1 done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+}
+
+if (isassign("ElemName",0))
+{
+  attrobj copy record "ElemName" done last 1 done;
+}
+else
+{
+  attrobj attach "ElemName" done last 1 "Вырез под короб";
+}
+if (isassign("HoldName",0))
+{
+  attrobj copy record "HoldName" done last 1 done;
+}
+if (isassign("UnitName",0))
+{
+  attrobj copy record "UnitName" done last 1 done;
+}
+attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 WidthDuct DepthDuct HeightDuct; //-- Размеры выреза
+
+attrobj attach "Assembly" done last 1 1;   //-- Добавим атрибут сборочной единицы
+attrobj copy record Namescr done last 1 done;
+attrobj attach "FurnType" done last 1 FurnType;
+exit;

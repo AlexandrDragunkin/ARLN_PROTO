@@ -1,0 +1,78 @@
+//-- Макропрогрмма создания сборочной единицы из группы элементов верхнего уровня
+defarr xm[6];
+
+NumFT=8;  //-- Число предопределенных типов FurnType
+defarr FT[NumFT],FTN[NumFT];
+FT[1]="200000";       FTN[1]="Система дверей";
+FT[2]="210000";       FTN[2]="Раздвижная дверь";
+FT[3]="230000";       FTN[3]="Распашная дверь";
+FT[4]="319900";       FTN[4]="Ящик";
+FT[5]="320000";       FTN[5]="Выдвижная полка";
+FT[6]="330000";       FTN[6]="Профильная сборочная единица";
+FT[7]="400000";       FTN[7]="Рейлинговая система";
+FT[8]="500000";       FTN[8]="Фасад";
+
+
+selbyattr "IsAssign(\"FurnType\")&&iif(!IsAssign(\"Posit\"),1,Posit!=10)" prompt "Укажите объекты, включаемые в сборочную единицу:" wholly : ;
+numobj=sysvar(61)
+if (numobj==0)
+{
+  exit;
+}
+#grp group previous done;
+//-- Присваиваем нужные атрибуты
+NULLOUT=objgab3(grp,xm);
+XUnit=round(xm[4]-xm[1]);
+YUnit=round(xm[5]-xm[2]);
+ZUnit=round(xm[6]-xm[3]);
+karknumb=getcarcnumb();
+HoldName=" ";
+ElemName="Сборочная единица";
+Assembly=1;
+FurnType="";
+Posit=0;
+
+#ok_flag
+Setvar
+"Характеристики сборочной единицы"
+""
+left
+"Определите характеристики сборочной единицы"
+done
+real default XUnit "Габарит сборочной единицы по оси X" XUnit
+real default YUnit "Габарит сборочной единицы по оси Y" YUnit
+real default ZUnit "Габарит сборочной единицы по оси Z" ZUnit
+str default ElemName "Наименование сборочной единицы" ElemName
+str auto listonly
+    let i=1
+    loo1:
+     FTN[i]
+     let i=i+1
+     if (i<=NumFT) { goto loo1; }
+done "Выберите тип сборочной единицы" zat1
+str default FurnType "        Или задайте свой" FurnType
+done;
+if (ok_flag==0)
+{
+  explode grp done;
+  exit;
+}
+if (len(FurnType)!=6)
+{
+  FurnType=FT[findinarray(FTN,zat1,1,NumFT)];
+}
+attrobj attach "ElemName" done grp ElemName;
+attrobj attach "HoldName" done grp HoldName;
+attrobj attach "XUnit" "YUnit" "ZUnit" done grp XUnit,YUnit,ZUnit;
+attrobj attach "FurnType" done grp FurnType ;
+attrobj attach "Assembly" done grp Assembly;
+attrobj attach "KarkasNumb" done grp karknumb;
+attrobj attach "Posit" done grp Posit;
+#ok_flag
+alternative "Создание сборочной единицы"
+msgbox picture 4 beep 4 text left
+"Сборочная единица с именем '"+ElemName+"' успешно создана"
+done
+"  OK  "
+done;
+exit;

@@ -1,0 +1,51 @@
+//-- Создание объекта - опора для сотовой полки
+//-- Входные параметры:
+//-- xbase - Координата сотовой полки по оси x
+//-- x - Ширина секции
+//-- yn, zn - Координты нижнего дальнего угла сотовой полки
+//-- twigID - ID прута сотовой полки
+//-- N_clypse - Количество клипс
+
+global ProtoPath;
+
+getpar xbase,x,y,z,twigID,N_clypse;
+
+//------------------------------------------------------
+width=PriceInfo(twigID,"Width",310);        //-- Размер прута
+clypseID=PriceInfo(twigID,"ClipID",0);      //-- ID клипсы сотовой полки в номенклатурном справочнике
+pocketID=PriceInfo(twigID,"PocketID",0);    //-- ID кармана сотовой полки в номенклатурном справочнике
+nakonID=PriceInfo(twigID,"TipID",0);        //-- ID наконечника сотовой полки в номенклатурном справочнике
+
+NULLOUT=pushinst(1);
+if (clypseID!=0)
+{
+  macro ProtoPath+"SetEnam.mac" "Клипса сотовой полки" ;
+  macro ProtoPath+"SetECod.mac" "8505" ;
+  macro ProtoPath+"SetAccPLace.mac"   0;
+  macro ProtoPath+"MakeAcce.mac" clypseID, 0, xbase+100, y, z-17, 0 0 0 ;
+  move last 1 done ((x-200)/(N_clypse-1)) 0 0 copy N_clypse-1;
+}
+if (nakonID!=0)
+{
+  macro ProtoPath+"SetEnam.mac" "Наконечник сотовой полки" ;
+  macro ProtoPath+"SetECod.mac" "8508" ;
+  Macro ProtoPath+"SetAccPLace.mac"   0;
+  macro ProtoPath+"MakeAcce.mac" nakonID, 0, xbase+10,y+8,z-4.5, 0 0 0 ;
+  macro ProtoPath+"MakeAcce.mac" nakonID, 0, xbase+x-10,y+8,z-4.5, 180 180 -180 ;
+  macro ProtoPath+"MakeAcce.mac" nakonID, 0, xbase+10,y+width-1.2,z-5.5, 0 0 0 ;
+  macro ProtoPath+"MakeAcce.mac" nakonID, 0, xbase+x-10,y+width-1.2,z-5.5, 180 180 -180 ;
+  macro ProtoPath+"MakeAcce.mac" nakonID, 0, xbase+10, y+width-33,z-4.5, 0 0 0 ;
+  macro ProtoPath+"MakeAcce.mac" nakonID, 0, xbase+x-10, y+width-33,z-4.5, 180 180 -180 ;
+  macro ProtoPath+"MakeAcce.mac" nakonID, 0, xbase+10,y+width+0.5,z-37, 0 0 0 ;
+  macro ProtoPath+"MakeAcce.mac" nakonID, 0, xbase+x-10,y+width+0.5,z-37, 180 180 -180 ;
+}
+if (pocketID!=0)
+{
+  macro ProtoPath+"SetEnam.mac" "Карман сотовой полки" ;
+  macro ProtoPath+"SetECod.mac" "8507" ;
+  Macro ProtoPath+"SetAccPLace.mac"   0;
+  macro ProtoPath+"MakeAcce.mac" pocketID, 0, xbase, y+width+29, z+10, 0 0 0 ;
+  macro ProtoPath+"MakeAcce.mac" pocketID, 0, xbase+x, y+width+29-54, z+10, 180 180 -180 ;
+}
+NULLOUT=popinst(1);
+exit;

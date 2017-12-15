@@ -1,0 +1,76 @@
+global PKM_SP ;
+global ProtoPath;
+if (isvardef("PKM_SP")>0)
+{
+   //‘ункци€ определ€ет, определена ли к данному моменту переменна€, им€ которой содержит строка variable. ‘ункции возвращает:
+   //0  Ц переменна€ не определена;
+   //3  Ц переменна€ €вл€етс€ массивом
+   //5  Ц переменна€ числового типа
+   //6  Ц переменна€ строкового типа
+   //16  Ц переменна€ €вл€етс€ ссылкой на объект
+   macro ProtoPath+"Glob_Sp.mac" ; // «агружаем переменныые дл€ макросов из   SUPPORT
+}
+//ecvArc.mac
+//*********************************************
+// ѕостроение эквидистантной дуги
+//              ƒрагункин ј.–.
+//              √ео— 2007 г.
+//*********************************************
+defarr xmm[15] ;
+getpar auto ;
+if (auto==1)
+{
+ getpar
+ arc      //”казатель на дугу
+ delta    //смещение
+ ;
+}
+else 
+{
+  objident : arc;
+  #delta getvar "¬ведите смещение" :
+}
+setucs save "ecvArc";
+Nel=GetObjGeo(arc,xmm);
+R=xmm[1];                      //радиус
+Xc=xmm[5];                     //координата центра
+Yc=xmm[6];                     //координата центра
+Zc=xmm[7];                     //координата центра
+Xn=xmm[8];                     //координата начала
+Yn=xmm[9];                     //координата начала
+Zn=xmm[10];                    //координата начала
+Xe=xmm[11];                    //координата конца
+Ye=xmm[12];                    //координата конца
+Ze=xmm[13];                    //координата конца
+Ar=xmm[15];                    //”гол раствора
+PtransCS(3,0,xmm[5],xmm[6],xmm[7],Xc,Yc,Zc) ;
+setucs move xc yc zc ;
+PtransCS(3,0,xmm[5],xmm[6],xmm[7],Xc,Yc,Zc) ;
+PtransCS(3,0,xmm[8],xmm[9],xmm[10],Xn,Yn,Zn) ;
+PtransCS(3,0,xmm[11],xmm[12],xmm[13],Xe,Ye,Ze) ;
+#Znc angle Xc Yc Zc   Xn Yn Zn  Xe Ye Ze ;
+
+If Abs(radian((Znc))-abs(Ar))<radian(5) 
+{
+  #stAngle angle Xc Yc Zc  Xc+100 Yc Zc Xn Yn Zn  ;
+  #edAngle angle Xc Yc Zc  Xc+100 Yc Zc Xe Ye Ze  ;
+  midangle=stAngle+Abs(Ar)/2;
+}
+else 
+{
+  #edAngle angle Xc Yc Zc  Xc+100 Yc Zc Xn Yn Zn  ;
+  #stAngle angle Xc Yc Zc  Xc+100 Yc Zc Xe Ye Ze  ;
+  midangle=(stAngle+Abs(Ar)/2)
+}
+polar on ;
+if (R+delta>0)
+{
+  arc R+delta stAngle
+      R+delta EdAngle
+      R+delta midangle ;
+}
+polar off ;
+setucs restore "ecvArc" ;
+setucs delete  "ecvArc" ;
+bp 0 0 0 ;
+exit;

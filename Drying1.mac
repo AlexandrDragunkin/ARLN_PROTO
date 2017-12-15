@@ -1,0 +1,114 @@
+//-- Макропрограмма создания посудосушителя
+global ProtoPath;
+defarr MatProp[2], ValProp[2];
+defarr MatProp1[2], ValProp1[2];
+getpar
+Drying,								//-- Тип посудосушителя
+w,                    //-- Ширина ниши
+d,                    //-- Глубина ниши
+h,                    //-- Высота
+Korp_Type,						//-- Тип корпуса (0-прямой, 1-угловой)
+ShelfCut,							//-- Заглубление полок
+R2,
+;
+//-- Параметры по умолчания
+H_1=0;
+H_2=0;
+Sh_1=0;
+Sh_2=0;
+OtsF=41;			//-- Отступ крепежа от краев
+defarr FixZ[6];
+//-- Запрос посудосушителя
+GoodsID=Drying;	
+GoodsProp="ListMat";
+MatProp[1]="Dept";			//-- глубина
+MatProp[2]="Width";			//-- ширина
+ValProp[1]=d;
+ValProp[2]=w;
+IDDry=NPGetByProps(GoodsID,GoodsProp,MatProp,ValProp);
+
+if (IDDry>0)		
+{
+	//-- Проверяем 
+	kolkomp1=npgetbywhere(1," ParentID = "+str(IDDry)+" AND [accessory] = "+str(3),"ArrKomp");		//-- ищем первого "ребенка" комплекта
+	if (kolkomp1>0)					
+	{
+		ChildID1=ArrKomp[1];
+		Sh_1=priceinfo(ChildID1,"Shift",0);	//-- отступ сушки от ниши
+		H_1=priceinfo(ChildID1,"Height",0);	//-- высота сушки
+	}
+	kolkomp2=npgetbywhere(1," ParentID = "+str(IDDry)+" AND [accessory] = "+str(4),"ArrKomp");		//-- ищем второго "ребенка" комплекта
+	if (kolkomp2>0)					
+	{
+		ChildID2=ArrKomp[1];
+		Sh_2=priceinfo(ChildID2,"Shift",0);	//-- отступ сушки от ниши
+		H_2=priceinfo(ChildID2,"Height",0);	//-- высота сушки
+	}
+	if ((Sh_1+H_1+Sh_2+H_2+100)>=h)	//-- если размеры не подходят 
+	{
+		H_Dry=0;
+		goto end;
+	}
+	//-- Устанавливаем 
+	WiD2=priceinfo(IDDry,"Width",0);
+	FixType=priceinfo(IDDry,"FixID",0);	
+	if (kolkomp1>0)						//-- ставим нижнюю сетку
+	{
+		accessory "042200" IDDry 3 yes;
+		macro ProtoPath+"CompAttr.mac" ChildID1 1 ;
+		//-- Установка крепежа
+		//-- Расчет положения крепежа
+		FixZ[1]=-(w-WiD2)/2;
+		FixZ[2]=0+OtsF;
+		FixZ[3]=H_1-30-2.5;
+		FixZ[4]=-(w-WiD2)/2;
+		FixZ[5]=d-OtsF-ShelfCut;
+		FixZ[6]=H_1-30-2.5;
+		macro ProtoPath+"SetFixLine.mac"  FixZ[1]  FixZ[2] FixZ[3] FixZ[1]-0.01  FixZ[2] FixZ[3] FixZ[4]  FixZ[5] FixZ[6] FixType;
+		macro ProtoPath+"MakeFixGroup.mac" FixZ 2;
+		macro ProtoPath+"SetFixLine.mac"  FixZ[1]+w-1  FixZ[2] FixZ[3] FixZ[1]+0.01  FixZ[2] FixZ[3] FixZ[4]+w-1  FixZ[5] FixZ[6] FixType;
+		macro ProtoPath+"MakeFixGroup.mac" FixZ 2;
+		move last 3 done (w-WiD2)/2,0,Sh_1 nocopy;
+	}
+	if (kolkomp2>0)						//-- ставим верхнюю сетку
+	{
+		accessory "042200" IDDry 4 no;
+		macro ProtoPath+"CompAttr.mac" ChildID2 1 ;
+		//-- Установка крепежа
+		//-- Расчет положения крепежа
+		FixZ[1]=-(w-WiD2)/2;
+		FixZ[2]=0+OtsF;
+		FixZ[3]=H_2-5-2.5;
+		FixZ[4]=-(w-WiD2)/2;
+		FixZ[5]=d-OtsF-ShelfCut;
+		FixZ[6]=H_2-5-2.5;
+		macro ProtoPath+"SetFixLine.mac"  FixZ[1]  FixZ[2] FixZ[3] FixZ[1]-0.01  FixZ[2] FixZ[3] FixZ[4]  FixZ[5] FixZ[6] FixType;
+		macro ProtoPath+"MakeFixGroup.mac" FixZ 2;
+		macro ProtoPath+"SetFixLine.mac"  FixZ[1]+w-1  FixZ[2] FixZ[3] FixZ[1]+0.01  FixZ[2] FixZ[3] FixZ[4]+w-1  FixZ[5] FixZ[6] FixType;
+		macro ProtoPath+"MakeFixGroup.mac" FixZ 2;
+		move last 3 done (w-WiD2)/2,0,Sh_1+H_1+Sh_2 nocopy;
+	}
+	//-- Запрос поддона
+	GoodsID=Drying;	
+	GoodsProp="ListMat2";
+	MatProp1[1]="Dept";			//-- глубина
+	MatProp1[2]="Width";		//-- ширина
+	ValProp1[1]=d;
+	ValProp1[2]=w;
+	IDPod=NPGetByProps(GoodsID,GoodsProp,MatProp1,ValProp1);
+	if (IDPod>0)
+	{
+		WiD1=priceinfo(IDPod,"Width",0);
+		Dept=priceinfo(IDPod,"Dept",0);
+		macro ProtoPath+"MakeAcce.mac" 
+		IDPod				    //-- Тип комплектующих
+		"040000"	      //-- FurnType
+		0,0,0,					//-- Координаты точки установки
+		0 0 0;			    //-- Углы поворота
+		move last 1 done (w-WiD1)/2,(d-Dept)/2,0 nocopy;
+	}
+}
+H_Dry=Sh_1+H_1+Sh_2+H_2;
+end:
+NULLOUT=setvarinst(1,"H_Dry",H_Dry);
+exit;

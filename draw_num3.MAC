@@ -1,0 +1,214 @@
+// Рисуем номера
+
+defarr xm[6], dObj[1000];
+defarr w1[3], w2[3] vNormal[3];
+defarr panels[500];
+nmac=GetFileTitle(sysvar(7))
+
+getpar NameAtrPos ;
+NULLOUT=getsnap();
+setucs save "@@@@GEOSTEMP@@@@@";
+object_2=sysvar(60);
+i=0
+	If (!IsAttrdef("NumType"))
+	{ Attribute Create "NumType" "NumType" Real 5 0 ; }
+	
+SavRm=SysVar(58);
+'Rendmode,,0;
+//  Удаляем старые номера
+j=0;
+
+lab_0:
+i=i+1
+If (i<=object_2) {
+  OBJ1=getobjnum(i);
+  If (IsAttrdef("NumType")) {
+
+    n=getattr(OBJ1,"NumType",-1);
+    if (n==1) {
+	j=j+1
+	dObj[j]=OBJ1 ;
+    }
+  }
+  goto lab_0;
+}
+
+i=0;
+Loop:
+
+i=i+1
+if (i<=j) {
+  if !GetObjVisual(dObj[i])
+  {
+     visible dObj[i];
+  }
+  delete dObj[i];
+goto Loop;
+}
+
+// Проставляем новые
+
+    selbyattr "Posit==11||Posit==12||Posit==13||Posit==14" partly all done;
+	object_2=sysvar(61);
+ 	i=0
+ 	i1=0
+	lab_111:
+	i=i+1
+	If (i<=object_2)
+        {
+        i1=i1+1;
+	panels[i1]=getselnum(i);
+	goto lab_111;
+	}
+	//-----------------------------
+        selbyattr "(ElemName==\"Полотно фасада\")&&(Posit=="+str(14)+")" partly all done;
+        dopsim=""
+        object_3=sysvar(61);
+        //i2=object_2;
+        i=0;
+        object_2=object_2+object_3;
+        lab_113:
+        i=i+1;
+
+	If (i<=object_3)
+        {
+           OBJ1=getselnum(i);
+           name=getattr(OBJ1,NameAtrPos,-1);  // 2010-02-17
+           PriceID=getattr(OBJ1,"PriceID",0);
+           MATTYPE=PriceInfo(PriceID,"MATTYPE",-1);
+           // if (name!=-1)&&(MATTYPE!=99) // Убрать комментарий если стекла не нумеруются
+           // {
+              // i1=i1+1
+              // panels[i1]=getselnum(i);
+           // }
+	   goto lab_113;
+	}
+	//-----------------------------
+i=0;
+lab_1:
+
+i=i+1
+//putmsg(i);
+
+If (i<=object_2) {
+//putmsg(object_2);
+   OBJ1=panels[i]
+   if isvardef("OBJ1")!=16 {
+		goto labups;
+   }
+  If (IsAttrdef(NameAtrPos))
+  {
+    name=getattr(OBJ1,NameAtrPos,-1);
+    KarkasN=getattr(OBJ1,"KarkasNumb",-1);
+    PriceID=getattr(OBJ1,"PriceID",0);
+    Vector=getattr(OBJ1,"PanDir",0);
+    
+    Psim=iif(Vector==2,"=","");
+        UnicID=getattr(OBJ1,"UnitPos",0);
+		FT=getattr(OBJ1,"FurnType","");
+           Holder=getattr(OBJ1,"TopParentPos",0);
+           selbyattr "UnitPos=="+str(holder) wholly all done ;
+           if SysVar(61)>0
+           {
+              objHol=getselnum(1);
+              Posit=getattr(objHol,"POSIT",0);
+              if (posit==20)
+              {
+                 dopsim="Д";
+              }
+              else
+              {
+                  dopsim="";
+                  // goto lab_1;
+              }
+           }
+		   else {
+			//goto labups;
+		   }
+    MATTYPE=PriceInfo(PriceID,"MATTYPE",-1);
+    // if (name!=-1)&&(MATTYPE!=99) // только не стекло // Убрать комментарий если стекла не нумеруются
+    // { // Убрать комментарий если стекла не нумеруются
+/////////////////////////////////////////////////////////////	
+//NULLOUT=getsnap();
+setucs lcs partly OBJ1 ;
+NULLOUT=objgab3(OBJ1,xm);
+name2=getattr(OBJ1,"Posit",-1);
+
+if (name2==11)   // стойка
+{     	posx=(xm[4]+xm[1])/2;
+	posy=(xm[5]+xm[2])/2;
+	posz=xm[3] ; //(xm[6]+xm[3])/2;
+	posx2=posx
+	posy2=posy+10
+	posz2=posz
+	strg=Psim+Str(name)+dopsim
+        vNormal[1]=0;
+        vNormal[2]=0;
+        vNormal[3]=-1;
+//	gosub PutText;
+}
+if (name2==12)
+{
+ 	posy=(xm[5]+xm[2])/2;
+	posz=xm[6];
+	posx=(xm[4]+xm[1])/2;
+	posx2=posx-1
+	posy2=posy
+	posz2=posz
+        strg=Psim+Str(name)+dopsim
+	vNormal[1]=0;
+        vNormal[2]=0;
+        vNormal[3]=1;
+//	gosub PutText;
+}
+if (name2==13||name2==14||name2==33)
+{
+	posy=(xm[5]+xm[2])/2; //xm[5];
+	posx=(xm[4]+xm[1])/2;
+	posz=xm[6] //(xm[6]+xm[3])/2;
+	posx2=posx
+	posy2=posy-1
+	posz2=posz
+	vNormal[1]=0;
+        vNormal[2]=0;
+        vNormal[3]=1;
+	strg=Psim+Str(name)+dopsim
+}
+
+gosub PutText;
+chprop color last 1 done 74;
+chprop lwidth last 1 done 0.1;
+labups:
+
+   // } // Убрать комментарий если стекла не нумеруются
+  }
+  goto lab_1;
+}
+//setucs gcs;
+
+NULLOUT=resnap();
+'Rendmode,,SavRm;
+setucs restore "@@@@GEOSTEMP@@@@@";
+setucs delete "@@@@GEOSTEMP@@@@@" ;
+exit;
+
+exit;
+//------------------------------------------------------------------------
+//-- Подпрограмма помещает строку в точку с указанными координатами на текущем виде
+//-- Входные параметры:
+//-- strg - строка текста
+//-- posx, posy, posz - координаты в ПСК точки, куда нужно поместить строку
+PutText:
+NULLOUT=getsnap();
+#tx1 text strg done posx posy posz normal vNormal[1] vNormal[2] vNormal[3] posx2 posy2 posz2 ;
+
+setucs lcs partly tx1 ;
+err=ObjGab3(tx1,xm);
+Circle xm[1]+(xm[4]-xm[1])/2 xm[2]+(xm[5]-xm[2])/2 xm[3]+(xm[6]-xm[3])/2 normal 0 0 1 sqrt(pow(xm[4]-xm[1],2)+pow(xm[5]-xm[2],2))*0.6;
+group last 2 done ;
+if KarkasN!=-1 { attrobj attach "Karkasnumb" done last 1  KarkasN; }
+attrobj attach "NumType" "NumHolder" "NmMacNums" "FT_Holder" done last 1 1 UnicID nmac FT;
+
+NULLOUT=resnap();
+return;
+

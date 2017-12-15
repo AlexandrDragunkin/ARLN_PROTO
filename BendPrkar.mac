@@ -1,0 +1,531 @@
+global ProtoPath;
+global UndoMode;
+global PKM_SP ;
+NULLOUT=GetVarInst(2,"g_eps",g_eps,0.01); // Погрешность округления
+if (isvardef("PKM_SP")>0) 
+{
+   //Функция определяет, определена ли к данному моменту переменная, имя которой содержит строка variable. Функции возвращает:
+   //0  – переменная не определена;
+   //3  – переменная является массивом
+   //5  – переменная числового типа
+   //6  – переменная строкового типа
+   //16  – переменная является ссылкой на объект
+    macro ProtoPath+"Glob_Sp.mac" ; // Загружаем переменныые для макросов из   SUPPORT
+}
+if isvardef("UndoMode")!=5 { UndoMode=0; }
+//BendPrkar.mac
+//*********************************************
+//***Построение гнутого профильного длинномера****
+//              Драгункин А.Р.
+//              ГеоС 2007-2011 г.
+//*********************************************
+
+defarr xm[6] bd[11] ar1[3]  ar2[3] ar3[3] arr[4] verSys[7] ;
+NULLOUT=InitArray(ar1,0);
+NULLOUT=InitArray(ar2,0);
+NULLOUT=InitArray(ar3,0);
+global Rlong ; //стартовое значение радиуса
+//line 0 0 0 1 1 1 done ; delete all done ;
+//;macro GetProtoMac("Shkaf.ptl")+"Setarr.mac" ;
+setucs save "$$$$" ;
+//R=250
+getpar auto ;
+onerror metend;
+metstart:
+if (auto==0)
+{
+bd[3]=0
+err=SetBentProf(bd);
+  #R getvar "Введите радиус" default Rlong :
+  get "Укажите начальную точку"   point missing xs ys zs :
+  get "Укажите конечную точку"    point         xs ys zs  xe ye ze :
+  get "Укажите направление оси X" point         xe ye ze  Xn Yn Zn :
+  TrendKey=1;
+  Rlong=R;
+}
+else 
+{
+  getpar
+  R
+  xs ys zs
+  xe ye ze
+  Xn Yn Zn
+  TrendKey  //ключ корректировки точек     0-не корректировать   1-корректировать
+;
+}
+NULLOUT=SysArr(82,verSys) ;
+err=GetBentProf(bd) ;
+if (bd[10]==0)
+{ 
+  bd[10]=50;
+}
+dxn=0;
+dyn=0;
+dxk=0;
+dyk=0;
+metnm:
+if verSys[5]<"7.1"
+{
+	PTransCS(0,3,xs,ys,zs,xs,ys,zs) ;
+	PTransCS(0,3,xe,ye,ze,xe,ye,ze) ;
+	PTransCS(0,3,xn,yn,zn,xn,yn,zn) ;
+}
+if (R<0)
+{ 
+  #SetAn angle xs ys zs xe ye ze xn yn ze ; 
+}
+else 
+{ 
+  #SetAn angle xe ye ze xs ys ze xn yn ze ; 
+}
+
+if (setan>=90-g_eps&&setan<=360-g_eps)
+{
+  if (setan>180+g_eps)&&(setan<270-g_eps) 
+  {
+    dxn=xn-xe;
+    dyn=yn-ye;
+    xn=xe-dxn;
+    yn=ye-dyn;
+    goto metsok ;
+  }
+  putmsg("Ошибка! При указанном направлении оси гнутый длинномер построен быть не может",0);
+  putmsg("Введите корректные данные или нажмите ESC для выхода",0);
+  setucs restore "$$$$" ;
+  if (auto==0)
+  { 
+    goto metstart;
+  }
+  else 
+  { 
+    goto metend;
+  }
+}
+metsok:
+if verSys[5]<"7.1"
+{
+	setucs gcs ;
+	setucs move xe ye ze ;
+
+	PTransCS(3,0,xs,ys,zs,xs1,ys1,zs1) ;
+	PTransCS(3,0,xe,ye,ze,xe1,ye1,ze1) ;
+	PTransCS(3,0,xn,yn,zn,xn1,yn1,zn1) ;
+	setucs rotate 2points  0 0 0 0 0 10 3points 0 0 0 100 ye1 ze1 Xn1 Yn1 Zn1 ;
+
+	PTransCS(3,0,xs,ys,zs,xs,ys,zs) ;
+	PTransCS(3,0,xe,ye,ze,xe,ye,ze) ;
+	PTransCS(3,0,xn,yn,zn,xn,yn,zn) ;
+}
+#l1  line xs,ys,zs xs,ys,zs+1 done ;
+DistPntToObj(ar1,l1,ar3);
+delete l1 done ;
+if verSys[5]<"7.1"
+{
+	PTransCS(3,0,Ar3[1],Ar3[2],Ar3[3],Ar3[1],Ar3[2],Ar3[3]) ;
+}
+if (R<0)
+{
+  bd[2]=Ar3[1];
+  bd[1]=abs(Ar3[2]);
+  bd[3]=R;
+}
+if (R>0||abs(Ar3[2])<0.1)
+{
+  bd[1]=Ar3[1];
+  bd[2]=abs(Ar3[2]);
+  bd[3]=R;
+}
+bd[11]=0;
+if (Abs(bd[3])>0)
+{ 
+  bd[11]=1;
+}
+err=SetBentProf(bd);
+Result=GetLongCut(arr);
+
+if (TrendKey!=0)
+{
+  gosub TrendXY ;   // расчет корректировки по XY в зависимости от угла подрезки
+  xs=xs+dxn;
+  ys=ys+dyn;
+  xe=xe+dxk;
+  ye=ye+dyk;
+  xn=xn+dxk;
+  yn=yn+dyk;
+  if (segkey!=0)
+  { 
+    xn=xs;
+    yn=ys;
+  }
+  trendkey=0;
+  goto metnm;
+}
+//err=GetBentProf(bd) ;
+if ((2*abs(R)-bd[1])>=0)&&(bd[2]<0.1)  
+{ //линейных участков нет
+  if UndoMode==1 { Macromode Undo on; }
+  longcreate Xs Ys 0 xe ye 0;
+  if UndoMode==1 { Macromode Undo off; }
+  goto metend ;
+}
+else 
+{
+  if (bd[2]<0.1)
+  {
+    putmsg("Минимальнодопустимое значение радиуса для заданных точек: "+str(bd[1]/2)+" мм",0);
+    putmsg("Введите корректные значения или нажмите ESC для выхода",0);
+    setucs restore "$$$$" ;
+    if (auto==0)
+    { 
+      goto metstart;
+    }
+    else
+    { 
+      goto metend;
+    }
+  }
+}
+if verSys[5]<"7.1"
+{
+	if (bd[2]>=abs(R))&&(bd[1]>=abs(R)) 
+	{
+	  if (R>0) 
+	  { 
+		if UndoMode==1 { Macromode Undo on; }
+		longcreate bd[1] 0 0 xe ye 0;
+		if UndoMode==1 { Macromode Undo off; }
+		goto metend;
+	  }
+	  if (R<0)
+	  { 
+		if UndoMode==1 { Macromode Undo on; }
+	longcreate   xe ye 0 bd[1] 0 0;
+	 if UndoMode==1 { Macromode Undo off; }   
+	 goto metend;
+	  }
+	}
+	if (bd[1]>=abs(R))&&(bd[2]<abs(R)) 
+	{  //КЛЮШКА
+	  if (R>0)
+	  {         //дуга в нт
+		nbd1=bd[1]+abs(R)-sqrt((pow(r,2)-pow((abs(r)-bd[2]),2)));
+		if UndoMode==1 { Macromode Undo on; }
+		longcreate nbd1 0 0 xe ye 0;
+		if UndoMode==1 { Macromode Undo off; }
+		goto metend;
+	  }
+	  if (R<0)
+	  {         //дуга в кт
+		nbd1=bd[1]+abs(R)-sqrt((pow(r,2)-pow((abs(r)-bd[2]),2)));
+		bd[1]=abs(Ar3[2]);
+		bd[3]=R;
+		err=SetBentProf(bd);
+		if UndoMode==1 { Macromode Undo on; }
+		longcreate 0 bd[1] 0 0 bd[1]-nbd1 0;
+		if UndoMode==1 { Macromode Undo off; }
+		goto metend;
+	  }
+	}
+	if (bd[2]>=abs(R))&&(bd[1]<abs(R)) 
+	{   //КЛЮШКА
+	  if (R>0)
+	  {
+		bd[1]=abs(Ar3[1]);
+		nbd2=bd[2]+iif(bd[1]<abs(R),abs(R)-sqrt(abs(pow(R,2)-pow((abs(R)-bd[1]),2))),0);
+		ds=nbd2-bd[2];
+		bd[2]=nbd2;
+		bd[3]=R;
+		err=SetBentProf(bd);
+		if UndoMode==1 { Macromode Undo on; }
+		longcreate bd[1] ds 0 xe ds 0;
+		if UndoMode==1 { Macromode Undo off; }
+		goto metend;
+	  }
+	  if (R<0)
+	  {
+		bd[1]=abs(Ar3[1]);
+		nbd2=bd[2]+iif(bd[1]<abs(R),abs(R)-sqrt((pow(r,1)-pow((abs(r)-bd[1]),2))),0);
+		bd[2]=nbd2;
+		bd[1]=abs(Ar3[2]);
+		bd[3]=R;
+		err=SetBentProf(bd);
+		if UndoMode==1 { Macromode Undo on; }
+		longcreate  bd[1] 0 0 xe ye 0;
+		if UndoMode==1 { Macromode Undo off; }
+		goto metend;
+	  }
+	}
+}
+else
+{
+	bd[3]=R;
+	nullout=SetBentProf(bd);
+	if UndoMode==1 { Macromode Undo on; }
+	longcreate bend xs,ys,zs xe,ye,ze xn,yn,zn;
+	if UndoMode==1 { Macromode Undo off; }
+}
+
+metend:
+offerror;
+setucs restore "$$$$" ;
+setucs delete  "$$$$" ;
+bp 0 0 0 ;
+exit;
+
+//***************************************sub
+TrendXY:
+//расчет корректировки по XY в зависимости от угла подрезки
+Xgab=0;
+Ygab=0;
+plgYmax=0;
+plgYmin=0;
+LongPath=GetLongFile(Xgab,Ygab,plgYmax,plgYmin);
+plgYmin=-plgYmin;
+//Строим кусочек кончился
+alf=0;
+alfa=0;
+beta=0;
+gam=0;
+gam1=0;
+ad=0;
+dc=0;
+d1p2a=0;
+ad1=0;
+segkey=0;
+
+if (bd[1]<abs(R))&&(abs(bd[2])<0.01) 
+{ //сегмент
+  putmsg("Тип гнутого длинномера - сегмент");
+//пропускаем его два раза через клюшки для определения левой и правой корректировки
+//корректируем bd[2] и bd[1]
+  bd1old=bd[1];  //Сохраняем
+  bd2old=bd[2];  //Сохраняем
+  h=abs(R)-sqrt(R*R-BD[1]*BD[1]/4);   //высота сегмента дуги
+  bd[1]=h;
+  bd[2]=abs(R)+100;
+  segkey=segkey+1;
+  goto nxfseg;
+  metseg1:
+  bd[2]=h;
+  bd[1]=abs(R)+100;
+  if (r>0)
+  {
+    dxk1=dxk;
+    dyk1=dyk;
+  }
+  if (r<0)
+  {
+    dxn1=dxn;
+    dyn1=dyn;
+  }
+  segkey=segkey+1;
+  goto nxfseg;
+  metseg2:
+  bd[1]=bd1old;
+  bd[2]=bd2old;
+  if (r>0) 
+  {
+    dxn1=dxn;
+    dyn1=dyn;
+    dxk=dxk1;
+    dyk=-dyk1;
+  }
+  if (r<0) 
+  {
+    dxk1=dxk;
+    dyk1=dyk;
+    dxk=dyk1;
+    dyk=-dxk1;
+  }
+  dxn=dxn1;
+  dyn=dyn1;
+  putmsg("Тип гнутого длинномера - сегмент");
+//  PutMsg("dxn="+str(dxn)+" dyn="+str(dyn),1);
+//  PutMsg("dxk="+str(dxk)+" dyk="+str(dyk),1);
+  return;
+}
+NxFseg:
+if (bd[1]<abs(R)&&bd[2]>=abs(R))||(bd[1]>=abs(R)&&bd[2]<abs(R)) 
+{ //клюшки
+  //******Расчитываем общие характеристики базовой дуги
+  AD=abs(bd[3])-min(bd[1],bd[2]);
+  DC=sqrt(bd[3]*bd[3]-ad*ad);
+  gam1=acos(ad/abs(bd[3]));
+  //PutMsg("ad="+str(ad)+" dc="+str(dc)+" гамма="+str(grad(gam1)))
+  //***** Дальше в зависимости от знака радиуса
+  Var=0; //вариант решения
+  If (R<0)
+  {
+    Rmin=abs(R)-plgYmax;
+    Rmax=abs(R)-plgYmin;
+  }
+  If (R>0)
+  {
+    Rmin=abs(R)+plgYmin;
+    Rmax=abs(R)+plgYmax;
+  }
+  //***** Дальше в зависимости от знака среза для "клюшек"
+  if (r>0) 
+  {
+    if (bd[1]<r)&&(bd[2]>=r) 
+    {
+      alf=abs(arr[1]);
+      sxn=0;                               //знак смещения в начальной точке
+      syn=-1;                               //знак смещения в начальной точке
+      sxk=-1;                               //знак смещения в конечной точке
+      syk=+1;                               //знак смещения в конечной точке
+      Smn=GetProfShift(arr[2],0);
+      dyn=syn*smn;                          //смещение линейного участка
+      dxn=0;
+      if (arr[1]<0) 
+      {  //Rmax
+        var=0;
+      }
+      if (arr[1]>0) 
+      {  //Rmin
+        var=1;
+      }
+      if (abs(arr[1])==0) 
+      {  //Rmin
+        var=-999;
+      }
+    }
+    if (bd[1]>=r)&&(bd[2]<r) 
+    {  //Rmin
+      alf=abs(arr[2]);
+      sxn=+1;                               //знак смещения в начальной точке
+      syn=-1;                              //знак смещения в начальной точке
+      sxk=-1;                               //знак смещения в конечной точке
+      syk=0;                               //знак смещения в конечной точке
+      Smk=GetProfShift(arr[1],1);
+      dyk=0;                          //смещение линейного участка
+      dxk=sxk*smk;
+      if (arr[2]<0)
+      {  //Rmax
+        var=11;
+      }
+      if (arr[2]>0) 
+      {  //Rmin
+        var=10;
+      }
+      if (abs(arr[2])==0) 
+      {  //Rmin
+        var=-999;
+      }
+    }
+  }
+  if (r<0) 
+  {
+    if (bd[1]<abs(r))&&(bd[2]>abs(r)) 
+    {  //Rmin    0 10
+      var=0;
+      alf=abs(arr[2]);
+      sxn=+1;                               //знак смещения в начальной точке
+      syn=+1;                               //знак смещения в начальной точке
+      sxk=-1;                               //знак смещения в конечной точке
+      syk=0;                               //знак смещения в конечной точке
+      Smk=GetProfShift(arr[1],1);
+      dyk=0;                          //смещение линейного участка
+      dxk=sxk*smk;
+      if (arr[2]<0) 
+      {  //Rmin   0 10
+        var=0;
+      }
+      if (arr[2]>0)
+      {  //Rmax       1 11
+        var=1;
+      }
+    }
+    if (bd[1]>abs(r))&&(bd[2]<abs(r)) 
+    {  //Rmax    1 11
+      var=11;
+      alf=arr[1];
+      sxn=0;                               //знак смещения в начальной точке
+      syn=1;                               //знак смещения в начальной точке
+      sxk=-1;                               //знак смещения в конечной точке
+      syk=-1;                               //знак смещения в конечной точке
+      Smn=GetProfShift(arr[2],0);
+      dyn=syn*smn;                          //смещение линейного участка
+      dxn=0;
+      if (arr[1]<0)
+      {  //Rmax
+        var=11;
+      }
+      if (arr[1]>0) 
+      {  //Rmin
+        var=10;
+      }
+    }
+  }
+  if (var==0||var==10)
+  { //Rmin
+    beta=Pi()-alf;
+    alfa=asin(Rmin*sin(beta)/abs(bd[3]));
+  }
+  if (var==1||var==11)
+  { //Rmax
+    alfa=alf;
+    beta=pi()-(asin(Rmax*sin(alfa)/abs(bd[3])));
+  }
+  gam=Pi()-(alfa+beta);
+  ad1=abs(bd[3])*cos(gam+gam1);
+  D1p2a=abs(bd[3])*sin(gam+gam1);
+  if (R>0&&(var==10||var==11))
+  {
+    DYn=syn*abs(abs(bd[3])-bd[2]-ad1);
+    DXn=sxn*abs(D1p2a-Dc);
+  }
+  if (R>0&&(var==0||var==1))
+  {
+    DYk=sYk*abs(abs(bd[3])-bd[1]-ad1);
+    DXk=sXk*abs(D1p2a-Dc);
+  }
+  if (R<0&&(var==0||var==1))
+  {
+    DYn=syn*(abs(abs(bd[3])-bd[1]-ad1));
+    Dxn=sxn*(abs(D1p2a-Dc));
+  }
+  if (R<0&&(var==10||var==11))
+  {
+    Dxk=sxk*abs(abs(bd[3])-bd[2]-ad1);
+    Dyk=syk*abs(D1p2a-Dc);
+  }
+}
+//***** Дальше в зависимости от знака среза для "бумеров"
+if (bd[1]>=abs(R)&&bd[2]>=abs(R))||(bd[1]>=abs(R)&&bd[2]>=abs(R)) 
+{
+  Smk=GetProfShift(arr[1],1);
+  putMsg("Смещение конца линии  установки: "+str(smk),1) ;
+  Smn=GetProfShift(arr[2],0);
+  putMsg("Смещение начала линии установки: "+str(smn),1) ;
+  If (R>0)
+  { 
+    dyn=-smn;
+    dxn=0;
+    dxk=-smk;
+    dyk=0;
+  }
+  If (R<0) 
+  { 
+    dyn=smn;
+    dxn=0;
+    dxk=-smk;
+    dyk=0;
+  }
+}
+//PutMsg("bd[1]="+str(bd[1])+" bd[2]="+str(bd[2]),1)
+//PutMsg("arr[2]="+str(grad(arr[2]))+" arr[1]="+str(grad(arr[1])),1)
+//PutMsg("dxn="+str(dxn)+" dyn="+str(dyn),1)
+//PutMsg("dxk="+str(dxk)+" dyk="+str(dyk),1)
+//PutMsg("alf="+str(grad(alf))+" beta="+str(grad(beta))+" gam="+str(grad(gam))+" gam=1"+str(grad(gam1)),1)
+//PutMsg("ad="+str(ad)+" Dc="+str(Dc)+" ad1="+str(ad1)+" d1p2a="+str(d1p2a),1)
+//PutMsg("segkey="+str(segkey),1)
+if (segkey==1)
+{ 
+  goto metseg1;
+}
+if (segkey==2)
+{ 
+  goto metseg2;
+}
+return;

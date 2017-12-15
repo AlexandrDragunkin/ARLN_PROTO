@@ -1,0 +1,26 @@
+//-- Перенумерация мебельных элементов, заданных пользовательским номером
+//-- Входные параметры:
+//-- bAll = 1 - перенумеровывать все элементы
+//-- bAll = 0 - перенумеровывать только те элементы, которым номер не присвоен
+//-- bByType = 1 - нумеровать разные типы объектов по своему
+//-- bByType = 0 - сквозная нумерация объектов
+//-- Mask1, Mask2, Mask3 - битовая маска сравнения мебельных элементов
+
+getpar bAll, bByType, Mask1, Mask2, Mask3 ;
+
+if (bAll==1)
+{
+  if (bByType==0)
+  {
+    NULLOUT=renumerate("CommonPos",Mask1,Mask2,Mask3);
+    exit;
+  }
+  NULLOUT=attrdelete("CommonPos");
+}
+NULLOUT=renumerate("CommonPos",Mask1,Mask2,Mask3,renumerate("CommonPos",-1,0,0,0,1)+1,1);                             //-- Пернумеровываем панели
+NULLOUT=renumerate("CommonPos",Mask1,Mask2,Mask3,iif(bByType==0,NULLOUT+1,renumerate("CommonPos",-1,0,0,0,2)+1),2);   //-- Пернумеровываем профили
+NULLOUT=renumerate("CommonPos",Mask1,Mask2,Mask3,iif(bByType==0,NULLOUT+1,renumerate("CommonPos",-1,0,0,0,3)+1),3);   //-- Пернумеровываем комплектующие и детали крепежа
+NULLOUT=renumerate("CommonPos",Mask1,Mask2,Mask3,iif(bByType==0,NULLOUT+1,renumerate("CommonPos",-1,0,0,0,4)+1),4);   //-- Пернумеровываем группы крепежа
+NULLOUT=renumerate("CommonPos",Mask1,Mask2,Mask3,iif(bByType==0,NULLOUT+1,renumerate("CommonPos",-1,0,0,0,5)+1),5);   //-- Пернумеровываем изделия
+NULLOUT=renumerate("CommonPos",Mask1,Mask2,Mask3,iif(bByType==0,NULLOUT+1,renumerate("CommonPos",-1,0,0,0,0)+1),-1);  //-- Пернумеровываем все остальное
+exit;

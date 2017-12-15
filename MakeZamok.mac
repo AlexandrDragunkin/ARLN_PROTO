@@ -1,0 +1,74 @@
+//--добавление замка
+
+global ProtoPath ;
+global ElemName ; //-- Имена мебельных элементов
+global HoldName ; //-- Имя хозяина
+global UnitCode ; //-- Код изделия (текст)
+global ElemCode ; //-- Код мебельных элементов
+KarkasNumb=getcarcnumb();     //-- Порядковый номер каркаса в сцене
+
+getpar
+IdAcces		//-- Тип комплектующих
+NAcces		//-- Не используется
+xn yn zn	//-- Положение начала локальной системы координат
+ax ay az;	//-- Углы поворота
+
+if (isvardef("NAcces")!=6)
+{
+  FurnType="041300";
+}
+else
+{
+  FurnType=NAcces;
+}
+
+AccPlace=1+512;
+NULLOUT=getsnap();
+object_1=sysvar(60); //-- Кол-во объектов
+  accessory FurnType IdAcces  0 yes AccPlace;
+  objident last 1 Elem;
+  move nocopy Elem done xn yn zn ;
+  rotate Elem done 2points xn yn zn xn+1 yn zn ax nocopy ;
+  rotate Elem done 2points xn yn zn xn yn+1 zn ay nocopy ;
+  rotate Elem done 2points xn yn zn xn yn zn+1 az nocopy ;
+
+NULLOUT=resnap();
+object_2=sysvar(60)-object_1; //-- Кол-во объектов
+if (object_2==0) //-- Нет объектов
+{
+  exit;
+}
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done Elem done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done Elem KarkasNumb;
+}
+if (isattrdef("HoldName"))
+{
+  attrobj attach "HoldName" done Elem HoldName ;
+}
+if (isattrdef("UnitCode"))
+{
+  if (len(UnitCode+ElemCode)>0)
+  {
+    attrobj attach "UnitCode" done Elem UnitCode+ElemCode ;
+  }
+  attrobj attach "XUnit" "YUnit" "ZUnit" done Elem 0 0 0 ; //-- Размеры детали
+}
+macro ProtoPath+"CompAttr.mac" IdAcces 1 ;
+
+NULLOUT=addattrpi(Elem,1,132,IdAcces);
+
+
+AссID=priceinfo(IdAcces,"AccessID",0); // Ответная планка для замка
+if AссID>0
+{
+	Macro ProtoPath+"SetAccPLace.mac" AccPlace;
+	macro ProtoPath+"SetEnam.mac" priceinfo(AссID,"MATNAME","Ответная планка замка");
+	Macro ProtoPath+"MakeZamok.mac" AссID "040000" xn yn zn ax ay az ;
+}
+exit;

@@ -1,0 +1,140 @@
+//-- Выбор панелей для замены свойств
+global pnt, iPNT;
+defarr pnt[2000];
+
+getpar S_zam;
+F_Pr=0; //-- Флаг профилей
+F_Vr=0; //-- Флаг вертикальных профилей
+F_Hr=0; //-- Флаг горизонтальных профилей
+F_St=0; //-- Флаг стоек
+F_Po=0; //-- Флаг полок
+F_VS=0; //-- Флаг врезных стенок
+F_NS=0; //-- Флаг накладных стенок
+F_Do=0; //-- Флаг распашных дверей
+F_Dr=0; //-- Флаг раздвижных дверей
+F_Bf=0; //-- Флаг для фасада ящика
+F_Bx=0; //-- Флаг для дна ящика
+F_Os=0; //-- Флаг только для стандартных панелей
+
+if (S_zam=="Все профили")
+{
+  F_Pr=1;
+}
+if (S_zam=="Все горизонтальные")
+{
+  F_Hr=1;
+}
+if (S_zam=="Все вертикальные")
+{
+  F_Vr=1;
+}
+if (S_zam=="Все панели")
+{
+  F_St=1;
+  F_Po=1;
+  F_VS=1;
+  F_NS=1;
+}
+if (S_zam=="Все полки")
+{
+  F_Po=1;
+}
+if (S_zam=="Все стойки")
+{
+  F_St=1;
+}
+if (S_zam=="Все врезные стенки")
+{
+  F_VS=1;
+}
+if (S_zam=="Все накладные стенки")
+{
+  F_NS=1;
+}
+if (S_zam=="Все распашные двери")
+{
+  F_Do=1;
+}
+if (S_zam=="Все раздвижные двери")
+{
+  F_Dr=0;
+}
+if (S_zam=="Все ящики")
+{
+  F_Bf=1;
+}
+if (S_zam=="Все фасады")
+{
+  F_Bf=1;
+  F_Do=1;
+}
+if (S_zam=="Только стандартные панели")
+{
+  F_Os=1;
+}
+if (S_zam=="Все, кроме накладной стенки")
+{
+  F_St=1;
+  F_Po=1;
+  F_VS=1;
+}
+//----------------------------------------------------------------
+object_2=sysvar(60);
+i=0;
+iPNT=0;
+lab_1:
+i=i+1;
+if (i<=object_2)
+{
+  point=getobjnum(i);
+  name=getattr(point,"Posit",-1);
+  furntype=getattr(point,"FurnType","");
+  ns=getattr(point,"NestPan",-1);
+  if ((name==11||left(furntype,4)=="0102")&&F_St==1)  //-- Все стойки
+  {
+    iPNT=iPNT+1;
+    pnt[iPNT]=point;
+  }
+  if ((name==12||name==18||name==21||left(furntype,4)=="0101")&&F_Po==1) //-- Все полки
+  {
+    iPNT=iPNT+1;
+    pnt[iPNT]=point;
+  }
+  if ((name==13||left(furntype,4)=="0104")&&F_NS==1)  //-- Все накладные стенки
+  {
+    iPNT=iPNT+1;
+    pnt[iPNT]=point;
+  }
+  if ((name==14||left(furntype,4)=="0103")&&F_VS==1)  //-- Все врезные стенки
+  {
+    iPNT=iPNT+1;
+    pnt[iPNT]=point;
+  }
+  if ((name==20||left(furntype,2)=="23")&&F_Do==1)  //-- Все распашные двери
+  {
+    iPNT=iPNT+1;
+    pnt[iPNT]=point;
+  }
+  if ((name==17||left(furntype,2)=="21")&&F_Dr==1) //-- Все раздвижные двери
+  {
+    iPNT=iPNT+1;
+    pnt[iPNT]=point;
+  }
+  if ((name==16||name==63||name==51||left(furntype,2)=="31")&&F_Bf==1)   //-- Все ящики
+  {
+    iPNT=iPNT+1;
+    pnt[iPNT]=point;
+  }
+  if ((name==39||left(furntype,2)=="02")&&F_Pr==1)  //-- Все профили
+  {
+    iPNT=iPNT+1;
+    pnt[iPNT]=point;
+  }
+  if (left(furntype,2)=="01"&&ns!=1&&F_Os==1)   //-- Только стандартные панели
+  {
+    iPNT=iPNT+1;
+    pnt[iPNT]=point;
+  }
+  goto lab_1;
+}
+exit;

@@ -1,0 +1,478 @@
+//-- Программа построения чертежей всех панелей
+//-- Последовательно перебирает все панели и возвращает указатели на них
+global test_lbase;
+global ProtoPath, g_osn, g_dorab, g_lz, g_drawall, g_pict, g_scala, g_name, g_ik, G_setDrw G_numTxt g_lza g_legenda g_clear;
+global g_h, g_w;
+global g_vimDraws; // Просмотр чертежей
+global g_KonsCode;
+g_scala=iif(isvardef("g_scala")==0,1,g_scala);
+g_clear=iif(isvardef("g_clear")==0,0,g_clear);
+g_legenda=iif(isvardef("g_legenda")==0,1,g_legenda);
+test_lbase=0
+global DRWZPath L_Support g_dparln;
+keyBased=0;
+#UndoOnBefore MacroMode Undo Off [Clear];
+macro protopath+"addFolderToSysPath.py" ; // Расширяет список sys.path для поиска модулей Питон
+macro l_SUPPORT+"SetPlProjectA.mac" 10;
+gosub sUdDraws; // Пользовательское умолчание "Всегда создавать чертежи"
+//-----------------------------------
+macro ProtoPath+"IsBand.mac" ;
+//macro ProtoPath+"IsFixHole.mac" ; //-- Проверка на расставленный крепеж и сверловку
+macro protopath+"\\drawprof\\kromznakinit.py";
+if FileExist(ProtoPAth+"AliasChDialog.py")==1 {
+    macro ProtoPAth+"AliasChDialog.py" "onedialog"; //-- Для ДВ
+    //macro protopath+"\\drawprof\\Utilites_K3.py" "set_time_refresh_interval"   9999  ;
+}
+Result=1
+if FileExist(ProtoPath+"ClearFolder.py")==1 {
+    macro ProtoPath+"ClearFolder.py" "CNC;CNCKR;DXF;DXFKR;Reports\\WMF_Drafts;Reports\\K3_Drafts" "0;0;0;0;0;0" ByRef Result ;
+}
+
+if Result==0 {
+    Putmsg("Команда вывода чертежей прервана пользователем.");
+    //macro protopath+"\\drawprof\\Utilites_K3.py" "set_time_refresh_interval"   25  ;
+    exit;
+ }
+holes create all done;
+//macro protopath+"Refresh_Panels.py" done;
+// NULLOUT=initselected()
+// select partly attribute "FurnType!=\"010000\"&&Furntype!=\"050000\"&&!IsAssign(\"CommonPos\")" done;
+// if (sysvar(61)>0)
+// {
+  // macro ProtoPath+"Num.mac" ;
+// }
+//macro protopath+"drawprof\\test_lbase_panel.py";
+//-----------------------------------
+if fileexist(protopath+"k3.py") {
+    err=renamefile(protopath+"k3.py",protopath+"sup_k3.py")
+    if !err {
+        macro protopath+"ShowError.mac" "В папке PROTO есть файл, который мешает работе." "" "Файл "+protopath+"k3.py"+" требуется удалить или переименовать. Удалите его вручную. И запустите чертежи еще раз." ;
+        //macro protopath+"\\drawprof\\Utilites_K3.py" "set_time_refresh_interval"   25  ;
+   exit;
+    }
+}
+g_ik=0;
+numpan=0;
+iVid=0;
+g_drawall=1;
+g_pict=3; //-- wmf файл по третьему виду
+g_h=297;
+g_w=210;
+g_KonsCode="";
+G_setDrw=0;
+projname=sysvar(2);
+tprjname=projname-3+"t.k3";
+defarr aSel[1000] ;
+
+macro protopath+"\\drawprof\\Utilites_K3.py" "isorder" byref isORD  ;
+macro Protopath+"\\drawprof\\mLayerfun.py" "delFreeLayer" ;
+//putmsg(isORD);
+if isORD {
+    saveOrder; //CloseOrder; //-- Записываем проект
+}
+else
+{
+    save all projname [ overwrite ];
+}
+gosub sClAttr;
+defarr obj1[1] selp[1]; //-- Для экcпорта
+//-- Направление вида в ВСК
+defarr vi[3] error[20];
+vi[1]=0;
+vi[2]=0;
+vi[3]=1;
+NULLOUT=GetSnap();
+
+numTxt="."
+//macro DRWZPath+"DrawDB.mac" ;"(Left(FurnType,2)==\"01\")"
+
+nullout=getvarinst(1,"DrawAll",DrawAll,0);
+selbyattr  "FurnType==\"010000\""
+if !DrawAll
+{ prompt "Укажите панели для вывода чертежей"  partly : }
+else { partly all done; }
+nullout=setvarinst(1,"DrawAll",0);
+object_2=sysvar(61);
+if (object_2==0)
+{
+  NULLOUT=ReSnap();
+  // new;
+  // if isORD { loadorder last }
+  // else { open projname ;}
+  //macro protopath+"\\drawprof\\Utilites_K3.py" "set_time_refresh_interval"   25  ;
+  exit;
+}
+setucs gcs;
+defarr panels[object_2]  addr[20] aCommPos[object_2] adraw[object_2*3] objdraw[3*object_2] sobjdraw[30000];
+macro ProtoPath+"Arrobj.mac" object_2, panels;
+macro protopath+"\\drawprof\\Utilites_K3.py" "sortAPanelsToCommonPos" object_2 byref panels  ;
+
+
+vName="Name;Number;Customer;Address;Phone;Date;ExpDate;Firm;Salon;Acceptor;Executor;AddInfo;ToWorking;NCurrency;Discount;Rate"
+nelm=splitByDelim(vName,";",aDDr)
+i=0
+labvn:
+if i<nelm {
+    i=i+1
+    Name="O"+aDDr[i]
+    //putmsg(Name);
+    if !isattrdef(Name) {
+        attribute create  Name Name string 30 255 ;
+    }
+
+    vv=getorderinfo(aDDr[i]) ;
+    //putmsg(vv);
+    if len(str(vv))>0 {
+        attrobj  attach Name done record str(vv) ;
+    }
+    goto labvn;
+}
+ if !isattrdef("ZgUnitX") {
+        attribute create  "ZgUnitX" "ZgUnitX" Real 12 5 ;
+    }
+ if !isattrdef("ZgUnitY") {
+        attribute create  "ZgUnitY" "ZgUnitY" Real 12 5 ;
+    }
+ if !isattrdef("ZgUnitZ") {
+        attribute create  "ZgUnitZ" "ZgUnitZ" Real 12 5 ;
+    }
+ if !isattrdef("nCount") {
+    attribute create  "nCount" "nCount" Real 12 5 ;
+}
+if !isattrdef("selPanel") {
+    attribute create  "selPanel" "Номер выбраной панели" Real 5 0 ;
+}
+if g_lza {
+
+    stdisplay grfcoeff absolute 1;
+    //grfcoeff absolute 1;
+}
+
+valcoeff absolute 1;
+
+pf_name=mpathexpand("<AppData>")+"\\listkrom.txt"
+if fileexist(pf_name) {
+    removefile(pf_name)
+}
+vport 3;
+view cartesian none gcs 0 0 1;
+i=0;
+lab3:
+if (i<object_2) {
+    i=i+1;
+    attrobj attach "selPanel" done partly panels[i] i ;
+    goto lab3;
+}
+NULLOUT=setvarinst(1,"vDrawDial",0)
+i=0;
+lab2:
+if (i<object_2) {
+    i=i+1;
+    keyerr=0;
+    onerror tErr;
+    pnt=panels[i];
+    if sysvar(60)-sysvar(63)>0 {
+        invisible  all;
+    }
+    layers on "0" ;
+    layers unlock "0" ;
+    layers set "0";
+    macro protopath+"\\drawprof\\DrawingSupp.mac" pnt  aCommPos byref numpan adraw byref iVid;
+    //macro protopath+"\\drawprof\\Utilites_K3.py" "set_time_refresh_interval"  9999  ;
+    keyerr=1;
+    tErr:
+    offerror;
+    if keyerr==0 {
+    
+    }
+    goto lab2;
+}
+
+//------------------------------------------------------------------------------
+keyBased=1
+end:
+
+
+NULLOUT=ReSnap();
+//**************************************
+pi_name=mpathexpand("<AppData>")+"\\t_Dimp.dat"
+sfPi="UndoOnBefore;tprjname;g_clear;keyBased;pf_name;numpan;g_vimDraws;iVid;" // контейнер переменных
+sfPiArr="sobjdraw;adraw;objdraw;obj1;vi"; // контейнер массивов
+gosub DumperPi;
+//**************************************
+//----------------------------------------------
+new;
+ loadorder last;
+ attrobj delete record all;
+vport 1 zoom all;
+//macro protopath+"\\drawprof\\Utilites_K3.py" "set_time_refresh_interval"   25  ;
+//**************************************
+//----------------------------------------------
+pi_name=mpathexpand("<AppData>")+"\\t_Dimp.dat"
+gosub LoaderPi;
+if keyBased==1 {
+    if g_vimDraws==1&&object_2<20 {
+        layers on "0" ;
+        layers unlock "0" ;
+        layers set "0";
+      gosub BAsedEnd;
+}
+    gosub delDablFile;
+}
+if fileexist(pf_name) {
+    removefile(pf_name)
+}
+
+If UndoOnBefore==1 { MacroMode Undo On; }
+test_lbase=1
+exit;
+//==============================================================
+DumperPi:
+// pi_name=mpathexpand("<AppData>")+"\\t_Dimp.dat"
+// sfPi="keyBased;pf_name;numpan;g_vimDraws;iVid;"
+// sfPiArr="adraw;objdraw;obj1;vi";
+//PutMsg("Сохраняем переменные")
+<?python
+import k3
+from DrawingSupp import DumperPickle
+sfPi=k3.Var("sfPi")
+sfPiArr=k3.Var("sfPiArr")
+pi_name=k3.Var("pi_name")
+sfPi=sfPi.value
+sfPiArr=sfPiArr.value
+pi_name=pi_name.value
+l_sfPi = sfPi.split(';')
+l_sfPiArr = sfPiArr.split(';')
+d_vars = {}
+d_arrs = {}
+
+for v in l_sfPi:
+    if len(v)>0:
+        tm = k3.Var(v)
+        if k3.isvardef(v)>0:
+#           print( v )
+           d_vars[v] = tm.value
+
+for v in l_sfPiArr:
+    if len(v)>0:
+        tm = k3.VarArray(2, v)
+        tm = k3.VarArray(int(k3.getdimarray(tm)), v)
+        d_arrs[v] = [a.value for a in list(tm)]
+DumperPickle([d_vars, d_arrs], pi_name)
+?>
+//putmsg("---------------------------");
+return;
+
+//-----------------------------------------------------------------------
+LoaderPi:
+//PutMsg("Восстанавливаем переменные")
+<?python
+import k3
+from DrawingSupp import LoaderPickle
+pi_name=k3.Var("pi_name")
+pi_name=pi_name.value
+resFFile = int(k3.fileexist(pi_name)) # проверяем есть ли файл с результатом
+if resFFile==1: # Значит файл найден
+    t = LoaderPickle(pi_name)
+l_sfPii = list(t[0].keys())
+l_sfPiArri = list(t[1].keys())
+for v in l_sfPii:
+    if t[0][v] is not None:
+        tm = k3.Var(v)
+        tm.value = t[0][v]
+tt = {}
+for v in l_sfPiArri:
+    if len(t[1][v]) > 0:
+        tt[v]  = k3.VarArray(len(t[1][v]), v)
+        for i in range(len(t[1][v])):
+            tt[v][i].value = t[1][v][i]
+?>
+
+//putmsg("---------------------------------------");
+return;
+//--------------------------------------------------
+sExpVI:
+        fnam="" //numTxt
+        vtranscs(1,3,vi[1],vi[2],vi[3],vi[1],vi[2],vi[3]);
+        i=0;
+        lbexpDrawA:
+        if i<numpan
+        {
+           i=i+1;
+           obj1[1]=objdraw[i]
+            zoom byobject objdraw[i] done;
+            CurGrk=Sysvar(76)
+
+            NULLOUT=exportvim(obj1,1,vi,str(i),0,iif(i==numpan,2,1),"Чертежи"); //,4,1,1
+            zoom previous;
+            goto  lbexpDrawA ;
+        }
+        i=0;
+        lbexpDraw:
+
+        if g_clear>0 {
+            if i<numpan {
+            
+				i=i+1;
+				delete objdraw[i] done;
+				goto  lbexpDraw ;
+			}
+        //macro protopath+"\\drawprof\\Utilites_K3.py" "set_time_refresh_interval"   9999  ;
+        new;
+        loadorder last;
+        //macro protopath+"\\drawprof\\Utilites_K3.py" "set_time_refresh_interval"   25  ;
+        }
+        else {  
+        }
+return;
+
+//-- создаем атрибуты если надо и чистим следы былой работы
+sClAttr:
+    if (!IsAttrdef("IDRWN")) { Attribute Create "IDRWN" "Номер листа " Real 5 0  ; }
+    if (!IsAttrdef("IDRWL")) { Attribute Create "IDRWL" "Номер легенды " Real 5 0  ; }
+    if (!IsAttrdef("maxGabsX"))
+    {
+        Attribute Create "maxGabsX" "maxGabsX" Real 12 5  ;
+    }
+    if (!IsAttrdef("maxGabsY"))
+    {
+        Attribute Create "maxGabsY" "maxGabsY" Real 12 5  ;
+    }
+    if (!IsAttrdef("maxGabsZ"))
+    {
+        Attribute Create "maxGabsZ" "maxGabsZ" Real 12 5  ;
+    }
+    if (!IsAttrdef("Legend"))
+    {
+        Attribute Create "Legend" "Legenda" Real 12 5  ;
+    }
+    if (!IsAttrdef("TempSel"))
+    {
+        Attribute Create "TempSel" "Признак избранности" Real 12 5  ;
+    }
+    else
+    {
+        selbyattr "TempSel>"+str(0) partly all done ;
+        if SysVar(61)>0
+        {
+            n=SysVar(61);
+            defarr atmp[n];
+            macro ProtoPath+"Arrobj.mac" n, atmp;
+            i=0;
+            labT2:
+            if i<n
+            {
+                i=i+1;
+                attrobj delete partly atmp[i] "TempSel" done;
+                goto labT2;
+            }
+
+        }
+    }
+return;
+//--удаляет файл с именем fName
+sDelBackF:
+if FileExist(fName)
+{
+    Nullout=RemoveFile(fName)
+}
+return;
+
+BAsedEnd:
+    If (!IsAttrdef("DrawObject"))
+    {
+      Attribute Create "DrawObject" "Чертежный объект" Real 5 0 ;
+    }
+    else
+    {
+        selbyattr "DrawObject>"+str(0) partly all done;
+        if sysvar(61)>0
+        {
+           delete partly previous done;
+        }
+    }
+    defarr xm[6];
+    NULLOUT=GetSnap();
+    #gr1 group all done;
+    nulout=objgab3(gr1,xm);
+    explode gr1 done;
+
+    PtransCS(0,1,xm[1],xm[2],xm[3],xm[1],xm[2],xm[3]);
+    PtransCS(0,1,xm[4],xm[5],xm[6],xm[4],xm[5],xm[6]);
+    px=xm[1]-2000
+    py=xm[5]
+    pz=xm[3]
+    setucs vcs ;
+    numpan=iVid;
+    i=0;
+    lbDraw:
+    if i<numpan
+    {
+       i=i+1;
+       objects=sysvar(60);
+       fName=adraw[i]-3+".~k3"; gosub sDelBackF;
+       //PutMsg(fName,1);
+       append adraw[i]  0 0 0 ;
+       objects=sysvar(60)-objects;
+       #gr1 group last objects done;
+       objident last 1 objdraw[i];
+       attrobj attach "DrawObject" done objdraw[i] 1 ;
+       nobj=GetCntObjGA(objdraw[i]);
+       nulout=ScanG(objdraw[i],sobjdraw);
+       i_nb=0
+       lb_nb:
+       if i_nb<nobj
+       {
+         i_nb=i_nb+1
+         attrobj attach "DrawObject" done partly sobjdraw[i_nb] 1 ;
+         goto lb_nb;
+       }
+
+       nulout=objgab3(gr1,xm);
+       rotate nocopy gr1 done 2point (xm[4]-xm[1])/2+xm[1] (xm[5]-xm[2])/2+xm[2] xm[3] (xm[4]-xm[1])/2+xm[1] (xm[5]-xm[2])/2+xm[2] xm[3]+1 180
+       move nocopy gr1 done 2point xm[4] xm[2] xm[3] px py pz
+       nulout=objgab3(gr1,xm);
+       px=xm[1]
+       py=xm[2]
+       pz=xm[3]
+       //explode gr1 done;
+       goto lbDraw;
+    }
+    NULLOUT=ReSnap();
+
+	macro protopath+"\\complexlabeldraw\\Noteed.py";
+
+    gosub sExpVI;
+return;
+delDablFile:
+    numpan=iVid;
+    i=0;
+    lbDraws:
+    if i<numpan
+    {
+       i=i+1;
+       objects=sysvar(60);
+       fName=adraw[i]-3+".~k3"; 
+       gosub sDelBackF;
+       goto lbDraws;
+    }   
+    fName=tprjname;
+    gosub sDelBackF;
+    fName=tprjname-3+".~k3";
+    gosub sDelBackF;
+return;
+
+sUdDraws:
+<?python
+# -*- coding: cp1251 -*-
+import k3
+pos = k3.udgetpos('Drawings')
+ps = k3.udgetpos('u99_IsRefreshDraws')
+if ps > 0:
+    vt, dv,  sv = k3.Var(), k3.Var(), k3.Var() 
+    ps = k3.udgetentity('u99_IsRefreshDraws', vt, dv, sv)
+else:
+    k3.udaddentity(pos,"Всегда создавать чертежи",'u99_IsRefreshDraws',3,0,0,100)
+    k3.udloadsave(1)
+?>
+return;

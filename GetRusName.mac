@@ -1,0 +1,80 @@
+//-- Программа возвращает русское название геометрического объекта
+//-- Входные параметры:
+//-- obj - объект
+//-- Выходные параметры:
+//-- g_result - русское имя объект
+
+global g_result;
+getpar obj;
+tmm=getobjtypenm(obj);
+if (tmm=="Text")
+{
+  g_result="Текст";
+  exit;
+}
+if (tmm=="Point")
+{
+  g_result="Точка"
+  exit;
+}
+if (tmm=="Line")
+{
+  g_result="Отрезок ";
+  exit;
+}
+if (tmm=="Circle")
+{
+  g_result="Окружность";
+  exit;
+}
+if (tmm=="Arc")
+{
+  g_result="Дуга";
+  exit;
+}
+if (tmm=="Path")
+{
+  g_result="Контур";
+  exit;
+}
+if (tmm=="BRep")
+{
+  g_result="Тело";
+  exit;
+}
+if (tmm=="Dim")
+{
+  g_result="Размер";
+  exit;
+}
+if (tmm=="Insert")
+{
+  g_result="Вставка";
+  exit;
+}
+if (tmm=="Spline”")
+{
+  g_result="Сплайн";
+  exit;
+}
+if (tmm=="Frame")
+{
+  g_result="Набор линий";
+  exit;
+}
+if (tmm=="PolyLine")
+{
+  g_result="Полилиния";
+  exit;
+}
+if (tmm=="Light")
+{
+  g_result="Источник света";
+  exit;
+}
+if (tmm=="Group")
+{
+  g_result="Группа";
+  exit;
+}
+exit;

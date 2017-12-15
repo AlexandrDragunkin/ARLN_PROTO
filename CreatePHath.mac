@@ -1,0 +1,35 @@
+// создание штриховки "гнутой" по контуру
+
+global ProtoPath ;
+
+
+getpar 
+h1, h2           // начальная и конецная высота над контуром
+HathPath            // Контур Штриховки
+;
+
+defarr pt0[3] pt1[3];
+//------------------------------------------------------------------------------
+
+
+  object_1=sysvar(60); // Кол-во объектов
+  P1=HathPath;        	
+  L=getpathpoint(P1,0,pt0);
+  L=getpathpoint(P1,100/L,pt1);
+  #C7 rectangle 3points pt0[1], pt0[2], pt0[3]+h1
+        	      pt0[1], pt0[2], pt0[3]+h2
+        	      pt1[1], pt1[2], pt1[3]+h1;
+        	
+  hatchtype 117 ;
+  hatchcoef 1 ;
+  hatchangle -45;
+  #ha  hatch C7 done;
+  invisible rendervport last 1 done ;
+  hatchangle 0;
+pmove ha done P1 100;
+delete  C7 ;
+object_2=sysvar(60)-object_1; // Кол-во объектов
+
+group last object_2+1 done ;
+
+exit

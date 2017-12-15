@@ -1,0 +1,719 @@
+//-- Макропрограмма перемещения панели
+global ProtoPath;
+global pnt, iPNT, iPanME;
+getpar 
+Pan								//-- перемещаемая панель
+L									//-- расстояние для перемещения
+A									//-- область захвата со стороны А
+F									//-- область захвата со стороны F
+Ots								//-- отступ (для учета изменений толщины панели)
+R1;
+//-------------------
+defarr arr[10];			//-- массив параметров панели
+defarr GP[6];				//-- массив габаритов панели
+defarr GOb[6];			//-- массив габаритов остальных объектов
+defarr GKar[6];			//-- массив габаритов каркаса
+//-- Умолчания на параметры
+Xc=0;								//-- не меняем габарит по ширине
+Yc=0;								//-- не меняем габарит по глубине
+Zc=0;								//-- не меняем габарит по высоте
+IsMove=0;						//-- не перемещаем объект.
+SG=0.5;							//-- погрешность для захвата объектов.
+error=0;						//-- признак того, что объект не отредактирован (0-отредактирован,1-не отредактирован)
+XPar="*";						//-- умолчание на параметр прототипа, который отвечает за ширину
+YPar="*";						//-- умолчание на параметр прототипа, который отвечает за глубину
+ZPar="*";						//-- умолчание на параметр прототипа, который отвечает за высоту
+//-- Переменные для перемещения объекта
+Lob=L;
+OtsOb=Ots;
+NULLOUT=getvarinst(2,"FailColor",FailColor,12);      //-- Цвет объектов, не прошедших проверку
+NULLOUT=getsnap();
+//--------------------------------------------------------
+//-- Минимальная область захвата
+if (A<0)
+{
+	A=abs(A);
+}
+if (A==0)
+{
+	A=0.1;
+}
+if (F<0)
+{
+	F=abs(F);
+}
+if (F==0)
+{
+	F=0.1;
+}
+//-- Номер каркаса
+KarkasNumb=GetAttr(Pan,"KarkasNumb",-1);
+if (KarkasNumb==-1)
+{
+	exit;
+}
+//-- Габариты каркаса
+selbyattr "KarkasNumb=="+str(KarkasNumb)+"&&FurnType==\"100000\"" wholly all done;
+if (sysvar(61)==0)
+{
+	putmsg("Нет каркаса");
+	goto err;
+}
+karkas=getselnum(1);
+NULLOUT=objgab3(Pan,GP);
+//-- Выбираем объекты каркаса и заносим их в массив
+selbyattr "KarkasNumb=="+str(KarkasNumb)+"&&FurnType!=\"100000\"" wholly all done; 
+kobj=sysvar(61);
+defarr KarObj[kobj];
+macro ProtoPath+"ArrObj.mac" kobj KarObj;
+//-- Опеределяем габариты панели и её тип
+type_pan=GetAttr(Pan,"Furntype","");
+NULLOUT=objgab3(Pan,GP);
+//-- Округлим хотя бы до десятых
+GP[1]=round(GP[1],0.1);
+GP[2]=round(GP[2],0.1);
+GP[3]=round(GP[3],0.1);
+GP[4]=round(GP[4],0.1);
+GP[5]=round(GP[5],0.1);
+GP[6]=round(GP[6],0.1);
+//-- Если СТОЙКА
+if (left(type_pan,4)=="0102")
+{
+	//-- В цикле находим объекты примыкающие к стойке
+	i=0;
+	SSt:
+	i=i+1;
+	ObGabR=KarObj[i];
+	ObGab=ObGabR;
+	NULLOUT=objgab3(ObGab,GOb);		
+	//-- Округлим хотя бы до десятых
+	GOb[1]=round(GOb[1],0.1);
+	GOb[2]=round(GOb[2],0.1);
+	GOb[3]=round(GOb[3],0.1);
+	GOb[4]=round(GOb[4],0.1);
+	GOb[5]=round(GOb[5],0.1);
+	GOb[6]=round(GOb[6],0.1);
+	if (Gob[1]==GP[1]&&Gob[2]==GP[2]&&Gob[3]==GP[3]&&Gob[4]==GP[4]&&Gob[5]==GP[5]&&Gob[6]==GP[6])	//-- Если примыкающий объект и есть та самая стойка (либо есть еще одна стойка внутри)
+	{
+		goto StNext;
+	}
+	if (((GOb[4]>GP[1]-A&&GOb[4]<=GP[1])||(GOb[4]>=GP[1]&&GOb[4]<GP[4]))&&(Gob[3]<=GP[6]-0.1&&Gob[6]>=GP[3]+0.1)&&(Gob[2]<=GP[5]-0.1&&Gob[5]>=GP[2]+0.1)) //-- если объект справа от стойки
+	{
+		Xc=1;				//-- меняем габарит по ширине
+		Yc=0;				//-- не меняем габарит по глубине
+		Zc=0;				//-- не меняем габарит по высоте
+		IsMove=0;		//-- не перемещаем объект.
+		gosub ObjChangeGab;
+	}
+	if (((GOb[1]<GP[4]+F&&GOb[1]>=GP[4])||(GOb[1]<=GP[4]&&GOb[1]>GP[1]))&&(Gob[3]<=GP[6]-0.1&&Gob[6]>=GP[3]+0.1)&&(Gob[2]<=GP[5]-0.1&&Gob[5]>=GP[2]+0.1))  //-- если объект слева от стойки
+	{
+		Xc=1;				//-- меняем габарит по ширине
+		Yc=0;				//-- не меняем габарит по глубине
+		Zc=0;				//-- не меняем габарит по высоте
+		IsMove=1;		//-- перемещаем объект.
+		gosub ObjChangeGab;
+	}
+	StNext:
+	if (i<kobj)
+	{
+		goto SSt;
+	}
+	move pan done L,0,0 nocopy;		//-- переместим стойку
+}
+//-- Если ПОЛКА
+if (left(type_pan,4)=="0101")
+{
+	//-- В цикле находим объекты примыкающие к полке
+	i=0;
+	SP:
+	i=i+1;
+	ObGabR=KarObj[i];
+	ObGab=ObGabR;
+	NULLOUT=objgab3(ObGab,GOb);		
+	//-- Округлим хотя бы до десятых
+	GOb[1]=round(GOb[1],0.1);
+	GOb[2]=round(GOb[2],0.1);
+	GOb[3]=round(GOb[3],0.1);
+	GOb[4]=round(GOb[4],0.1);
+	GOb[5]=round(GOb[5],0.1);
+	GOb[6]=round(GOb[6],0.1);
+	if (Gob[1]==GP[1]&&Gob[2]==GP[2]&&Gob[3]==GP[3]&&Gob[4]==GP[4]&&Gob[5]==GP[5]&&Gob[6]==GP[6])	//-- Если примыкающий объект и есть та самая полка (либо есть еще одна полка внутри)
+	{
+		goto PNext;
+	}
+	if (((GOb[6]>GP[3]-F&&GOb[6]<=GP[3])||(GOb[6]>=GP[3]&&GOb[6]<GP[6]))&&(Gob[1]<=GP[4]-0.1&&Gob[4]>=GP[1]+0.1)&&(Gob[2]<=GP[5]-0.1&&Gob[5]>=GP[2]+0.1)) //-- если объект снизу от полки
+	{
+		Xc=0;				//-- не меняем габарит по ширине
+		Yc=0;				//-- не меняем габарит по глубине
+		Zc=1;				//-- меняем габарит по высоте
+		IsMove=0;		//-- не перемещаем объект.
+		gosub ObjChangeGab;
+	}
+	if (((GOb[3]<GP[6]+A&&GOb[3]>=GP[6])||(GOb[3]<=GP[6]&&GOb[3]>GP[3]))&&(Gob[1]<=GP[4]-0.1&&Gob[4]>=GP[1]+0.1)&&(Gob[2]<=GP[5]-0.1&&Gob[5]>=GP[2]+0.1))  //-- если объект сверху от полки
+	{
+		Xc=0;				//-- не меняем габарит по ширине
+		Yc=0;				//-- не меняем габарит по глубине
+		Zc=1;				//-- меняем габарит по высоте
+		IsMove=1;		//-- перемещаем объект.
+		gosub ObjChangeGab;
+	}
+	PNext:
+	if (i<kobj)
+	{
+		goto SP;
+	}
+	move pan done 0,0,L nocopy;		//-- переместим полку
+}
+//-- Если СТЕНКА
+if (left(type_pan,4)=="0103")
+{
+	//-- В цикле находим объекты примыкающие к стенке
+	i=0;
+	STN:
+	i=i+1;
+	ObGabR=KarObj[i];
+	ObGab=ObGabR;
+	NULLOUT=objgab3(ObGab,GOb);		
+	//-- Округлим хотя бы до десятых
+	GOb[1]=round(GOb[1],0.1);
+	GOb[2]=round(GOb[2],0.1);
+	GOb[3]=round(GOb[3],0.1);
+	GOb[4]=round(GOb[4],0.1);
+	GOb[5]=round(GOb[5],0.1);
+	GOb[6]=round(GOb[6],0.1);
+	if (Gob[1]==GP[1]&&Gob[2]==GP[2]&&Gob[3]==GP[3]&&Gob[4]==GP[4]&&Gob[5]==GP[5]&&Gob[6]==GP[6])	//-- Если примыкающий объект и есть та самая стенка (либо есть еще одна стенка внутри)
+	{
+		goto StnNext;
+	}
+	if (((GOb[5]>GP[2]-F&&GOb[5]<=GP[2])||(GOb[5]>=GP[2]&&GOb[5]<GP[5]))&&(Gob[1]<=GP[4]-0.1&&Gob[4]>=GP[1]+0.1)&&(Gob[3]<=GP[6]-0.1&&Gob[6]>=GP[3]+0.1)) //-- если объект сзади от стенки
+	{
+		Xc=0;				//-- не меняем габарит по ширине
+		Yc=1;				//-- меняем габарит по глубине
+		Zc=0;				//-- не меняем габарит по высоте
+		IsMove=0;		//-- не перемещаем объект.
+		gosub ObjChangeGab;
+	}
+	if (((GOb[2]<GP[5]+A&&GOb[2]>=GP[5])||(GOb[2]<=GP[5]&&GOb[2]>GP[2]))&&(Gob[1]<=GP[4]-0.1&&Gob[4]>=GP[1]+0.1)&&(Gob[3]<=GP[6]-0.1&&Gob[6]>=GP[3]+0.1))  //-- если объект спереди от стенки
+	{
+		Xc=0;				//-- не меняем габарит по ширине
+		Yc=1;				//-- меняем габарит по глубине
+		Zc=0;				//-- не меняем габарит по высоте
+		IsMove=1;		//-- перемещаем объект.
+		gosub ObjChangeGab;
+	}
+	StnNext:
+	if (i<kobj)
+	{
+		goto STN;
+	}
+	move pan done 0,L,0 nocopy;		//-- переместим стенку
+}
+//-- Если СТЕНКА УТОПЛЕННАЯ
+if (left(type_pan,4)=="0104")
+{
+	move pan done 0,L,0 nocopy;		//-- переместим стенку
+}
+//--------------------------------------------------------
+End:
+err:
+NULLOUT=resnap();
+exit;
+////////-- Подпрограмма изменения параметров объектов --////////
+ObjChangeGab:
+Pos=getattr(ObGab,"Posit",-1);
+Razm=0;
+//--Полка
+if (Pos==12)		
+{
+	InitArray(arr,0);
+  arr[1]=ObGab;
+  err=GetPan6Par(1,arr);
+  err=GetPan6Par(11,arr);
+	Razm=0;	
+	if (Xc==1)
+	{	
+		Razm=arr[2];		//-- длина полки
+		NumC=4;
+	}
+	if (Yc==1)
+	{
+		Razm=arr[3];		//-- ширина полки
+		NumC=5;
+	}
+	if (Zc!=1)
+	{
+		if (left(type_pan,4)=="0102")
+		{
+			Razm=Razm+iif(IsMove==0,L-Ots,-(L));
+		}
+		else
+		{
+			Razm=Razm+iif(IsMove==0,L,-(L+Ots));
+		}
+		if (Razm<50)
+		{
+			error=1;
+			goto Propusk;
+		}
+		UnPosO=getattr(ObGab,"UnitPos",-1);
+		gosub MaterEdit;
+		#ObGab MBPanel item ObGab NumC Razm 0 ;
+		if (UnPosO==UnPosPnt)
+		{
+			pnt[iii]=ObGab;	//-- записываем объект-панель обратно в массив
+		}
+	}
+	else
+	{
+	  goto Propusk;
+	}
+}
+//--Стойка
+if (Pos==11)		
+{
+	InitArray(arr,0);
+  arr[1]=ObGab;
+  err=GetPan6Par(1,arr);
+  err=GetPan6Par(11,arr);
+	Razm=0;	
+	if (Zc==1)
+	{	
+		Razm=arr[2];		//-- длина стойки
+		NumC=4;
+	}
+	if (Yc==1)
+	{
+		Razm=arr[3];		//-- ширина стойки
+		NumC=5;
+	}
+	if (Xc!=1)
+	{
+		Razm=Razm+iif(IsMove==0,L,-(L+Ots));
+		if (Razm<50)
+		{
+			error=1;
+			goto Propusk;
+		}
+		UnPosO=getattr(ObGab,"UnitPos",-1);
+		gosub MaterEdit;
+		#ObGab MBPanel item ObGab NumC Razm 0 ;
+		if (UnPosO==UnPosPnt)
+		{
+			pnt[iii]=ObGab;	//-- записываем объект-панель обратно в массив
+		}
+	}
+	else
+	{
+	  goto Propusk;
+	}
+}
+//--Стенка
+if (Pos==14)		
+{
+	InitArray(arr,0);
+  arr[1]=ObGab;
+  err=GetPan6Par(1,arr);
+  err=GetPan6Par(11,arr);
+	Razm=0;	
+	if (Xc==1)
+	{	
+		Razm=arr[3];		//-- ширина стенки
+		NumC=5;
+	}
+	if (Zc==1)
+	{
+		Razm=arr[2];		//-- длина стенки
+		NumC=4;
+	}
+	if (Yc!=1)
+	{
+		if (left(type_pan,4)=="0102")
+		{
+			Razm=Razm+iif(IsMove==0,L-Ots,-(L));
+		}
+		else
+		{
+			Razm=Razm+iif(IsMove==0,L,-(L+Ots));
+		}
+		if (Razm<50)
+		{
+			error=1;
+			goto Propusk;
+		}
+		UnPosO=getattr(ObGab,"UnitPos",-1);
+		gosub MaterEdit;
+		#ObGab MBPanel item ObGab NumC Razm 0 ;
+		if (UnPosO==UnPosPnt)
+		{
+			pnt[iii]=ObGab;	//-- записываем объект-панель обратно в массив
+		}
+	}
+	else
+	{
+	  goto Propusk;
+	}
+}
+//--Выдвижная полка
+if (Pos==40)
+{
+	XPar="x";		
+	YPar="y";		
+	ZPar="*";
+	gosub ChProtoPar;
+}
+//--Ящик сборный
+if (Pos==51)
+{
+	XPar="Wk";		
+	YPar="y";		
+	ZPar="Hk";
+	gosub ChProtoPar;
+}
+//--Фасад
+if (Pos==52)
+{
+	XPar="W";		
+	YPar="*";		
+	ZPar="H";
+	gosub ChProtoPar;
+}
+//--Группа ящиков
+if (Pos==63)
+{
+	XPar="W";		
+	YPar="D";		
+	ZPar="H";
+	gosub ChProtoPar;
+}
+//--Угловое покрытие
+if (Pos==84)
+{
+	XPar="LLK";		
+	YPar="LRK";		
+	ZPar="*";
+	gosub ChProtoPar;
+}
+//--Фигурная столешница
+if (Pos==118)
+{
+	XPar="Length";		
+	YPar="Width";		
+	ZPar="*";
+	gosub ChProtoPar;
+}
+//--Распашная дверь
+if (Pos==121||Pos==20)
+{
+	XPar="S";		
+	YPar="*";		
+	ZPar="Hd";
+	gosub ChProtoPar;
+}
+//--Фасад прото
+if (Pos==124)
+{
+	XPar="W";		
+	YPar="*";		
+	ZPar="H";
+	gosub ChProtoPar;
+}
+//--Столешница Amik
+if (Pos==143)
+{
+	XPar="L";		
+	YPar="*";		
+	ZPar="*";
+	gosub ChProtoPar;
+}
+//--Ящик прото
+if (Pos==148)
+{
+	XPar="Wk";		
+	YPar="y";		
+	ZPar="Hk";
+	gosub ChProtoPar;
+}
+//--Вешалка продольная
+if (Pos==149)
+{
+	XPar="x";		
+	YPar="x";		
+	ZPar="x";
+	gosub ChProtoPar;
+}
+//--Сотовая полка
+if (Pos==150)
+{
+	XPar="x";		
+	YPar="y";		
+	ZPar="z";
+	gosub ChProtoPar;
+}
+//--Обувная полка
+if (Pos==154)
+{
+	XPar="x";		
+	YPar="y";		
+	ZPar="z";
+	gosub ChProtoPar;
+}
+//--Овальная столешница
+if (Pos==157)
+{
+	XPar="x";		
+	YPar="y";		
+	ZPar="*";
+	gosub ChProtoPar;
+}
+//--Овальная столешница
+if (Pos==158)
+{
+	XPar="x";		
+	YPar="y";		
+	ZPar="*";
+	gosub ChProtoPar;
+}
+//--Рельсы системы дверей
+if (Pos==162)
+{
+	XPar="x";		
+	YPar="y";		
+	ZPar="z";
+	gosub ChProtoPar;
+}
+//--Створка системы дверей
+if (Pos==163)
+{
+	XPar="x";		
+	YPar="y";		
+	ZPar="z";
+	gosub ChProtoPar;
+}
+//--Ниша прямая
+if (Pos==188)
+{
+	XPar="w";		
+	YPar="d";		
+	ZPar="h";
+	gosub ChProtoPar;
+}
+//--Ниша угловая
+if (Pos==190)
+{
+	XPar="w";		
+	YPar="d";		
+	ZPar="h";
+	gosub ChProtoPar;
+}
+//--Каркас дверной системы 64
+if (Pos==199)
+{
+	XPar="x";		
+	YPar="y";		
+	ZPar="z";
+	gosub ChProtoPar;
+}
+//--Створка  дверной системы 64
+if (Pos==200)
+{
+	XPar="x";		
+	YPar="y";		
+	ZPar="z";
+	gosub ChProtoPar;
+}
+//--Распашная угловая дверь
+if (Pos==228)
+{
+	XPar="S";		
+	YPar="G";		
+	ZPar="Hd";
+	gosub ChProtoPar;
+}
+//--Распашная дугообразная дверь
+if (Pos==231)
+{
+	XPar="S";		
+	YPar="G";		
+	ZPar="Hd";
+	gosub ChProtoPar;
+}
+//--Распашная карусельная дверь
+if (Pos==232)
+{
+	XPar="S";		
+	YPar="G";		
+	ZPar="Hd";
+	gosub ChProtoPar;
+}
+//--Ниша прямая дугообразная
+if (Pos==250)
+{
+	XPar="w";		
+	YPar="d";		
+	ZPar="h";
+	gosub ChProtoPar;
+}
+//--Фасад дугообразный
+if (Pos==251)
+{
+	XPar="W";		
+	YPar="DY";		
+	ZPar="H";
+	gosub ChProtoPar;
+}
+//--Ниша угловая под угловую дверь
+if (Pos==256)
+{
+	XPar="w";		
+	YPar="d";		
+	ZPar="h";
+	gosub ChProtoPar;
+}
+//--Вырез под короб
+if (Pos==259)
+{
+	XPar="WidthDuct";		
+	YPar="DepthDuct";		
+	ZPar="HeightDuct";
+	gosub ChProtoPar;
+}
+//--Пантограф
+if (Pos==265)
+{
+	XPar="W";		
+	YPar="*";		
+	ZPar="*";
+	gosub ChProtoPar;
+}
+//--Рамка выдвижная для навесных элементов
+if (Pos==266)
+{
+	XPar="W";		
+	YPar="D";		
+	ZPar="*";
+	gosub ChProtoPar;
+}
+//--Выдвижная корзина/полка
+if (Pos==267)
+{
+	XPar="W";		
+	YPar="*";		
+	ZPar="*";
+	gosub ChProtoPar;
+}
+//--Выдвижное вешало
+if (Pos==268)
+{
+	XPar="W";		
+	YPar="*";		
+	ZPar="*";
+	gosub ChProtoPar;
+}
+//--Ниша Dynaplan (Blum)
+if (Pos==268)
+{
+	XPar="W";		
+	YPar="D";		
+	ZPar="H";
+	gosub ChProtoPar;
+}
+////////-- Перемещение объекта --//////////
+if (IsMove==1&&left(type_pan,4)=="0102")
+{
+	move ObGab done L,0,0 nocopy;	
+}
+if (IsMove==1&&left(type_pan,4)=="0101")
+{
+	move ObGab done 0,0,L+Ots nocopy;
+}
+if (IsMove==1&&left(type_pan,4)=="0103")
+{
+	move ObGab done 0,L+Ots,0 nocopy;
+}
+//-- Переопределение параметров (если было дополнительное редактирование)
+Lob=L;
+OtsOb=Ots;
+//-- Выходим из редактирования параметров объекта, если объект не редактируется.
+Propusk:
+if (error==1)
+{
+	chprop color partly ObGab done FailColor;
+}
+return;
+/////////////--Подпрограмма общего редактирования параметров прототипа--////////////////
+ChProtoPar:
+//-- Проверяем объект на соответстввие его ЛСК ПКС каркаса
+setucs lcs ObGab;		//-- ставим ПКС в ЛСК объекта
+xO=50;							//-- вектор в ЛСК
+yO=30;
+zO=0;
+vtranscs(2,3,xo,yo,zo,xOG,yOG,zOG);			//-- переводим вектор в ГСК
+setucs lcs karkas;											//-- возвращаем ПСК в каркас
+vtranscs(3,2,xOG,yOG,zOG,xOK,yOK,zOK);	//-- переводим вектор в ЛСК каркаса
+if (xOK==yO&&yOK==-xO)									//-- если объект повернут на 90 градусов, кореектируем положение
+{
+	xxx=XPar;
+	XPar=YPar;
+	YPar=xxx;
+	if (IsMove==0)
+	{
+		move ObGab done iif(left(type_pan,4)=="0102",Lob+Otsob,0),iif(left(type_pan,4)=="0103",Lob+Otsob,0),iif(left(type_pan,4)=="0101",Lob+Otsob,0) nocopy;	
+	}
+	if (IsMove==1)
+	{
+		move ObGab done iif(left(type_pan,4)=="0102",-Lpb-Otsob,0),iif(left(type_pan,4)=="0103",-Lob-Otsob,0),iif(left(type_pan,4)=="0101",-Lob-Otsob,0) nocopy;	
+	}
+}
+//-- Редактируем
+if (Xc==1&&XPar!="*")	//-- если меняем ширину прототипа и есть такой параметр
+{
+	NULLOUT=GetProtoVal(ObGab,XPar,Razm);
+	if (left(type_pan,4)=="0102")
+	{
+		protoobj edit list ObGab nodc XPar Razm+iif(IsMove==0,Lob-Otsob,-(Lob));
+	}
+	else
+	{
+		protoobj edit list ObGab nodc XPar Razm+iif(IsMove==0,Lob,-(Lob+Otsob));
+	}
+	objident last 1 ObGab;
+}
+if (Yc==1&&YPar!="*")	//-- если меняем глубину прототипа и есть такой параметр
+{
+	NULLOUT=GetProtoVal(ObGab,YPar,Razm);
+	protoobj edit list ObGab nodc YPar Razm+iif(IsMove==0,Lob,-(Lob+Otsob));
+	objident last 1 ObGab;
+}
+if (Zc==1&&ZPar!="*")	//-- если меняем высоту прототипа и есть такой параметр
+{
+	NULLOUT=GetProtoVal(ObGab,ZPar,Razm);
+	protoobj edit list ObGab nodc ZPar Razm+iif(IsMove==0,Lob,-(Lob+Otsob));
+	objident last 1 ObGab;
+}
+return;
+
+////////////////-- Подпрограмма записи измененных панелей в массив панелей выбранных в materEdit.mac--/////////////////
+MaterEdit:
+//-- Делаем проверку по UnitPos
+if ((Pos==14||Pos==12||Pos==11)&&R1>0)
+{
+	iii=0;
+	UNL:
+	iii=iii+1;
+	ObjInf=pnt[iii];
+	//-- Узнаем UnitPos элемента массива
+	UnPosPnt=getattr(ObjInf,"UnitPos",-1);
+	if (UnPosO==UnPosPnt)
+	{
+		return;
+	}
+	if (iii<iPNT)
+	{
+		goto UNL;
+	}
+}
+else
+{
+	UnPosPnt=0;
+}
+return;

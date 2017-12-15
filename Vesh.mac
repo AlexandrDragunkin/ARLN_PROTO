@@ -1,0 +1,71 @@
+//-- Макропрограмма установки поперечной вешалки
+global ProtoPath;
+global MacroSw;
+defarr first[3] second[3], xm[6];
+
+defarr arr[10], arrin[15];
+onerror Err;
+NULLOUT=getvarinst(2,"g_Vesh",g_Vesh,0);      //-- Умолчание на вешалки
+
+if (g_Vesh==0) {
+	Err:
+  DefVesh=str(getyadsubst(18))+"#"+str(g_Vesh) ;                    // Формируем строку умолчаний.
+  #ok_flag
+  setvar
+  "Установка вешалки"
+  ""
+  left
+  "Выберите вешалки"
+  done
+  string auto button 6 default DefVesh
+     "Тип вешалки:" NVesh
+  done;
+  if (ok_flag==0)
+  {
+	exit;
+  }
+  splitbydelim(NVesh,"#",Arr);
+  g_Vesh=Arr[2];
+}
+Macro ProtoPath+"MakeVesh.mac" g_Vesh 0   0 0 0 ;
+objident last 1 Elem;
+
+NULLOUT=GetSnap();
+
+//  protoobj create "Shkaf.ptl" 22
+//  "Ots" 0
+//  "V_Type" g_Vesh
+//  done
+//  0 0 0;
+
+
+onerror nend;
+
+initarray(arrin,0);
+arrin[1]=Elem  // Объект
+arrin[2]=0  // Флаг фасада
+arrin[3]=90  // Угол
+//arrin[4]=0  // Габариты, если нулевые - то расчет в коде по объекту
+//arrin[5]=0
+//arrin[6]=0
+//arrin[7]=0    // Сдвиг 0
+//arrin[8]=0
+//arrin[9]=0
+arrin[10]=0  // вектор, если нулевой, то 0 0 1
+arrin[11]=0
+arrin[12]=-1
+
+mbget "Укажите положение поперечной вешалки:" point arrin arr back rotate rotate :
+
+place elem ;
+//  attrobj attach "AccPlace" done elem 0+2+384 ;     // Тип размещения - Под панель, -z, с переворотом
+
+NULLOUT=ReSnap();
+offerror;
+exit;
+nend:
+delete elem;
+NULLOUT=ReSnap();
+offerror;
+exit;
+

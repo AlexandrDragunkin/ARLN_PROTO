@@ -1,0 +1,118 @@
+//-- Макропрограмма устанавливает выдвижное вешало
+global ProtoPath;
+global HangType;
+defarr basep[3];
+
+PicturesPath=mpathexpand("<Pictures>\\");															//-- Папка с картинками
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));     //-- Путь к папке с макропрограммами
+
+res=IsvarDef("HangType");
+if (res==0) 
+{
+	NULLOUT=getvarinst(2,"MotHangType",HangType,0);					//-- Умолчание на вешало
+}
+DefHang=str(getyadsubst(81))+"#"+str(HangType) ;			//-- Формируем строку умолчаний.
+
+onerror final;
+NULLOUT=getsnap();
+NULLOUT=pushinst(1);
+defarr arr[10];
+#ok_flag
+setvar
+"Параметры выдвижного вешала"
+//PicturesPath+"PantRas.jpg"
+//center
+"Задайте параметры вешала"
+done
+string auto button 6 default DefHang
+     "Тип вешала:" HangType
+str listonly current  "Справа"
+											"Слева"
+                 done "Установка вешала:" BLt
+str listonly current  "Нет"
+											"Расширитель"
+											"Поворотная петля"
+                 done "Дополнительный крепеж:" F_W
+done;
+if (ok_flag==0)
+{
+  goto final;
+}
+//----------------------------------------
+if (BLt=="Справа") { RV=1;}
+if (BLt=="Слева") { RV=0;}
+if (F_W=="Нет") { F_Width=0;}
+if (F_W=="Расширитель") { F_Width=1;}
+if (F_W=="Поворотная петля") { F_Width=2;}
+//----------------------------------------
+splitbydelim(HangType,"#",Arr);
+typeF=Arr[2];
+HangType=typeF;
+ShiftY=priceinfo(typeF,"ShiftY",0,2);							//-- Отступ спереди
+typeKor=priceinfo(typeF,"NomID1",0,2);
+H_Hang=priceinfo(typeKor,"Height",86);						//-- Высота вешала
+
+D_Hang=priceinfo(typeKor,"ToleranceY",86);				//-- Глубина вешала
+W_Hang=priceinfo(typeKor,"ToleranceX",86);				//-- Ширина вешала
+if (F_Width==1)
+{
+  RasT=priceinfo(typeF,"NomID2",0,2);
+  ots=priceinfo(RasT,"Width",0);									//-- Ширина расширителя
+  if (ots>0)
+  {
+    W_Hang=W_Hang+ots;
+  }
+}
+
+//-- Запрос ниши
+defarr arrin[3], arrout[14];
+arrin[1]=H_Hang;  // Высота резиновой панели
+mbget "Укажите положение корзины:" shell arrin arrout :
+basep[1]=arrout[1];
+basep[2]=arrout[2];
+basep[3]=arrout[3];
+xgab=arrout[4];
+ygab=arrout[5];
+zgab=arrout[14];
+Numb=arrout[6];
+Shift=arrout[7];
+
+//-- Проверки
+//--Если не подходит по ширине
+if (xgab<W_Hang)
+{
+ putmsg("Ширина ниши меньше допустимой",0);
+ putmsg("Допустимая ширина "+str(W_Hang),0);
+ putmsg("Ширина ниши "+str(xgab),0);
+ goto final;
+}
+//--Если не подходит по глубине
+if (ygab<D_Hang)
+{
+ putmsg("Глубина ниши меньше допустимой",0);
+ putmsg("Допустимая глубина "+str(D_Hang),0);
+ putmsg("Глубина ниши "+str(ygab),0);
+ goto final;
+}
+//--Если не подходит по высоте
+if (zgab<H_Hang)
+{
+ putmsg("Высота ниши меньше высоты выбранного вешала",0);
+ putmsg("Высота вешала "+str(H_Hang),0);
+ putmsg("Высота ниши "+str(zgab),0);
+ goto final;
+}
+position=getprotoid("Shkaf","Выдвижное вешало","ProtoMacro","MotHangP");  //-- ID прототипа
+protoobj create "Shkaf.ptl" position
+   "W"			 xgab
+   "typeF"	 typeF
+   "F_Width" F_Width
+	 "RV"			 RV
+   done
+basep[1], basep[2]+ygab-ShiftY, basep[3]+H_Hang;
+
+final:
+offerror;
+NULLOUT=resnap();
+NULLOUT=popinst(1);
+exit;

@@ -1,0 +1,12 @@
+//-- Прототип "Обувная полка"
+global ProtoPath;
+
+x=DbVar("x",1000);                  //-- Ширина секции
+y=DbVar("y",450);                   //-- Глубина установки
+z=DbVar("z",1870);                  //-- Высота установки
+SotID=DbVar("width",661);           //-- ID обувной полки в справочнике сборочных единиц
+N_clypse=DbVar("N_clypse",2);       //-- Количество клипс
+N_Kron=DbVar("N_Kron",2);           //-- Количество кронштейнов
+
+macro ProtoPath+"MakeShoesShelf.mac" SotID, 0, y, z, x, N_clypse N_Kron;
+exit;

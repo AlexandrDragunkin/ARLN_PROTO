@@ -1,0 +1,4 @@
+//-- Установить текущий тип навески
+getpar Naves;
+NULLOUT=setvarinst(1,"Naves",Naves);
+exit;

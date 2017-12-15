@@ -1,0 +1,35 @@
+//-- Рассечь панель
+global ProtoPath;
+tmp=0;
+//---------------------------------------------------------------------------
+Start1:
+onerror final;
+switch autosingle on;
+selbyattr "(Left(FurnType,2)==\"01\"&&FurnType!=\"010000\")||Posit==11||Posit==13||Posit==14"
+  prompt "Укажите разрезающую панель:" : ;
+switch autosingle off;
+if (sysvar(61)==0)
+{
+  goto final;
+}
+Stoyka=getselnum(1);
+select stayblink Stoyka done;
+Start2:
+onerror final1;
+switch autosingle on;
+  selbyattr "(Left(FurnType,2)==\"01\"&&FurnType!=\"010000\")||Posit==11||Posit==12||Posit==13||Posit==14"
+    prompt "Укажите разрезаемую панель:" : ;
+switch autosingle off;
+offerror;
+if (sysvar(61)==0)
+{
+  goto final1;
+}
+Pn=getselnum(1);
+macro Protopath+"CutPMac.mac" Stoyka Pn;
+goto Start2;
+final1:
+select Stoyka done;
+final:
+switch autosingle off;
+exit;

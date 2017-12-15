@@ -1,0 +1,8 @@
+//-- Присвоить атрибут с именем параметра прототипа последнему объекту
+getpar P1;
+if (!isattrdef("ProtoAtNm")) 
+{
+	attribute create "ProtoAtNm" "ProtoAttrName" String 35 15 ;
+}
+attrobj attach "ProtoAtNm" done last 1 P1 ;
+exit;

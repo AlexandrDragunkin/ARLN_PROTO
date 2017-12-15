@@ -1,0 +1,120 @@
+CurStat=SysVar(70) ;
+=Curstat
+if CurStat==0 { CurStat=2  }
+=MsgLevel(2) ;
+//*********************************************
+//        Создание новых типов стрелок
+//              Драгункин А.Р.
+//              ГеоС 2008 г.
+//*********************************************
+
+defarr xm[6] data[8] ObjPh[100] geo[15] arr[3] ;
+Defname="Drill1"
+errlab1:
+#NameArrow getvar "Ведите имя стрелки" default Defname  :
+//измеряем длинну имени
+Lname=Len(NameArrow) ;
+if Lname>8 {
+   putmsg("Ошибка!Длинна имени превышает 8 символов.",0) ;
+   Defname=Left(NameArrow,8) ;
+   goto errlab1 ;
+}
+Objident prompt "Укажите объект который станет стрелкой" : pnt
+Typeobj=Getobjtype(pnt) ;
+If Typeobj!=7 {
+   putmsg("Ошибка!Объект должен быть группой, состоящей из линий и контуров.",0) ;
+   goto metend ;
+}
+N=GetCntObjG(pnt) ;        //колличество объектов первого уровня в группе
+defarr obj[n] ;            //массив для объектов первого уровня
+Err=GetArrObjG(pnt,obj) ;  //Заполняем массив ссылками
+err=objgab3(pnt,xm) ;      //Измеряем габариты определяем размер сетки
+
+Xsize=max(abs(xm[4]),abs(xm[1]))          //габарит по X
+Ysize=max(abs(xm[2]),abs(xm[5]))           //Габарит по Y
+SHSize=Ceil(max(Xsize,Ysize)) ;   //размер сетки
+if abs(xm[1]>125)||abs(xm[2]>125)||abs(xm[4]>125)||abs(xm[5]>125) {
+   putmsg("Ошибка!Габарит объекта больше допустимого. Или неправильно расположена система координат.",0) ;
+   goto metend ;
+}
+gosub StartFl ;            //создаем макрофайл
+
+i=0
+met1:
+if i<N {
+   i=i+1
+   Typeobj=Getobjtype(obj[i]) ;
+   if TypeObj==5 { gosub AddFlPh ; }
+   if TypeObj==2 { gosub AddFlLn ; }
+   goto met1 ;
+}
+err=PutStr(fname,"0",0) ;   //Параметры описания
+err=PutStr(fname,"done",0) ;
+err=PutStr(fname,"done",0) ;
+err=PutStr(fname,"exit",0) ;
+macro fname ;  //выполняем сформированный файл
+metend:
+=MsgLevel(CurStat) ;
+exit;
+//=============================
+//====Создаем макрофайл========
+StartFl:
+err=sysarr(81,data) ;
+Cdata=str(data[1])+"/"+str(data[2])+"/"+str(data[3])+"("
+Cdata=Cdata+str(data[5])+":"+str(data[6])+":"+str(data[7])+")"
+fname=GetProtoMac("Shkaf.ptl")+"ArrowAuto.mac" ;    //Имя файла макро
+err=PutStr(fname,"//Сформирован автоматически CreateArrow.mac   "+Cdata,-1) ;
+err=PutStr(fname,"//===============================================",0) ;
+err=PutStr(fname,"//===========(c)ГеоС Н.Новгород 2008 г===========",0) ;
+err=PutStr(fname,"//===============================================",0) ;
+err=PutStr(fname,"Draftinfo Arrow "+"\""+NameArrow+"\"",0) ;
+err=PutStr(fname,str(SHsize),0) ; //Размер сетки описания стрелки (от 1 до 126)
+err=PutStr(fname,"0",0) ;  //Недовод продолжения размерной линии (от -126 до 0)
+err=PutStr(fname,"0",0) ;  //Недовод размерной линии (от 0 до 126)
+err=PutStr(fname,"1",0) ;  //Допустимость автоматического продолжения (0 -нет; 1 -да)
+return;
+//====Дописываем в файл информацию по контуру========
+AddFlPh:
+Np=ScanG(Obj[i],ObjPh);
+err=ContStatus(Obj[i],Arr) ;
+i1=0
+    met2:
+    if i1<Np {
+       i1=i1+1
+       TypElem=getobjtype(ObjPh[i1]) // 2-отрезок 4-дуга
+       if typElem==2 {
+         err=GetObjGeo(ObjPh[i1],geo) ;
+         ptransCS(3,2,geo[1],geo[2],geo[3],geo[1],geo[2],geo[3]);
+         ptransCS(3,2,geo[4],geo[5],geo[6],geo[4],geo[5],geo[6]);
+         if i1==1 {
+          err=PutStr(fname,"3",0) ;  //Код описания равен 3:  Контур
+          if arr[2]!=1 { err=PutStr(fname,str(round(geo[1]))+" "+str(round(geo[2]))+" "+str(round(geo[4]))+" "+str(round(geo[5])),0) ; } //Параметры описания
+          else { err=PutStr(fname,str(round(geo[4]))+" "+str(round(geo[5])),0) ; stpoint=str(round(geo[4]))+" "+str(round(geo[5])) }   //Параметры описания
+         }
+         else {
+          err=PutStr(fname,str(round(geo[4]))+" "+str(round(geo[5])),0) ;   //Параметры описания
+         }
+       }
+       else {
+        putmsg("Ошибка! Дуги в составе контура не допускаются.",0) ;
+        goto metend ;
+       }
+    goto met2 ;
+    }
+//err=PutStr(fname,"5 "+str(round(geo[4]))+" "+str(round(geo[5])),0) ;   //Параметры описания
+if arr[2]==1 { err=PutStr(fname,stpoint,0) ;  }
+err=PutStr(fname,"127",0) ;   //Параметры описания
+return;
+//====Дописываем в файл информацию по линии========
+AddFlLn:
+
+ err=GetObjGeo(Obj[i],geo) ;
+ ptransCS(3,2,geo[1],geo[2],geo[3],geo[1],geo[2],geo[3]);
+ ptransCS(3,2,geo[4],geo[5],geo[6],geo[4],geo[5],geo[6]);
+
+ err=PutStr(fname,"1",0) ;   //Параметры описания
+ err=PutStr(fname,str(round(geo[1]))+" "+str(round(geo[2]))+" "+str(round(geo[4]))+" "+str(round(geo[5])),0) ; //Параметры описания
+
+ err=PutStr(fname,"127",0) ;   //Параметры описания
+return;
+

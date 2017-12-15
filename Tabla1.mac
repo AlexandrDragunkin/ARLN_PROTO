@@ -1,0 +1,79 @@
+//Tabla1.mac
+//
+//             А.Р.Драгункин   2006 г.
+//
+//Заполнение и рисование таблицы в чертеже
+Wts=0.5        //толщина толстых линий
+Wtl=0.2        //толщина тонких линий
+NameTabl="Tabl.dbf"
+Protopath=Getfilepath(sysvar(7)) ;
+//Ищем файл определяем количество строк заполняем массив
+fnk=Protopath+NameTabl
+if GetCount(fnk) {  DbOpen rcdTMP,fnk;   //открыли базу проекта
+   DbMoveFirst rcdTMP;                  // Встали на первую запись
+   n=DbRecCount(rcdTMP) ;//ОПРЕДЕЛИЛИ ЧИСЛО ЗАПИСЕЙ В ОТКРЫТОЙ БАЗЕ
+   n1=DbFldCount(rcdTMP) ;//ОПРЕДЕЛИЛИ ЧИСЛО ЗАПИСЕЙ В ОТКРЫТОЙ БАЗЕ
+
+   if n<1 {
+   #ok_flag alternative "Внимание!!" msgbox text "Записи в базе с именем "+fnk+" не обнаружены."
+   done "Ок"
+   done ;
+   Vimage on;
+   'regen all
+   ;exit ; }
+defarr zap[n,n1] xm[6];
+
+   =n
+
+   I=0
+   met1:
+   If !DbEOF(rcdTMP) {
+      if i<n {  i=i+1
+         //Считали  поля
+          j=0
+          met5:
+          if j<n1 {
+             zap[i,j+1]=DbGetValue(rcdTMP,j,-99)  ;
+             j=j+1
+             goto met5 }
+         
+          DbMoveNext rcdTMP;
+         goto met1 ;
+         }
+    }
+
+    DbClose rcdTMP
+    x1=0
+    j=0
+    met6:
+    if j<n1 {
+    j=j+1
+    met3:
+    gosub ZApTab ;
+    objident last 1 ttx ;
+    =objgab3(ttx,xm) ;
+    Rectangle x1+10 20 0  xm[1]-10 xm[2]-20
+    chprop lwidth last 1 done Wts ;
+    x1=xm[1]-20
+
+
+    goto met6
+    }
+    
+
+}
+
+exit;
+
+    ZapTab:
+    i=0
+    text
+    met2:
+    let i=i+1
+    if i<N {
+    zap[i,j]
+    goto met2 }
+    done
+    x1 0 0 x1-20 0 0  ;
+    return;
+

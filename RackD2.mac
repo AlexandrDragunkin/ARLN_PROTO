@@ -1,0 +1,51 @@
+// Труба,
+
+xsec=DbVar("x",1000);
+ybase=DbVar("y",450)
+zspan=DbVar("z",1870);
+
+colour=DbVar("colo",1);
+
+//Ots=DbVar("Ots",100);
+//Kpipe=DbVar("Kpipe",1);
+
+WMFPath=DbVar("WMFPath","")
+
+ProtoPath=GetProtoMac("Shkaf.ptl")
+macro ProtoPath+"global_s.mac" ;
+F2000=DbVar("F2000",0)
+
+H=20;
+xbase=0;
+//ybase=(y-Ots*(Kpipe-1))/2;
+zbase=zspan;
+Hor_Gap=3;  //-- Если нужного типа вешалки нет в прайс-листе
+d1=25;      //-- Если нужного типа вешалки нет в прайс-листе
+//xsec=xsec-Right*sh-Left*sh;
+
+//-----------------------------------------
+
+macro ProtoPath+"bear2.mac"
+xbase,ybase,zbase,D1,Hor_Gap,xsec,colour;
+
+macro ProtoPath+"pipe2.mac"
+xbase,ybase,zbase,xsec,D1,Hor_Gap,colour;
+
+
+//if (Kpipe>1) {
+//  move last 3 done 0 Ots 0 copy Kpipe-1 ;
+//}
+w=xsec;
+d=ybase;
+	LDim 3DDim 0 d zbase
+		 w d zbase
+	Horizontal 0 d zbase-150
+
+View None Gcs .33 .87 .38;
+Zoom all
+Hide
+
+If F2000 { Exp2d Wmf Yes WMFPath+"1.WMF" [ overwrite ] }
+Else     { Exp2d Wmf No WMFPath+"1.WMF" [ overwrite ] }
+
+exit;

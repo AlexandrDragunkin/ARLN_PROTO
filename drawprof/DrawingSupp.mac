@@ -1,0 +1,137 @@
+global ProtoPath drwzpath g_name g_draw G_numTxt  l_support Pl_NumPan g_ndets;;
+defarr adraw[1000] ;
+onerror endlab;
+
+getpar pnt aCommPos numpan aVid iVid ;
+// pnt - полотно панели
+// hold - сама панель
+err=getobjhold(pnt,hold)
+hh=hold
+// Определяем число отверстий у самой панели
+PanHoles=getholes(hold)
+if PanHoles>0 {
+	// Определяем число отверстий у полотна панели
+	n=getholes(pnt)
+	// Создаем массив отверстий панели
+	nPanHoles=getholes(hold,"aPHoles")
+}
+else {
+	n=0
+}
+if n>0 {
+	nels=getholes(pnt,"aHoles")	
+}
+else {
+	defarr aHoles[1]; // aPHoles[1];
+}
+
+ZgUnitX=getattr(pnt,"XUnit",-1)
+ZgUnitY=getattr(pnt,"YUnit",-1)
+ZgUnitZ=getattr(pnt,"ZUnit",-1)
+vCP=-99
+PanDir=-99
+
+<?python
+# -*- coding: cp1251 -*-
+import k3
+import DrawingSupp
+hd=k3.Var('hold')
+hn=k3.Var()
+e=k3.Var('err')
+err=1
+i=0
+while err==1 and i<10:
+    i+=1
+    err=k3.getobjhold(hd,hd)
+    lt=k3.getattr(hd.value,"LongsType",-99);
+    if lt>=0:
+        e.value=0
+        print( 'Это длинномер. Чертеж не выводим.')
+        break
+?>
+nObjSt=SysVar(60)
+if err {
+	hold=hh
+	err=getobjhold(hold,hold)
+	if err {
+		vCP=getAttr(hold,"CommonPos",-99);				
+     
+		PanDir=getattr(hold,"PanDir",1)
+		attrobj attach "ZgUnitX" "ZgUnitY" "ZgUnitZ" done record iif(PanDir==2,ZgUnitY,ZgUnitX) iif(PanDir==2,ZgUnitX,ZgUnitY) ZgUnitZ;
+		
+		pos=findinarray(aCommPos,vCP);
+		if pos==0 {
+			gosub getCount;
+			attrobj attach "nCount" done record nCount;
+			g_ndets=nCount
+			numpan=numpan+1
+			aCommPos[numpan]=vCP
+                        Pl_NumPan=vCP
+			attrobj copy partly  hold all  record ;	
+			putmsg("Панель номер: "+str(vCP));
+			IsDraw=0 // Возвращает результат построения чертежа панели в переменной
+			macro Protopath+"\\drawprof\\DrawingSupp.py"  byref aHoles  byref n byref hold ByRef IsDraw done;
+			if IsDraw {
+				object_name=sysvar(2);
+				projname=sysvar(2);
+				adraw[1]=object_name-3+"_"+g_name+".k3";
+				macro DRWZPath+"drawsave_ds.mac" projname adraw byref iVid aVid;	
+				adraw[1]=G_numTxt
+			}
+		}
+	}
+}
+nObj=SysVar(60)
+nObjSt=nObj-nObjSt-1;
+endlab:
+offerror;
+
+exit;
+
+
+
+
+getCount:
+	ng=sysvar(62);
+	if ng>32767 {
+		nn=32767
+		defarr arr[nn] arr1[ng-nn];
+	}
+	else { 
+		nn=ng
+		defarr arr[nn] arr1[1]; 
+	}
+	//m=scanscene(arr);
+	#m scan_scene arr  "left(furntype,2)==\"01\"" ;
+	//Putmsg(m);
+	
+	nCount=0
+	i=0
+	loop:
+	if i<m {
+	   i=i+1
+	   cCP=getAttr(arr[i],"CommonPos",-98)
+	   FT=getAttr(arr[i],"FurnType","nn")
+		if cCP==vCP&&(Left(FT,2)=="01") {
+		  nCount=nCount+1;     
+		}
+		goto loop;
+	}
+	ng=m
+	if ng>32767 {
+		m=scanscene(arr1,nn+1);
+		//Putmsg('m-------------');
+		//Putmsg(m);
+		i=0
+		loop1:
+		if i<m {
+		   i=i+1
+		   cCP=getAttr(arr1[i],"CommonPos",-98)
+		   FT=getAttr(arr1[i],"FurnType","nn")
+			if cCP==vCP&&(Left(FT,2)=="01") {
+			  nCount=nCount+1;     
+			}
+			goto loop1;
+		}
+	}
+return;

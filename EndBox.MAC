@@ -1,0 +1,80 @@
+//-- Макропрограмма присваивает ящику все необходимые атрибуты
+//-- Входные параметры:
+//-- BoxKType - Тип ящика
+//-- wk y hk - Габариты фасада по ширине, глубине и высоте соответственно
+
+global ProtoPath;
+global UnitCode; //-- Код изделия (текст)
+global HoldName; //-- Имя хозяина
+global ElemName; //-- Имена мебельных элементов
+// global PROPCODY;  //-- Код корпуса
+KarkasNumb=getcarcnumb();    //-- Порядковый номер каркаса в сцене
+
+getpar BoxKType wk y hk;
+
+// if (isvardef("PROPCODY"))
+// {
+  // PrId=0;
+  // total_s=0;
+  // DBFFile=ProtoPath+"Shkaf.ptm" ;
+  // dbopen rcd, DBFFile,"";
+  // dbfilter rcd, "ARTICUL==PROPCODY";
+  // total_s=dbreccount(rcd);
+  // if (total_s==0)
+  // {
+    // goto EndVeter;
+  // }
+  // dbmovefirst rcd;
+  // PrId=dbgetvalue(rcd,0);
+  // EndVeter:
+  // dbclose rcd;
+  // PropCod=PropCodY
+// }
+// else
+// {
+  PrId=BoxKType;
+// }
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done last 1 done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+}
+if (isattrdef("ElemName"))
+{
+  if (ElemName==" ")
+  {
+    attrobj attach "ElemName" done last 1 "Ящик";
+  }
+  else
+  {
+    attrobj attach "ElemName" done last 1 ElemName;
+  }
+}
+if (isattrdef("HoldName"))
+{
+  if (isassign("HoldName",0))
+  {
+    attrobj copy record "HoldName" done last 1 done;
+  }
+  else
+  {
+    attrobj attach "HoldName" done last 1 HoldName;
+  }
+}
+if (isattrdef("UnitCode"))
+{
+  if (!isvardef("PROPCOD"))
+  {
+    PropCod=" ";
+  }
+  attrobj attach "UnitCode" done last 1 "3000";
+  attrobj attach "GroupID" done last 1 31;      //-- 31 - YAD группа типов ящиков
+	attrobj attach "GoodsID" done last 1 PrId;	  //-- ID типа ящиков
+  attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 wk y hk;     //-- Размеры ящика
+  PropCod=" ";
+}
+exit;

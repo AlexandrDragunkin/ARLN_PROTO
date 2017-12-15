@@ -1,0 +1,74 @@
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+//-- Программа заполняет массив названиями дизайна систем дверей в соответствии со строкой фильтра
+//-- Входные параметры:
+//-- SQLStr - SQL строка фильтра
+//-- Массив g_g_DRDesN - массив названий
+//-- Массив g_DRDesI - массив ID
+//-- g_DRDesNumb - количество записей в массиве
+//-- Данные берутся из таблицы DSGabProfile поля NameGroup базы данных DoorSys63.mdb вертикальных профилей
+
+nullout=getvarinst(2,"Doors63",Doors63,"Doors63.zmc|");
+global ProtoPath;
+global g_keyDS63,g_Doorscon;
+global g_DRDesN,g_DRDesI,g_DRFsN,g_DRTyFI,g_DRDesNumb g_DRTySt, g_DRTyKF;
+
+nullout=getvarinst(1,"g_tab_place",g_tab_place,ProtoPath+"DoorSys63.mdb");
+
+isvardef("g_DRDesN")==0
+{
+ defarr g_DRDesN[200],g_DRDesI[200],g_DRTyFI[200],g_DRFsN[200], g_DRTySt[200], g_DRTyKF[200];
+}
+
+getpar SQLStr N_str;
+
+if g_keyDS63!=1
+{
+   macro ProtoPath+Doors63+"CrtSysDoor63.mac" ;
+}
+
+res=adbChkMdbTbl(g_tab_place,"DSSystemFlap");
+if (res==0)
+{
+ if g_keyDS63!=0
+ {
+   macro ProtoPath+Doors63+"ClosSysDoor63.mac" ;
+ }
+  exit;
+}
+
+SysRs=adbOpen(g_Doorscon,SQLStr,N_Str);
+ij=adbRecCount(SysRs);
+if (ij<1)
+{
+  SysRs=adbClose(SysRs);
+  macro ProtoPath+"ShowSmartError.mac" " Ошибка DoorSys63.mdb" 1 "Для выбранной системы нет доступных профилей. Возможно ошибка в таблице DSSystemFlap"  done;
+	cancel;
+}
+NULLOUT=adbMoveFirst(SysRs);
+
+i=1;
+LC:
+g_DRDesI[i]=adbGetValue(SysRs,"ID");
+g_DRDesN[i]=adbGetValue(SysRs,"NameSys");
+g_DRTyFI[i]=adbGetValue(SysRs,"TypeFlap");
+g_DRTySt[i]=adbGetValue(SysRs,"TID");
+g_DRTyKF[i]=adbGetValue(SysRs,"KeyFas");
+g_DRFsN[i]=adbGetValue(SysRs,"Drawing");
+
+if (i<ij)
+{
+  i=i+1;
+  NULLOUT=adbMoveNext(SysRs);
+  goto LC;
+}
+g_DRDesNumb=ij;
+SysRs=adbClose(SysRs);
+
+nullout=setarrinst(1,"g_DRTyKF",g_DRTyKF);
+//Doorscon=adbDisCon(Doorscon);
+exit;

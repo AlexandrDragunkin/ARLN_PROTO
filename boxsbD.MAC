@@ -1,0 +1,34 @@
+// Разбор объекта - ящик
+global MacroSw  ; // Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+MacroSw=1
+
+WMFPath=DbVar("WMFPath","")
+
+ProtoPath=GetProtoMac("Shkaf.ptl")
+macro ProtoPath+"global_s.mac" ;
+F2000=DbVar("F2000",0)
+w=DbVar("wk",330)   //ширина корпуса ящика
+d=DbVar("y",320)   //глубина фасада
+hbox=DbVar("Hk",822)   //высота корпуса ящика
+
+X_Fas=DbVar("X_Fas",0); // Ширина фасада
+Z_Fas=DbVar("Z_Fas",0); // Высота фасада
+macro ProtoPath+"boxsb.mac" ;
+
+
+	LDim 3DDim 0 d 0
+		 X_Fas d 0
+	Horizontal 0 d -150
+
+	LDim 3DDim X_Fas d Z_Fas
+		X_Fas d 0
+	Vertical	 X_Fas+150 d 0
+
+View None Gcs .33 .87 .38;
+Zoom all
+Hide
+
+If F2000 { Exp2d Wmf Yes WMFPath+"1.WMF" [ overwrite ] }
+Else     { Exp2d Wmf No WMFPath+"1.WMF" [ overwrite ] }
+
+exit

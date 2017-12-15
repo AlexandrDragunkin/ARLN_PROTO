@@ -1,0 +1,30 @@
+//CrtSysDoor63.mac
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+//Открываем доступ  к базе дверных систем DoorSys63.mdb
+global ProtoPath, g_keyDS63, g_Doorscon, g_tab_place;
+
+g_keyDS63=iif(isvardef("g_keyDS63")==0,0,g_keyDS63);
+if g_keyDS63==1
+{
+ exit;
+}
+tab_place=ProtoPath+"DoorSys63.mdb";
+//-- Если база отсутствует - выходим
+if (fileexist(tab_place)==0)
+{
+  PutMsg("База по адресу "+tab_place+" не обнаружена",0);
+  cancel;
+}
+szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+tab_place;
+g_Doorscon=adbCon(szSrc);
+g_tab_place=tab_place;
+setvarinst(1,"g_tab_place",g_tab_place);
+
+g_keyDS63=1;
+
+exit;

@@ -1,0 +1,38 @@
+//move_centrAuto
+UscS=Getsnap()
+
+//выравнивание объектов по одной из координат относительно текущего вида
+
+defarr  xm[6] xn[6] d_pnt[3] ;
+setucs vcs ;
+Getpar
+//укажите объект который выравниваем
+pnt,
+//укажите объек по которому выравниваем
+pnt1,
+//укажите сторону по которой выравниваем
+d_pnt[1],
+d_pnt[2],
+d_pnt[3];
+=d_pnt[1]  =d_pnt[2]   =d_pnt[3]
+
+=objgab3(pnt1,xm) ;
+=objgab3(pnt,xn) ;
+
+//VS=MIN(abs(xm[3]-d_pnt[3]),abs(xm[6]-d_pnt[3]))
+VS=MIN(abs(xm[2]-d_pnt[2]),abs(xm[5]-d_pnt[2]))
+=vs
+if d_pnt[1]<=(xm[4]+VS)&&d_pnt[1]>=(xm[1]-VS) { Var="X"
+
+   move pnt done ((xm[4]-xm[1])/2+xm[1])-((xn[4]-xn[1])/2+xn[1]) 0 0  ;
+}
+else { var="Y"
+   move pnt done 0  ((xm[5]-xm[2])/2+xm[2])-((xn[5]-xn[2])/2+xn[2]) 0  ;
+}
+//explode pnt pnt1 ;
+redraw  ,,
+UScS=ReSnap(USCS) ;
+//goto lab1 ;
+exit ;
+
+

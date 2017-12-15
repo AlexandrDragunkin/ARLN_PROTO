@@ -1,0 +1,4 @@
+//-- Установить подрез съемной полки
+getpar FixShelfRem;
+NULLOUT=setvarinst(1,"FixShelfRem",FixShelfRem);
+exit;

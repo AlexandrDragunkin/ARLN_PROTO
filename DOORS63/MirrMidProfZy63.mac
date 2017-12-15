@@ -1,0 +1,78 @@
+//MirrMidProfZy63.mac
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+nullout=getvarinst(2,"Doors64",Doors64,"Doors64.zmc|");
+global g_SimZx;
+
+global ProtoPath;
+global
+       gs_TlinX1               //-- массив с координатами X начала теоретических линий(осей)
+       gs_TlinZ1               //-- массив с координатами Z начала теоретических линий(осей)
+       gs_TlinX2               //-- массив с координатами X конца теоретических линий(осей)
+       gs_TlinZ2               //-- массив с координатами Z конца теоретических линий(осей)
+       gs_TlinHM               //-- Массив с парметрами эквидистанты для расчета средних профилей
+       gs_TlinHV               //-- Массив с парметрами эквидистанты для расчета вставок
+       gs_NTLin                //-- число теоретических линий(осей)
+       ;
+global g_CLTop  g_CLDown  g_CLMid  g_CLDer  g_CLVer g_CLVerR g_CLVerL g_DRP g_hmida g_hmidz ;
+//========================================================================================================
+defarr aGeo[4];
+//========================================================================================================
+
+NobjGraf=0
+Namescr="ScrFlat";
+
+
+Beg:
+objident prompt "Укажите створку" : pnt ;
+beg1:
+if (isattrdef("ScrFlat"))    //-- Если определен ScrFlat
+{
+  if (isassign("ScrFlat",pnt)) //-- Если он есть в объекте - копируем в "запись"
+  {
+    attrobj copy pnt "ScrFlat"  done  record done ;
+  }
+  else
+  {
+    goto Beg;
+  }
+}
+else
+{
+  exit;
+}
+
+SnapPt=GetSnap();
+smart edit list pnt ;
+objident last 1 pnt ;
+;Macro ProtoPath+Doors64+"ScrFlapGet63.mac" 1 ;
+NTLin=gs_NTLin           //-- число теоретических линий(осей)
+
+
+
+i=0
+lab1:
+if i<NTLin
+{
+   i=i+1
+   ageo[1]=gs_TLinX1[i]
+   ageo[3]=gs_TLinX2[i]
+   dxn=abs(g_SimZx-ageo[1]);
+   dxk=abs(g_SimZx-ageo[3]);
+   ageo[1]=iif(g_SimZx>ageo[1],g_SimZx+dxn,g_SimZx-dxn);
+   ageo[3]=iif(g_SimZx>ageo[3],g_SimZx+dxk,g_SimZx-dxk);
+   gs_TLinX1[i]=ageo[1]
+   gs_TLinX2[i]=ageo[3]
+   goto lab1;
+}
+macro ProtoPath+Doors64+"ScrFlatatr63.mac" 0 pnt ;             //-- Запись  Scratch атрибута
+SnapPt=ReSnap(SnapPt);
+smart edit list pnt ;
+exit;
+
+
+

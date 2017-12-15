@@ -1,0 +1,168 @@
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+//Инициализация дизайна профиля створки
+global ProtoPath;
+global g_DRP, g_DRS;
+global g_VstSt;
+global Pl_Color1; // ID материала створок
+global g_Ndors; // Количество дверей
+global g_DRTyKF, g_DRDesI, g_DRDesNumb;
+// nullout=getvarinst(1,"g_k3fPath",g_k3fPath,"");
+// nullout=getvarinst(1,"g_nameSf",g_nameSf,"");
+PL_Color1=iif(isvardef("g_VstSt")==0,0,g_VstSt);
+//==========
+getpar g_key_prev;
+//==========
+defarr Arr[2];
+// nullout=getvarinst(1,"g_DRDesNumb",g_DRDesNumb,0);
+// if g_DRDesNumb==0 { putmsg("Ошибка в InitDesignProf63.mac",1); exit; }
+// defarr g_DRTyKF[g_DRDesNumb], g_DRDesI[g_DRDesNumb];
+// nullout=getarrinst(1,"g_DRTyKF",g_DRTyKF);
+// nullout=getarrinst(1,"g_DRDesI",g_DRDesI);
+// putmsg(g_DRTyKF)
+// putmsg(g_DRDesI)
+KeyFas=g_DRTyKF[findinarray(g_DRDesI,g_DRP,1,g_DRDesNumb)];
+
+global g_Doorscon;
+IDGR=36;
+strq="SELECT IDGrMatVst FROM DSNameSystem WHERE DSNameSystem.ID="+str(g_DRS);
+Rs=adbOpen(g_Doorscon,strq);
+ij=adbRecCount(Rs);
+if (ij<1)
+{
+  Rs=adbClose(Rs);
+}
+NULLOUT=adbMoveFirst(Rs);
+IDGrMatVst=adbGetValue(Rs,"IDGrMatVst");
+if IDGrMatVst>0
+{
+	IDGR=IDGrMatVst;
+	res=NPGetByWhere(1,"ID>0","ArrIDName",IDGR);
+	if res>0&&ArrIDName[1]!=PL_Color1
+	{
+		PL_Color1=ArrIDName[1];
+	}
+}
+// putmsg(IDGR)
+// putmsg("setvarinst_KeyFas="+str(KeyFas))
+nullout=setvarinst(1,"KeyFas",KeyFas);
+next:
+if KeyFas==0
+{
+	// next3:
+	#ok_flag
+	setvar
+	"Установка систем дверей в нишу"
+	""
+	left
+	"Определите параметры системы дверей"
+	done
+	string button 6 auto default str(IDGR)+"#"+str(PL_Color1)
+	"Материал створок:" PL_Color1
+	done;
+	if ok_flag==0
+	{
+		g_key_prev=0;
+		exit;
+		// goto next2;
+	}
+	splitbydelim(PL_Color1,"#",Arr);
+	g_VstSt=Arr[2];
+	// #ok_flag
+	// setvar
+	// "Установка систем дверей в нишу"
+	// ""
+	// left
+	// "Определите параметры системы дверей"
+	// done
+	// string button 6 auto default "36#"+str(PL_Color1)
+	// "Материал вставок:" PL_Color1
+	// done;
+
+	// if ok_flag==0
+	// {
+	  // g_key_prev=0
+	  // exit;
+	// }
+}
+else
+{
+	nullout=getvarinst(2,"FasDTyp",FasDTyp,0);          //-- Умолчание на тип фасада двери
+	nullout=getvarinst(2,"FasDMat",FasDMat,0);
+	nullout=getvarinst(2,"DoorVsMater1",DoorVsMater1,0);
+
+	#ok_flag
+	setvar
+	"Установка систем дверей в нишу"
+	""
+	left
+	"Определите параметры системы дверей"
+	done
+	// string button 6 auto default "26#"+str(FasDTyp) 
+	// "Тип фасада" FasDTyp
+	string button 6 auto default str(IDGR)+"#"+str(FasDMat)
+	"Материал фасада:" FasDMat
+	// string button 6 auto default "47#"+str(DoorVsMater1)
+	// "Материал вставки:" DoorVsMater1	
+	done;
+	
+	if ok_flag==0
+	{
+	  g_key_prev=0
+	  exit;
+	}
+
+	FasDTyp=318;
+	// splitbydelim(FasDTyp,"#",Arr);
+	// FasDTyp=Arr[2];	
+	// ExcCinInst=priceinfo(FasDTyp,"ExcCinettoInst",0,2);
+	// if ExcCinInst==1
+	// {
+		// #ok_flag2
+		 // alternative "Ошибка"
+		 // msgbox text "Тип фасада "+str(priceinfo(FasDTyp,"NAME","",2))+" недопустим!"
+		 // "Выберите другой тип фасада"
+		 // done
+		 // "  OK  "
+		 // done;
+		// goto next;
+	// }
+	splitbydelim(FasDMat,"#",Arr);
+	FasDMat=Arr[2];
+	// splitbydelim(DoorVsMater1,"#",Arr);
+	// DoorVsMater1=g_VstSt=Arr[2];
+	nullout=setvarinst(1,"FasDMat",FasDMat);
+	// nullout=setvarinst(1,"DoorVsMater1",DoorVsMater1);
+	
+	Overlap=priceinfo(FasDTyp,"Overlap",0,2);
+	if g_Ndors>1
+	{
+		#ok_flag2
+		setvar
+		"Установка систем дверей в нишу"
+		""
+		left
+		"Определите параметры системы дверей"
+		done
+		real auto default Overlap
+		"Перехлест между фасадами:" Overlap
+		
+		done;
+		
+		if ok_flag2==0
+		{
+		  g_key_prev=0
+		  exit;
+		}
+	}
+	nullout=setvarinst(1,"Overlap",Overlap);
+	nullout=setvarinst(1,"FasDTyp",FasDTyp);
+	// nullout=setvarinst(1,"FasDMat",FasDMat);
+	// nullout=setvarinst(1,"DoorVsMater1",DoorVsMater1);
+	//putmsg(Overlap)
+}
+exit;

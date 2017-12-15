@@ -1,0 +1,235 @@
+//-- Макпропрограмма редактирует типы ящиков в группе
+//-- при помощи Scratch параметров.
+global ProtoPath;
+global gs_BTypeX,gs_IDsec,gs_FasTyp,gs_Kbox;
+
+global gs_Hk	            //-- высота короба ящика
+
+global gs_ZFt gs_ZFtS gs_ZmFt gs_HmFt gs_ZmZ g_zamokBx g_grDec g_Dec g_TipOn gs_ZFtDn gs_LBox gs_BFasMat;
+
+// global Box_typs Box_ID N_Box;
+// global FasBtyps FasBID NBFas;
+
+// defarr L_Box_typs[200], L_Box_ID[200];
+// defarr L_FasBtyps[200], L_FasBID[200];
+// defarr L_FasBMat[200], L_FasBMatID[200];
+
+defarr ZFt[100] ZFtS[100] ZmFt[100] ZmZ[100] fDecor[100] aTipOn[100] ZFtDn[100] HmFt[100] LBox[100];
+defarr BXt[100] BFt[100] BMatFas[100];
+defarr Arr[2] LogDec[100];
+defarr aHk[100];
+
+Namescr="ScrBox";
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+initarray(fDecor,"");
+
+Beg:
+objident prompt "Укажите ящик" : pnt ;
+
+if (isattrdef("ScrBox"))    //-- Если определен ScrBox
+{
+  if (isassign("ScrBox",pnt)) //-- Если он есть в объекте - копируем в "запись"
+  {
+    attrobj copy pnt "ScrBox" done record done;
+  }
+  else
+  {
+    goto Beg;
+  }
+}
+else
+{
+  exit;
+}
+
+N_Box=getmplsubst(31,"Box_ID","Box_typs");
+
+// nullout=GetVarInst(2,"N_Box",N_Box,0);
+// defarr Box_typs[N_Box], Box_ID[N_Box];
+// nullout=getarrinst(2,"Box_typs",Box_typs);
+// nullout=getarrinst(2,"Box_ID",Box_ID);
+defarr L_Box_typs[N_Box+1], L_Box_ID[N_Box+1];
+err=CopyArray(L_Box_typs,1,Box_typs,1,N_Box);
+err=CopyArray(L_Box_ID,1,Box_ID,1,N_Box);
+
+L_N_Box=N_Box+1;
+
+L_Box_ID[L_N_Box]=0;
+L_Box_typs[L_N_Box]="По умолчанию";
+
+NBFas=getmplsubst(29,"FasBID","FasBtyps");
+
+// nullout=GetVarInst(2,"NBFas",NBFas,0);
+// defarr FasBtyps[NBFas], FasBID[NBFas];
+// nullout=getarrinst(2,"FasBtyps",FasBtyps);
+// nullout=getarrinst(2,"FasBID",FasBID);
+
+defarr L_FasBtyps[NBFas], L_FasBID[NBFas];
+err=CopyArray(L_FasBtyps,1,FasBtyps,1,NBFas);
+err=CopyArray(L_FasBID,1,FasBID,1,NBFas);
+L_NBFas=NBFas;
+
+indexnull=findinarray(L_FasBID,0);
+L_FasBtyps[indexnull]="По умолчанию";
+
+//-- Материал фасадов ящиков
+N_PrFBox=getmplsubst(26,"I_PrFBox","S_PrFBox");
+
+// NULLOUT=GetVarInst(2,"N_PrFBox",N_PrFBox,0);
+// defarr I_PrFBox[N_PrFBox], S_PrFBox[N_PrFBox];
+// NULLOUT=getarrinst(2,"I_PrFBox",I_PrFBox);
+// NULLOUT=getarrinst(2,"S_PrFBox",S_PrFBox);
+
+defarr L_FasBMat[N_PrFBox], L_FasBMatID[N_PrFBox];
+err=CopyArray(L_FasBMat,1,S_PrFBox,1,N_PrFBox);
+err=CopyArray(L_FasBMatID,1,I_PrFBox,1,N_PrFBox);
+L_NBFasMat=N_PrFBox;
+
+indexnull=findinarray(L_FasBMatID,0);
+L_FasBMat[indexnull]="По умолчанию";
+
+
+macro ProtoPath+"ScrBoxGet.mac" 1; //-- Создание Scratch атрибута ящика
+Kbox=gs_Kbox;
+if (Kbox==0)
+{
+  goto Beg;
+}
+Boxdef=Box_ID[1]; //-- Умолчание для типа ящика
+
+#ok_flag
+setvar
+"Редактирование Ящика в группе"
+PicturesPath+"boxes.wmf"
+left
+"Количество Ящиков в группе: "+str(Kbox)
+"Введите параметры Ящика"
+done
+let i=Kbox
+LOOPM:
+if (i>0)
+{
+  str listonly
+	let j=1
+	LoopJB:
+	if (gs_BTypeX[i]==L_Box_ID[j]) {
+	  current
+	}
+	L_Box_typs[j]
+	if (j<L_N_Box) {
+		let j=j+1
+		goto LoopJB
+	}
+	done
+	"Тип ящика №"+str(i)+":"  BXt[i]
+	
+	str listonly
+	let j=1
+	LoopJF:
+	if (gs_FasTyp[i]==L_FasBID[j]) {
+		current
+	}
+	L_FasBtyps[j]
+	if (j<L_NBFas) {
+		let j=j+1
+		goto LoopJF
+	}
+	done
+	"Тип фасада ящика №"+str(i)+":" BFt[i]
+	
+	str listonly
+	let j=1
+	LoopJM:
+	if (gs_BFasMat[i]==L_FasBMatID[j]) {
+		current
+	}
+	L_FasBMat[j]
+	if (j<L_NBFasMat) {
+		let j=j+1
+		goto LoopJM
+	}
+	done
+	"Материал фасада ящика №"+str(i)+":" BMatFas[i]
+	
+    // let defDec=str(g_grDec[i])+"#"+iif(g_Dec[i]>10,str(g_Dec[i]),"")
+	// string auto button 6  default defDec "Материал отделки фасада №"+str(i)+":" fDecor[i]	
+	// logical default 0  "Удалить отделку у ящика №"+str(i)+":" LogDec[i] 
+ 
+	real default gs_ZFt[i]		"Высота фасада ящика №"+str(i)+":" ZFt[i]
+	real default gs_ZFtS[i]		"Сдвиг ящика №"+str(i)+":" ZFtS[i]
+	real default gs_ZFtDn[i]	"Изменить зазор ящика №"+str(i)+" снизу на [мм]:" ZFtDn[i]
+	real default gs_Hk[i]		"Высота короба ящика "+str(i)+":" aHk[i]
+	real default gs_LBox[i]		"Глубина короба ящика "+str(i)+":" LBox[i]
+	
+  
+  //if g_zamokBx>0 {
+   // logical default gs_ZmFt[i]	"Тип замка у ящика №"+str(i)+":" ZmFt[i]
+   string auto button 6 default "328#"+str(gs_ZmFt[i])	"Тип замка у ящика №"+str(i)+":" ZmFt[i]
+   logical default gs_HmFt[i]	"Ручка на скрытом  у ящика №"+str(i)+":" HmFt[i]
+  // real default gs_ZmZ[i] "Сдвиг Z замка ящика №"+str(i)+":" ZmZ[i]
+  //}
+  //else {
+//	let ZmFt[i]=0
+//	let ZmZ[i]=0
+ // }
+  
+  // logical default g_TipOn[i]  "TipOn у ящика №"+str(i)+":" aTipOn[i] 
+  logical default 1 "----Использовать параметры для ящика №"+str(i)+"----" notval
+  let i=i-1
+  goto LOOPM
+}
+done;
+if (ok_flag==0)
+{
+  exit;
+}
+
+scr=initscratch();
+i=1;
+err=addscratch(scr,"Ящик","Колво",Kbox); 	//-- Количество ящиков по умолчанию
+LoopS:
+if (i<=Kbox)
+{
+	splitbydelim(ZmFt[i],"#",Arr);
+	ZmFt[i]=Arr[2];
+	if ZmFt[i]==1 { ZmFt[i]=0; } //- Заглушка от прошлого логического значения переменных
+	
+	
+	splitbydelim(fDecor[i],"#",Arr);
+	grDecor=iif(LogDec[i]>0,150,Arr[1]);
+	Decor=iif(LogDec[i]>0,0,Arr[2]);
+	IndexStr=findinarray(L_Box_typs,BXt[i],1,L_N_Box);
+	gs_BTypeX[i]=L_Box_ID[IndexStr];
+	err=AddScratch(scr,"Тип","Ящ"+str(i),gs_BTypeX[i]);	//-- Тип ящика
+
+	IndexStr=findinarray(L_FasBtyps,BFt[i],1,L_NBFas);
+	gs_FasTyp[i]=L_FasBID[IndexStr];
+
+	err=AddScratch(scr,"ТипФас","Ящ"+str(i),gs_FasTyp[i]);	//-- Тип фасада
+	err=addscratch(scr,"ГрпОтд","Ящ"+str(i),grDecor);	//-- Группа отделки
+	err=addscratch(scr,"МатОтд","Ящ"+str(i),Decor);		//-- Материал отделки
+	err=AddScratch(scr,"ВысФас","Ящ"+str(i),ZFt[i]);		//-- Высота фасада ящика
+	err=AddScratch(scr,"ПодФас","Ящ"+str(i),ZFtS[i]);	//-- Высота фасада ящика
+	err=AddScratch(scr,"ЗамФас","Ящ"+str(i),ZmFt[i]);	//-- Замок фасада ящика
+	err=AddScratch(scr,"ЗамФасZ","Ящ"+str(i),ZmZ[i]);	//-- Сдвиг Замка фасада ящика
+	err=AddScratch(scr,"TipOn","Ящ"+str(i),aTipOn[i]);		//-- Blum TipON 
+	err=AddScratch(scr,"ZFtDn","Ящ"+str(i),ZFtDn[i]);	//-- Дельта дна снизу
+	err=addscratch(scr,"Hk","Ящ"+str(i),aHk[i]);			//-- Высота короба ящика
+	err=addscratch(scr,"HmFt","Ящ"+str(i),HmFt[i]);		//-- Ручка на скрытом
+	err=addscratch(scr,"LBox","Ящ"+str(i),LBox[i]);		//-- Глубина короба ящика
+	
+	IndexStr=findinarray(L_FasBMat,BMatFas[i],1,L_NBFasMat);
+	gs_BFasMat[i]=L_FasBMatID[IndexStr];
+	err=addscratch(scr,"BFasMat","Ящ"+str(i),gs_BFasMat[i]); //-- Материал фасада ящика
+	
+	i=i+1;
+	goto LoopS;
+}
+if (!isattrdef(Namescr))
+{
+  attribute create Namescr Namescr text 30 80 ;
+}
+WriteScratch(scr,Namescr,pnt);
+TermScratch(scr);
+smart edit list pnt ;
+exit;

@@ -1,0 +1,27 @@
+//-- Создание объекта - столешница-сектор
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами 
+
+PrMater=DbVar("PrMater",0); 		//-- Материал панели
+Rad=DbVar("Rad",300); 		      //-- Радиус сектора
+BegAngle=DbVar("BegAngle",0);		//-- Начальный угол сектора
+Angle=DbVar("Angle",180);			  //-- Угол сектора
+Band=DbVar("Band",0); 			    //-- Материал кромки
+Face_col=DbVar("Face_col",0);   //-- Цвет кромки
+//--------------------------------------------------------------------------
+FurnType="011000";
+Namescr="ProtoParams";
+NULLOUT=setvarinst(1,"FurnType",FurnType);
+//--------------------------------------------------------------------------
+macro ProtoPath+"SectorForm.mac" Rad, BegAngle, Angle, PrMater, Band, Face_col
+
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"PrMater",PrMater);
+err=AddScratch(ScrMod,FurnType,"Rad",Rad);
+err=AddScratch(ScrMod,FurnType,"BegAngle",BegAngle);
+err=AddScratch(ScrMod,FurnType,"Angle",Angle);
+err=AddScratch(ScrMod,FurnType,"Band",Band);
+err=AddScratch(ScrMod,FurnType,"Face_col",Face_col);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+exit;

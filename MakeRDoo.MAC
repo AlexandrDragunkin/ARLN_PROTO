@@ -1,0 +1,151 @@
+// создание раздвижной двери
+global MacroSw  ; // Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global		// Для  дверей
+RDoorMater1 , // Материал полотна двери
+RDoorMater2 , // Материал полотна двери
+RDoorMater3 , // Материал полотна двери
+RDoorBCol ,  // Материал обрамления двери
+RDoorType,   // Тип створки
+RDoorNS       // Количество секций
+RDoorH1n      //Высота 1 секции
+RDoorH1k      //Высота 1 наклона секции
+RDoorH2n      //Высота 2 секции
+RDoorH2k      //Высота 1 наклона секции
+RDoorColor   // Цвет профилей  обрамление из прайса
+
+RDoorRail ,  // Тип направляющих
+RDoorMBok ,  // Материал боковин
+RTrackColor   // Цвет профилей направляющих
+
+;
+//===================================================
+global NSysDoor; // Номер системы дверей
+global ProtoPath WMFPath ;
+global ElemName ; // Имена мебельных элементов
+global HoldName ; // Имя хозяина
+
+getpar 
+x y z		// правый нижний дальний угол	
+w h Sd	 // размер по ширине и высоте, сдвиг по глубине,
+X_per    // нахлест по ширине
+N        // Кол-во створок
+;
+xx=x;
+hdsp=PriceInfo(RDoorMater1,"Thickness",16)
+Col_DSP=PriceInfo(RDoorMater1,"Thickness",1) ;
+
+  X1=w
+  Y1=Sd
+  Z1=h
+  NSysDoor=NSysDoor+1
+
+// Каркас =========================================
+if MacroSw==0 {
+  object_1=sysvar(60); // Кол-во объектов
+  BokLeft=0 BokRight=0
+  PrBok=0
+  macro GetProtoMac("Shkaf.ptl")+"FrDoors0.mac" w Sd h           // Размеры
+  RDoorRail RDoorMBok   RTrackColor     // Материалы: профиль боковины Цвет профиля
+  BokLeft BokRight;  // Боковины;
+  object_2=sysvar(60)-object_1; // Кол-во объектов
+  move last object_2 done x y z nocopy ;
+}
+else {
+  protoobj create "Shkaf.ptl" 37 // Каркас
+  "x" x1
+  "y" y1
+  "z" z1
+  "PrRail" RDoorRail
+  "PrMBok"  RDoorMBok
+  "ColorRail"  RTrackColor
+  done
+  x y z;
+  If (IsAttrdef("ElemName")) {
+    if (len(ElemName)>0) {
+      Attrobj Attach "ElemName" Done last 1 ElemName ;
+    }
+  }
+  If (IsAttrdef("HOldName")) {
+    Attrobj Attach "HOldName" Done last 1 HoldName ;
+  }
+  MacroSw=1;
+}
+
+PrKant=RDoorBCol
+DBFRail=GetProtoMac("Shkaf.ptl")+"DoorSys.dbf" ;
+NRail=PriceInfo(RDoorType,"S2","") ;
+if (len(NRail)==0) { goto MDefault; }
+
+DbOpen rcd, DBFRail,"";
+DbFilter rcd, "NSYS==NRail";	// Выбрали систему по номеру
+total_s=DbRecCount(rcd);
+DbMoveFirst rcd;
+Z2d=DbGetValue(rcd,12); // Зазор по глубине
+X_per=DbGetValue(rcd,11); // Нахлест обрамления ////////////////
+//Z2d=X_per;
+DbClose rcd;
+
+goto MGeo;
+
+MDefault:
+X_per=15
+Z2d=X_per;
+
+MGeo:
+
+xsd=0
+Npol=2
+x1=int((x1+(N-1)*X_per)/N);
+i=1
+
+LDoors:
+// Створки=======================================
+
+if MacroSw==0 {
+object_1=sysvar(60); // Кол-во объектов
+  macro GetProtoMac("Shkaf.ptl")+"StDoors1.mac"
+  x1	// Ширина створки
+  y1
+  z1
+  xsd	// Сдвиг двери справа
+  Npol	// Номер полоза
+  RDoorMater1 // Материал полотна
+  RDoorBCol  // Обрамление
+  RDoorType // тип створки
+  RDoorColor   // Цвет профилей   из прайса
+  ;
+  object_2=sysvar(60)-object_1; // Кол-во объектов
+  move last object_2 done x y z nocopy ;
+}
+else {
+  protoobj create "Shkaf.ptl" 38 // Створка
+  "x" x1
+  "y" y1
+  "z" z1
+  "xsd" xsd
+  "Npol" Npol
+//  "PrKant" RDoorBCol
+  "PrMater1" RDoorMater1
+    "PrMater2" RDoorMater2
+      "PrMater3" RDoorMater3
+  "ColorKant"  RDoorColor
+  "StvType"  RDoorType //RDoorSTVT
+  "Npart"    RDoorNS
+  "H1n"  RDoorH1n
+  "H1k"  RDoorH1k
+  "H2n"  RDoorH2n
+  "H2k"  RDoorH2k
+
+  done
+  x y z;
+  MacroSw=1;
+}
+if (i<N) {
+   i=i+1
+   Npol=Npol+1 
+   if (Npol==3) { Npol=1 }
+   x=(i-1)*(x1-X_per)+xx;
+//   xsd=(i-1)*(x1-Z2d);
+   goto LDoors;
+}
+exit;

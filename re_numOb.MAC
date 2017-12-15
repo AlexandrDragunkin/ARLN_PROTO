@@ -1,0 +1,29 @@
+//-- Макропрограмма изменяет номер объекта
+
+onerror final;
+switch autosingle on;
+select prompt "Укажите объект, у которого нужно изменить номер" wholly : ;
+
+switch autosingle off;
+offerror;
+OBJ1=getselnum(1);
+
+n=getattr(OBJ1,"CommonPos",0);
+#ok_flag
+setvar
+"Изменить номер объекта"
+""
+left
+"Введите номер объекта"
+done
+real default N "Номер объекта:" N
+done;
+if (ok_flag==0)
+{
+  exit;
+}
+Attrobj Attach "CommonPos" done partly OBJ1 n;
+
+final:
+switch autosingle off;
+exit;

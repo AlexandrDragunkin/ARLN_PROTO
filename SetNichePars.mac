@@ -1,0 +1,18 @@
+//-- Создание scratch NichePars
+//-- Входные параметры:
+//-- obj - объект, которому приписываем атрибут
+//-- XMin, YMin, ZMin, XMax, YMax, ZMax -
+//-- габаритные координаты мебельного элемента, ограничивающего нишу
+
+getpar obj, XMin, YMin, ZMin, XMax, YMax, ZMax;
+
+Scratch=InitScratch();
+err=addscratch(Scratch,"GabCoords","XMin",XMin);
+err=addscratch(Scratch,"GabCoords","YMin",YMin);
+err=addscratch(Scratch,"GabCoords","ZMin",ZMin);
+err=addscratch(Scratch,"GabCoords","XMax",XMax);
+err=addscratch(Scratch,"GabCoords","YMax",YMax);
+err=addscratch(Scratch,"GabCoords","ZMax",ZMax);
+NULLOUT=writescratch(Scratch,"NichePars",obj);
+NULLOUT=termscratch(Scratch);
+exit;

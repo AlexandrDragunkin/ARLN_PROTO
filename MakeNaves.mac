@@ -1,0 +1,246 @@
+//-- Макро установки навесок в корпус
+global ProtoPath;
+getpar
+Naves,								//-- Навеска
+w,                    //-- Ширина
+d,                    //-- Глубина
+h,                    //-- Высота
+DepthBp								//-- Глубина установки задней стенки
+Stenka,								//-- Ссылка на стенку
+Stenka2,							//-- Ссылка на вторую стенку (если корпус угловой)
+h_dsp,								//-- Толщина материала корпуса
+h_dvp,								//-- Толщина материала стенки
+KorpType;							//-- Тип корпуса (0-прямой, 1-угловой)
+//-- Доп. параметры
+ProfLeng=100;							//-- Длина кусков профиля
+//-- Информация по навескам
+Naves2=priceinfo(Naves,"MatID",0);	//-- проверяем наличие второй навески (если нет, значит навес универсальный).
+NameN1=priceinfo(Naves,"MatName","");
+if (Naves2>0)
+{
+	NameN2=priceinfo(Naves2,"MatName","");
+	LRNav2=priceinfo(Naves2,"Accessory",0);	//-- определяем, левая или правая вторая навеска
+	if (LRNav2==1)
+	{
+		LRNav=2;
+	}
+	else
+	{
+	  LRNav=1;
+	}
+}
+//-- Крепление навески
+FixType=0;
+FixN=priceinfo(Naves,"FixerID",0);
+if (FixN>0)
+{	
+	FixUnit=priceinfo(FixN,"UNITS",0);
+	FixName=priceinfo(FixN,"MatName","");
+}
+//-- Если корпус прямой
+if (KorpType==0)
+{
+	if (Naves2==0)	//-- если навеска универсальная
+	{
+		macro ProtoPath+"MakeAcce.mac"
+		Naves											//-- Тип комплектующих
+		"040000"									//-- FurnType
+		h_dsp DepthBp h-h_dsp		  //-- Положение начала локальной системы координат
+		0 0 0;										//-- Углы поворота
+		objident last 1 NavesOb;
+		attrobj attach "ElemName" Done last 1 NameN1 ;
+		mirror NavesOb done 3points w/2,0,0 w/2,1,0 w/2,1,1 copy;
+		objident last 1 NavesOb2;
+		attrobj attach "ElemName" Done last 1 NameN1 ;
+	}
+	if (Naves2!=0)	//-- если навески идут парой: левая и правая
+	{
+		macro ProtoPath+"MakeAcce.mac"
+		Naves											//-- Тип комплектующих
+		"040000"									//-- FurnType
+		iif(LRNav==2,h_dsp,w-h_dsp) DepthBp h-h_dsp		  //-- Положение начала локальной системы координат
+		0 0 0;										//-- Углы поворота
+		objident last 1 iif(LRNav==2,NavesOb2,NavesOb);		
+		attrobj attach "ElemName" Done last 1 NameN1 ;
+		macro ProtoPath+"MakeAcce.mac"
+		Naves2										//-- Тип комплектующих
+		"040000"									//-- FurnType
+		iif(LRNav2==2,h_dsp,w-h_dsp) DepthBp h-h_dsp		  //-- Положение начала локальной системы координат
+		0 0 0;										//-- Углы поворота
+		objident last 1 iif(LRNav2==2,NavesOb2,NavesOb);		
+		attrobj attach "ElemName" Done last 1 NameN2 ;
+	}
+	//-- Делаем вырезы под навески
+	//-- Первая навеска
+	N1obj=GetCntObjGA(NavesOb);
+	if (N1obj>0)
+	{
+		defarr Arr1[N1obj];
+		err=getarrobjg(NavesOb,Arr1);
+		n1=0;
+		LOOPN1:
+		n1=n1+1;
+		IsCut=getattr(Arr1[n1],"CutLine",0);
+		if (IsCut==1)	//-- нашли контур
+		{
+			CutL1=Arr1[n1];
+			#Stenka MBPanel incut incut Stenka CutL1;
+		}
+		if (n1<N1obj&&IsCut==0)
+		{
+			goto LOOPN1;
+		}
+	}
+	//-- Вторая навеска
+	N2obj=GetCntObjGA(NavesOb2);
+	if (N2obj>0)
+	{
+		defarr Arr2[N2obj];
+		err=getarrobjg(NavesOb2,Arr2);
+		n2=0;
+		LOOPN2:
+		n2=n2+1;
+		IsCut=getattr(Arr2[n2],"CutLine",0);
+		if (IsCut==1)	//-- нашли контур
+		{
+			CutL2=Arr2[n2];
+			MBPanel incut incut Stenka CutL2;
+		}
+		if (n1<N2obj&&IsCut==0)
+		{
+			goto LOOPN2;
+		}
+	}
+	//--Устанавливаем крепление к стене
+	//-- Если оно профильное
+	if (FixUnit==1)
+	{
+		ProfX=priceinfo(FixN,"ProfX",0);
+		macro ProtoPath+"SetProf.mac" FixN 0 0 0 0 0;
+		if (ProfLeng==0)	//-- если профиль один
+		{
+			macro ProtoPath+"MakeProf.mac" iif(DepthBp>0,h_dsp,0) iif(DepthBp>0,0,-ProfX-h_dvp)  h-h_dsp-20 iif(DepthBp>0,w-h_dsp,w) iif(DepthBp>0,0,-ProfX-h_dvp)  h-h_dsp-20;
+			attrobj attach "ElemName" Done last 1 FixName ;
+		}
+		if (ProfLeng>0)		//-- если профиль "кусками"
+		{
+			macro ProtoPath+"MakeProf.mac" iif(DepthBp>0,h_dsp,0) iif(DepthBp>0,0,-ProfX-h_dvp)  h-h_dsp-20 iif(DepthBp>0,ProfLeng+h_dsp,ProfLeng) iif(DepthBp>0,0,-ProfX-h_dvp)  h-h_dsp-20;
+			attrobj attach "ElemName" Done last 1 FixName ;
+			macro ProtoPath+"MakeProf.mac" iif(DepthBp>0,w-h_dsp-ProfLeng,w-ProfLeng) iif(DepthBp>0,0,-ProfX-h_dvp)  h-h_dsp-20 iif(DepthBp>0,w-h_dsp,w) iif(DepthBp>0,0,-ProfX-h_dvp)  h-h_dsp-20;
+			attrobj attach "ElemName" Done last 1 FixName ;
+		}
+	}
+	//-- Если оно комплектующее
+	if (FixUnit==4)
+	{
+		macro ProtoPath+"MakeAcce.mac"
+		FixN											//-- Тип комплектующих
+		"040000"									//-- FurnType
+		h_dsp iif(DepthBp>0,0,-2-h_dvp) h-h_dsp-20				//-- Положение начала локальной системы координат
+		0 0 0;										//-- Углы поворота
+		attrobj attach "ElemName" Done last 1 FixName ;
+		mirror last 1 done 3points w/2,0,0 w/2,1,0 w/2,1,1 copy;
+		attrobj attach "ElemName" Done last 1 FixName ;
+	}
+}
+//-- Если корпус угловой
+if (KorpType==1)
+{
+	if (Naves2==0)	//-- если навеска универсальная
+	{
+		macro ProtoPath+"MakeAcce.mac"
+		Naves											//-- Тип комплектующих
+		"040000"									//-- FurnType
+		DepthBp d h-h_dsp		  //-- Положение начала локальной системы координат
+		0 -90 0;										//-- Углы поворота
+		objident last 1 NavesOb2;
+		attrobj attach "ElemName" Done last 1 NameN1 ;
+		mirror NavesOb2 done 3points 0,0,0 w-h_Dsp,d,0 0,0,1 copy;
+		objident last 1 NavesOb;
+		attrobj attach "ElemName" Done last 1 NameN1 ;
+	}
+	if (Naves2!=0)	//-- если навески идут парой: левая и правая
+	{
+		macro ProtoPath+"MakeAcce.mac"
+		Naves											//-- Тип комплектующих
+		"040000"									//-- FurnType
+		iif(LRNav==2,DepthBp,w-h_dsp) iif(LRNav==2,d,DepthBp) h-h_dsp		  //-- Положение начала локальной системы координат
+		0 iif(LRNav==2,-90,0) 0;												//-- Углы поворота
+		objident last 1 iif(LRNav==2,NavesOb2,NavesOb);		
+		attrobj attach "ElemName" Done last 1 NameN1 ;
+
+		macro ProtoPath+"MakeAcce.mac"
+		Naves2										//-- Тип комплектующих
+		"040000"									//-- FurnType
+		iif(LRNav2==2,DepthBp,w-h_dsp) iif(LRNav2==2,d,DepthBp) h-h_dsp		  //-- Положение начала локальной системы координат
+		0 iif(LRNav2==2,-90,0) 0;													//-- Углы поворота
+		objident last 1 iif(LRNav2==2,NavesOb2,NavesOb);		
+		attrobj attach "ElemName" Done last 1 NameN2 ;
+	}
+	//-- Делаем вырезы под навески
+	//-- Первая навеска
+	N1obj=GetCntObjGA(NavesOb);
+	if (N1obj>0)
+	{
+		defarr Arr1[N1obj];
+		err=getarrobjg(NavesOb,Arr1);
+		n1=0;
+		LOOPN11:
+		n1=n1+1;
+		IsCut=getattr(Arr1[n1],"CutLine",0);
+		if (IsCut==1)	//-- нашли контур
+		{
+			CutL1=Arr1[n1];
+			MBPanel incut incut Stenka CutL1;
+		}
+		if (n1<N1obj&&IsCut==0)
+		{
+			goto LOOPN11;
+		}
+	}
+	//-- Вторая навеска
+	N2obj=GetCntObjGA(NavesOb2);
+	if (N2obj>0)
+	{
+		defarr Arr2[N2obj];
+		err=getarrobjg(NavesOb2,Arr2);
+		n2=0;
+		LOOPN22:
+		n2=n2+1;
+		IsCut=getattr(Arr2[n2],"CutLine",0);
+		if (IsCut==1)	//-- нашли контур
+		{
+			CutL2=Arr2[n2];
+			MBPanel incut incut Stenka2 CutL2;
+		}
+		if (n1<N2obj&&IsCut==0)
+		{
+			goto LOOPN22;
+		}
+	}
+	//--Устанавливаем крепление к стене
+	//-- Если оно профильное
+	if (FixUnit==1)
+	{
+		ProfX=priceinfo(FixN,"ProfX",0);
+		macro ProtoPath+"SetProf.mac" FixN 0 0 0 0 0;
+		macro ProtoPath+"MakeProf.mac" iif(DepthBp>0,0,-ProfX-h_dvp) iif(DepthBp>0,d,d+h_dsp)  h-h_dsp-20 iif(DepthBp>0,0,-ProfX-h_dvp) iif(DepthBp>0,d-ProfLeng,d-ProfLeng+h_dsp)  h-h_dsp-20;
+		attrobj attach "ElemName" Done last 1 FixName ;
+
+		macro ProtoPath+"MakeProf.mac" iif(DepthBp>0,w-h_dsp-ProfLeng,w-ProfLeng) iif(DepthBp>0,0,-ProfX-h_dvp)  h-h_dsp-20 iif(DepthBp>0,w-h_dsp,w) iif(DepthBp>0,0,-ProfX-h_dvp)  h-h_dsp-20;
+		attrobj attach "ElemName" Done last 1 FixName ;
+	}
+	//-- Если оно комплектующее
+	if (FixUnit==4)
+	{
+		macro ProtoPath+"MakeAcce.mac"
+		FixN											//-- Тип комплектующих
+		"040000"									//-- FurnType
+		iif(DepthBp>0,0,-2-h_dvp) d h-h_dsp		  //-- Положение начала локальной системы координат
+		0 -90 0;											//-- Углы поворота
+		attrobj attach "ElemName" Done last 1 FixName ;
+		mirror last 1 done 3points 0,0,0 w-h_Dsp,d,0 0,0,1 copy;
+		attrobj attach "ElemName" Done last 1 FixName ;
+	}
+}
+exit;

@@ -1,0 +1,210 @@
+//-- Проверка длинномеров, профилей, панелей на превышение допустимой длины
+
+global ProtoPath;
+defarr arr[10];
+NULLOUT=initarray(arr,0);
+NULLOUT=getvarinst(2,"FailColor",FailColor,12);      //-- Цвет объектов, не прошедших провеору
+
+//-- Оцениваем число возможных кандидатов на превышение
+select partly attribute "Left(FurnType,3)==\"010\"||Left(FurnType,2)==\"02\"||Left(FurnType,2)==\"03\"" done;
+numb=sysvar(61);
+if (numb==0)  //-- Если таких кандидатов нет, выходим
+{
+  exit;
+}
+NULLOUT=infinitepb(1,"");  //-- Включаем ProgressBar
+defarr panels[numb];
+//macro ProtoPath+"Arrobj.mac" object_2, panels;
+NULLOUT=getsnap();
+snb=0;  //-- Счетчик объектов, не прошедших проверку
+//-- Проверяем длинномеры
+select partly attribute "Left(FurnType,2)==\"03\"" done;
+object_2=sysvar(61);
+if (object_2>0)
+{
+  defarr Longs[object_2];
+  macro ProtoPath+"Arrobj.mac" object_2, Longs;
+  i=0;
+  looplong:
+  NULLOUT=infinitepb(2,"");  //-- наращиваем счетчик ProgressBar
+  i=i+1;
+  obj=Longs[i];
+  NULLOUT=setlongobj(obj);
+  if (NULLOUT!=0) //-- Если это все-таки длинномер
+  {
+    length=getlonglen(obj);   //-- Реальная длина длинномера
+    NULLOUT=setlongobj(obj);  //-- Устанавливаем текущий длинномер
+    if (NULLOUT!=0)
+    {
+      NULLOUT=getlongmat(llID,MatID);
+      if (NULLOUT!=0)
+      {
+        MaxLen=priceinfo(llID,"Length",-1,2);
+        MaxLen2=priceinfo(MatID,"GabX",-1,1);
+				if ((MaxLen2<MaxLen&&MaxLen2!=-1)||MaxLen==-1)
+				{
+					MaxLen=MaxLen2;
+				}
+        if (MaxLen>0)
+        {
+          if (length>MaxLen)
+          {
+            snb=snb+1;
+            panels[snb]=obj;
+          }
+        }
+      }
+    }
+  }
+  if (i<object_2)
+  {
+    goto looplong;
+  }
+}
+//-- Проверяем панели
+select partly attribute "Left(FurnType,3)==\"010\"" done;
+object_2=sysvar(61);
+if (object_2>0)
+{
+  defarr Pans[object_2];
+  macro ProtoPath+"Arrobj.mac" object_2, Pans;
+  i=0;
+  looppan:
+  NULLOUT=infinitepb(2,"");  //-- наращиваем счетчик ProgressBar
+  i=i+1;
+  obj=Pans[i];
+  if (getobjhold(obj,hobj)!=0)  //-- Если панель внутри длинномера, то мы ее уже отработали
+  {
+    if (left(getattr(hobj,"FurnType","000000"),2)=="03")
+    {
+      goto nextpan;
+    }
+  }
+
+  arr[1]=obj;
+  NULLOUT=getpan6par(1,arr);
+  NULLOUT=getpan6par(2,arr);
+  MatID=arr[1];
+  // setucs lcs obj;
+  // NULLOUT=objgab3(obj,arr);
+  // length=arr[4]-arr[1];
+  // width=arr[5]-arr[2];
+  // NULLOUT=getpan6par(19,arr);
+  // PanDir=arr[1];
+  
+  length=GetAttr(obj,"Xunit",0);
+  width=GetAttr(obj,"Yunit",0);
+// putmsg(length)
+// putmsg(width)
+  nullout=getvarinst(2,"ProtoArl",ProtoArl,"A__A.ar|");
+  macro ProtoPath+ProtoArl+"A_PanGabs.mac" obj, ByRef length, ByRef width;
+  
+  MaxLen=priceinfo(MatID,"GabX",0);
+  MaxWidth=priceinfo(MatID,"GabY",0);
+
+  if (MaxLen>0&&MaxWidth>0)
+  {
+    if (length>MaxLen||width>MaxWidth)
+    {
+      snb=snb+1;
+      panels[snb]=obj;
+    }
+  }
+  NULLOUT=getpan6par(999,arr);
+  nextpan:
+  if (i<object_2)
+  {
+    goto looppan;
+  }
+}
+//-- Проверяем профили
+select partly attribute "Left(FurnType,2)==\"02\"" done;
+object_2=sysvar(61);
+if (object_2>0)
+{
+  defarr Profs[object_2];
+  macro ProtoPath+"Arrobj.mac" object_2, Profs;
+  i=0;
+  loopprof:
+  NULLOUT=infinitepb(2,"");  //-- наращиваем счетчик ProgressBar
+  i=i+1;
+  obj=Profs[i];
+  if (getobjhold(obj,hobj)!=0)  //-- Если профиль внутри длинномера, то мы его уже отработали
+  {
+    if (left(getattr(hobj,"FurnType","000000"),2)=="03")
+    {
+      goto nexprof;
+    }
+  }
+  arr[1]=obj;
+  NULLOUT=getprof6par(1,arr);
+  NULLOUT=getprof6par(2,arr);
+  MatID=arr[1];
+  setucs lcs obj;
+  NULLOUT=objgab3(obj,arr);
+  length=arr[6]-arr[3];
+  MaxLen=priceinfo(MatID,"Length",0);
+  if (MaxLen>0)
+  {
+    if (length>MaxLen)
+    {
+      snb=snb+1;
+      panels[snb]=obj;
+    }
+  }
+  NULLOUT=getprof6par(999,arr);
+  nexprof:
+  if (i<object_2)
+  {
+    goto loopprof;
+  }
+}
+NULLOUT=resnap();
+//---------------------------------------------------------
+NULLOUT=infinitepb(3,"");  //-- Выключаем ProgressBar
+if (snb==0)
+{
+  nullout=getvarinst(1,"WithoutInfo",WithoutInfo,0);
+  if WithoutInfo==0
+  {
+    #ok_flag
+    alternative "Проверка на превышение максимальной длины"
+    msgbox picture 4 beep 4 text left
+    "В заказе нет объектов, превышающих допустимую длину"
+    done
+    "  OK  "
+    done;
+  }
+}
+else
+{
+  NULLOUT=initselected();
+  select stayblink partly
+  let jj=1
+  loopjj:
+  if (snb>=jj)
+  {
+    panels[jj]
+    let jj=jj+1
+    goto loopjj
+  }
+  done;
+  #ok_flag
+  alternative "Проверка на превышение максимальной длины"
+  msgbox picture 4 beep 4 text left
+  "Объекты, длина которых превышает максимальную, выделены мерцанием"
+  ""
+  "Отключить мерцание длинных объектов?"
+  done
+  "Да"  "Нет" "Изменить цвет"
+  done;
+  if (ok_flag==1)
+  {
+    select all done;
+  }
+  if (ok_flag==3)
+  {
+    chprop color partly previous done FailColor ;
+  }
+}
+exit;

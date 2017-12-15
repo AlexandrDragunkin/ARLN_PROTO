@@ -1,0 +1,18 @@
+//-- Макропрограмма присваивает необходимые атрибуты рамки фасада
+
+getpar w h Name UnitCode GrId PrId KonsCod PropCod;
+
+if (isattrdef("ElemName")) 
+{
+  attrobj attach "ElemName" done last 1 Name;
+}
+attrobj attach "Assembly" done last 1 1; 
+if (isattrdef("UnitCode")) 
+{
+  attrobj attach "UnitCode" done last 1 UnitCode ;
+  attrobj attach "GroupID" done last 1 GrId ;
+  attrobj attach "GoodsID" done last 1 PrId ;
+  attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 w h 0 ;
+  attrobj attach "FurnType" done last 1 "620000";
+}
+exit;

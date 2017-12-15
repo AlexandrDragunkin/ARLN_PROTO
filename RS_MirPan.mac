@@ -1,0 +1,688 @@
+//--Макро зеркальности одной панели.
+getpar pan;
+defarr arr[27];
+arr[1]=pan;
+kontP=getpan6par(1,arr);	//--Контур панели
+TypeP=getpan6par(22,arr);	//--Тип панели
+err=getpan6par(11,arr);		//--форма панели 
+FormP=arr[1];
+if ((TypeP==12||TypeP==13||TypeP==14)&&FormP==2)
+{
+ gosub ANGL; 
+ gosub KREP;
+ gosub KROM;
+}
+mbpanel execute pan;
+exit;
+/////////////////////////////////////////////////////////////////////////////////
+//-------------------------------ОБРАБОТКА УГЛОВ-------------------------------//
+/////////////////////////////////////////////////////////////////////////////////
+ANGL:			
+arr[1]=1;			//--Первый угол
+err=getpan6par(4,arr);	
+TypeUg1=arr[2];			//--Тип угла
+Ug11=arr[3];
+Ug12=arr[4];
+Ug13=arr[5];
+Ug14=arr[6];
+
+arr[1]=2;			//--Второй угол
+err=getpan6par(4,arr);
+TypeUg2=arr[2];			//--Тип угла
+Ug21=arr[3];
+Ug22=arr[4];
+Ug23=arr[5];
+Ug24=arr[6];
+
+arr[1]=3;			//--Третий угол
+err=getpan6par(4,arr);
+TypeUg3=arr[2];			//--Тип угла
+Ug31=arr[3];
+Ug32=arr[4];
+Ug33=arr[5];
+Ug34=arr[6];
+
+arr[1]=4;			//--Четвертый угол
+err=getpan6par(4,arr);
+TypeUg4=arr[2];			//--Тип угла
+Ug41=arr[3];
+Ug42=arr[4];
+Ug43=arr[5];
+Ug44=arr[6];
+//--------------------ПОЛКА--------------------------------
+if (TypeP==12)	
+{
+ arr[1]=1
+ arr[2]=TypeUg2;		//--Тип угла
+ arr[3]=Ug21;
+ arr[4]=Ug22;
+ arr[5]=Ug23;
+ arr[6]=Ug24;
+ setpan6par(4,arr);
+
+ arr[1]=2
+ arr[2]=TypeUg1;		//--Тип угла
+ arr[3]=Ug11;
+ arr[4]=Ug12;
+ arr[5]=Ug13;
+ arr[6]=Ug14;
+ setpan6par(4,arr);
+
+ arr[1]=3
+ arr[2]=TypeUg4;		//--Тип угла
+ arr[3]=Ug41;
+ arr[4]=Ug42;
+ arr[5]=Ug43;
+ arr[6]=Ug44;
+ setpan6par(4,arr);
+ 
+ arr[1]=4
+ arr[2]=TypeUg3;		//--Тип угла
+ arr[3]=Ug31;
+ arr[4]=Ug32;
+ arr[5]=Ug33;
+ arr[6]=Ug34;
+ setpan6par(4,arr);
+}
+//--------------------СТЕНКА--------------------------------
+if (TypeP==14||TypeP==13)
+{
+ arr[1]=1
+ arr[2]=TypeUg4;		//--Тип угла
+ arr[3]=Ug41;
+ arr[4]=Ug42;
+ arr[5]=Ug43;
+ arr[6]=Ug44;
+ setpan6par(4,arr);
+
+ arr[1]=2
+ arr[2]=TypeUg3;		//--Тип угла
+ arr[3]=Ug31;
+ arr[4]=Ug32;
+ arr[5]=Ug33;
+ arr[6]=Ug34;
+ setpan6par(4,arr);
+
+ arr[1]=3
+ arr[2]=TypeUg2;		//--Тип угла
+ arr[3]=Ug21;
+ arr[4]=Ug22;
+ arr[5]=Ug23;
+ arr[6]=Ug24;
+ setpan6par(4,arr);
+ 
+ arr[1]=4
+ arr[2]=TypeUg1;		//--Тип угла
+ arr[3]=Ug11;
+ arr[4]=Ug12;
+ arr[5]=Ug13;
+ arr[6]=Ug14;
+ setpan6par(4,arr);
+}
+return;
+/////////////////////////////////////////////////////////////////////////////////
+//-------------------------------ОБРАБОТКА КРЕПЕЖЕЙ----------------------------//
+/////////////////////////////////////////////////////////////////////////////////
+KREP:			
+arr[1]=kontP;		//--Контур панели
+arr[2]=1		//--Сторона D
+arr[3]=0		//--Узнаем количество линий крепежа
+err=getpan6par(26,arr);
+n1=arr[4];		//--Количество линий крепежа
+if (n1!=0)
+{
+	defarr krep1T[n1];
+	defarr krep1U[n1];
+	defarr krep1S[n1];
+	defarr krep1L[n1];
+	i=0;
+	LOOK1:
+	i=i+1;
+	arr[3]=i;			//--Номер линии крепежа
+	err=getpan6par(26,arr);
+	krep1T[i]=arr[4];		//--ID крепежа
+	krep1U[i]=arr[5];		//--Способ установки крепежа
+	krep1S[i]=arr[6];		//--Сдвиг крепежа
+	krep1L[i]=arr[7];		//--Длина линии крепежа
+	NULLOUT=iif(nbittest(krep1U[i],1)==0,nbitset(krep1U[i],1),nbitclear(krep1U[i],1));
+	NULLOUT=iif(nbittest(krep1U[i],2)==0,nbitset(krep1U[i],2),nbitclear(krep1U[i],2));
+	if (i<n1) {goto LOOK1;}
+}
+
+arr[1]=kontP;		//--Контур панели
+arr[2]=2		//--Угол 2
+arr[3]=0		//--Узнаем количество линий крепежа
+err=getpan6par(26,arr);
+n2=arr[4];		//--Количество линий крепежа
+if (n2!=0)
+{
+	defarr krep1T[n2];
+	defarr krep2U[n2];
+	defarr krep2S[n2];
+	defarr krep2L[n2];
+	i=0;
+	LOOK2:
+	i=i+1;
+	arr[3]=i;			//--Номер линии крепежа
+	err=getpan6par(26,arr);
+	krep2T[i]=arr[4];		//--ID крепежа
+	krep2U[i]=arr[5];		//--Способ установки крепежа
+	krep2S[i]=arr[6];		//--Сдвиг крепежа
+	krep2L[i]=arr[7];		//--Длина линии крепежа
+	NULLOUT=iif(nbittest(krep2U[i],1)==0,nbitset(krep2U[i],1),nbitclear(krep2U[i],1));
+	NULLOUT=iif(nbittest(krep2U[i],2)==0,nbitset(krep2U[i],2),nbitclear(krep2U[i],2));
+	if (i<n2) {goto LOOK2;}
+}
+
+arr[1]=kontP;		//--Контур панели
+arr[2]=3		//--Сторона С
+arr[3]=0		//--Узнаем количество линий крепежа
+err=getpan6par(26,arr);
+n3=arr[4];		//--Количество линий крепежа
+if (n3!=0)
+{
+	defarr krep3T[n3];
+	defarr krep3U[n3];
+	defarr krep3S[n3];
+	defarr krep3L[n3];
+	i=0;
+	LOOK3:
+	i=i+1;
+	arr[3]=i;			//--Номер линии крепежа
+	err=getpan6par(26,arr);
+	krep3T[i]=arr[4];		//--ID крепежа
+	krep3U[i]=arr[5];		//--Способ установки крепежа
+	krep3S[i]=arr[6];		//--Сдвиг крепежа
+	krep3L[i]=arr[7];		//--Длина линии крепежа
+	NULLOUT=iif(nbittest(krep3U[i],1)==0,nbitset(krep3U[i],1),nbitclear(krep3U[i],1));
+	NULLOUT=iif(nbittest(krep3U[i],2)==0,nbitset(krep3U[i],2),nbitclear(krep3U[i],2));
+	if (i<n3) {goto LOOK3;}
+}
+
+arr[1]=kontP;		//--Контур панели
+arr[2]=4		//--Угол 3
+arr[3]=0		//--Узнаем количество линий крепежа
+err=getpan6par(26,arr);
+n4=arr[4];		//--Количество линий крепежа
+if (n4!=0)
+{
+	defarr krep4T[n4];
+	defarr krep4U[n4];
+	defarr krep4S[n4];
+	defarr krep4L[n4];
+	i=0;
+	LOOK4:
+	i=i+1;
+	arr[3]=i;			//--Номер линии крепежа
+	err=getpan6par(26,arr);
+	krep4T[i]=arr[4];		//--ID крепежа
+	krep4U[i]=arr[5];		//--Способ установки крепежа
+	krep4S[i]=arr[6];		//--Сдвиг крепежа
+	krep4L[i]=arr[7];		//--Длина линии крепежа
+	NULLOUT=iif(nbittest(krep4U[i],1)==0,nbitset(krep4U[i],1),nbitclear(krep4U[i],1));
+	NULLOUT=iif(nbittest(krep4U[i],2)==0,nbitset(krep4U[i],2),nbitclear(krep4U[i],2));
+	if (i<n4) {goto LOOK4;}
+}
+
+arr[1]=kontP;		//--Контур панели
+arr[2]=5		//--Сторона E
+arr[3]=0		//--Узнаем количество линий крепежа
+err=getpan6par(26,arr);
+n5=arr[4];		//--Количество линий крепежа
+if (n5!=0)
+{
+	defarr krep5T[n5];
+	defarr krep5U[n5];
+	defarr krep5S[n5];
+	defarr krep5L[n5];
+	i=0;
+	LOOK5:
+	i=i+1;
+	arr[3]=i;			//--Номер линии крепежа
+	err=getpan6par(26,arr);
+	krep5T[i]=arr[4];		//--ID крепежа
+	krep5U[i]=arr[5];		//--Способ установки крепежа
+	krep5S[i]=arr[6];		//--Сдвиг крепежа
+	krep5L[i]=arr[7];		//--Длина линии крепежа
+	NULLOUT=iif(nbittest(krep5U[i],1)==0,nbitset(krep5U[i],1),nbitclear(krep5U[i],1));
+	NULLOUT=iif(nbittest(krep5U[i],2)==0,nbitset(krep5U[i],2),nbitclear(krep5U[i],2));
+	if (i<n5) {goto LOOK5;}
+}
+
+arr[1]=kontP;		//--Контур панели
+arr[2]=6		//--Угол 4
+arr[3]=0		//--Узнаем количество линий крепежа
+err=getpan6par(26,arr);
+n6=arr[4];		//--Количество линий крепежа
+if (n6!=0)
+{
+	defarr krep6T[n6];
+	defarr krep6U[n6];
+	defarr krep6S[n6];
+	defarr krep6L[n6];
+	i=0;
+	LOOK6:
+	i=i+1;
+	arr[3]=i;			//--Номер линии крепежа
+	err=getpan6par(26,arr);
+	krep6T[i]=arr[4];		//--ID крепежа
+	krep6U[i]=arr[5];		//--Способ установки крепежа
+	krep6S[i]=arr[6];		//--Сдвиг крепежа
+	krep6L[i]=arr[7];		//--Длина линии крепежа
+	NULLOUT=iif(nbittest(krep6U[i],1)==0,nbitset(krep6U[i],1),nbitclear(krep6U[i],1));
+	NULLOUT=iif(nbittest(krep6U[i],2)==0,nbitset(krep6U[i],2),nbitclear(krep6U[i],2));
+	if (i<n6) {goto LOOK6;}
+}
+
+arr[1]=kontP;		//--Контур панели
+arr[2]=7		//--Сторона B
+arr[3]=0		//--Узнаем количество линий крепежа
+err=getpan6par(26,arr);
+n7=arr[4];		//--Количество линий крепежа
+if (n7!=0)
+{
+	defarr krep7T[n7];
+	defarr krep7U[n7];
+	defarr krep7S[n7];
+	defarr krep7L[n7];
+	i=0;
+	LOOK7:
+	i=i+1;
+	arr[3]=i;			//--Номер линии крепежа
+	err=getpan6par(26,arr);
+	krep7T[i]=arr[4];		//--ID крепежа
+	krep7U[i]=arr[5];		//--Способ установки крепежа
+	krep7S[i]=arr[6];		//--Сдвиг крепежа
+	krep7L[i]=arr[7];		//--Длина линии крепежа
+	NULLOUT=iif(nbittest(krep7U[i],1)==0,nbitset(krep7U[i],1),nbitclear(krep7U[i],1));
+	NULLOUT=iif(nbittest(krep7U[i],2)==0,nbitset(krep7U[i],2),nbitclear(krep7U[i],2));
+	if (i<n7) {goto LOOK7;}
+}
+
+arr[1]=kontP;		//--Контур панели
+arr[2]=8		//--Угол 1
+arr[3]=0		//--Узнаем количество линий крепежа
+err=getpan6par(26,arr);
+n8=arr[4];		//--Количество линий крепежа
+if (n8!=0)
+{
+	defarr krep8T[n8];
+	defarr krep8U[n8];
+	defarr krep8S[n8];
+	defarr krep8L[n8];
+	i=0;
+	LOOK8:
+	i=i+1;
+	arr[3]=i;			//--Номер линии крепежа
+	err=getpan6par(26,arr);
+	krep8T[i]=arr[4];		//--ID крепежа
+	krep8U[i]=arr[5];		//--Способ установки крепежа
+	krep8S[i]=arr[6];		//--Сдвиг крепежа
+	krep8L[i]=arr[7];		//--Длина линии крепежа
+	NULLOUT=iif(nbittest(krep8U[i],1)==0,nbitset(krep8U[i],1),nbitclear(krep8U[i],1));
+	NULLOUT=iif(nbittest(krep8U[i],2)==0,nbitset(krep8U[i],2),nbitclear(krep8U[i],2));
+	if (i<n8) {goto LOOK8;}
+}
+
+//--------------------ПОЛКА--------------------------------
+if (TypeP==12)
+{
+ arr[1]=kontP;		//--Контур панели
+ arr[2]=2		//--УГОЛ 2
+ arr[3]=0;		//--Обнуляем крепеж
+ err=setpan6par(21,arr);
+ if (n8!=0)
+ {
+	 i=0;
+	 POLK2:
+	 i=i+1;
+	 arr[3]=krep8T[i];		//--ID крепежа
+	 arr[4]=krep8U[i];		//--Способ установки крепежа
+	 arr[5]=krep8S[i];		//--Сдвиг крепежа
+	 arr[6]=krep8L[i];		//--Длина линии крепежа
+	 err=setpan6par(21,arr);
+	 if (i<n8) {goto POLK2;}
+ }
+
+ arr[1]=kontP;		//--Контур панели
+ arr[2]=3		//--СТОРОНА С
+ arr[3]=0;		//--Обнуляем крепеж
+ err=setpan6par(21,arr);
+ if (n7!=0)
+ {
+	 i=0;
+	 POLK3:
+	 i=i+1;
+	 arr[3]=krep7T[i];		//--ID крепежа
+	 arr[4]=krep7U[i];		//--Способ установки крепежа
+	 arr[5]=krep7S[i];		//--Сдвиг крепежа
+	 arr[6]=krep7L[i];		//--Длина линии крепежа
+	 err=setpan6par(21,arr);
+	 if (i<n7) {goto POLK3;}
+ }
+
+ arr[1]=kontP;		//--Контур панели
+ arr[2]=4		//--УГОЛ 3
+ arr[3]=0;		//--Обнуляем крепеж
+ err=setpan6par(21,arr);
+ if (n6!=0)
+ {
+	 i=0;
+	 POLK4:
+	 i=i+1;
+	 arr[3]=krep6T[i];		//--ID крепежа
+	 arr[4]=krep6U[i];		//--Способ установки крепежа
+	 arr[5]=krep6S[i];		//--Сдвиг крепежа
+	 arr[6]=krep6L[i];		//--Длина линии крепежа
+	 err=setpan6par(21,arr);
+	 if (i<n6) {goto POLK4;}
+ }
+
+ arr[1]=kontP;		//--Контур панели
+ arr[2]=6		//--УГОЛ 4
+ arr[3]=0;		//--Обнуляем крепеж
+ err=setpan6par(21,arr);
+ if (n4!=0)
+ {
+	 i=0;
+	 POLK6:
+	 i=i+1;
+	 arr[3]=krep4T[i];		//--ID крепежа
+	 arr[4]=krep4U[i];		//--Способ установки крепежа
+	 arr[5]=krep4S[i];		//--Сдвиг крепежа
+	 arr[6]=krep4L[i];		//--Длина линии крепежа
+	 err=setpan6par(21,arr);
+	 if (i<n4) {goto POLK6;}
+ }
+
+ arr[1]=kontP;		//--Контур панели
+ arr[2]=7		//--СТОРОНА В
+ arr[3]=0;		//--Обнуляем крепеж
+ err=setpan6par(21,arr);
+ if (n3!=0)
+ {
+	 i=0;
+	 POLK7:
+	 i=i+1;
+	 arr[3]=krep3T[i];		//--ID крепежа
+	 arr[4]=krep3U[i];		//--Способ установки крепежа
+	 arr[5]=krep3S[i];		//--Сдвиг крепежа
+	 arr[6]=krep3L[i];		//--Длина линии крепежа
+	 err=setpan6par(21,arr);
+	 if (i<n3) {goto POLK7;}
+ }
+
+ arr[1]=kontP;		//--Контур панели
+ arr[2]=8		//--УГОЛ 1
+ arr[3]=0;		//--Обнуляем крепеж
+ err=setpan6par(21,arr);
+ if (n2!=0)
+ {
+	 i=0;
+	 POLK8:
+	 i=i+1;
+	 arr[3]=krep2T[i];		//--ID крепежа
+	 arr[4]=krep2U[i];		//--Способ установки крепежа
+	 arr[5]=krep2S[i];		//--Сдвиг крепежа
+	 arr[6]=krep2L[i];		//--Длина линии крепежа
+	 err=setpan6par(21,arr);
+	 if (i<n2) {goto POLK8;}
+ }
+}
+//--------------------СТЕНКИ--------------------------------
+if (TypeP==14||TypeP==13)
+{
+ arr[1]=kontP;		//--Контур панели
+ arr[2]=1		//--СТОРОНА D
+ arr[3]=0;		//--Обнуляем крепеж
+ err=setpan6par(21,arr);
+ if (n5!=0)
+ {
+	 i=0;
+	 STEN1:
+	 i=i+1;
+	 arr[3]=krep5T[i];		//--ID крепежа
+	 arr[4]=krep5U[i];		//--Способ установки крепежа
+	 arr[5]=krep5S[i];		//--Сдвиг крепежа
+	 arr[6]=krep5L[i];		//--Длина линии крепежа
+	 err=setpan6par(21,arr);
+	 if (i<n5) {goto STEN1;}
+ }
+
+ arr[1]=kontP;		//--Контур панели
+ arr[2]=2		//--УГОЛ 2
+ arr[3]=0;		//--Обнуляем крепеж
+ err=setpan6par(21,arr);
+ if (n4!=0)
+ {
+	 i=0;
+	 STEN2:
+	 i=i+1;
+	 arr[3]=krep4T[i];		//--ID крепежа
+	 arr[4]=krep4U[i];		//--Способ установки крепежа
+	 arr[5]=krep4S[i];		//--Сдвиг крепежа
+	 arr[6]=krep4L[i];		//--Длина линии крепежа
+	 err=setpan6par(21,arr);
+	 if (i<n4) {goto STEN2;}
+ }
+
+ arr[1]=kontP;		//--Контур панели
+ arr[2]=4		//--УГОЛ 3
+ arr[3]=0;		//--Обнуляем крепеж
+ err=setpan6par(21,arr);
+ if (n2!=0)
+ {
+	 i=0;
+	 STEN4:
+	 i=i+1;
+	 arr[3]=krep2T[i];		//--ID крепежа
+	 arr[4]=krep2U[i];		//--Способ установки крепежа
+	 arr[5]=krep2S[i];		//--Сдвиг крепежа
+	 arr[6]=krep2L[i];		//--Длина линии крепежа
+	 err=setpan6par(21,arr);
+	 if (i<n2) {goto STEN4;}
+ }
+
+ arr[1]=kontP;		//--Контур панели
+ arr[2]=5		//--СТОРОНА E
+ arr[3]=0;		//--Обнуляем крепеж
+ err=setpan6par(21,arr);
+ if (n1!=0)
+ {
+	 i=0;
+	 STEN5:
+	 i=i+1;
+	 arr[3]=krep1T[i];		//--ID крепежа
+	 arr[4]=krep1U[i];		//--Способ установки крепежа
+	 arr[5]=krep1S[i];		//--Сдвиг крепежа
+	 arr[6]=krep1L[i];		//--Длина линии крепежа
+	 err=setpan6par(21,arr);
+	 if (i<n1) {goto STEN5;}
+ }
+
+ arr[1]=kontP;		//--Контур панели
+ arr[2]=6		//--УГОЛ 4
+ arr[3]=0;		//--Обнуляем крепеж
+ err=setpan6par(21,arr);
+ if (n8!=0)
+ {
+	 i=0;
+	 STEN6:
+	 i=i+1;
+	 arr[3]=krep8T[i];		//--ID крепежа
+	 arr[4]=krep8U[i];		//--Способ установки крепежа
+	 arr[5]=krep8S[i];		//--Сдвиг крепежа
+	 arr[6]=krep8L[i];		//--Длина линии крепежа
+	 err=setpan6par(21,arr);
+	 if (i<n8) {goto STEN6;}
+ }
+
+ arr[1]=kontP;		//--Контур панели
+ arr[2]=8		//--УГОЛ 1
+ arr[3]=0;		//--Обнуляем крепеж
+ err=setpan6par(21,arr);
+ if (n6!=0)
+ {
+	 i=0;
+	 STEN8:
+	 i=i+1;
+	 arr[3]=krep6T[i];		//--ID крепежа
+	 arr[4]=krep6U[i];		//--Способ установки крепежа
+	 arr[5]=krep6S[i];		//--Сдвиг крепежа
+	 arr[6]=krep6L[i];		//--Длина линии крепежа
+	 err=setpan6par(21,arr);
+	 if (i<n6) {goto STEN8;}
+ }
+}
+return;
+
+/////////////////////////////////////////////////////////////////////////////////
+//-------------------------------ОБРАБОТКА КРОМОК------------------------------//
+/////////////////////////////////////////////////////////////////////////////////
+KROM:			
+arr[1]=1		//--Сторона D
+err=getpan6par(3,arr);
+krom1T=arr[2];		//--ID крепежа
+krom1R=arr[3];		
+krom1U=arr[4];		//--Способ установки кромки
+krom1L=arr[5];		//--Длина кромки
+
+arr[1]=2		//--Угол 2
+err=getpan6par(3,arr);
+krom2T=arr[2];		//--ID крепежа
+krom2R=arr[3];		
+krom2U=arr[4];		//--Способ установки кромки
+krom2L=arr[5];		//--Длина кромки
+
+arr[1]=3		//--Сторона С
+err=getpan6par(3,arr);
+krom3T=arr[2];		//--ID крепежа
+krom3R=arr[3];		
+krom3U=arr[4];		//--Способ установки кромки
+krom3L=arr[5];		//--Длина кромки
+
+arr[1]=4		//--Угол 3
+err=getpan6par(3,arr);
+krom4T=arr[2];		//--ID крепежа
+krom4R=arr[3];		
+krom4U=arr[4];		//--Способ установки кромки
+krom4L=arr[5];		//--Длина кромки
+
+arr[1]=5		//--Сторона E
+err=getpan6par(3,arr);
+krom5T=arr[2];		//--ID крепежа
+krom5R=arr[3];		
+krom5U=arr[4];		//--Способ установки кромки
+krom5L=arr[5];		//--Длина кромки
+
+arr[1]=6		//--Угол 4
+err=getpan6par(3,arr);
+krom6T=arr[2];		//--ID крепежа
+krom6R=arr[3];		
+krom6U=arr[4];		//--Способ установки кромки
+krom6L=arr[5];		//--Длина кромки
+
+arr[1]=7		//--Сторона B
+err=getpan6par(3,arr);
+krom7T=arr[2];		//--ID крепежа
+krom7R=arr[3];		
+krom7U=arr[4];		//--Способ установки кромки
+krom7L=arr[5];		//--Длина кромки
+
+arr[1]=8		//--Угол 1
+err=getpan6par(3,arr);
+krom8T=arr[2];		//--ID крепежа
+krom8R=arr[3];		
+krom8U=arr[4];		//--Способ установки кромки
+krom8L=arr[5];		//--Длина кромки
+//--------------------ПОЛКА--------------------------------
+if (TypeP==12)
+{
+ arr[1]=2		//--УГОЛ 2
+ arr[2]=krom8T;		//--ID крепежа
+ arr[3]=krom8R;	
+ arr[4]=krom8U;		//--Способ установки кромки
+ arr[5]=krom8L;		//--Длина кромки
+ err=setpan6par(3,arr);
+
+ arr[1]=3		//--СТОРОНА С
+ arr[2]=krom7T;		//--ID крепежа
+ arr[3]=krom7R;	
+ arr[4]=krom7U;		//--Способ установки кромки
+ arr[5]=krom7L;		//--Длина кромки
+ err=setpan6par(3,arr);
+
+ arr[1]=4		//--УГОЛ 3
+ arr[2]=krom6T;		//--ID крепежа
+ arr[3]=krom6R;	
+ arr[4]=krom6U;		//--Способ установки кромки
+ arr[5]=krom6L;		//--Длина кромки
+ err=setpan6par(3,arr);
+
+ arr[1]=6		//--УГОЛ 4
+ arr[2]=krom4T;		//--ID крепежа
+ arr[3]=krom4R;	
+ arr[4]=krom4U;		//--Способ установки кромки
+ arr[5]=krom4L;		//--Длина кромки
+ err=setpan6par(3,arr);
+
+ arr[1]=7		//--СТОРОНА В
+ arr[2]=krom3T;		//--ID крепежа
+ arr[3]=krom3R;	
+ arr[4]=krom3U;		//--Способ установки кромки
+ arr[5]=krom3L;		//--Длина кромки
+ err=setpan6par(3,arr);
+
+ arr[1]=8		//--УГОЛ 1
+ arr[2]=krom2T;		//--ID крепежа
+ arr[3]=krom2R;	
+ arr[4]=krom2U;		//--Способ установки кромки
+ arr[5]=krom2L;		//--Длина кромки
+ err=setpan6par(3,arr);
+}
+//--------------------СТЕНКИ--------------------------------
+if (TypeP==14||TypeP==13)
+{
+ arr[1]=1		//--СТОРОНА D
+ arr[2]=krom5T;		//--ID крепежа
+ arr[3]=krom5R;	
+ arr[4]=krom5U;		//--Способ установки кромки
+ arr[5]=krom5L;		//--Длина кромки
+ err=setpan6par(3,arr);
+
+ arr[1]=2		//--УГОЛ 2
+ arr[2]=krom4T;		//--ID крепежа
+ arr[3]=krom4R;	
+ arr[4]=krom4U;		//--Способ установки кромки
+ arr[5]=krom4L;		//--Длина кромки
+ err=setpan6par(3,arr);
+
+ arr[2]=4		//--УГОЛ 3
+ arr[2]=krom2T;		//--ID крепежа
+ arr[3]=krom2R;	
+ arr[4]=krom2U;		//--Способ установки кромки
+ arr[5]=krom2L;		//--Длина кромки
+ err=setpan6par(3,arr);
+
+ arr[1]=5		//--СТОРОНА E
+ arr[2]=krom1T;		//--ID крепежа
+ arr[3]=krom1R;	
+ arr[4]=krom1U;		//--Способ установки кромки
+ arr[5]=krom1L;		//--Длина кромки
+ err=setpan6par(3,arr);
+
+ arr[1]=6		//--УГОЛ 4
+ arr[2]=krom8T;		//--ID крепежа
+ arr[3]=krom8R;	
+ arr[4]=krom8U;		//--Способ установки кромки
+ arr[5]=krom8L;		//--Длина кромки
+ err=setpan6par(3,arr);
+
+ arr[1]=8		//--УГОЛ 1
+ arr[2]=krom6T;		//--ID крепежа
+ arr[3]=krom6R;	
+ arr[4]=krom6U;		//--Способ установки кромки
+ arr[5]=krom6L;		//--Длина кромки
+ err=setpan6par(3,arr);
+}
+return;

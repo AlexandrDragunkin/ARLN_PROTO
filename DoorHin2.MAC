@@ -1,0 +1,76 @@
+//-- ”становка петли поворотной двери
+//-- ¬ходные параметры:
+//-- xn,yn,zn - координаты точки установки двери
+//-- dx,dz - размеры двери
+//-- R_Fas,L_Fas,U_Fas,D_Fas, - увеличесни€ фасада двери справа, слева, сверху, снизу
+//-- variant - тип открывани€ двери
+global DoorHinge;  // ѕетл€ тип
+
+global ProtoPath;
+global FindMatID;
+
+getpar xn,yn,zn,dx,dz,
+R_Fas,L_Fas,U_Fas,D_Fas,
+variant;
+//----------------------------------------
+kray=30;
+//----------------------------------------
+if (variant==0)
+{
+  exit;
+}
+//----------------------------------------
+object_1=sysvar(60);
+DoorHin=DoorHinge;
+//-- ѕоворотна€ петл€
+macro ProtoPath+"MakeHing.mac" DoorHin 1 xn yn 0 0 0 0;
+xmid=xn-R_Fas+dx/2;
+zmid=zn-D_Fas+dz/2;
+object_2=sysvar(60)-object_1;
+if (object_2>0)
+{
+  if (variant<3)
+  {
+    hd=dz;
+  }
+  else
+  {
+    hd=dx;
+  }
+  if (variant==1)
+  {
+    move last object_2 done R_Fas+kray 0 zn nocopy ;
+    rotate last object_2 done 2points R_Fas+kray,yn,zn R_Fas+kray+10,yn,zn 180 copy 1 ;
+    mirror last object_2 done 1point 0 yn 0 nocopy;
+    rotate last object_2 done 2point 0,yn,0 0,yn+10,0 180 nocopy;
+    move last object_2 done 0,0,dz nocopy ;
+  }
+  if (variant==2)
+  {
+    mirror last object_2 done 1point xn,yn,0 nocopy;
+    rotate last object_2 done 2points xn,yn,0 xn+10,yn,0 180 nocopy;
+    move last object_2 done dx+L_Fas-kray 0 zn nocopy ;      // +L_Fas
+    mirror last object_2 done 1point 0,0,zn copy;
+    rotate last object_2 done 2point 0,0,zn 0,0,zn+10 180 nocopy;
+    move last object_2 done 0,0,dz nocopy ;
+  }
+  if (variant==3)
+  {
+    rotate last object_2 done 2points xn,yn,0 xn,yn+10,0 90 nocopy;
+    mirror last object_2 done 1point xn,yn,0 nocopy;
+    rotate last object_2 done 2points xn,yn,zn xn,yn,zn+10 180 nocopy;
+    move last object_2 done 0 0 zn+D_Fas+kray nocopy ;      //+D_Fas
+    mirror last object_2 done 1point xn,yn,zn copy;
+    rotate last object_2 done 2points xn,yn,zn xn+10,yn,zn 180 nocopy;
+    move last object_2 done dx,0,0 nocopy;
+  }
+  if (variant==4)
+  {
+    rotate last object_2 done 2points xn yn 0 xn yn+10 0 90 nocopy ;
+    move last object_2 done 0 0 zn+dz+U_Fas-kray+5 nocopy ;
+    mirror last object_2 done 1point xn,yn,zn copy;
+    rotate last object_2 done 2points xn,yn,zn xn+10,yn,zn 180 nocopy;
+    move last object_2 done dx,0,0 nocopy;
+  }
+}
+exit;

@@ -1,0 +1,123 @@
+// Макрос назначаят скрейч для фасадов 5 отделок
+// 2015 Александр Драгункин
+global protopath;
+global gs_Nfasad;     //-- Счетчик фасадов в объекте
+ifasad=gs_Nfasad
+
+// putmsg("scrFasAr");
+
+getpar DoorPict nmfdeco nmadeco ScGrName;
+
+nmfdeco="(";
+nmadeco="(";
+nullout=getvarinst(1,"BoxMacro",lBoxmac,0);
+nullout=getvarinst(1,"boxhidetyp",HideTyp,0)
+// putmsg(lBoxmac)
+// putmsg(HideTyp)
+if lBoxmac<1&&HideTyp==0 {
+	//-- Читаем skratch-параметры фасада для дверей
+	// putmsg("ScrFasAr_GO->ScrFasadGet.mac");
+	macro Protopath+"ScrFasadGet.mac" DoorPict ByRef Scratch;
+	//ScGrName="RS_Neoclassic"; //-- Имя группы фасада для scratch
+	// putmsg(Scratch)
+	if (Scratch!=0)
+	{
+		FT=0;
+		SubstName="";
+		err=GetScratch(Scratch,ScGrName,"FasType",FT,SubstName);
+		if (FT!=DoorPict)||!err //-- Если данной группы нет в scratch - создаем ее
+		{
+			// putmsg("ScrFasAr_GO->ScrFasCr.mac")
+			macro ProtoPath+"ScrFasCr.mac" DoorPict Scratch;
+		}
+		
+		#res CalcVarScr Scratch ScGrName; //-- Вычисляем параметры, находящиеся в scratch атрибуте
+		// if (res==0)    //-- Если вычислить не удалось, берем умолчания
+		// {
+			// ilbf=0
+			// lab_f:
+			// if ilbf<5 {
+				// ilbf=ilbf+1
+				// // По пласти А
+				// err=addscratch(Scratch,ScGrName,"АГрпОтд1"+str(ilbf),94);	//-- группа отделки
+				// err=addscratch(Scratch,ScGrName,"АМатОтд1"+str(ilbf),0);	//-- материал отделки
+				// err=addscratch(Scratch,ScGrName,"АГрпОтд2"+str(ilbf),324);	//-- группа отделки
+				// err=addscratch(Scratch,ScGrName,"АМатОтд2"+str(ilbf),0);	//-- материал отделки
+				// err=addscratch(Scratch,ScGrName,"АГрпОтд3"+str(ilbf),325);	//-- группа отделки
+				// err=addscratch(Scratch,ScGrName,"АМатОтд3"+str(ilbf),0);	//-- материал отделки
+				// err=addscratch(Scratch,ScGrName,"АГрпОтд4"+str(ilbf),326);	//-- группа отделки
+				// err=addscratch(Scratch,ScGrName,"АМатОтд4"+str(ilbf),0);	//-- материал отделки
+				// err=addscratch(Scratch,ScGrName,"АГрпОтд5"+str(ilbf),327);	//-- группа отделки
+				// err=addscratch(Scratch,ScGrName,"АМатОтд5"+str(ilbf),0);	//-- материал отделки
+				// err=addscratch(Scratch,ScGrName,"АГрпОтд6"+str(ilbf),336);	//-- группа отделки
+				// err=addscratch(Scratch,ScGrName,"АМатОтд6"+str(ilbf),0);	//-- материал отделки
+				// err=addscratch(Scratch,ScGrName,"АГрпОтд7"+str(ilbf),339);	//-- группа отделки
+				// err=addscratch(Scratch,ScGrName,"АМатОтд7"+str(ilbf),0);	//-- материал отделки
+				// err=addscratch(Scratch,ScGrName,"АГрпОтд8"+str(ilbf),346);	//-- группа отделки
+				// err=addscratch(Scratch,ScGrName,"АМатОтд8"+str(ilbf),0);	//-- материал отделки
+				// err=addscratch(Scratch,ScGrName,"АГрпОтд9"+str(ilbf),347);	//-- группа отделки
+				// err=addscratch(Scratch,ScGrName,"АМатОтд9"+str(ilbf),0);	//-- материал отделки
+				// //По пласти F
+				// err=addscratch(Scratch,ScGrName,"FГрпОтд1"+str(ilbf),94);	//-- группа отделки
+				// err=addscratch(Scratch,ScGrName,"FМатОтд1"+str(ilbf),0);	//-- материал отделки
+				// err=addscratch(Scratch,ScGrName,"FГрпОтд2"+str(ilbf),324);	//-- группа отделки
+				// err=addscratch(Scratch,ScGrName,"FМатОтд2"+str(ilbf),0);	//-- материал отделки
+				// err=addscratch(Scratch,ScGrName,"FГрпОтд3"+str(ilbf),325);	//-- группа отделки
+				// err=addscratch(Scratch,ScGrName,"FМатОтд3"+str(ilbf),0);	//-- материал отделки
+				// err=addscratch(Scratch,ScGrName,"FГрпОтд4"+str(ilbf),326);	//-- группа отделки
+				// err=addscratch(Scratch,ScGrName,"FМатОтд4"+str(ilbf),0);	//-- материал отделки
+				// err=addscratch(Scratch,ScGrName,"FГрпОтд5"+str(ilbf),327);	//-- группа отделки
+				// err=addscratch(Scratch,ScGrName,"FМатОтд5"+str(ilbf),0);	//-- материал отделки
+				// err=addscratch(Scratch,ScGrName,"FГрпОтд6"+str(ilbf),336);	//-- группа отделки
+				// err=addscratch(Scratch,ScGrName,"FМатОтд6"+str(ilbf),0);	//-- материал отделки
+				// err=addscratch(Scratch,ScGrName,"FГрпОтд7"+str(ilbf),339);	//-- группа отделки
+				// err=addscratch(Scratch,ScGrName,"FМатОтд7"+str(ilbf),0);	//-- материал отделки
+				// err=addscratch(Scratch,ScGrName,"FГрпОтд8"+str(ilbf),346);	//-- группа отделки
+				// err=addscratch(Scratch,ScGrName,"FМатОтд8"+str(ilbf),0);	//-- материал отделки
+				// err=addscratch(Scratch,ScGrName,"FГрпОтд9"+str(ilbf),347);	//-- группа отделки
+				// err=addscratch(Scratch,ScGrName,"FМатОтд9"+str(ilbf),0);	//-- материал отделки
+				// goto lab_f;
+			// }
+			// err=AddScratch(Scratch,ScGrName,"FasType",DoorPict);
+			// WriteScratch(Scratch,"FasadPar",0);
+		// }
+		
+		//Putmsg(Scratch);
+		TermScratch(Scratch);
+	}
+	
+	nullout=getvarinst(2,"n_scrFas",n_scrFas,0)
+
+	macro ProtoPath+"SetDecorate.mac" 0 0 0 0 ;
+	i=0;
+	labs:
+	if i<n_scrFas {
+		i=i+1;
+		err=""
+		t=0;
+		m=0;
+		expression "АГрпОтд"+str(i)+str(ifasad+1) t err;
+		expression "АМатОтд"+str(i)+str(ifasad+1) m err;
+
+		if val(str(m))>0 {
+			macro ProtoPath+"SetDecorate.mac" 5 t val(str(m)) 1 ;
+			nmadeco=nmadeco+iif(len(nmadeco)>2,"/","")+priceinfo(val(str(m)),"Article","");
+		}
+		err=""
+		t=0;
+		m=0;
+		expression "FГрпОтд"+str(i)+str(ifasad+1) t err;
+		expression "FМатОтд"+str(i)+str(ifasad+1) m err;
+		
+		if val(str(m))>0 {
+			macro ProtoPath+"SetDecorate.mac" 6 t val(str(m)) 1 ;	
+			nmfdeco=nmfdeco+iif(len(nmfdeco)>2,"/","")+priceinfo(val(str(m)),"Article","");
+		}		
+		goto labs;
+	}		
+	
+	// if ifasad==1 {
+		// macro ProtoPath+"SetDecorate.mac" 5 ГрпОтд1 МатОтд2 1 ;
+	// }
+}
+exit;

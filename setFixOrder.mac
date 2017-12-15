@@ -1,0 +1,12 @@
+//setFixOrder.mac
+//-- Установить правило крепежа по сторонам панели
+global FixtOrder; //--  правило крепежа по сторонам
+defarr FixtOrder[8];
+getpar OrdB OrdC OrdD OrdE;
+FixtOrder[7]=OrdB;
+FixtOrder[3]=OrdC;
+FixtOrder[1]=OrdD;
+FixtOrder[5]=OrdE;
+NULLOUT=setarrinst(1,"FixtOrder",FixtOrder);
+
+exit;

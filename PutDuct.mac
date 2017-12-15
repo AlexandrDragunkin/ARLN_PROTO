@@ -1,0 +1,108 @@
+//-- Создание обрамления для выреза
+//-- Входные параметры:
+//-- ConfDuct - тип выреза
+//--          = 2 - Вырез примыкает справа
+//--          = 3 - Вырез примыкает слева
+//--          = 4 - Вырез внутри корпуса
+//-- ShiftDuct - сдвиг выреза от начала изделия
+//-- ZDuct - сдвиг выреза по высоте
+//-- WidthDuct - ширина выреза
+//-- DepthDuct - глубина выреза
+//-- HeightDuct - высота выреза
+//-- MaterDuct - материал выреза
+//-- FixDuct - крепеж выреза
+//-- TypeBp - тип задней стенки
+//--        =0 - утопленная
+//--        =1 - накладная
+//--        =-1 - стенка для мойки
+//--        =3 - врезная
+//-- FixBp - крепеж задней стенки
+//-- DepthBp - глубина вреза врезной задней стенки
+//-- InCutBp - врезка задней стенки
+//-- MatBp - материал задней стенки
+
+global ProtoPath;
+getpar ConfDuct, ShiftDuct, ZDuct, WidthDuct, DepthDuct, HeightDuct, MaterDuct, FixDuct, TypeBp, FixBp, DepthBp, InCutBp, MatBp;
+
+//---------------------------------------------------------
+wcutD=0;        //-- Подрез стенки под короб справа
+wcutE=0;        //-- Подрез стенки под короб слева
+dcutE=0;        //-- Подрез стойки под короб
+wfixD=0;        //-- Крепеж стенки под короб справа
+wfixE=0;        //-- Крепеж стенки под короб слева
+dfixE=0;        //-- Крепеж стойки под короб
+dfixD=0;        //-- Крепеж стойки под короб
+h_dsp=priceinfo(MaterDuct,"Thickness",DbVar("HDSP",16)); //-- Толщина материала корпуса выреза
+h_dvp=priceinfo(MatBp,"Thickness",DbVar("HDVP",4));      //-- Толщина материала задней стенки
+//---------------------------------------------------------
+//-- Вычисляем конструктив корпуса выреза
+if (WidthDuct<=DepthDuct)      //-- Если ширина выреза меньше глубины
+{
+  dcutE=-h_dsp;
+  wfixD=FixDuct;
+  wfixE=FixDuct;
+}
+else
+{
+  dfixE=FixDuct;
+}
+if (ConfDuct==2||ConfDuct==4)   //-- Если короб примыкает справа или внутри корпуса
+{
+  if (WidthDuct>DepthDuct)      //-- Если ширина выреза больше глубины
+  {
+    wcutE=-h_dsp;
+  }
+  if (ConfDuct==2)
+  {
+    wcutD=h_dsp;
+    wfixD=FixDuct;
+  }
+}
+if (ConfDuct==3||ConfDuct==4)   //-- Если короб примыкает слева или внутри корпуса
+{
+  if (WidthDuct>DepthDuct)      //-- Если ширина выреза больше глубины
+  {
+    wcutD=-h_dsp;
+  }
+  if (ConfDuct==3)
+  {
+    wcutE=h_dsp;
+    wfixE=FixDuct;
+  }
+}
+if (TypeBp==1)
+{
+  dfixD=FixBp;
+}
+//-----------------------------------------------------------
+//-- Рисуем конструктив
+macro ProtoPath+"SetMat.mac" MaterDuct;
+//-- Стенка
+macro ProtoPath+"SetCuts.mac" 0 0 wcutD wcutE;
+macro ProtoPath+"SetFix.mac" FixDuct FixDuct wfixD wfixE;
+macro ProtoPath+"MakePan.mac" ShiftDuct DepthDuct ZDuct HeightDuct WidthDuct 14;
+//-- Стойки
+macro ProtoPath+"SetCuts.mac" 0 0 0 dcutE;
+macro ProtoPath+"SetFix.mac" FixDuct FixDuct dfixD dfixE;
+if (TypeBp==3)
+{
+  //-- Пропил в правой стойке
+  macro ProtoPath+"SetProp.mac" "F" "D" DepthBp-h_dvp h_dvp InCutBp ;
+}
+if (ConfDuct==2||ConfDuct==4)   //-- Если короб примыкает справа или внутри корпуса
+{
+  macro ProtoPath+"MakePan.mac" ShiftDuct+WidthDuct 0 ZDuct HeightDuct DepthDuct 11;
+}
+macro ProtoPath+"SetPropNull.mac";
+if (TypeBp==3)
+{
+  //-- Пропил в левой стойке
+  macro ProtoPath+"SetProp.mac" "A" "D" DepthBp-h_dvp h_dvp InCutBp ;
+}
+if (ConfDuct==3||ConfDuct==4)   //-- Если короб примыкает слева или внутри корпуса
+{
+  macro ProtoPath+"MakePan.mac" ShiftDuct-h_dsp 0 ZDuct HeightDuct DepthDuct 11;
+}
+macro ProtoPath+"SetPropNull.mac";
+macro ProtoPath+"SetCuts.mac" 0 0 0 0;
+exit;

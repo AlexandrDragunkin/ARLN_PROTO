@@ -1,0 +1,56 @@
+//-- Создание фасада прозрачного
+//-- Входные параметры:
+//-- xn,yn,zn - координаты правого нижнего дальнего угла фасада
+//-- dx,dz - размеры фасада по ширине и высоте
+//-- Глобальные переменные:
+//-- FsMater - материал фасада
+//-- DoorBCol - цвет кромки фасада
+//-- DoorBand - тип кромки фасада
+global ProtoPath;
+global FsMater;
+global DoorMater;  //-- Материал панелей двери
+global DoorBCol,DoorBand;
+global g_FurnType;    //-- Тип мебельного объекта
+global DoorMatVS1, DoorMatVS2;
+
+getpar xn,yn,zn,dx,dz;
+
+//putmsg(FsMater)
+h_fas=PriceInfo(FsMater,"Thickness",16) ;
+Trans=PriceInfo(FsMater,"Transparency",0) ;
+FsMater1=FsMater
+if (Trans==0) { gosub Find1; }
+
+macro ProtoPath+"SetMat.mac" FsMater1;
+macro ProtoPath+"SetFix.mac" 0 0 0 0;
+macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+macro ProtoPath+"SetECod.mac" "2101" ;
+// macro ProtoPath+"SetKCod.mac" "ПЛДВ" dz dx ;
+macro ProtoPath+"SetEnam.mac" "Полотно фасада" ;
+macro ProtoPath+"SetKrom.mac" 0 0 0 0 0 ;
+//macro ProtoPath+"SetKrom.mac" DoorBCol DoorBand DoorBand DoorBand DoorBand;
+macro ProtoPath+"MakePan.mac" xn yn zn dz dx 14 ;
+macro ProtoPath+"SetECod.mac" "" ;
+g_FurnType="500401";
+DoorMater=FsMater1
+FsMater=FsMater1
+exit;
+//==============================
+Find1:
+if (DoorMatVS1>0) {
+   Trans=PriceInfo(DoorMatVS1,"Transparency",0) ;
+   if (Trans==0) { goto Find2; }
+   FsMater1=DoorMatVS1;
+   return;
+}
+
+Find2:    // Найдем любой прозрачный материал
+defarr GlassARR[1] ;
+Glass=0    //-- стекло
+kol1=npgetbywhere(1,"[Transparency] = "+str(1),"GlassARR",getyadsubst(27));
+if (kol1>0) {
+  Glass=GlassARR[1];
+}
+   FsMater1=Glass;
+   return;
+

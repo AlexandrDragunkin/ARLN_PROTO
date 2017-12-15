@@ -1,0 +1,16 @@
+getpar ttp1 ttp2 ttp3 result;
+global g_DrawBase g_base;
+defarr 	p1[3];
+onerror errlab;
+if g_DrawBase==1
+{
+	get "Укажите сторону базы ( Текущий базовый угол = "+str(g_base)+" или нажмите Esc )" point missing ttp1 ttp2 ttp3 :         //определяем базы"Укажите сторону базы"
+	p1[1]=ttp1 p1[2]=ttp2 p1[3]=ttp3
+
+}
+result=1
+offerror;
+exit;
+errlab:
+result=0
+exit;

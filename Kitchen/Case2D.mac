@@ -1,0 +1,41 @@
+// Создание объекта - Шкаф кухонный угловой
+global MacroSw  ; // Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+MacroSw=1;
+
+WMFPath=DbVar("WMFPath","")
+global ProtoPath;		// Путь к папке с макропрограммами общей библиотеке прототипов
+global LocalPath;		// Путь к папке с макропрограммами локальной библиотеке прототипов
+ProtoPath=GetProtoMac("Shkaf.ptl")
+LocalPath=GetProtoMac("Kitchen.ptl");
+macro ProtoPath+"global_s.mac" ;
+F2000=DbVar("F2000",0)
+
+length=DbVar("Шир",330)   //-- длина	шкафа
+width=DbVar("Глуб",320)   //-- ширина шкафа 
+height=DbVar("Выс",822)   //-- высота шкафа
+
+macro ProtoPath+"SetInit.mac" ;
+
+macro LocalPath+"Case2.mac" ;
+
+//размеры
+	LDim 3DDim 0 width 0
+		 length width 0
+	Horizontal 0 width -150
+
+	LDim 3DDim 0 0 height
+		 0 width height
+	Parallel -150 0 height
+
+	LDim 3DDim length 0 height
+		length 0 0
+	Vertical	 length+150 0 0
+
+View None Gcs .33 .87 .38;
+Zoom all
+Hide
+
+If F2000 { Exp2d Wmf Yes WMFPath+"1.WMF" [ overwrite ] }
+Else     { Exp2d Wmf No WMFPath+"1.WMF" [ overwrite ] }
+
+exit

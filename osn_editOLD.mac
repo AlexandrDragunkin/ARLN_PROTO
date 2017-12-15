@@ -1,0 +1,47 @@
+//-- Программа редактирования содержимого основной надписи
+
+defarr cap[18], g[6];
+global g_caption ProtoPath,g_autoosn;
+ProtoPath=GetProtoMac("Shkaf.ptl");
+
+kol=sysvar(60);
+i=0;
+label1:
+i=i+1;
+if (i<=kol)
+{
+  g_caption=GetObjNum(i);
+  n1=getattr(g_caption,"Capt","");
+  if (n1=="")
+  {
+    goto label1;
+  }              
+}
+else
+{
+  exit;
+}
+NULLOUT=GetSnap();
+setucs lcs g_caption;
+NULLOUT=objgab3(g_caption,g)
+n=getattrtext(g_caption,"Capt",cap);
+g_autoosn=0;
+//macro Protopath+"fill_cap.mac" cap n;
+delete g_caption done;
+if (n==18)
+{
+    macro Protopath+"osnCap_A.mac" cap;
+    NULLOUT=textbystr(g_caption,"capt",18,cap);
+}
+if (n==15)
+{
+    macro Protopath+"osnCap_B1.mac" cap;
+    NULLOUT=textbystr(g_caption,"capt",15,cap);
+}
+if (n==2)
+{
+    macro Protopath+"osnCap_B2.mac" cap;
+    NULLOUT=textbystr(g_caption,"capt",2,cap);
+}
+NULLOUT=ReSnap();
+exit;

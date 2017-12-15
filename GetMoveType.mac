@@ -1,0 +1,45 @@
+//-- Программа определяет тип движения дверной системы
+//-- Входные параметры:
+//-- DRS - тип дверной системы (из таблицы System)
+//-- Выходные параметры:
+//-- g_MoveType - тип движения дверной системы (из ьаблицы Types)
+
+global ProtoPath;
+global g_MoveType;
+getpar DRS;
+
+g_MoveType=0;
+tab_place=ProtoPath+"DoorSys.mdb";
+szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+tab_place;
+Doorscon=adbCon(szSrc);
+str_tab="SELECT * FROM System WHERE ID="+str(DRS);
+SysRs=adbOpen(Doorscon,str_tab);
+ij=adbRecCount(SysRs);
+//-- Если количество нужных систем дверей не равно единице - выходим
+if (ij!=1)
+{
+  errcode="Количество систем дверей с номером "+str(DRS)+" равно "+str(ij);
+  gosub err;
+  goto end;
+}
+=adbMoveFirst(SysRs);
+g_MoveType=adbGetValue(SysRs,"IDType");
+end:
+SysRs=adbClose(SysRs);
+Doorscon=adbDisCon(Doorscon); //-- Разрываем соединение
+exit;
+//==============================================================================
+//-- Вывод окна сообщения об ошибке
+//-- Входные параметры:
+//-- errcode - сод ошибки
+err:
+//-- ShowSmartError
+#ok_flag
+     alternative "Ошибка базы данных"
+     msgbox text "Некорректно заполнена база данных систем дверей"
+     " "
+     errcode
+     done
+     "  OK  "
+     done;
+return;

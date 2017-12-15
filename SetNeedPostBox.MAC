@@ -1,0 +1,4 @@
+//-- Установить наличие стойки между горизонтальными ящиками
+getpar NeedPost;
+NULLOUT=setvarinst(1,"NeedPostBox",NeedPost);
+exit;

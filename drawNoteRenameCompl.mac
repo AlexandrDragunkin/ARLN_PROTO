@@ -1,0 +1,68 @@
+global ProtoPath;
+defarr xm[6];
+selbyattr "left(FurnType,2)==\"04\"" partly all;
+n1=sysvar(61);
+if n1==0 {
+exit;
+}
+defarr aCompl[n1] ;
+macro protopath+"arrobj.mac" n1 aCompl;
+selbyattr "left(FurnType,2)==\"06\"" partly all;
+n2=sysvar(61);
+defarr aFix[n2] aSel[n1+n2];
+macro protopath+"arrobj.mac" n2 aFix;
+CurrVi=SysVar(51)   ;
+j=0;
+i=0;
+lab1:
+if  i<n1 {
+	i=i+1;
+		p=aCompl[i];
+		gosub getProperty;
+	goto lab1;
+}
+i=0;
+lab2:
+if  i<n2 {
+	i=i+1;
+		p=aFix[i];
+		gosub getProperty;
+	goto lab2;
+}
+//-----
+nullout=getsnap();
+setucs vcs;
+i=0;
+lab3:
+if i<j {
+	i=i+1;
+	nullout=objgab3(asel[i],xm);
+	KarkasN=getattr(asel[i],"KarkasNumb",-1);
+	#nnt note normal 0 0 1 type 1 getattr(asel[i],"ElemName","х") "" xm[1]+(xm[4]-xm[1])/2 xm[2]+(xm[5]-xm[2])/2 xm[3]+(xm[6]-xm[3])/2 @(xm[5]-xm[2])/2 (xm[5]-xm[2])/2 0 @1 0 0 ;
+	chprop color nnt done 14
+	if KarkasN!=-1 { attrobj attach  "Karkasnumb" done last 1 KarkasN; }
+	Attrobj Attach "NumType" Done  last 1 1;
+	attrobj attach "NoHide" done last 1  1;
+	Attrobj Attach  "AutoPlace"  Done Last 1 1;
+	Attrobj Attach  "VidDimPlace"  Done Last 1 CurrVi;
+
+	goto lab3;
+}
+
+nullout=resnap();
+exit;
+//=========================================
+getProperty:
+	priceid=getattr(p,"PriceId",0);
+	ElemName=getattr(p,"ElemName","х");
+	matName="x"
+	key=0;
+	if priceid>0 {
+		matName=priceinfo(priceid,"MatName","x");
+		if (matName==ElemName) { key=1 }
+		if !key {
+			j=j+1;
+			asel[j]=p
+		}
+	}
+return;

@@ -1,0 +1,147 @@
+//-- Выбор типового проекта
+defarr altxt[11], altfl[11];
+global ProtoPath;
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами
+
+select attribute "posit==10" done; //-- Выбираем каркасы
+nk=sysvar(61);
+//---Поиск каркаса
+i=0;
+lab_1:
+i=i+1
+If (i<=nk)
+{
+  if (getcarcnumb(getselnum(i))==getcarcnumb()) //-- Если этот каркас текущий
+  {
+    sss="KarkasNumb=="+str(getcarcnumb())+"&&ObjType>=0&&Posit!=10";
+    select attribute sss done;
+    kkk=sysvar(61);
+    if (kkk>0)
+    {
+      #ok_flag
+          alternative "Внимание!!!" msgbox picture 3 beep 3
+          text "Текущий каркас в проекте уже заполнен"
+      "Создание типового проекта невозможно"
+      done " ОК "
+      done;
+      exit;
+    }
+    else
+    {
+      goto begin;
+    }
+  }
+  goto lab_1;
+}
+begin:
+
+// altxt[1]="Стол письменный";
+altxt[2]="Корпус шкафа";
+// altxt[3]="Стол компьютерный";
+// altxt[5]="Стол кухонный";
+// altxt[4]="Шкаф с наполнением";
+// altxt[6]="Шкаф c системой дверей";
+altxt[7]="Шкаф угловой";
+// altxt[8]="Тумба под ТВ";
+// altxt[9]="Книжный шкаф";
+// altxt[10]="Стол палатный";
+// altxt[11]="Парта";
+
+// altfl[1]=PicturesPath+"stol1.png";
+altfl[2]=PicturesPath+"shkaf.png";
+// altfl[3]=PicturesPath+"stol2.png";
+// altfl[5]=PicturesPath+"stolkuh.png";
+// altfl[4]=PicturesPath+"shkaf1.png";
+// altfl[6]=PicturesPath+"cupel.png";
+altfl[7]=PicturesPath+"qsh.png";
+// altfl[8]=PicturesPath+"Tumb_TV.png";
+// altfl[9]=PicturesPath+"BookCase.png";
+// altfl[10]=PicturesPath+"Camptable.png";
+// altfl[11]=PicturesPath+"parta.png";
+
+
+#altnum
+alternative
+"Типовые проекты"
+picbox
+text
+center
+"Выберите типовой проект"
+done
+default 1
+// altxt[1]  altfl[1]
+altxt[2]  altfl[2]
+// altxt[3]  altfl[3]
+// altxt[4]  altfl[4]
+// altxt[5]  altfl[5]
+// altxt[6]  altfl[6]
+altxt[7]  altfl[7]
+// altxt[8]  altfl[8]
+// altxt[9]  altfl[9]
+// altxt[10] altfl[10]
+// altxt[11] altfl[11]
+done;
+putmsg(altnum)
+if (altnum==0)
+{
+  goto finish;
+}
+
+if altnum==1
+{
+	macro ProtoPath+"Stkarkas.mac" ;
+}
+
+// if (altnum==1)
+// {
+  // macro ProtoPath+"StTable.mac"  ;
+// }
+if (altnum==2)
+{
+  macro ProtoPath+"qsh.mac"  ;
+}
+// if (altnum==2)
+// {
+  // macro ProtoPath+"Stkarkas.mac" ;
+// }
+// if (altnum==3)
+// {
+  // macro ProtoPath+"StTable2.mac"  ;
+// }
+// if (altnum==4)
+// {
+  // macro ProtoPath+"Shkaf1.mac"  ;
+// }
+// if (altnum==5)
+// {
+  // macro ProtoPath+"StBoad1.mac"  ;
+// }
+// if (altnum==6)
+// {
+  // macro ProtoPath+"cupel.mac"  ;
+// }
+// if (altnum==7)
+// {
+  // macro ProtoPath+"qsh.mac"  ;
+// }
+// if (altnum==8)
+// {
+  // macro ProtoPath+"Tumb_TV.mac";
+// }
+// if (altnum==9)
+// {
+  // macro ProtoPath+"BookCase.mac";
+// }
+// if (altnum==10)
+// {
+  // macro ProtoPath+"CampTable.mac";
+// }
+// if (altnum==11)
+// {
+  // macro ProtoPath+"parta.mac";
+// }
+finish:
+;Redraw AllNoRender	// перерисовать все не рендерные видеоокна
+exit;

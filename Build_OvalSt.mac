@@ -1,0 +1,77 @@
+// Построение овальной столешницы
+
+global Kont; // Контур
+global L_E;  // Дли-
+global L_B;  // ны
+global L_C;  // сто-
+global L_D;  // рон
+global Dug1 Dug2;
+
+getpar
+x,    // ширина
+y,    // глубина
+r,    // радиус скругления
+Hc,   // высота конструкции
+Band_E, // кромка по стороне E
+Band_D, // кромка по стороне D
+Band_C, // кромка по стороне C
+Band_B; // кромка по стороне B
+
+defarr Cr[6]; // массив для координат пересечения
+
+//---------------------------------------------------------------------------
+
+L_E=0; L_D=0; L_B=0; L_C=0;// Длины сторон
+
+//------------расчёты-------------------------------------------------------
+a=0.5*x;  b=0.5*y;
+y0=(a-b)*(a+b-2*r)/(2*(b-r));
+R1=y0+b;
+
+//-----------построение------------------------------------------------------
+//#C1 circle   a-r 0 Hc   normal 0 0 1   r;
+//#C2 circle  -a+r 0 Hc   normal 0 0 1   r;
+//#TmpC circle   0 y0 Hc   normal 0 0 1   R1;
+//int=intpoint(C1,TmpC,Cr);
+//x1=Cr[1];  y1=Cr[2];
+//int=intpoint(C2,TmpC,Cr);
+//x2=Cr[1];  y2=Cr[2];
+//:
+//delete C1 C2 TmpC done;
+
+x0=a-r;
+f=(r*r-R1*R1-x0*x0-y0*y0)/2;
+x1=(-f*x0+sqrt(f*f*x0*x0-(y0*y0+x0*x0)*(f*f-R1*R1*y0*y0)))/(y0*y0+x0*x0);
+y1=-sqrt(r*r-(x1-a+r)*(x1-a+r));
+x0=r-a;
+x2=(-f*x0+sqrt(f*f*x0*x0-(y0*y0+x0*x0)*(f*f-R1*R1*y0*y0)))/(y0*y0+x0*x0);
+y2=y1;
+
+#Ae arc  x2 y2 Hc   x1 y1 Hc   0 -b Hc;
+#Tmp clength Ae;
+L_E=Tmp;
+#Ad mirror Ae done 3points -a 0 Hc   a 0 Hc  a 0 Hc+10 copy 1;
+#Tmp clength Ad;
+L_D=Tmp;
+#Ab arc x2 -y2 Hc   x2 y2 Hc   -a 0 Hc;
+objident last 1 Dug1;
+#Tmp clength Ab;
+L_B=Tmp;
+//#Ac arc x1 -y1 Hc   x1 y1 Hc    a 0 Hc;
+#Ac mirror Ab done 3points 0 -b Hc   0 b Hc  0 b Hc+10 copy 1;
+objident last 1 Dug2;
+#Tmp clength Ac;
+Dug2=Ac;
+L_C=Tmp;
+
+Attrobj Attach "Facer_B" Done record 0;
+Attrobj Attach "Facer_C" Done record 0;
+Attrobj Attach "Facer_D" Done record 0;
+Attrobj Attach "Facer_E" Done record 0;
+if Band_B>0 { Attrobj Attach "Facer_B" Done record L_B; }
+if Band_C>0 { Attrobj Attach "Facer_C" Done record L_C; }
+if Band_D>0 { Attrobj Attach "Facer_D" Done record L_D; }
+if Band_E>0 { Attrobj Attach "Facer_E" Done record L_E; }
+
+#Kont path select last 4 done last 1 create;
+exit;

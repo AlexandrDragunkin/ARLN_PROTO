@@ -1,0 +1,29 @@
+//-- Вывод окна восклицательного сообщения
+//-- с возвратом кода ошибки в вызывающую программу
+//-- Входные параметры:
+//-- errname - название ошибки
+//-- nErrStr - число строк с описанием ошибки
+//-- error[] - массив строк для вывода
+
+getpar errname,nErrStr,error;
+if (nErrStr<1)
+{
+  exit;
+}
+#ok_flag
+alternative "Внимание!"
+msgbox picture 3 beep 3 text left
+errname
+" "
+let i=0
+loop:
+let i=i+1
+error[i]
+if (i<nErrStr)
+{
+  goto loop
+}
+done
+"  OK  "
+done;
+exit;

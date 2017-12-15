@@ -1,0 +1,615 @@
+CurStat=SysVar(70) ;
+=Curstat
+if CurStat==0 { CurStat=2  }
+
+//*********************************************
+//построение размерных сеток замкнутого контура
+//
+//              Драгункин А.Р.
+//              ГеоС 2007 г.
+//*********************************************
+//=MsgLevel(4) ;  // 2008/05/23 ;     //Устанавливает статус вывода сообщений в зависимости от значения параметра
+//0 – «Сообщения об ошибках»
+//1 – «Системные подсказки»
+//2 – «Системные сообщения»
+//3 – «Пользовательский ввод»
+global L_SUPPORT ;
+global Protopath ;
+// Умолчания для типов линий
+global
+TiLDef    // Толщина тонких линий (умолчание)
+TiLDet    // Толщина линий детали
+TiLPaz    // Толщина линий паза
+TiLKrom   // Толщина линий кромки
+TiLOs     // Толщина осевых линий
+TyLOs     // Тип осевых линий
+;
+global
+Cv
+CurrVi
+;
+global DRWZPath;
+
+
+defarr xm[6] w1[3] w2[3] xmm[30] DimInf[48] p1[3] darr[21] ArrSys[20] ;
+
+defarr AriB[200] AriB2[200] ;
+defarr AriC[200] AriC2[200] ;
+defarr AriD[200] AriD2[200] ;
+defarr AriE[200] AriE2[200] ;
+
+
+defarr xp[300] yp[300] Np[300] Dp[300] Lp[300] Fp[300];
+
+D_Drill=1.1                                                             // было 0.5 18.06.03 Допуск на отклонение
+DS_Drill=D_Drill
+
+BaseFlgB=1                                                              // Флаг база/цепочка по B
+BaseFlgD=1                                                              // Флаг база/цепочка по D
+
+BaseDE="E"                                                              // Размерная база от D или E
+BaseBC="B"                                                              // Размерная база от B или C
+
+getpar auto ;                                                           // 1-из макро или командной строки 0-диалоговый режим
+if auto==0 { // =MsgLevel(2) ;
+   PutMsg("Укажите контур");
+   objident : pnt ;
+
+   get "Укажите сторону базы" point missing p1[1] p1[2] p1[3] :         //определяем базы
+   }
+else {
+     getpar                                                             // Задаем параметры
+     pnt                                                                // указатель на контур
+     p1[1]                                                              // X-координата точки указателя базы
+     p1[2]                                                              // Y-координата точки указателя базы
+     p1[3] ;                                                            // Z-координата точки указателя базы
+}
+
+PTransCS(0,3,p1[1],p1[2],p1[3],p1[1],p1[2],p1[3]);                      //преобразуем в ГСК
+chprop lwidth pnt done TiLDet ;                                         //меняем толщину
+if ""==GetLayer(pnt) {    chprop layer  pnt done "0" ;  }               //Присваиваем контуру определенный слой если он неопределен
+
+TypPnt=GetObjType(pnt) ;
+//PutMsg("Тип элемента для анализа="+str(TypPnt),1);
+
+
+if (TypPnt!=5)&&(TypPnt!=7) {    // проверяем. контур ли?
+   PutMsg("Не допустимый тип элемента для анализа= "+str(TypPnt),0);
+   goto metend ;
+   }
+
+   
+//Создаем уровни для отображения размеров
+ layers new "VidDim_1" ;
+ layers new "VidDim_2" ;
+ layers new "VidDim_3" ;
+ layers new "VidDim_4" ;
+  If (!IsAttrdef("AutoPlace"))
+ { Attribute Create "AutoPlace" "Тип установки" Real 5 0 ; }
+   If (!IsAttrdef("VidDimPlace"))
+ { Attribute Create "VidDimPlace" "Номер вида на котором определен размер" Real 5 0 ; }
+ If (!IsAttrdef("LongDim"))
+ { Attribute Create "LongDim" "Размеры длинномера" Real 5 0  ; }
+// Размер - уровень
+ CurrVi=SysVar(51)   ;
+ CV="VidDim_"+Str(CurrVi) ;
+err=SysArr(80,darr) ;
+err=SysArr(43,ArrSys) ; // массив свойств созаваемого объекта
+//Поправка на коэффициент графических элементов
+oldDarr=darr[21]
+SdDimCD=Sysvar(76)*2*darr[1]*ArrSys[3] ;
+hdim=darr[1]*1.6 ;
+SdDimBE=Sysvar(76)*2*hdim*ArrSys[3] ;
+GoSub DDbas ;      //Расчитываем значение SPACE для размеров типа base
+objects=sysvar(60) ;
+//=======================
+if TypPnt==7 {  //Выполняем поиск радиусов для каждого контура и их образмеривание
+   ;macro L_SUPPORT+"RdimPathGr.mac" pnt ;
+}
+else {
+     ;macro L_SUPPORT+"RdimPath656.mac" pnt ;
+     }
+//=======================
+objects=Sysvar(60)-objects ;
+if objects>0 {
+   chprop lwidth last objects done TiLOs ;
+   chprop layer  last objects done CV ;
+   }
+//Ищем центр габаритов
+setucs save "@@@@" ;
+// определяем габариты в В ПСК
+gosub GetGab;
+//Смещаем ПСК
+setucs move CentX CentY CentZ ;
+
+
+PTransCS(3,0,p1[1],p1[2],p1[3],p1[1],p1[2],p1[3]); //преобразуем в ГСК
+if p1[2]>0 { BaseDE="E" }    // Размерная база от D или E
+else { BaseDE="D" }
+if p1[1]>0 { BaseBC="C" }   // Размерная база от B или C
+else { BaseBC="B" }
+
+//Добавляем точки размеров контура
+gosub ArrPoint;
+//PutMsg("Конец заполнения массива точек контура. Количество точек в массивах="+str(ip));
+
+SimX=0 //Признак симметричности относительно оси перпендикулярной X
+SimY=0 //Признак симметричности относительно оси перпендикулярной Y
+//PutMsg("Проверка симметричности относительно осей  X Y ");
+objects=sysvar(60) ;
+gosub SimXY;
+// определяем габариты в В ПСК
+gosub GetGab;
+rectangle W1[1] W1[2] 0  W2[1] W2[2] 0;
+//Строим оси симметрии
+gosub OsySim;
+
+//Строим размерную cетку
+if SimX==1 { gosub DimSimX ;  } //Если есть ось симметрии относительно X
+else {
+//--------------------------------------------------D
+macro DRWZPath+"DwPhDimD.mac" iD w1 w2 AriD AriD2 BaseFlgD SdDimCD  BaseBC ;
+//--------------------------------------------------E
+macro DRWZPath+"DwPhDimE.mac" iE w1 w2 AriE AriE2 BaseFlgD SdDimBE  BaseBC ;
+}
+if SimY==1 { gosub DimSimY ;  } //Если есть ось симметрии относительно Y
+else {
+
+
+//--------------------------------------------------C
+macro DRWZPath+"DwPhDimC.mac" iC w1 w2 AriC AriC2 BaseFlgB SdDimCD  BaseDE ;
+
+//--------------------------------------------------B
+macro DRWZPath+"DwPhDimB.mac" iB w1 w2 AriB AriB2 BaseFlgB SdDimBE  BaseDE ;
+}
+objects=Sysvar(60)-objects ;
+chprop lwidth last objects done TiLOs ;
+chprop layer  last objects done CV ;
+
+//gosub MkAxisX;  // Осевые
+//gosub MkAxisY;  // Осевые
+#dm1 ldim 3ddim 0 0 0 1 0 0 free 0 1 0 ;//востанавливаем нормальные привязки размеров
+delete dm1 ;
+setucs restore "@@@@" ;
+setucs delete "@@@@" ;
+metend:
+bp 0 0 0 ;
+hdim=oldDarr
+GoSub DDbas ;      //Расчитываем значение SPACE для размеров типа base
+//=MsgLevel(CurStat) ;
+exit;
+
+//=============================sub===================================
+DimSimX:    //Если есть ось симметрии относительно X
+//если нет симметрии по Y Расстановка размеров делается в полусферах
+//В противном случае можно поставить осевые между точками на одной координате
+//И произвести простановку размеров в одной полусфере
+// Простановка размеров
+
+Val=0     //Значение размера
+ToVal=0.1 //точность округления
+j=0
+i=0
+if (SimY==1)&&(p1[2]>0) { goto metDSE ; }
+metDSD:
+if i<iD {
+   i=i+1
+   #ds dist AriD[i] AriD2[i]  W1[3] -AriD[i] AriD2[i]  W1[3] ;
+   if AriD[i]>0&&abs(ds-Val)>ToVal&&ds>0.001 {
+      j=j+1
+      ldim 3ddim AriD[i] AriD2[i]  W1[3] -AriD[i] AriD2[i]  W1[3]
+      free AriD[i] w1[2]-SdDimCD*(j) W1[3]    ;
+      objident last 1 dm ;
+      Err=GetDimInfo(dm,DimInf);
+      ;macro L_SUPPORT+"EditDim.mac" 1 dm ;
+      objident last 1 dm ;
+      Val=dimInf[1] ;     //Значение размера
+      ToVal=dimInf[29] ; //точность округления
+      
+      }
+   goto metDSD ;
+}
+   if w2[1]!=AriD[i] {
+      ldim 3ddim w2[1] w1[2]  W1[3] -w2[1] w1[2]  W1[3]
+      free w2[1] w1[2]-SdDimCD*(j+1) W1[3]    ;
+      }
+if SimY==1 { return ; }
+i=0
+j=0
+metDSE:
+if i<iE {
+   i=i+1
+   #ds dist AriE[i] AriE2[i]  W1[3] -AriE[i] AriE2[i]  W1[3] ;
+   if AriE[i]>0&&abs(ds-Val)>ToVal&&ds>0.001 {
+      j=j+1
+      ldim 3ddim AriE[i] AriE2[i]  W1[3] -AriE[i] AriE2[i]  W1[3]
+      free AriE[i] w2[2]+SdDimBE*(j) W1[3]    ;
+      objident last 1 dm ;
+      Err=GetDimInfo(dm,DimInf);
+      ;macro L_SUPPORT+"EditDim.mac" 1 dm ;
+      objident last 1 dm ;
+      Val=dimInf[1] ;
+      ToVal=dimInf[29] ; //точность округления
+      }
+   goto metDSE ;
+}
+   if w2[1]!=AriE[i] {
+      ldim 3ddim w2[1] w2[2]  W1[3] -w2[1] w2[2]  W1[3]
+      free w2[1] w2[2]+SdDimBE*(j+1) W1[3]    ;
+   }
+return;
+
+DimSimY:    //Если есть ось симметрии относительно Y
+Val=0     //Значение размера
+ToVal=0.1 //точность округления
+i=0
+j=0
+if (SimX==1)&&(p1[1]>0) { goto metDSC ; }
+metDSB:
+if i<iB {
+   i=i+1
+   #ds dist AriB2[i] AriB[i]   W1[3] AriB2[i] -AriB[i]  W1[3] ;
+   if AriB[i]>0&&abs(ds-Val)>ToVal&&ds>0.001 {
+      j=j+1
+      =AriB2[i] =AriB[i]
+      ldim 3ddim  AriB2[i] AriB[i]   W1[3] AriB2[i] -AriB[i]  W1[3]
+      free  w1[1]-SdDimBE*(j) AriB[i]  W1[3]    ;
+      objident last 1 dm ;
+      Err=GetDimInfo(dm,DimInf);
+      ;macro L_SUPPORT+"EditDim.mac" 1 dm ;
+      objident last 1 dm ;
+      Val=dimInf[1] ;
+      ToVal=dimInf[29] ; //точность округления
+      }
+   goto metDSB ;
+   }
+   if w2[2]!=AriB[i] {
+   ldim 3ddim  w1[1] w2[2]  W1[3] w1[1] -w2[2]  W1[3]
+      free w1[1]-SdDimBE*(j+1) w2[2]  W1[3]    ;
+      }
+   if SimX==1 { return ; }
+
+i=0
+j=0
+metDSC:
+if i<iC {
+   i=i+1
+   #ds dist AriC2[i] AriC[i]   W1[3] AriC2[i] -AriC[i]  W1[3] ;
+   if AriC[i]>0&&abs(ds-Val)>ToVal&&ds>0.001 {
+      j=j+1
+      ldim 3ddim  AriC2[i] AriC[i]   W1[3] AriC2[i] -AriC[i]  W1[3]
+      free w2[1]+SdDimCD*(j) AriC[i]  W1[3]    ;
+      objident last 1 dm ;
+      Err=GetDimInfo(dm,DimInf);
+      ;macro L_SUPPORT+"EditDim.mac" 1 dm ;
+      objident last 1 dm ;
+      Val=dimInf[1] ;
+      ToVal=dimInf[29] ; //точность округления
+      }
+   goto metDSC ;
+}
+if w2[2]!=AriC[i] {
+ldim 3ddim  w2[1] w2[2]  W1[3] w2[1] -w2[2]  W1[3]
+      free w2[1]+SdDimCD*(j+1) w2[2]  W1[3]    ;
+}
+return;
+
+
+
+GetGab: // определяем габариты в В ПСК
+rr=objgab3(pnt,xm)
+w1[1]=xm[1];
+w1[2]=xm[2];
+w1[3]=xm[3];
+w2[1]=xm[4];
+w2[2]=xm[5];
+w2[3]=xm[6];
+CentX=w1[1]+(w2[1]-w1[1])/2;  // Центр
+CentY=w1[2]+(w2[2]-w1[2])/2;
+CentZ=w1[3]+(w2[3]-w1[3])/2;
+DDX=(w2[1]-w1[1]) // Размер по X
+DDY=(w2[2]-w1[2]) // Размер по Y
+DDZ=(w2[3]-w1[3]) // Размер по Z
+
+return;
+
+OsySim:
+if SimY==1 {
+   #lX line w1[1]-SdDimBE/2 centY w1[3]  w2[1]+SdDimBE/2 centY w1[3] done ;
+   Chprop lwidth Last 1 done TiLOs     // Толщина осевых линий
+   Chprop ltype  Last 1 done TyLOs     // Тип осевых линий
+   Chprop layer  Last 1 done CV        // Уровень отображения
+   Attrobj Attach  "AutoPlace"  Done Last 1 1 ;
+   Attrobj Attach  "VidDimPlace"  Done Last 1 CurrVi;
+   }
+if SimX==1 {
+   #lY line centX w1[2]-SdDimBE/2  w1[3] centX w2[2]+SdDimBE/2  w1[3] done ;
+   Chprop lwidth Last 1 done TiLOs     // Толщина осевых линий
+   Chprop ltype  Last 1 done TyLOs     // Тип осевых линий
+   Chprop layer  Last 1 done CV        // Уровень отображения
+   Attrobj Attach  "AutoPlace"  Done Last 1 1 ;
+   Attrobj Attach  "VidDimPlace"  Done Last 1 CurrVi;
+   }
+return;
+
+ArrPoint:
+   ip=0;  // счетчик точек образмеривания
+   n_TypO=getcntobjga(pnt); //количество элементов в контуре
+   //PutMsg("Количество элементов в контуре="+str(n_TypO));
+   defarr objs[n_TypO];
+   scang(pnt,objs);
+   i_TypO=0
+   metTo:
+   if (i_TYpO<n_TypO) {    // &&(N_Typo>4)
+      i_TypO=i_Typo+1
+         GetObjGeo(objs[i_TYpO],xmm) ;
+         Typi=GetObjType(objs[i_TYpO]);
+         if Typi==2 { //отрезок
+            PTransCS(3,2,xmm[1],xmm[2],xmm[3],xmm[1],xmm[2],xmm[3]);
+            PTransCS(3,2,xmm[4],xmm[5],xmm[6],xmm[4],xmm[5],xmm[6]);
+            ip=ip+1
+            xp[ip]=xmm[1] // Точка контура
+            yp[ip]=xmm[2];
+            Dp[ip]=0.1;
+            Lp[ip]=0.1;
+            Fp[ip]=1;          // Флаг уникальности
+
+           ip=ip+1
+            xp[ip]=xmm[4] // Точка контура
+            yp[ip]=xmm[5];
+            Dp[ip]=0.1;
+            Lp[ip]=0.1;
+            Fp[ip]=1;          // Флаг уникальности
+
+         }
+         if Typi==3 { //окружность
+            PTransCS(3,2,xmm[5],xmm[6],xmm[7],xmm[5],xmm[6],xmm[7]);
+            ip=ip+1
+            xp[ip]=xmm[5] // Точка контура
+            yp[ip]=xmm[6];
+            Dp[ip]=0.1;
+            Lp[ip]=0.1;
+            Fp[ip]=1;          // Флаг уникальности
+         }
+         if Typi==4 { //Дуга
+            PTransCS(3,2,xmm[8],xmm[9],xmm[10],xmm[8],xmm[9],xmm[10]);
+            PTransCS(3,2,xmm[11],xmm[12],xmm[13],xmm[11],xmm[12],xmm[13]);
+            //PTransCS(3,2,xmm[5],xmm[6],xmm[7],xmm[5],xmm[6],xmm[7]);
+            //PTransCS(3,2,xmm[2],xmm[3],xmm[4],xmm[2],xmm[3],xmm[4]);
+
+            //#ast Angle xmm[5] xmm[6] xmm[7] xmm[5]+10 xmm[6] xmm[7]  xmm[8] xmm[9] xmm[10] ;
+            //ast=radian(ast)
+
+            ip=ip+1
+            xp[ip]=xmm[8] // Точка контура
+            yp[ip]=xmm[9];
+            Dp[ip]=0.1;
+            Lp[ip]=0.1;
+            Fp[ip]=1;          // Флаг уникальности
+            ip=ip+1
+            xp[ip]=xmm[11] // Точка контура
+            yp[ip]=xmm[12];
+            Dp[ip]=0.1;
+            Lp[ip]=0.1;
+            Fp[ip]=1;          // Флаг уникальности
+            //      ip=ip+1
+            //xp[ip]=xmm[5] // Точка контура центр дуги
+            //yp[ip]=xmm[6];
+            //Dp[ip]=0.1;
+            //Lp[ip]=0.1;
+            //Fp[ip]=1;          // Флаг уникальности
+
+         }
+    goto metTo ;
+   }
+
+
+   //Конец заполнения массива точек контура
+//Сортировка точек
+i=0;
+iAx=0;
+iAy=0;
+iB=0;
+iC=0;
+iD=0;
+iE=0;
+iF=0;
+lab_S1:
+i=i+1
+If (i<=ip) {
+  if xp[i]<0 {
+    macro GetProtoMac("Shkaf.ptl")+"Sort2Arr.mac" yp[i] xp[i] AriB AriB2 iB ;
+    iB=iB+1;
+     }
+     else {
+        macro GetProtoMac("Shkaf.ptl")+"Sort2Arr.mac" yp[i] xp[i] AriC AriC2 iC ;
+      iC=iC+1;
+     }
+
+  if yp[i]<0 {
+      macro GetProtoMac("Shkaf.ptl")+"Sort2Arr.mac" xp[i] yp[i] AriD AriD2 iD ;
+      iD=iD+1;
+    }
+    else {
+    macro GetProtoMac("Shkaf.ptl")+"Sort2Arr.mac" xp[i] yp[i] AriE AriE2 iE ;
+          iE=iE+1;
+    }
+  goto lab_S1
+}
+//putmsg("ie="+str(ie),1) ;
+iie=0
+iiie:
+if iie<ie {
+   iie=iie+1
+   //putmsg("Arie["+str(iie)+"]="+str(arie[iie])+"; "+"Arie2["+str(iie)+"]="+str(arie2[iie]),1) ;
+   goto iiie ;
+   }
+
+return;
+
+SimXY:
+//PutMsg("Проверка симметричности относительно оси перпендикулярной X ");
+MirP=0 //счетчик зеркальных точек
+i=0
+ metSimX:
+ if i<ip {
+    i=i+1
+    if Fp[i]!=1 { goto metsimX ; }
+    Fp[i]=0 //Больше эту точку анализировать не надо
+    j=0
+    metSX:
+    if j<ip {
+       j=j+1
+       // Ищем точку с Yp[j]==Yp[i]
+       if Fp[j]!=1 { goto metSX ; }
+       if ABS(Yp[j]-Yp[i])<=0.1 { //Эти точки в пределах допуска на одной Y
+
+          if (Abs(Xp[j])-Abs(Xp[i])<=DS_Drill)&&(abs(Xp[j]+Xp[i])<=DS_Drill) { //Эти точки зеркальные
+             MirP=MirP+1
+             Fp[j]=0 // Больше эту точку анализировать не надо
+
+          }
+       }
+    goto metSX ;
+    }
+ goto metsimX ;
+ }
+ //конец проверки на симметрию X
+if Mirp==ip/2  
+{ 
+	SimX=1; 
+	//PutMsg("Все Ок! Контур симметричный относительно оси перпендикулярной X MirP="+str(MirP)); 
+}
+else 
+{ 
+//PutMsg("Плохо. Контур НЕ симметричный относительно оси перпендикулярной X MirP="+str(MirP)); 
+}
+//PutMsg("Проверка симметричности относительно оси перпендикулярной Y ");
+MirP=0 //счетчик зеркальных точек
+i=0
+ metSimY:
+ if i<ip {
+    i=i+1
+    if Fp[i]!=0 { goto metsimY ; }
+    Fp[i]=1 //Больше эту точку анализировать не надо
+    j=0
+    metSY:
+    if j<ip {
+       j=j+1
+       // Ищем точку с Yp[j]==Yp[i]
+       if Fp[j]!=0 { goto metSY ; }
+       if ABS(Xp[j]-Xp[i])<=0.1 { //Эти точки в пределах допуска на одной Y
+
+          if (Abs(Yp[j])-Abs(Yp[i])<=0.1)&&(abs(Yp[j]+Yp[i])<=0.1) { //Эти точки зеркальные
+             MirP=MirP+1
+             Fp[j]=1 // Больше эту точку анализировать не надо
+
+          }
+       }
+    goto metSY ;
+    }
+ goto metsimY ;
+ }
+ //конец проверки на симметрию Y
+if Mirp==ip/2  { SimY=1 ; PutMsg("Все Ок! Контур симметричный относительно оси перпендикулярной Y MirP="+str(MirP)); }
+else { PutMsg("Плохо. Контур НЕ симметричный относительно оси перпендикулярной Y MirP="+str(MirP)); }
+return;
+//=======================================================================
+// Формирование осевых
+MkAxisY:
+defarr xpt[300];
+
+lwidth TiLOs ;     // Толщина осевых линий
+ltype TyLOs ;
+
+i=0;
+lab_Ay:
+i=i+1
+If (i<=ip) {
+    if (Lp[i]==0) { goto lab_Ay  }
+  if (abs(xp[i]-0)<DS_Drill) { goto lab_Ay  }  // Крайние  (abs(xp[i]-w1[1]*nylw11-w2[1]*nylw21)<DS_Drill)
+  //if (abs(yp[i]-w1[2])<DS_Drill) { goto lab_Ax  }
+  if (abs(xp[i]-0)<DS_Drill) { goto lab_Ay  }    // (abs(xp[i]-w1[1]*nylw11-w2[1]*nylw21)<DS_Drill)
+  //if (abs(yp[i]-w2[2])<DS_Drill) { goto lab_Ax  }
+  ytt=yp[i]
+  iAxt=1
+  xpt[1]=xp[i]
+  j=i
+lab_Ay2:
+  j=j+1
+  If (j<=ip) {
+    if (abs(yp[j]-ytt)<.1) {
+      ;macro  GetProtoMac("Shkaf.ptl")+"SortArr.mac" xp[j] xpt iAxt ;
+      Dp[j]=0             // Исключаем из дальнейшей обработки
+      iAxt=iAxt+1;
+    }
+    goto lab_Ay2;
+  }
+//  if (iAxt==1) {  goto lab_Ay; }
+    #dss dist w1[1]*nylw11+w2[1]*nylw21 ytt  0 xpt[iAxt] ytt  0 ;
+    if dss>0.1 {
+       line w1[1]*nylw11+w2[1]*nylw21 ytt  0 xpt[iAxt] ytt  0 ;
+       Attrobj Attach  "AutoPlace"  Done Last 1 1 ;
+       Attrobj Attach  "VidDimPlace"  Done Last 1 CurrVi;
+       chprop layer last 1 done CV ;
+       }
+  goto lab_Ay;
+}
+ltype 0 ;
+return;
+//=======================================================================
+// Формирование осевых
+MkAxisX:
+defarr ypt[300];
+
+lwidth TiLOs ;     // Толщина осевых линий
+ltype TyLOs ;
+
+i=0;
+lab_Ax:
+i=i+1
+If (i<=ip) {
+  if (Lp[i]==0) { goto lab_Ax  }
+  //if (abs(xp[i]-w1[1])<DS_Drill) { goto lab_Ax  }  // Крайние
+  if (abs(yp[i]-0)<DS_Drill) { goto lab_Ax  }  //w2[2]*nylw22-w1[2]*nylw12
+  //if (abs(xp[i]-w2[1])<DS_Drill) { goto lab_Ax  }
+  if (abs(yp[i]-0)<DS_Drill) { goto lab_Ax  }    //w2[2]*nylw22-w1[2]*nylw12
+  xtt=xp[i]
+  iAyt=1
+  ypt[1]=yp[i]
+  j=i
+lab_Ax2:
+  j=j+1
+  If (j<=ip) {
+    if (abs(xp[j]-xtt)<.1) {
+      ;macro  GetProtoMac("Shkaf.ptl")+"SortArr.mac" yp[j] ypt iAyt ;
+      Lp[j]=0             // Исключаем из дальнейшей обработки
+      iAyt=iAyt+1;
+    }
+    goto lab_Ax2;
+  }
+//  if (iAyt==1) {  goto lab_Ax; }
+    #dss dist xtt w2[2]*nylw22+w1[2]*nylw12 0 xtt ypt[iAyt] 0 ;
+    =dss
+    if dss>0.1 {
+        line xtt w2[2]*nylw22+w1[2]*nylw12 0 xtt ypt[iAyt] 0 ;
+        Attrobj Attach  "AutoPlace"  Done Last 1 1 ;
+        Attrobj Attach  "VidDimPlace"  Done Last 1 CurrVi;
+        chprop layer last 1 done CV ;
+    }
+
+  goto lab_Ax;
+}
+ltype 0 ;
+return;
+
+DDbas:
+ldim 3ddim 0 0 0  0 100 0 free 50 0 0 ; //стартовый размер
+ldim base  0 110 0 ;
+ldim base space hdim 0 120 0  ;
+//ldim base  0 120 0  ;
+//putmsg("hdim="+str(hdim),0)
+
+ldim 3ddim 0 0 0 100 0 0 free 0 50 0 ; //стартовый размер
+delete last 4 done ;
+return ;

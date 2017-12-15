@@ -1,0 +1,430 @@
+// Чертеж фасада
+
+object_2=1
+defarr panels[object_2]  addr[20] aCommPos[object_2] adraw[object_2*3] objdraw[3*object_2] sobjdraw[30000];
+global ProtoPath Formlist g_lza;
+global FindMatID;   //-- Для GetPriceName
+global g_draw;
+//==========
+
+defarr angS[1];
+defarr arr[16];
+NULLOUT=GetSnap();
+// Берем дверку
+onerror end;
+switch autosingle on;
+selbyattr "FurnType==\"500000\"" partly :
+switch autosingle off;
+
+Nobj=SysVar(61);
+if nObj==0
+{
+	goto end;
+}
+
+hDoor=GetSelNum(1);
+//---------------------------------
+gosub initDRWV;
+//macro protopath+"GlasoffPref.mac" hDoor;
+macro L_support+"SetPlProjectA.mac" 10;
+//---------------------------------
+// Ищем дырки
+labRen:
+TPPOS=GetAttr(hDoor,"TopParentPos",-1);
+PPOS=GetAttr(hDoor,"ParentPos",-1);
+UPOS=GetAttr(hDoor,"UnitPos",-1);
+CPOS=GetAttr(hDoor,"CommonPos",-1);
+if Upos==-1 { 
+	err=Renumerate() 
+	goto labRen;
+}
+if TPPOS==-1
+{
+	goto end;
+}
+if PPOS!=-1
+{
+	selbyattr "unitpos=="+str(ppos) partly all done;
+	Nobj=SysVar(61);
+
+	if nObj>0
+	{
+		objh=getselnum(1);
+		Ucode=GetAttr(objh,"UnitCode","-1");
+
+		
+		if Ucode=="3000" // ящик
+		{
+			selbyattr "ParentPos=="+str(ppos)+"&&Posit=="+str(12) partly all done; 
+			Nobj=SysVar(61);
+			if nObj>0
+			{
+				pDno=getselnum(1); // дно ящика
+			}
+		}
+	}
+}
+
+
+IsHolderH=0
+IsHolderH=GetObjHold(hDoor,HHDoor);
+	if IsHolderH
+	{
+		extract partly HHDoor hDoor done ;
+	}
+	Pic=GetAttr(hDoor,"PriceId",0);
+j=0
+selbyattr "TopParentPos=="+str(TPPOS)+"&&FurnType==\"800600\"" partly all done;
+Nobj=SysVar(61);
+if nObj>0
+{
+
+	defarr aHole[nObj] aHoleIn[nObj];
+	macro protoPath+"ArrObj.mac" nObj aHole done ;
+	//---------------------------------
+	// ищем дырки которые внутри створки
+
+	
+	
+	i=0;
+	j=0;
+	lab1:
+	if i<nObj
+	{
+		i=i+1
+		dst=penetrate(hDoor,aHole[i]); // надо найти ближайший профиль к комплектующему когда расстояние 0
+		if dst>1
+		{
+			j=j+1;
+			aHoleIn[j]=aHole[i]
+			chprop color partly ahole[i] done 12 ;
+		}
+		goto lab1;
+	}
+	if IsHolderH
+	{
+		add partly HHDoor hDoor done ;
+	}
+	//---------------------------------
+	// Вытаскиваем все это во внешний файл
+	//saveOrder;
+	;
+	if IsHolderH
+	{
+		extract partly HHDoor hDoor done ;
+	}
+	defarr isHolder[j] HolderHol[j] ;
+	i=0;
+	lab2:
+	if i<j
+	{
+		i=i+1
+		IsHolder[i]=GetObjHold(aHoleIn[i],HolderHol[i]);
+
+		if IsHolder[i]
+		{
+			extract partly HolderHol[i] aHoleIn[i]  done ;
+		}
+		goto lab2;
+	}
+}
+IsHolderpd=0
+if isvardef("pDno")==16
+{
+	IsHolderpd=GetObjHold(pDno,Holderpd);
+	
+	extract partly Holderpd pDno  done ;
+}
+
+Save 
+	select 
+		hDoor
+			let i=0
+			lab3:
+			if i<j
+			{
+				let i=i+1
+				aHoleIn[i]
+				goto lab3
+			}
+			if isvardef("pDno")==16
+			{
+				pDno
+			}
+			done ProjPath+"Door_"+str(Upos)+".k3" [ overwrite ];
+
+
+if IsHolderH
+{
+	add partly HHDoor hDoor done ;
+}
+if IsHolderpd
+{
+	add partly Holderpd pDno done ;
+}
+i=0;
+lab4:
+if i<j
+{
+	i=i+1
+	if IsHolder[i]
+	{
+		add partly HolderHol[i] aHoleIn[i]  done ;
+	}
+	goto lab4;
+}
+//---------------------------------
+// получаем картинку дверки
+// совмещаем картинки
+// сохраняем
+
+SaveUpdate;
+open ProjPath+"Door_"+str(Upos)+".k3" ;
+
+selbyattr "FurnType==\"500000\"" all done;
+if sysvar(61)==0
+{
+	goto end;
+}
+hDoor=GetSelNum(1);
+setucs lcs hDoor ;
+
+#gr1 group all done ;
+setucs gcs ;
+place gr1 ;
+explode gr1;
+Xgab=GetAttr(hDoor,"Xunit",0);
+
+Zgab=GetAttr(hDoor,"Zunit",0);
+Ygab=GetAttr(hDoor,"Yunit",0);
+#Putmsg(Ygab);
+h_fas=Round(PriceInfo(Pic,"Thickness",16));
+Putmsg(h_fas);
+
+n=NPGetByWhere(1,"Name like('Плита (теория) "+str(round(h_fas))+"%')","aMats");
+
+if n>0 {
+ PMatID=aMats[1];
+	
+}
+else { goto end; }
+angS[1]=0;
+save auto [ overwrite ];
+
+rotate nocopy all done 2points Xgab/2 0 0 Xgab/2 0 1 180
+macro DRWZPath+"d_vid3get.mac" 
+1 //NumVid=0 // 1 2 3 4  0-все 4   5-текущий
+1 //Nvid=4 // число выводимых видов
+1 //hideA=1  //невидимые выводить    1-да 0-нет
+1 //visA=1  //видимые выводить      1-да 0-нет
+done ;
+Save all DraftsPath+"tmpRaspDoorF.k3" [ overwrite ];
+open ProjPath+"Door_"+str(Upos)+".k3";
+layers new "DoorVA";
+layers new "DoorVF";
+
+setucs gcs ;
+setucs 0 0 0 1 0 0 0 0 -1 ;
+obj=sysvar(60);
+append  DraftsPath+"tmpRaspDoorF.k3" 0 0 0 ;
+obj=sysvar(60)-obj;
+setucs gcs ;
+#grF group last obj done;
+chprop layer grF done "DoorVF";
+if FileExist(DraftsPath+"tmpRaspDoorF.k3")
+{
+	nullout=RemoveFile(DraftsPath+"tmpRaspDoorF.k3")
+}
+
+
+rotate nocopy grF  done 2points 0 0 0 1 0 0 -90
+rotate nocopy grF  done 2points 0 0 0 0 0 1 -90
+move nocopy grF  done 0 xgab 0
+#g_draw group grF  done ;
+//---------------------------------
+// получаем чертеж дырок надо бы(дырки собираем в блоки) но пока просто
+// для это создаем фиктивную панель той же толщины что дверка
+SetPan6Par(1,arr);
+arr[1]=PMatID;                 // ID материала
+SetPan6Par(2,arr);         // Задание материала панели
+err=SetPan6Par(19,angS);
+#Pant Mbmakepan rectangle 0 0 0 14 Xgab Zgab ;
+		
+err=SetPan6Par(999,arr);							
+objident last 1 Pant;
+attrobj attach "PriceId" done  Pant pic;
+attrobj attach "ElemName" done  Pant "Дверь 7";
+selbyattr "ParentPos=="+str(ppos)+"&&Posit=="+str(12) partly all done; 
+Nobj=SysVar(61);
+if nObj>0
+{
+	pDno=getselnum(1);
+	macro DRWZPath+"PropADDBox.mac" pDno ;
+	selbyattr "ElemName==\"Дверь 7\"" partly all done; 
+	Nobj=SysVar(61);
+	if nObj>0
+	{
+		Pant=getselnum(1);
+	}
+	attrobj attach "PriceId" done  Pant pic;
+}
+
+vport 3;
+macro DRWZPath+"drawdial.mac" 0 ;
+if (g_osn==1)
+{
+    macro DRWZPath+"osndial.mac";
+}
+
+nmal:
+//ft=getattr(Pant,"$ProtoINFO","");
+vAtr=GetAttr(Pant,"PorNumber",0);
+Pl_NumPan=vAtr;
+if (protoid(Pant)>0)
+{
+  //macro Protopath+"draw33.mac" Pant ;
+  macro ProtoPath+"OldPanToNewPan.mac" Pant;
+  objident last 1 Pant;
+  attrobj edit partly Pant "PorNumber" done vAtr
+  goto nmal;
+}
+else
+{
+  macro DRWZPath+"DrawDB.mac" ;
+ //macro Protopath+"drawpan.mac" Pant ;
+ //macro DRWZPath+"drawpanDR1.mac" Pant ;
+ vName="Name;Number;Customer;Address;Phone;Date;ExpDate;Firm;Salon;Acceptor;Executor;AddInfo;ToWorking;NCurrency;Discount;Rate;ID"
+nelm=splitByDelim(vName,";",aDDr)
+i=0
+labvn:
+if i<nelm {
+    i=i+1
+    Name="O"+aDDr[i]
+    //putmsg(Name);
+    if !isattrdef(Name) {
+        attribute create  Name Name string 30 255 ;
+    }
+
+    vv=getorderinfo(aDDr[i]) ;
+    //putmsg(vv);
+    if len(str(vv))>0 {
+        attrobj  attach Name done record str(vv) ;
+    }
+    goto labvn;
+}
+ if !isattrdef("ZgUnitX") {
+        attribute create  "ZgUnitX" "ZgUnitX" Real 12 5 ;
+    }
+ if !isattrdef("ZgUnitY") {
+        attribute create  "ZgUnitY" "ZgUnitY" Real 12 5 ;
+    }
+ if !isattrdef("ZgUnitZ") {
+        attribute create  "ZgUnitZ" "ZgUnitZ" Real 12 5 ;
+    }
+ if !isattrdef("nCount") {
+    attribute create  "nCount" "nCount" Real 12 5 ;
+}
+if !isattrdef("selPanel") {
+    attribute create  "selPanel" "Номер выбраной панели" Real 5 0 ;
+}
+if g_lza {
+
+    stdisplay grfcoeff absolute 1;
+    grfcoeff absolute 1;
+}
+
+valcoeff absolute 1;
+
+     layers on "0" ;
+    layers unlock "0" ;
+    layers set "0";
+	selbyattr  "FurnType==\"010000\"" child Pant  done;
+	pnt=getselnum(1);
+	numpan=0
+
+    macro protopath+"\\drawprof\\DrawingSupp.mac" pnt  aCommPos byref numpan adraw byref iVid;
+
+}
+
+
+//---------------------------------
+macro DRWZPath+"drawsave65.mac" projname adraw;
+new;
+  loadorder last
+//------------------------------------------------------------------------------
+
+if FileExist(ProjPath+"Door_"+str(Upos)+".k3")
+{
+	nullout=RemoveFile(ProjPath+"Door_"+str(Upos)+".k3")
+}
+if FileExist(ProjPath+"tmpRaspDoor.~k3")
+{
+	nullout=RemoveFile(ProjPath+"tmpRaspDoor.~k3")
+}
+if (g_dorab==2)
+{
+	//exit;
+}
+
+// new;
+  // loadorder last
+// #ok_flag
+// alternative "Чертежи сохранены"
+// msgbox picture 4 beep 4 text left
+// "Созданные чертежи сохранены в папке '"+DraftsPath+"'"
+// done
+// "  OK  "
+// done;
+final:
+
+// размещаем на бланке
+
+end:
+offerror;
+switch autosingle off;
+new;
+loadorder last
+NULLOUT=ReSnap();
+exit;
+
+
+initDRWV:
+	//-- Типа чертеж панели
+	global g_h, g_w g_ik G_setDrw;
+	global g_KonsCode g_DrawTaile;
+	global ProtoPath, g_osn, g_dorab, g_drawall, g_pict, g_scala, g_draw d_support l_support Pl_NumPan Pl_MatrZag g_name;
+	global g_vidUnic ; // 0-объединять на один бланк 1-разносить на несколько бланков (как печатать чертеж если видов несколько например сторона А и F)
+	defarr aObjv[10] aObj[10] aLeg[10]; // массисв для ссылок на объекты чертежа и легеды
+	defarr xm[6] aoLeg[100] ;
+	g_DrawTaile=1;
+	global DRWZPath;
+	//DRWZPath=GetProtoMac("Shkaf.ptl")+"DrwZip.zk3|";
+	nullout=INITARRAY(adraw,0);
+
+	Formlist=iif(isvardef("Formlist")==0,"gost_a4",Formlist);
+	g_vidUnic=iif(isvardef("g_vidUnic")==0,0,g_vidUnic);
+	
+
+	
+	//macro ProtoPath+"re_NumGroup.mac";
+	g_drawall=0;
+	g_pict=3; //-- wmf файл по третьему виду
+	g_h=297;
+	g_w=210;
+	g_ik=0;
+	g_KonsCode="";
+	G_setDrw=0;
+	valcoeff absolute 1;
+	grfcoeff 1;
+	if (!IsAttrdef("Legend"))
+	{
+		Attribute Create "Legend" "Legenda" Real 12 5  ;
+	}
+	saveOrder          //-- Записываем проект
+	//fixing delauto all done; //-- Удаляем весь автокрепеж
+	projname=sysvar(2);
+	ProjPath=getfilepath(projname);
+	
+	DraftsPath=ProjPath+"Reports\\K3_Drafts\\"
+	grfcoeff absolute 1;
+return;

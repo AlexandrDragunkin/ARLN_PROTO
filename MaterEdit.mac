@@ -1,0 +1,345 @@
+//-- Изменить материал панели
+global ProtoPath;
+global pnt, iPNT, iPanME;
+defarr pnt[2000];
+selbyattr "Posit==10" child all done;
+karkas_kol=sysvar(61);
+karkas_num=GetCarcNumb();
+err=renumerate();		//-- проставляем номера, чтобы иметь UnitPos панелей
+if (karkas_kol==0)
+{
+ putmsg("Сначала надо создать мебельный каркас",0);
+ exit;
+}
+if (karkas_kol==1)
+{
+ #karkas MBCarcase set yes;
+}
+if (karkas_kol>1&&karkas_num==0)
+{
+ #karkas MBCarcase set no yes :
+}
+karkas_num=GetCarcNumb();
+global ProtoPath;
+defarr arr[3];
+defarr TypeMat[50];
+defarr arrmat[50];	//-- массив материалов панелей выбранного типа
+iyf=getyadfixing();
+NULLOUT=getvarinst(2,"PrMater",PrMater,0);          //-- Умолчание для материалов
+DefFasDMat=str(getyadsubst(2))+"#"+str(PrMater) ;                    // Формируем строку умолчаний.
+
+//-- Диалог запроса способа замены
+#ok_flag
+setvar
+"Изменить материал панели"
+""
+left
+"Определите параметры замены"
+done
+str listonly
+	   "По указанию"
+	current	"Все панели"
+		"Все полки"
+		"Все стойки"
+		"Все врезные стенки"
+		"Все накладные стенки"
+		"Все, кроме накладной стенки"
+    "Только стандартные панели"
+done
+"Способ замены:"    S_zam
+done;
+if (ok_flag==0)
+{
+  exit;
+}
+///////////////////////////-- Выборка материалов сцены --////////////////////////////////
+if (S_zam=="Все панели"||S_zam=="Только стандартные панели")
+{
+	selbyattr "KarkasNumb=="+str(karkas_num)+"&&left(FurnType,3)==\"010\"" wholly all done; 
+	if (sysvar(61)==0)
+	{
+		putmsg("В изделии нет панелей");
+		goto final;
+	}
+}
+if (S_zam=="Все полки")
+{
+	selbyattr "KarkasNumb=="+str(karkas_num)+"&&left(FurnType,4)==\"0101\"" wholly all done; 
+	if (sysvar(61)==0)
+	{
+		putmsg("В изделии нет полок");
+		goto final;
+	}
+}
+if (S_zam=="Все стойки")
+{
+	selbyattr "KarkasNumb=="+str(karkas_num)+"&&left(FurnType,4)==\"0102\"" wholly all done; 
+	if (sysvar(61)==0)
+	{
+		putmsg("В изделии нет стоек");
+		goto final;
+	}
+}
+if (S_zam=="Все врезные стенки")
+{
+	selbyattr "KarkasNumb=="+str(karkas_num)+"&&left(FurnType,4)==\"0103\"" wholly all done; 
+	if (sysvar(61)==0)
+	{
+		putmsg("В изделии нет стенок");
+		goto final;
+	}
+}
+if (S_zam=="Все накладные стенки")
+{
+	selbyattr "KarkasNumb=="+str(karkas_num)+"&&left(FurnType,4)==\"0104\"" wholly all done; 
+	if (sysvar(61)==0)
+	{
+		putmsg("В изделии нет накладных стенок");
+		goto final;
+	}
+}
+if (S_zam=="Все, кроме накладной стенки")
+{
+	selbyattr "KarkasNumb=="+str(karkas_num)+"&&left(FurnType,3)==\"010\"&&FurnType!=\"010400\"" wholly all done; 
+	if (sysvar(61)==0)
+	{
+		putmsg("В изделии нет стенок, полок и стоек");
+		goto final;
+	}
+}
+/////-- Если способ замены  не "По указанию" --/////
+if (S_zam!="По указанию")
+{
+	//-- Формируем список материалов
+	kolmat=1;	//-- счетчик видов материал
+	cd=0;			//-- счетчик панелей
+	LOP:
+	cd=cd+1;
+	objS=getselnum(cd);
+	matpan=getattr(objS,"PriceID",0);
+	if (cd==1)	//-- если объект первый
+	{
+		arrmat[kolmat]=matpan;
+		kolmat=kolmat+1;
+	}
+	else		//-- последующий материал проверяем с уже существующими в списке
+	{	
+		mi=0;
+		have=0;
+		MI:
+		mi=mi+1;
+		if (matpan==arrmat[mi])	//-- если материал уже есть, выходим.
+		{
+			have=0;	//-- материал уже есть.
+			goto NMI;	
+		}
+		else			
+		{
+			have=1;	//-- материала еще нет.
+		}
+		if (mi<kolmat)	//-- если материал не равен тукущему, проходим весь цикл.
+		{
+			goto MI;
+		}
+		if (have=1)
+		{
+			arrmat[kolmat]=matpan;
+			kolmat=kolmat+1;
+		}
+		NMI:
+	}
+	if (cd<sysvar(61))
+	{
+		goto LOP;
+	}
+	kolmat=kolmat-1;
+	
+	forall=iif(kolmat>1,0,1);	//-- Умолчание на параметр "Применить для всех".
+	//-- Диалог запроса материалов замены
+	GrNum=getyadsubst(2);	//-- номер подстановки
+	#ok_flag
+	setvar
+	"Изменить материал панели"
+	""
+	left
+	"Выберете материалы замены"
+	done
+	let i=1
+	LOOPM:
+	if (i<kolmat+1)
+	{
+		string auto button 6 default str(GrNum)+"#"+str(arrmat[i])
+		"Заменяемый материал \""+priceinfo(arrmat[i],"MatName",str(i))+"\":"  TypeMat[i]
+		if (i==1&&kolmat>1)
+		{
+			logical  default 0  "Применить этот материал для всех выбранных панелей"  forall
+			button " " var
+		}
+		let i=i+1
+		goto LOOPM
+	}
+	done;
+	if (ok_flag==0)
+	{
+		exit;
+	}
+	//-- Цикл редактирования по типам материала
+	iq=0;
+	MatEd:
+	iq=iq+1;
+	splitbydelim(TypeMat[iq],"#",Arr);
+	OldMat=arrmat[iq];
+	E_col=Arr[2];
+	gosub SELTYPEPAN;
+	if (iq<kolmat&&forall==0)
+	{
+		goto MatEd;
+	}
+}
+/////-- Если способ замены "По указанию" --/////
+else		
+{
+  #ok_flag
+	setvar
+	"Изменить материал панели"
+	""
+	left
+	"Определите параметры замены"
+	done
+	string auto button 6 default DefFasDMat "Новый материал:" NDMat
+	done;
+	if (ok_flag==0)
+	{
+		exit;
+	}
+	splitbydelim(NDMat,"#",Arr);
+	E_col=Arr[2];
+	if (S_zam=="По указанию")
+	{
+		Loop:
+		a=fltrparamobj(1,61);  //-- Фильтр по мебельной панели
+		if 1==1 {
+			onerror final;
+			objident prompt "Укажите панель" partly : pnt1
+			offerror;
+		} else {
+		switch autosingle on;
+		onerror final;
+		select partly : ;
+		switch autosingle off;
+		offerror;
+		a=fltrparamobj(0);     //-- Выключили фильтр по мебельной панели
+		if (sysvar(61)==0)
+		{
+			exit;
+		}
+			pnt1=getselnum(1);
+		}
+		UnCod=getattr(pnt1,"UnitPos",-1);
+		if (iyf==1)  //-- Если крепеж включен, выключаем его.
+		{
+			NULLOUT=setyadfixing(0);
+			holes delall all done;
+			fixing delauto all done;
+			fixing hide all done;
+		}
+		//-- Перевыбор объекта (из-за крепежа)
+		selbyattr "UnitPos=="+str(UnCod)+"&&KarkasNumb=="+str(karkas_num)+"" partly all done; 
+		if (sysvar(61)==0)
+		{
+			goto final;
+		}
+		pnt1=getselnum(1);
+		iPanME=0;
+		OldMat=getattr(pnt1,"PriceID",0);
+		//-- Толщина текущего и нового материалов
+		ThOldMat=PriceInfo(OldMat,"Thickness",16);
+		ThE_col=PriceInfo(E_col,"Thickness",16);
+		macro ProtoPath+"ChangePanMat.mac" pnt1 ThOldMat ThE_col 0;
+		MBPanel item pnt1 1 E_col 0 ;
+		if (iyf==1)  //-- Если крепеж выключали, включаем его.
+		{
+			fixing create all done;
+		}
+		goto Loop;
+	}
+	goto final;
+}
+
+final:
+NULLOUT=InitArray(pnt,0);
+switch autosingle off;
+if (iyf==1)  //-- Если крепеж выключали, включаем его.
+{
+	fixing create all done;
+}
+a=fltrparamobj(0);     //-- Выключили фильтр по мебельной панели
+exit;
+
+
+////------Подпрограмма замены материалов нескольких панелей-----////
+SELTYPEPAN:
+if (iyf==1)  //-- Если крепеж включен, выключаем его.
+{
+	NULLOUT=setyadfixing(0);
+	holes delall all done;
+	fixing delauto all done;
+	fixing hide all done;
+}
+if (forall==0)
+{
+	//-- Выбираем панели 
+	if (S_zam=="Все панели"||S_zam=="Только стандартные панели")
+	{
+		selbyattr "KarkasNumb=="+str(karkas_num)+"&&left(FurnType,3)==\"010\"&&PriceID=="+str(OldMat)+"" wholly all done; 
+	}
+	if (S_zam=="Все полки")
+	{
+		selbyattr "KarkasNumb=="+str(karkas_num)+"&&left(FurnType,4)==\"0101\"&&PriceID=="+str(OldMat)+"" wholly all done; 
+	}
+	if (S_zam=="Все стойки")
+	{
+		selbyattr "KarkasNumb=="+str(karkas_num)+"&&left(FurnType,4)==\"0102\"&&PriceID=="+str(OldMat)+"" wholly all done; 
+	}
+	if (S_zam=="Все врезные стенки")
+	{
+		selbyattr "KarkasNumb=="+str(karkas_num)+"&&left(FurnType,4)==\"0103\"&&PriceID=="+str(OldMat)+"" wholly all done; 
+	}
+	if (S_zam=="Все накладные стенки")
+	{
+		selbyattr "KarkasNumb=="+str(karkas_num)+"&&left(FurnType,4)==\"0104\"&&PriceID=="+str(OldMat)+"" wholly all done; 
+	}
+	if (S_zam=="Все, кроме накладной стенки")
+	{
+		selbyattr "KarkasNumb=="+str(karkas_num)+"&&left(FurnType,3)==\"010\"&&FurnType!=\"010400\"&&PriceID=="+str(OldMat)+"" wholly all done; 
+	}
+	iPNT=sysvar(61);
+	macro ProtoPath+"Arrobj.mac" iPNT pnt;
+}
+else
+{
+	macro Protopath+"ChgSel.mac" S_zam; 
+}
+
+i=0;
+LoopAll:
+if (i<iPNT)
+{
+	i=i+1;
+	iPanME=i;
+	pnt1=pnt[i];
+	if (forall==1)
+	{
+		OldMat=getattr(pnt1,"PriceID",0);
+	}
+	//-- Толщина текущего и нового материалов
+	ThOldMat=PriceInfo(OldMat,"Thickness",16);
+	ThE_col=PriceInfo(E_col,"Thickness",16);
+	macro ProtoPath+"ChangePanMat.mac" pnt1 ThOldMat ThE_col 0;
+	#pnt1 MBPanel item pnt1 1 E_col 0 ;
+	pnt[i]=pnt1;
+	goto LoopAll;
+}
+return;
+
+

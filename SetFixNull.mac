@@ -1,0 +1,6 @@
+//-- Обнулить маки параметров крепежа
+
+defarr Fix[4];
+NULLOUT=initarray(Fix,0);
+NULLOUT=setarrinst(1,"g_fixmask",Fix);
+exit;

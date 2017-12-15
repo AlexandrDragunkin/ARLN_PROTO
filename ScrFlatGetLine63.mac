@@ -1,0 +1,11 @@
+// читать данные ближайшей теоретической линии
+
+start:
+objident prompt "”кажите ќбъект-»сточник" : PntFrom
+If !(IsAssign("ScrFlat",PntFrom))
+{
+   PutMsg("”казанный объект-источник не содержит набор параметров ScrFlat ",0);
+   goto start;
+}
+
+exit;

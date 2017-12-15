@@ -1,0 +1,1113 @@
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+//-- программа установки индивидуальной створки дверной системы
+//-- Входные параметры:
+//-- X - ширина створки
+//-- Y - глубина установки
+//-- Z - высота створки
+//-- dz1 - Фаска по Z угла 1
+//-- dz2 - Фаска по Z угла 2
+//-- dz3 - Фаска по Z угла 3
+//-- dz4 - Фаска по Z угла 4
+//-- g_DRP - номер дверной системы (из таблицы DSSystemFlap базы данных DoorSys63.mdb)
+//--  g_CLTop ID  верхнего профиля (из таблицы DSFlapProfile базы данных DoorSys63.mdb)
+//-- g_CLDown ID  нижнего профиля  (из таблицы DSFlapProfile базы данных DoorSys63.mdb)
+//--  g_CLMid ID  разделительного профиля (из таблицы DSFlapProfile базы данных DoorSys63.mdb)
+//--  g_CLDer ID  декоративного профиля   (из таблицы DSFlapProfile базы данных DoorSys63.mdb)
+//--  g_CLVer ID  Вертикального профиля   (из таблицы DSFlapProfile базы данных DoorSys63.mdb)
+
+nullout=getvarinst(2,"Doors63",Doors63,"Doors63.zmc|");
+nullout=getvarinst(2,"Doors64",Doors64,"Doors64.zmc|");
+
+global ProtoPath ;
+global g_tab_place, g_keyDS63, g_Doorscon;
+global g_CLTop  g_CLDown  g_CLMid  g_CLDer  g_CLVer g_CLVerR g_CLVerL g_DRP g_hmida g_hmidz g_hmidZhg;
+
+// defarr SqlArr[5];
+N_PB=1             //-- число профилей
+
+global BottomLim;
+global g_ExName g_ExVal g_ExInf g_ExH1; // массивы дополнительных параметров  системы
+global logFrame ;      //       формировать толстые профили
+//global ex_prof ex_Horiz_d ex_Horiz_u  ex_vertR  ex_vertL ex_mid;
+//-------------------------блок массивов текущего слоя вставки--------------------------------
+global
+       gd_IdMid             // -- Id Разделительных профилей
+       gd_MidHV             // -- Массив с парметрами эквидистанты для расчета вставок в районе средних профилей
+       gd_XmidS  gd_ZmidS   // -- координаты начальных точек разделительных профилей в створке
+       gd_XmidE  gd_ZmidE   // -- координаты конечных  точек разделительных профилей в створке
+       gd_AngS   gd_AngE    // -- Углы подрезки профиля вначале и в конце разделительного профиля
+       gd_FlMater           // -- материалы вставок
+       gd_FlOtdel           // -- материалы отделки вставки
+       gd_FlOtdelN          // -- Число отделок вставки
+       gd_FlNshp            // -- направление текстуры шпона вставок
+       gd_Iotd              // -- Cчетчик обработанных в объекте отделок
+       gd_IdFl              // -- Cчетчик обработанных в объекте вставок
+       gd_IdMpr             // -- Cчетчик обработанных в объекте средних профилей
+       gd_KFL               // -- Количество вставок из скретча
+       gd_KMpr              // -- Количество средних профилей из скретча
+       ;
+global
+       gd_ProfHM               //-- Массив с парметрами эквидистанты для расчета средних профилей
+       gd_ProfHV               //-- Массив с парметрами эквидистанты для расчета вставок
+       ;
+global
+       gd_TlinX1               //-- массив с координатами X начала теоретических линий(осей)
+       gd_TlinZ1               //-- массив с координатами Z начала теоретических линий(осей)
+       gd_TlinX2               //-- массив с координатами X конца теоретических линий(осей)
+       gd_TlinZ2               //-- массив с координатами Z конца теоретических линий(осей)
+       gd_TlinHM               //-- Массив с парметрами эквидистанты для расчета средних профилей
+       gd_TlinHV               //-- Массив с парметрами эквидистанты для расчета вставок
+       gd_NTLin                //-- число теоретических линий(осей)
+       ;
+//-------------------------блок массивов средней вставки--------------------------------
+global
+       gs_IdMid             // -- Id Разделительных профилей
+       gs_MidHV             // -- Массив с парметрами эквидистанты для расчета вставок в районе средних профилей
+       gs_XmidS  gs_ZmidS   // -- координаты начальных точек разделительных профилей в створке
+       gs_XmidE  gs_ZmidE   // -- координаты конечных  точек разделительных профилей в створке
+       gs_AngS   gs_AngE    // -- Углы подрезки профиля вначале и в конце разделительного профиля
+       gs_FlMater           // -- материалы вставок
+       gs_FlOtdel           // -- материалы отделки вставки
+       gs_FlOtdelN          // -- Число отделок вставки
+       gs_FlNshp            // -- направление текстуры шпона вставок
+       gs_Iotd              // -- Cчетчик обработанных в объекте отделок
+       gs_IdFl              // -- Cчетчик обработанных в объекте вставок
+       gs_IdMpr             // -- Cчетчик обработанных в объекте средних профилей
+       gs_KFL               // -- Количество вставок из скретча
+       gs_KMpr              // -- Количество средних профилей из скретча
+       ;
+global
+       gs_ProfX1               //-- массив с координатами X начала толстых профилей
+       gs_ProfZ1               //-- массив с координатами Z начала толстых профилей
+       gs_ProfX2               //-- массив с координатами X конца толстых профилей
+       gs_ProfZ2               //-- массив с координатами Z конца толстых профилей
+       gs_ProfHM               //-- Массив с парметрами эквидистанты для расчета средних профилей
+       gs_ProfHV               //-- Массив с парметрами эквидистанты для расчета вставок
+       ;
+global
+       gs_TlinX1               //-- массив с координатами X начала теоретических линий(осей)
+       gs_TlinZ1               //-- массив с координатами Z начала теоретических линий(осей)
+       gs_TlinX2               //-- массив с координатами X конца теоретических линий(осей)
+       gs_TlinZ2               //-- массив с координатами Z конца теоретических линий(осей)
+       gs_TlinHM               //-- Массив с парметрами эквидистанты для расчета средних профилей
+       gs_TlinHV               //-- Массив с парметрами эквидистанты для расчета вставок
+       gs_NTLin                //-- число теоретических линий(осей)
+       ;
+//-------------------------блок массивов передней вставки--------------------------------
+global
+       gsf_IdMid            // -- Id Разделительных профилей
+       gsf_MidHV             // -- Массив с парметрами эквидистанты для расчета вставок в районе средних профилей
+       gsf_XmidS  gsf_ZmidS   // -- координаты начальных точек разделительных профилей в створке
+       gsf_XmidE  gsf_ZmidE   // -- координаты конечных  точек разделительных профилей в створке
+       gsf_AngS   gsf_AngE    // -- Углы подрезки профиля вначале и в конце разделительного профиля
+       gsf_FlMater           // -- материалы вставок
+       gsf_FlOtdel           // -- материалы отделки вставки
+       gsf_FlOtdelN          // -- Число отделок вставки
+       gsf_FlNshp            // -- направление текстуры шпона вставок
+       gsf_IdFl              // -- Cчетчик обработанных в объекте вставок
+       gsf_Iotd              // -- Cчетчик обработанных в объекте отделок
+       gsf_IdMpr             // -- Cчетчик обработанных в объекте средних профилей
+       gsf_KFL               // -- Количество вставок из скретча
+       gsf_KMpr              // -- Количество средних профилей из скретча
+       ;
+global
+       gsf_ProfHM               //-- Массив с парметрами эквидистанты для расчета средних профилей
+       gsf_ProfHV               //-- Массив с парметрами эквидистанты для расчета вставок
+       ;
+global
+       gsf_TlinX1               //-- массив с координатами X начала теоретических линий(осей)
+       gsf_TlinZ1               //-- массив с координатами Z начала теоретических линий(осей)
+       gsf_TlinX2               //-- массив с координатами X конца теоретических линий(осей)
+       gsf_TlinZ2               //-- массив с координатами Z конца теоретических линий(осей)
+       gsf_TlinHM               //-- Массив с парметрами эквидистанты для расчета средних профилей
+       gsf_TlinHV               //-- Массив с парметрами эквидистанты для расчета вставок
+       gsf_NTLin                //-- число теоретических линий(осей)
+       gsf_YSl                  //-- Сдвиг лицевой вставки по Y если 0, то ее нет
+       ;
+global
+      gsf_matVst
+      ;
+
+//-----------------------блок массивов задней вставки------------------------------------
+global
+       gsb_IdMid  g_CLMid g_DRMid g_CLMid  // -- Id Разделительных профилей
+       gsb_MidHV             // -- Массив с парметрами эквидистанты для расчета вставок в районе средних профилей
+       gsb_XmidS  gsb_ZmidS   // -- координаты начальных точек разделительных профилей в створке
+       gsb_XmidE  gsb_ZmidE   // -- координаты конечных  точек разделительных профилей в створке
+       gsb_AngS   gsb_AngE    // -- Углы подрезки профиля вначале и в конце разделительного профиля
+       gsb_FlMater           // -- материалы вставок
+       gsb_FlOtdel           // -- материалы отделки вставки
+       gsb_FlOtdelN          // -- Число отделок вставки
+       gsb_FlNshp            // -- направление текстуры шпона вставок
+       gsb_IdFl              // -- Cчетчик обработанных в объекте вставок
+       gsb_Iotd              // -- Cчетчик обработанных в объекте отделок
+       gsb_IdMpr             // -- Cчетчик обработанных в объекте средних профилей
+       gsb_KFL               // -- Количество вставок из скретча
+       gsb_KMpr              // -- Количество средних профилей из скретча
+       ;
+global
+       gsb_ProfHM               //-- Массив с парметрами эквидистанты для расчета средних профилей
+       gsb_ProfHV               //-- Массив с парметрами эквидистанты для расчета вставок
+       ;
+global
+       gsb_TlinX1               //-- массив с координатами X начала теоретических линий(осей)
+       gsb_TlinZ1               //-- массив с координатами Z начала теоретических линий(осей)
+       gsb_TlinX2               //-- массив с координатами X конца теоретических линий(осей)
+       gsb_TlinZ2               //-- массив с координатами Z конца теоретических линий(осей)
+       gsb_TlinHM               //-- Массив с парметрами эквидистанты для расчета средних профилей
+       gsb_TlinHV               //-- Массив с парметрами эквидистанты для расчета вставок
+       gsb_NTLin                //-- число теоретических линий(осей)
+       gsb_YSl                  //-- Сдвиг тыльной вставки по Y если 0, то ее нет
+       ;
+global
+      gsb_matVst
+      ;
+//----------------------------------------------------------------------------
+defarr SqlArr[5] aStr[20];
+defarr g_ExName[200] g_ExVal[200] g_ExInf[200] g_ExH1[200];
+
+//ex_prof[100] ex_Horiz_d[100] ex_Horiz_u[100]  ex_vertR[100]  ex_vertL[100] ex_mid[100];
+N_PB=1             //-- число профилей
+
+getpar
+x  //-- X - ширина створки
+y  //-- Y - глубина установки
+z  //-- Z - высота створки
+dx1             //-- Фаска по X угла 1                            // |2              1|
+dz1
+dx2            //-- Фаска по X угла 2                            // |                |
+dz2
+dx3           //-- Фаска по X угла 3                            // |                |
+dz3
+dx4             //-- Фаска по X угла 4                            // |3______________4|
+dz4
+P_L            // 	Подрез слева
+P_R            // 	Подрез справа
+P_D            // 	Подрез снизу
+;
+
+DoorNS=1; // --Число вставок
+//================Проверяем и открываем доступ к базе=================================
+C_key=0
+if g_keyDS63!=1
+{
+   macro ProtoPath+"CrtSysDoor63.mac" ;
+   C_key=1 // Признак что база открыта в этом макро
+}
+//====================================================================================
+str_tab="SELECT * FROM DSSystemFlap WHERE (((DSSystemFlap.ID)="+str(g_DRP)+"));";
+FlapRs=adbOpen(g_Doorscon,str_tab);
+ij=adbRecCount(FlapRs);
+if (ij<1)
+{
+  errcode="err62 FD63: Количество систем с ID "+str(g_DRP)+" равно "+str(ij);
+  ProfRs=adbClose(FlapRs);
+  gosub err1;
+  return;
+}
+NULLOUT=adbMoveFirst(FlapRs);
+MaxHeight=adbGetValue(FlapRs,"MaxHeight");
+MinHeight=adbGetValue(FlapRs,"MinHeight");
+MaxWidth=adbGetValue(FlapRs,"MaxWidth");
+MinWidth=adbGetValue(FlapRs,"MinWidth");
+
+FlapRs=adbClose(FlapRs)
+
+//-- Проверяем створку на соответствие диапазону
+if (x-P_L-P_R>MaxWidth)
+{
+  errcode="Ширина створки ("+str(x-P_L-P_R)+") больше допустимой ("+str(MaxWidth)+")";
+  putmsg(errcode);
+  // gosub err1;
+}
+if (x-P_L-P_R<MinWidth)
+{
+  errcode="Ширина створки ("+str(x-P_L-P_R)+") меньше допустимой ("+str(MinWidth)+")";
+  putmsg(errcode);
+  // gosub err1;
+}
+if (z-P_D>MaxHeight)
+{
+  errcode="Высота створки ("+str(z-P_D)+") больше допустимой ("+str(MaxHeight)+")";
+  putmsg(errcode);
+  // gosub err1;
+}
+if (z-P_D<MinHeight)
+{
+  errcode="Высота створки ("+str(z-P_D)+") меньше допустимой ("+str(MinHeight)+")";
+  putmsg(errcode);
+  // gosub err1;
+}
+
+//-- Для каждого профиля читаем параметры его контура
+//====================
+//-- Идентификаторы "толстых профилей"
+//-- 1 - горизонтальный нижний
+//-- 2 - горизонтальный верхний
+//-- 3 - вертикальный
+//-- 4 - соединительный
+defarr thin[4];
+thin[1]=1;
+thin[2]=1;
+thin[3]=1;
+thin[4]=1;
+//==============================================================================
+strZw=0;
+CurP=g_CLDown;
+gosub getprof;
+ProfBottom=CurP;
+BottomLim=s;
+h_horiz_d_a=h;      //-- Полная высота нижнего и верхнего профилей
+h_hor_d_zhg=zhg;
+h_horiz_dms=pMacroSet;
+if len(strzh)==0
+{
+	h_horiz_d_z=h-zh;   //-- Высота зазора нижнего и верхнего профилей
+}
+else
+{
+    gosub substrv;
+    h_horiz_d_z=parVal;
+	// putmsg(strzh)
+	// h_horiz_d_z=val(strzh);
+}
+w_horiz_d_z=zw;     //-- Боковое расстояние до зазора верхнего и нижнего профилей
+w_horiz_d_a=w;      //-- Полная ширина верхнего и нижнего профилей
+cl_horiz_d=IDCollor //-- ID цвет профиля
+S_horiz_d=IDSecP
+
+CurP=g_CLTop;
+gosub getprof;
+ProfTop=CurP;
+TopLim=s;
+h_horiz_u_a=h;      //-- Полная высота нижнего и верхнего профилей
+h_hor_u_zhg=zhg;
+h_horiz_ums=pMacroSet;
+if len(strzh)==0
+{
+   h_horiz_u_z=h-zh;   //-- Высота зазора нижнего и верхнего профилей
+}
+else
+{
+    gosub substrv;
+    h_horiz_u_z=parVal;
+	// h_horiz_u_z=val(strzh);
+}
+w_horiz_u_z=zw;     //-- Боковое расстояние до зазора верхнего и нижнего профилей
+w_horiz_u_a=w;      //-- Полная ширина верхнего и нижнего профилей
+cl_horiz_u=IDCollor //-- ID цвет профиля
+S_horiz_u=IDSecP
+
+CurP=g_CLVerR;
+gosub getprof;
+ProfVertR=CurP;
+VertLimR=s;
+h_vertR_a=h;         //-- Полная высота вертикального профиля
+h_horiz_Vms=pMacroSet;
+if len(strzh)==0
+{
+   h_vertR_z=h-zh;      //-- Высота зазора вертикального профиля
+}
+else
+{
+    gosub substrv;
+    h_vertR_z=parVal;
+}
+w_vertR_a=w;        //-- Полная ширина вертикального профиля
+w_vertR_z=zw;         //-- Боковое расстояние до зазора вертикального профиля
+h_vertR_zhg=zhg;
+cl_vertR=IDCollor //-- ID цвет профиля
+S_vertR=IDSecP
+
+CurP=g_CLVerL;
+gosub getprof;
+ProfVertL=CurP;
+VertLimL=s;
+h_vertL_a=h;         //-- Полная высота вертикального профиля
+if len(strzh)==0
+{
+   h_vertL_z=h-zh;      //-- Высота зазора вертикального профиля
+}
+else
+{
+    gosub substrv;
+    h_vertL_z=parVal;
+}
+w_vertL_a=w;        //-- Полная ширина вертикального профиля
+w_vertL_z=zw;         //-- Боковое расстояние до зазора вертикального профиля
+h_vertL_zhg=zhg;
+cl_vertL=IDCollor //-- ID цвет профиля
+S_vertL=IDSecP
+
+CurP=g_CLMid;
+gosub getprof;
+ProfMid=CurP;
+h_mid_a=h;          //-- Полная высота среднего профиля
+h_horiz_mms=pMacroSet
+if len(strzh)==0
+{
+   h_mid_z=h-2*zh;       //-- Высота двойного зазора среднего профиля
+}
+else
+{
+    gosub substrm;
+    h_mid_z=parVal;
+}
+
+w_mid_a=w;         //-- Полная ширина среднего профиля
+w_mid_z=zw;          //-- Боковое расстояние до зазора среднего профиля
+cl_mid=IDCollor //-- ID цвет профиля
+g_hmida=h_mid_a
+g_hmidZhg=zhg
+
+g_hmidz=h_mid_z
+S_mid=IDSecP
+impr=0;
+lmpr:
+if impr<gs_KMpr
+{
+	impr=impr+1;
+	
+	CurP=gs_IdMid[impr];
+	gosub getprof;
+	
+	ProfMid=CurP;
+	h_mid_a=h;          //-- Полная высота среднего профиля
+	if len(strzh)==0
+	{
+	   gs_TLinHV[impr]=h-2*zh;       //-- Высота двойного зазора среднего профиля
+	}
+	else
+	{
+		gosub substrm;
+		gs_TLinHV[impr]=parVal;
+	}
+   goto lmpr;
+}
+
+
+//Nulout=copyArray(ex_mid,ex_prof); //-- дополнительные параметры профиля
+
+//CurP=AdapHoriz;
+//gosub getprof;
+//ProfAdaptH=CurP;
+//h_adap_a=h;         //-- Полная высота профиля адаптера
+//h_adap_z=h-zh;      //-- Высота зазора профиля адаптера
+//w_adap_a=w;        //-- Полная ширина профиля адаптера
+//w_adap_z=zw;         //-- Боковое расстояние до зазора профиля адаптера
+
+//CurP=AdapVert;
+//gosub getprof;
+//ProfAdaptV=CurP;
+//h_adap_v_a=h;      //-- Полная высота вертикального профиля адаптера
+//h_adap_v_z=h-zh;      //-- Высота зазора вертикального профиля адаптера
+//w_adap_v_a=w;      //-- Полная ширина вертикального профиля адаптера
+//w_adap_v_z=zw;      //-- Боковое расстояние до зазора вертикального профиля адаптера
+
+//CurP=AdapMid;
+//gosub getprof;
+//ProfAdaptMid=CurP;
+//====================================================================================
+// Вызываем программу построения створки для кажого слоя вставок.
+// При этом построение самой рамы происходит один раз, а раскладка и вставки до трех раз.
+//==============
+gosub sCopySarr;
+//==============
+// Для средней вставки (общий случай).
+logFrame=0;
+g_Sandv=0;
+gosub RunFlapDraw;
+gosub sCopyRarr;
+//==============
+//==============
+// Для лицевой вставки .
+//==============
+PRM=g_DRP;
+gosub getExtraPar;
+//==============
+pos=FindInArray(g_ExName,"MatrF");
+if pos>0
+{
+   //Определено условие установки
+   TypF=g_ExVal[pos];
+   if TypF!=0
+   {
+      pos=FindInArray(g_ExName,"zwVsF");
+      =pos
+      if pos>0
+      {
+              SdvigVstF=g_ExVal[pos];
+              logFrame=1;
+              //==============
+              ZhVal="zhVsF";
+              gosub sCopySFarr;
+              gosub setZhVal;
+              N_obj=SysVAr(60);
+			  g_Sandv=1;
+              gosub RunFlapDraw;
+              gosub sCopyRFarr;
+              //==============
+              N_obj=SysVAr(60)-N_obj;
+              if N_obj>0
+              {
+                 move last N_obj done 0 SdvigVstF 0 nocopy;
+              }
+      }
+   }
+}
+// Для задней вставки .
+PRM=g_DRP;
+gosub getExtraPar;
+pos=FindInArray(g_ExName,"MatrR");
+if pos>0
+{
+   //Определено условие установки
+   TypR=g_ExVal[pos];
+   if TypR!=0
+   {
+      pos=FindInArray(g_ExName,"zwVsR");
+      if pos>0
+      {
+              SdvigVstR=g_ExVal[pos];
+              logFrame=2;
+              //==============
+              ZhVal="zhVsR";              
+			  gosub sCopySBarr;
+              gosub setZhVal;
+              N_obj=SysVAr(60);
+              //putmsg("N_obj1====="+str(N_obj),0);
+              //putmsg("logFrame====="+str(logFrame),0);
+			  if g_DRP==87
+			  {
+				g_Sandv=2;
+				gosub RunFlapDraw;
+			  }							//-- 2011-07-14 Для R+800 задняя вставка
+              gosub sCopyRBarr;
+              //==============
+              N_obj=SysVAr(60)-N_obj;
+              //putmsg("N_obj2====="+str(N_obj),0);
+              if N_obj>0
+              {
+                 move last N_obj done 0 -SdvigVstR 0 nocopy;
+              }
+      }
+    }
+}
+//====================================================================================
+if C_key==1
+{
+ macro ProtoPath+"Doors64.zmc|ClosSysDoor63.mac";
+}
+
+exit;
+
+//============================SUB==================SUB================================
+//------------------------------------------------------------------------------
+//-- Программа читает параметры профиля
+//-- Входные данные:
+//-- CurP -  ID профиля из таблицы DSFlapProfile
+//-- g_DRP - ID Системы створки из DSSystemFlap
+//-- Выходные данные:
+//-- w, h, zh, zw, s, zhg - параметры контура профиля
+
+getprof:
+// putmsg(CurP)
+// putmsg(g_DRP)
+SqlArr[1]="SELECT * FROM (((DSGabProfile INNER JOIN DSFlapSostav ON DSGabProfile.ID = DSFlapSostav.IDProf)"
+SqlArr[2]=" INNER JOIN DSFlapProfile ON DSGabProfile.ID = DSFlapProfile.PSYSTEM) INNER JOIN DSColorProfile"
+SqlArr[3]=" ON DSFlapProfile.Color = DSColorProfile.ID) INNER JOIN NNomenclature ON DSColorProfile.COLOR = NNomenclature.ID"
+SqlArr[4]=" WHERE (((DSFlapProfile.ID)="+str(CurP)+") AND ((DSFlapSostav.IDSyst)="+str(g_DRP)+"));";
+
+// putmsg("CurP=  "+str(CurP),0);
+ProfRs=adbOpen(g_Doorscon,SqlArr,4);
+ij=adbRecCount(ProfRs);
+if (ij<1)
+{
+	errcode="err269 FD63: Количество профилей с ID "+str(CurP)+" равно "+str(ij);
+	ProfRs=adbClose(ProfRs);
+	gosub err1;
+	return;
+}
+NULLOUT=adbMoveFirst(ProfRs);
+w=adbGetValue(ProfRs,"w");
+h=adbGetValue(ProfRs,"h");
+zh=adbGetValue(ProfRs,"zh");
+zw=adbGetValue(ProfRs,"zw");
+s=adbGetValue(ProfRs,"s");
+zhg=adbGetValue(ProfRs,"zhg");
+pMacroSet=adbGetValue(ProfRs,"MacroSet");
+IDCollor=adbGetValue(ProfRs,"NNomenclature.ID"); // ID цвета профиля в номенклатуре
+IDProf=adbGetValue(ProfRs,"IDProfile");
+IDSecP=adbGetValue(ProfRs,"IDProf");
+ProfRs=adbClose(ProfRs);
+gosub InitExParVs;
+
+// Для Палермо нужно строить профиль под вставку
+h_vst=PriceInfo(gs_FlMater[1],"Thickness",4);
+hdsp_where=iif(h_vst>4,10,4)
+nelem=NPGetByWhere(1,"ParentID="+str(IDProf)+" AND [SlotW1]="+str(hdsp_where),"ArrID");
+if nelem>0
+{
+	IDProf=ArrID[1];	
+	SqlArr[1]="SELECT * FROM (((DSGabProfile INNER JOIN DSFlapSostav ON DSGabProfile.ID = DSFlapSostav.IDProf)"
+	SqlArr[2]="  INNER JOIN DSFlapProfile ON DSGabProfile.ID = DSFlapProfile.PSYSTEM) INNER JOIN DSColorProfile"
+	SqlArr[3]="  ON DSFlapProfile.Color = DSColorProfile.ID) INNER JOIN NNomenclature ON DSColorProfile.COLOR = NNomenclature.ID"
+	SqlArr[4]="  WHERE (((DSFlapProfile.IDProfile)="+str(IDProf)+") AND ((DSFlapSostav.IDSyst)="+str(g_DRP)+")"
+	SqlArr[5]=" AND DSGabProfile.ID=(SELECT PSYSTEM FROM DSFlapProfile WHERE ID="+str(CurP)+"));";
+	ProfRs=adbOpen(g_Doorscon,SqlArr,5);
+	ij=adbRecCount(ProfRs);
+	// putmsg(CurP)
+	// putmsg(IDProf)
+	// putmsg(g_DRP)
+	// putmsg(ij)
+	if (ij>0)
+	{
+		NULLOUT=adbMoveFirst(ProfRs);
+		CurP=adbGetValue(ProfRs,"DSFlapProfile.ID");
+	}
+	ProfRs=adbClose(ProfRs);
+}
+// putmsg(IDProf)
+return;
+//==========================================================================================================
+// Для систем у которых параметр эквидистанты вставки зависит от толщины самой вставки приходится строить несколько графов
+// с различными параметрами эквидистанты.
+// Решаем эту задачу через дополнительные параметры. Формируем строку (толщина1,значение эквидистанты1,толщина2,значение эквидистанты2,....,толщинаN,значение эквидистантыN)
+// и помещаем в переменную zh
+InitExParVs:
+  //=========   ex параметры
+// putmsg(IDSecP)
+// putmsg(g_DRP)
+ SqlArr[1]="SELECT ExParamsName.ParamName, * "
+ SqlArr[2]="FROM DSExtraParams INNER JOIN ExParamsName ON DSExtraParams.ParamName = ExParamsName.ParamName "
+ SqlArr[3]="WHERE (((DSExtraParams.UnitPos)="+str(IDSecP)+") AND ((DSExtraParams.Hold2)="+str(g_DRP)+")"
+ SqlArr[4]="AND ((ExParamsName.ParamName)=\"zhVsW\"))";
+
+ strZH="";
+ //putmsg("CurP=  "+str(CurP),0);
+ ProfRs=adbOpen(g_Doorscon,SqlArr,4);
+ ij=adbRecCount(ProfRs);
+ if (ij>0)
+ {
+ NULLOUT=adbMoveFirst(ProfRs);
+
+   iex=0;
+   exlab2:
+   if !adbIsEOF(ProfRs)
+   {
+      iex=iex+1;
+      ExVal1=adbGetValue(ProfRs,"Hold1");
+      ExVal2=adbGetValue(ProfRs,"NumValue");
+      strZH=strZH+iif(len(strZH)>1,",","")+str(ExVal1)+","+str(ExVal2);
+	  // strZH=strZH+iif(len(strZH)>1,".","")+str(ExVal1)+"."+str(ExVal2);
+      NULLOUT=adbMoveNext(ProfRs);
+      goto exlab2;
+   }
+// putmsg(strZH);
+
+ }
+ ProfRs=adbClose(ProfRs);
+ 
+ 
+ SqlArr[1]="SELECT ExParamsName.ParamName, * "
+ SqlArr[2]="FROM DSExtraParams INNER JOIN ExParamsName ON DSExtraParams.ParamName = ExParamsName.ParamName "
+ SqlArr[3]="WHERE (((DSExtraParams.Hold2)="+str(g_DRP)+") AND ((ExParamsName.ParamName)=\"zwVsW\"))";
+
+ strZw="";
+ //putmsg("CurP=  "+str(CurP),0);
+ ProfRs=adbOpen(g_Doorscon,SqlArr,3);
+ ij=adbRecCount(ProfRs);
+ if (ij>0)
+ {
+ NULLOUT=adbMoveFirst(ProfRs);
+
+   iex=0;
+   exlab3:
+   if !adbIsEOF(ProfRs)
+   {
+      iex=iex+1;
+      ExVal1=adbGetValue(ProfRs,"Hold1");
+      ExVal2=adbGetValue(ProfRs,"NumValue");
+      strZw=strZw+iif(len(strZH)>1,",","")+str(ExVal1)+","+str(ExVal2);
+      NULLOUT=adbMoveNext(ProfRs);
+      goto exlab3;
+   }
+ }
+ ProfRs=adbClose(ProfRs);
+return;
+//
+//==============================================================================
+//-- Вывод окна сообщения об ошибке
+//-- Входные параметры:
+//-- errcode - сод ошибки
+// err1:
+//putmsg("=g_CLTop  "+str(g_CLTop),0);
+//putmsg("=g_CLDown "+str(g_CLDown),0);
+//putmsg("=g_CLMid  "+str(g_CLMid),0);
+//putmsg("=g_CLDer  "+str(g_CLDer),0);
+//putmsg("=g_CLVerR "+str(g_CLVerR),0);
+//putmsg("=g_CLVerL "+str(g_CLVerL),0);
+//putmsg("g_DRP= "+str(g_DRP),0);
+
+//#ok_flag
+//     alternative "Ошибка базы данных"
+//     msgbox text "Некорректно заполнена база данных систем дверей"
+//     " "
+//     errcode
+//     done
+//     "  OK  "
+//     done;
+// return;
+//=====================
+// Считать дополнительные параметры  системы
+getExtraPar:
+NULLOUT=initarray(g_ExName,"");
+NULLOUT=initarray(g_ExVal,0);
+NULLOUT=initarray(g_ExInf,0);
+SqlArr[1]="SELECT * FROM DSExtraParams INNER JOIN ExParamsName"
+SqlArr[2]=" ON DSExtraParams.ParamName = ExParamsName.ParamName"
+SqlArr[3]=" WHERE (((DSExtraParams.UnitPos)="+str(PRM)+"));";
+if g_Doorscon==0
+{
+	macro ProtoPath++Doors63+"CrtSysDoor63.mac" ;
+}
+ExFlapRs=adbOpen(g_Doorscon,SqlArr,3);
+// ExFlapRs=adbOpen(g_Doorscon,str_tab);
+//putmsg("ExFlapRs= "+str(ExFlapRs),0);
+ij=adbRecCount(ExFlapRs);
+if (ij>1)
+{
+   NULLOUT=adbMoveFirst(ExFlapRs);
+   iex=0;
+   exlab1:
+   if !adbIsEOF(ExFlapRs)
+   {
+      iex=iex+1;
+      ExNm=adbGetValue(ExFlapRs,"DSExtraParams.ParamName");
+      ExTyp=adbGetValue(ExFlapRs,"ParamType");
+      ExInf=adbGetValue(ExFlapRs,"InfName");
+      ExHold1=adbGetValue(ExFlapRs,"Hold1");
+      if ExTyp==0 { ExVal=adbGetValue(ExFlapRs,"NumValue"); }
+      else        { ExVal=adbGetValue(ExFlapRs,"StrValue"); }
+      g_ExName[iex]=ExNm;
+      g_ExVal[iex]=ExVal;
+      g_ExInf[iex]=ExInf;
+      NULLOUT=adbMoveNext(ExFlapRs);
+      goto exlab1;
+   }
+   //putmsg("ij=  "+str(ij),0);
+}
+ExFlapRs=adbClose(ExFlapRs)
+return;
+//=======================================================================
+//=======================================================================
+sCopySarr:
+macro ProtoPath+Doors64+"InitGd63.mac"; // Инициализация gd массива для doorsys63
+		// Из gs в gd
+       NULOUT=CopyArray(gd_IdMid,1,gs_IdMid,1);             // -- Id Разделительных профилей
+       //NULOUT=CopyArray(gd_MidHV,1,gs_MidHV,1);             // -- Массив с парметрами эквидистанты для расчета вставок в районе средних профилей
+       NULOUT=CopyArray(gd_XmidS,1,gs_XmidS,1);
+       NULOUT=CopyArray(gd_ZmidS,1,gs_ZmidS,1);             // -- координаты начальных точек разделительных профилей в створке
+       NULOUT=CopyArray(gd_XmidE,1,gs_XmidE,1);
+       NULOUT=CopyArray(gd_ZmidE,1,gs_ZmidE,1);             // -- координаты конечных  точек разделительных профилей в створке
+       NULOUT=CopyArray(gd_AngS,1,gs_AngS,1);
+       NULOUT=CopyArray(gd_AngE,1,gs_AngE,1);               // -- Углы подрезки профиля вначале и в конце разделительного профиля
+       NULOUT=CopyArray(gd_FlMater,1,gs_FlMater,1);         // -- материалы вставок
+       NULOUT=CopyArray(gd_FlOtdel,1,gs_FlOtdel,1);         // -- материалы отделки вставки
+       NULOUT=CopyArray(gd_FlOtdelN,1,gs_FlOtdelN,1);       // -- Число отделок вставки
+       NULOUT=CopyArray(gd_FlNshp,1,gs_FlNshp,1);           // -- направление текстуры шпона вставок
+       gd_Iotd=gs_Iotd;               // -- Cчетчик обработанных в объекте отделок
+       gd_IdFl=gs_IdFl;               // -- Cчетчик обработанных в объекте вставок
+       //gd_IdMpr=gs_IdMpr;             // -- Cчетчик обработанных в объекте средних профилей
+       gd_KFL=gs_KFL;                 // -- Количество вставок из скретча
+       //gd_KMpr=gs_KMpr;               // -- Количество средних профилей из скретча
+
+       NULOUT=CopyArray(gd_ProfHM,1,gs_ProfHM,1);                //-- Массив с парметрами эквидистанты для расчета средних профилей
+       NULOUT=CopyArray(gd_ProfHV,1,gs_ProfHV,1);                //-- Массив с парметрами эквидистанты для расчета вставок
+
+       NULOUT=CopyArray(gd_TlinX1,1,gs_TlinX1,1);                //-- массив с координатами X начала теоретических линий(осей)
+       NULOUT=CopyArray(gd_TlinZ1,1,gs_TlinZ1,1);                //-- массив с координатами Z начала теоретических линий(осей)
+       NULOUT=CopyArray(gd_TlinX2,1,gs_TlinX2,1);                //-- массив с координатами X конца теоретических линий(осей)
+       NULOUT=CopyArray(gd_TlinZ2,1,gs_TlinZ2,1);                //-- массив с координатами Z конца теоретических линий(осей)
+       NULOUT=CopyArray(gd_TlinHM,1,gs_TlinHM,1);                //-- Массив с парметрами эквидистанты для расчета средних профилей
+       NULOUT=CopyArray(gd_TlinHV,1,gs_TlinHV,1);                //-- Массив с парметрами эквидистанты для расчета вставок
+       gd_NTLin=gs_NTLin;                 //-- число теоретических линий(осей)
+return;
+//=======================================================================
+sCopySFarr:
+macro ProtoPath+Doors64+"InitGd63.mac"; // Инициализация gd массива для doorsys63
+       NULOUT=CopyArray(gd_IdMid,1,gsf_IdMid,1);             // -- Id Разделительных профилей
+       //NULOUT=CopyArray(gd_MidHV,1,gsf_MidHV,1);             // -- Массив с парметрами эквидистанты для расчета вставок в районе средних профилей
+       NULOUT=CopyArray(gd_XmidS,1,gsf_XmidS,1);
+       NULOUT=CopyArray(gd_ZmidS,1,gsf_ZmidS,1);             // -- координаты начальных точек разделительных профилей в створке
+       NULOUT=CopyArray(gd_XmidE,1,gsf_XmidE,1);
+       NULOUT=CopyArray(gd_ZmidE,1,gsf_ZmidE,1);             // -- координаты конечных  точек разделительных профилей в створке
+       NULOUT=CopyArray(gd_AngS,1,gsf_AngS,1);
+       NULOUT=CopyArray(gd_AngE,1,gsf_AngE,1);               // -- Углы подрезки профиля вначале и в конце разделительного профиля
+       NULOUT=CopyArray(gd_FlMater,1,gsf_FlMater,1);         // -- материалы вставок
+       NULOUT=CopyArray(gd_FlOtdel,1,gsf_FlOtdel,1);         // -- материалы отделки вставки
+       NULOUT=CopyArray(gd_FlOtdelN,1,gsf_FlOtdelN,1);       // -- Число отделок вставки
+       NULOUT=CopyArray(gd_FlNshp,1,gsf_FlNshp,1);           // -- направление текстуры шпона вставок
+       gd_Iotd=gsf_Iotd;               // -- Cчетчик обработанных в объекте отделок
+       gd_IdFl=gsf_IdFl;               // -- Cчетчик обработанных в объекте вставок
+       //gd_IdMpr=gsf_IdMpr;             // -- Cчетчик обработанных в объекте средних профилей
+       gd_KFL=gsf_KFL;                 // -- Количество вставок из скретча
+       //gd_KMpr=gsf_KMpr;               // -- Количество средних профилей из скретча
+
+       NULOUT=CopyArray(gd_ProfHM,1,gsf_ProfHM,1);                //-- Массив с парметрами эквидистанты для расчета средних профилей
+       NULOUT=CopyArray(gd_ProfHV,1,gsf_ProfHV,1);                //-- Массив с парметрами эквидистанты для расчета вставок
+
+       NULOUT=CopyArray(gd_TlinX1,1,gsf_TlinX1,1);                //-- массив с координатами X начала теоретических линий(осей)
+       NULOUT=CopyArray(gd_TlinZ1,1,gsf_TlinZ1,1);                //-- массив с координатами Z начала теоретических линий(осей)
+       NULOUT=CopyArray(gd_TlinX2,1,gsf_TlinX2,1);                //-- массив с координатами X конца теоретических линий(осей)
+       NULOUT=CopyArray(gd_TlinZ2,1,gsf_TlinZ2,1);                //-- массив с координатами Z конца теоретических линий(осей)
+       NULOUT=CopyArray(gd_TlinHM,1,gsf_TlinHM,1);                //-- Массив с парметрами эквидистанты для расчета средних профилей
+       NULOUT=CopyArray(gd_TlinHV,1,gsf_TlinHV,1);                //-- Массив с парметрами эквидистанты для расчета вставок
+       gd_NTLin=gsf_NTLin;                 //-- число теоретических линий(осей)
+return;
+//=======================================================================
+sCopySBarr:
+macro ProtoPath+Doors64+"InitGd63.mac"; // Инициализация gd массива для doorsys63
+       NULOUT=CopyArray(gd_IdMid,1,gsb_IdMid,1);             // -- Id Разделительных профилей
+       //NULOUT=CopyArray(gd_MidHV,1,gsb_MidHV,1);             // -- Массив с парметрами эквидистанты для расчета вставок в районе средних профилей
+       NULOUT=CopyArray(gd_XmidS,1,gsb_XmidS,1);
+       NULOUT=CopyArray(gd_ZmidS,1,gsb_ZmidS,1);             // -- координаты начальных точек разделительных профилей в створке
+       NULOUT=CopyArray(gd_XmidE,1,gsb_XmidE,1);
+       NULOUT=CopyArray(gd_ZmidE,1,gsb_ZmidE,1);             // -- координаты конечных  точек разделительных профилей в створке
+       NULOUT=CopyArray(gd_AngS,1,gsb_AngS,1);
+       NULOUT=CopyArray(gd_AngE,1,gsb_AngE,1);               // -- Углы подрезки профиля вначале и в конце разделительного профиля
+       NULOUT=CopyArray(gd_FlMater,1,gsb_FlMater,1);         // -- материалы вставок
+       NULOUT=CopyArray(gd_FlOtdel,1,gsb_FlOtdel,1);         // -- материалы отделки вставки
+       NULOUT=CopyArray(gd_FlOtdelN,1,gsb_FlOtdelN,1);       // -- Число отделок вставки
+       NULOUT=CopyArray(gd_FlNshp,1,gsb_FlNshp,1);           // -- направление текстуры шпона вставок
+       gd_Iotd=gsb_Iotd;               // -- Cчетчик обработанных в объекте отделок
+       gd_IdFl=gsb_IdFl;               // -- Cчетчик обработанных в объекте вставок
+       //gd_IdMpr=gsb_IdMpr;             // -- Cчетчик обработанных в объекте средних профилей
+       gd_KFL=gsb_KFL;                 // -- Количество вставок из скретча
+       //gd_KMpr=gsb_KMpr;               // -- Количество средних профилей из скретча
+
+       NULOUT=CopyArray(gd_ProfHM,1,gsb_ProfHM,1);                //-- Массив с парметрами эквидистанты для расчета средних профилей
+       NULOUT=CopyArray(gd_ProfHV,1,gsb_ProfHV,1);                //-- Массив с парметрами эквидистанты для расчета вставок
+
+       NULOUT=CopyArray(gd_TlinX1,1,gsb_TlinX1,1);                //-- массив с координатами X начала теоретических линий(осей)
+       NULOUT=CopyArray(gd_TlinZ1,1,gsb_TlinZ1,1);                //-- массив с координатами Z начала теоретических линий(осей)
+       NULOUT=CopyArray(gd_TlinX2,1,gsb_TlinX2,1);                //-- массив с координатами X конца теоретических линий(осей)
+       NULOUT=CopyArray(gd_TlinZ2,1,gsb_TlinZ2,1);                //-- массив с координатами Z конца теоретических линий(осей)
+       NULOUT=CopyArray(gd_TlinHM,1,gsb_TlinHM,1);                //-- Массив с парметрами эквидистанты для расчета средних профилей
+       NULOUT=CopyArray(gd_TlinHV,1,gsb_TlinHV,1);                //-- Массив с парметрами эквидистанты для расчета вставок
+       gd_NTLin=gsb_NTLin;                                        //-- число теоретических линий(осей)
+return;
+//=======================================================================
+sCopyRBarr:
+macro ProtoPath+Doors64+"InitGd63.mac"; // Инициализация gd массива для doorsys63
+       NULOUT=CopyArray(gsb_IdMid,1,gd_IdMid,1);             // -- Id Разделительных профилей
+       //NULOUT=CopyArray(gd_MidHV,1,gsb_MidHV,1);             // -- Массив с парметрами эквидистанты для расчета вставок в районе средних профилей
+       NULOUT=CopyArray(gsb_XmidS,1,gd_XmidS,1);
+       NULOUT=CopyArray(gsb_ZmidS,1,gd_ZmidS,1);             // -- координаты начальных точек разделительных профилей в створке
+       NULOUT=CopyArray(gsb_XmidE,1,gd_XmidE,1);
+       NULOUT=CopyArray(gsb_ZmidE,1,gd_ZmidE,1);             // -- координаты конечных  точек разделительных профилей в створке
+       NULOUT=CopyArray(gsb_AngS,1,gd_AngS,1);
+       NULOUT=CopyArray(gsb_AngE,1,gd_AngE,1);               // -- Углы подрезки профиля вначале и в конце разделительного профиля
+       NULOUT=CopyArray(gsb_FlMater,1,gd_FlMater,1);         // -- материалы вставок
+       NULOUT=CopyArray(gsb_FlOtdel,1,gd_FlOtdel,1);         // -- материалы отделки вставки
+       NULOUT=CopyArray(gsb_FlOtdelN,1,gd_FlOtdelN,1);       // -- Число отделок вставки
+       NULOUT=CopyArray(gsb_FlNshp,1,gd_FlNshp,1);           // -- направление текстуры шпона вставок
+       gsb_Iotd=gd_Iotd;               // -- Cчетчик обработанных в объекте отделок
+       gsb_IdFl=gd_IdFl;               // -- Cчетчик обработанных в объекте вставок
+       //gsb_IdMpr=gd_IdMpr;             // -- Cчетчик обработанных в объекте средних профилей
+       gsb_KFL=gd_KFL;                 // -- Количество вставок из скретча
+       //gsb_KMpr=gd_KMpr;               // -- Количество средних профилей из скретча
+
+       NULOUT=CopyArray(gsb_ProfHM,1,gd_ProfHM,1);                //-- Массив с парметрами эквидистанты для расчета средних профилей
+       NULOUT=CopyArray(gsb_ProfHV,1,gd_ProfHV,1);                //-- Массив с парметрами эквидистанты для расчета вставок
+
+       NULOUT=CopyArray(gsb_TlinX1,1,gd_TlinX1,1);                //-- массив с координатами X начала теоретических линий(осей)
+       NULOUT=CopyArray(gsb_TlinZ1,1,gd_TlinZ1,1);                //-- массив с координатами Z начала теоретических линий(осей)
+       NULOUT=CopyArray(gsb_TlinX2,1,gd_TlinX2,1);                //-- массив с координатами X конца теоретических линий(осей)
+       NULOUT=CopyArray(gsb_TlinZ2,1,gd_TlinZ2,1);                //-- массив с координатами Z конца теоретических линий(осей)
+       NULOUT=CopyArray(gsb_TlinHM,1,gd_TlinHM,1);                //-- Массив с парметрами эквидистанты для расчета средних профилей
+       NULOUT=CopyArray(gsb_TlinHV,1,gd_TlinHV,1);                //-- Массив с парметрами эквидистанты для расчета вставок
+       gsb_NTLin=gd_NTLin;                                        //-- число теоретических линий(осей)
+return;
+//=======================================================================
+sCopyRFarr:
+macro ProtoPath+Doors64+"InitGd63.mac"; // Инициализация gd массива для doorsys63
+       NULOUT=CopyArray(gsf_IdMid,1,gd_IdMid,1);             // -- Id Разделительных профилей
+       //NULOUT=CopyArray(gd_MidHV,1,gsf_MidHV,1);             // -- Массив с парметрами эквидистанты для расчета вставок в районе средних профилей
+       NULOUT=CopyArray(gsf_XmidS,1,gd_XmidS,1);
+       NULOUT=CopyArray(gsf_ZmidS,1,gd_ZmidS,1);             // -- координаты начальных точек разделительных профилей в створке
+       NULOUT=CopyArray(gsf_XmidE,1,gd_XmidE,1);
+       NULOUT=CopyArray(gsf_ZmidE,1,gd_ZmidE,1);             // -- координаты конечных  точек разделительных профилей в створке
+       NULOUT=CopyArray(gsf_AngS,1,gd_AngS,1);
+       NULOUT=CopyArray(gsf_AngE,1,gd_AngE,1);               // -- Углы подрезки профиля вначале и в конце разделительного профиля
+       NULOUT=CopyArray(gsf_FlMater,1,gd_FlMater,1);         // -- материалы вставок
+       NULOUT=CopyArray(gsf_FlOtdel,1,gd_FlOtdel,1);         // -- материалы отделки вставки
+       NULOUT=CopyArray(gsf_FlOtdelN,1,gd_FlOtdelN,1);       // -- Число отделок вставки
+       NULOUT=CopyArray(gsf_FlNshp,1,gd_FlNshp,1);           // -- направление текстуры шпона вставок
+       gsf_Iotd=gd_Iotd;               // -- Cчетчик обработанных в объекте отделок
+       gsf_IdFl=gd_IdFl;               // -- Cчетчик обработанных в объекте вставок
+       //gsf_IdMpr=gd_IdMpr;             // -- Cчетчик обработанных в объекте средних профилей
+       gsf_KFL=gd_KFL;                 // -- Количество вставок из скретча
+       //gsf_KMpr=gd_KMpr;               // -- Количество средних профилей из скретча
+
+       NULOUT=CopyArray(gsf_ProfHM,1,gd_ProfHM,1);                //-- Массив с парметрами эквидистанты для расчета средних профилей
+       NULOUT=CopyArray(gsf_ProfHV,1,gd_ProfHV,1);                //-- Массив с парметрами эквидистанты для расчета вставок
+
+       NULOUT=CopyArray(gsf_TlinX1,1,gd_TlinX1,1);                //-- массив с координатами X начала теоретических линий(осей)
+       NULOUT=CopyArray(gsf_TlinZ1,1,gd_TlinZ1,1);                //-- массив с координатами Z начала теоретических линий(осей)
+       NULOUT=CopyArray(gsf_TlinX2,1,gd_TlinX2,1);                //-- массив с координатами X конца теоретических линий(осей)
+       NULOUT=CopyArray(gsf_TlinZ2,1,gd_TlinZ2,1);                //-- массив с координатами Z конца теоретических линий(осей)
+       NULOUT=CopyArray(gsf_TlinHM,1,gd_TlinHM,1);                //-- Массив с парметрами эквидистанты для расчета средних профилей
+       NULOUT=CopyArray(gsf_TlinHV,1,gd_TlinHV,1);                //-- Массив с парметрами эквидистанты для расчета вставок
+       gsf_NTLin=gd_NTLin;                                        //-- число теоретических линий(осей)
+return;
+//=======================================================================
+sCopyRarr:
+macro ProtoPath+Doors64+"InitGd63.mac"; // Инициализация gd массива для doorsys63
+       NULOUT=CopyArray(gs_IdMid,1,gd_IdMid,1);             // -- Id Разделительных профилей
+       //NULOUT=CopyArray(gd_MidHV,1,gs_MidHV,1);             // -- Массив с парметрами эквидистанты для расчета вставок в районе средних профилей
+       NULOUT=CopyArray(gs_XmidS,1,gd_XmidS,1);
+       NULOUT=CopyArray(gs_ZmidS,1,gd_ZmidS,1);             // -- координаты начальных точек разделительных профилей в створке
+       NULOUT=CopyArray(gs_XmidE,1,gd_XmidE,1);
+       NULOUT=CopyArray(gs_ZmidE,1,gd_ZmidE,1);             // -- координаты конечных  точек разделительных профилей в створке
+       NULOUT=CopyArray(gs_AngS,1,gd_AngS,1);
+       NULOUT=CopyArray(gs_AngE,1,gd_AngE,1);               // -- Углы подрезки профиля вначале и в конце разделительного профиля
+       NULOUT=CopyArray(gs_FlMater,1,gd_FlMater,1);         // -- материалы вставок
+       NULOUT=CopyArray(gs_FlOtdel,1,gd_FlOtdel,1);         // -- материалы отделки вставки
+       NULOUT=CopyArray(gs_FlOtdelN,1,gd_FlOtdelN,1);       // -- Число отделок вставки
+       NULOUT=CopyArray(gs_FlNshp,1,gd_FlNshp,1);           // -- направление текстуры шпона вставок
+       gs_Iotd=gd_Iotd;               // -- Cчетчик обработанных в объекте отделок
+       gs_IdFl=gd_IdFl;               // -- Cчетчик обработанных в объекте вставок
+       //gs_IdMpr=gd_IdMpr;             // -- Cчетчик обработанных в объекте средних профилей
+       gs_KFL=gd_KFL;                 // -- Количество вставок из скретча
+       //gs_KMpr=gd_KMpr;               // -- Количество средних профилей из скретча
+
+       NULOUT=CopyArray(gs_ProfHM,1,gd_ProfHM,1);                //-- Массив с парметрами эквидистанты для расчета средних профилей
+       NULOUT=CopyArray(gs_ProfHV,1,gd_ProfHV,1);                //-- Массив с парметрами эквидистанты для расчета вставок
+
+       NULOUT=CopyArray(gs_TlinX1,1,gd_TlinX1,1);                //-- массив с координатами X начала теоретических линий(осей)
+       NULOUT=CopyArray(gs_TlinZ1,1,gd_TlinZ1,1);                //-- массив с координатами Z начала теоретических линий(осей)
+       NULOUT=CopyArray(gs_TlinX2,1,gd_TlinX2,1);                //-- массив с координатами X конца теоретических линий(осей)
+       NULOUT=CopyArray(gs_TlinZ2,1,gd_TlinZ2,1);                //-- массив с координатами Z конца теоретических линий(осей)
+       NULOUT=CopyArray(gs_TlinHM,1,gd_TlinHM,1);                //-- Массив с парметрами эквидистанты для расчета средних профилей
+       NULOUT=CopyArray(gs_TlinHV,1,gd_TlinHV,1);                //-- Массив с парметрами эквидистанты для расчета вставок
+       gs_NTLin=gd_NTLin;                                        //-- число теоретических линий(осей)
+return;
+//=======================================================================
+RunFlapDraw:
+
+objs=sysvar(60);
+
+Macro ProtoPath+Doors64+"flap_draw63.mac"
+0,               //-- Координаты установки правого нижнего дальнего угла створки двери
+y,
+0,
+x,               //-- Размер створки двери по горизонтали
+z,               //-- Размер створки двери по вертикали
+ProfBottom,      //-- Нижний горизонтальный профиль обрамления
+cl_horiz_d
+N_PB             //-- число профилей
+ProfTop,         //-- Верхний горизонтальный профиль обрамления
+cl_horiz_u
+ProfVertR,        //-- Вертикальный профиль обрамления правый
+cl_vertR
+ProfVertL,        //-- Вертикальный профиль обрамления левый
+cl_vertL
+ProfMid,         //-- Средний профиль (между вставками)
+cl_mid
+//ProfAdaptH,      //-- Адаптер (уплотнительный профиль) горизонтальный
+//ProfAdaptV,      //-- Адаптер (уплотнительный профиль) вертикальный
+//ProfAdaptMid,    //-- Адаптер (уплотнительный профиль) средний
+h_horiz_d_a,     //-- Полная высота нижнего профиля
+h_hor_d_zhg,
+h_horiz_u_a,     //-- Полная высота верхнего профиля
+h_hor_u_zhg,
+h_horiz_d_z,     //-- Высота зазора нижнего профиля
+h_horiz_u_z,     //-- Высота зазора верхнего профиля
+w_horiz_d_z,     //-- Боковое расстояние до зазора  нижнего профиля
+w_horiz_u_z,     //-- Боковое расстояние до зазора верхнего профиля
+        w_horiz_d_a,     //-- Полная ширина нижнего профиля
+        w_horiz_u_a,     //-- Полная ширина верхнего профиля
+h_vertR_a,        //-- Полная высота вертикального профиля
+h_vertR_z,        //-- Высота зазора вертикального профиля
+        w_vertR_a,        //-- Полная ширина вертикального профиля
+w_vertR_z,        //-- Боковое расстояние до зазора вертикального профиля
+h_vertR_zhg,      //-- Высота заглубления сопрягаемых горизонтальных профилей
+h_vertL_a,        //-- Полная высота вертикального профиля
+h_vertL_z,        //-- Высота зазора вертикального профиля
+        w_vertL_a,        //-- Полная ширина вертикального профиля
+w_vertL_z,        //-- Боковое расстояние до зазора вертикального профиля
+h_vertL_zhg,      //-- Высота заглубления сопрягаемых горизонтальных профилей
+h_mid_a,         //-- Полная высота среднего профиля
+h_mid_z,         //-- Высота двойного зазора среднего профиля
+w_mid_a,         //-- Полная ширина среднего профиля
+w_mid_z,         //-- Боковое расстояние до зазора среднего профиля
+//h_adap_a,        //-- Полная высота профиля адаптера
+//h_adap_z,        //-- Высота зазора профиля адаптера
+//w_adap_a,        //-- Полная ширина профиля адаптера
+//w_adap_z,        //-- Боковое расстояние до зазора профиля адаптера
+//h_adap_v_a,      //-- Полная высота вертикального профиля адаптера
+//h_adap_v_z,      //-- Высота зазора вертикального профиля адаптера
+//w_adap_v_a,      //-- Полная ширина вертикального профиля адаптера
+//w_adap_v_z,      //-- Боковое расстояние до зазора вертикального профиля адаптера
+thin,            //-- Идентификаторы "толстых профилей"
+dx1,             //-- Фаска по X угла 1                            // |2              1|
+dz1,
+dx2,             //-- Фаска по X угла 2                            // |                |
+dz2,
+dx3,             //-- Фаска по X угла 3                            // |                |
+dz3,
+dx4,             //-- Фаска по X угла 4                            // |3______________4|
+dz4
+P_L            // 	Подрез слева
+P_R            // 	Подрез справа
+P_D            // 	Подрез снизу
+strZw
+h_horiz_dms    //-- Имя макроса установки нижнего горизонтального профиля створки из поля MacroSet
+h_horiz_ums    //-- Имя макроса установки верхнего горизонтального профиля створки из поля MacroSet
+h_horiz_Vms    //-- Имя макроса установки вертикального профиля створки из поля MacroSet
+h_horiz_Mms    //-- Имя макроса установки соединительного профиля створки из поля MacroSet
+;
+
+objf=sysvar(60);
+selbyattr "P1==1" child last objf-objs done;
+NGrElems=sysvar(61);
+// putmsg(NGrElems)
+if NGrElems>0
+{
+	#gr group previous done;
+	//-- Читаем информацию о профилях
+	str_tab="SELECT * FROM DSGabProfile INNER JOIN DSFlapProfile ON	DSGabProfile.ID = DSFlapProfile.PSYSTEM WHERE DSFlapProfile.ID="+str(ProfVertR) ;
+
+	ProfRs=adbOpen(g_DoorsCon,str_tab);
+	ij=adbRecCount(ProfRs);
+	if (ij<1)
+	{
+	  errcode="Flap_data63 Количество профилей с ID "+str(ProfVertR)+" равно "+str(ij);
+	  gosub err1;
+	  goto end;
+	}
+	NULLOUT=adbMoveFirst(ProfRs);
+
+	ProfMater=adbGetValue(ProfRs,"IDProfile");
+	attrobj attach "PriceID" done Last 1 ProfMater;
+	attrobj attach "FurnType" done Last 1 "210999";
+	attrobj attach "ElemName" done Last 1 "Створка двери-купе по таблице";
+}
+
+return;
+
+setZhVal:
+   //==============================================================================
+        CurP=g_CLDown;
+        PRM=S_horiz_d;
+
+        gosub getExtraPar;;
+        ProfBottom=CurP;
+        pos=FindInArray(g_ExName,zhVal);
+        //putmsg("PRM="+str(PRM),0);
+        //putmsg("zhVal="+str(zhVal),0);
+        //putmsg("pos="+str(pos),0);
+        if pos>0
+        {
+                zh=g_ExVal[pos];
+                h_horiz_d_z=h_horiz_d_a-zh;   //-- Высота зазора нижнего и верхнего профилей
+        }
+        CurP=g_CLTop;
+        PRM=S_horiz_u; gosub getExtraPar;;
+        ProfTop=CurP;
+        pos=FindInArray(g_ExName,zhVal);
+        if pos>0
+        {
+                zh=g_ExVal[pos];
+                h_horiz_u_z=h_horiz_u_a-zh;   //-- Высота зазора нижнего и верхнего профилей
+        }
+        CurP=g_CLVerR;
+        PRM=s_vertR; gosub getExtraPar;;
+        ProfVertR=CurP;
+        pos=FindInArray(g_ExName,zhVal);
+        if pos>0
+        {
+                zh=g_ExVal[pos];
+                h_vertR_z=h_vertR_a-zh;      //-- Высота зазора вертикального профиля
+        }
+        CurP=g_CLVerL;
+        PRM=s_vertL; gosub getExtraPar;;
+        ProfVertL=CurP;
+        pos=FindInArray(g_ExName,zhVal);
+        if pos>0
+{
+                zh=g_ExVal[pos];
+                h_vertL_z=h_vertL_a-zh;      //-- Высота зазора вертикального профиля
+}
+        //putmsg("g_CLMidFD="+str(g_CLMid),0);
+        CurP=g_CLMid;
+        PRM=s_mid; gosub getExtraPar;;
+        ProfMid=CurP;
+        pos=FindInArray(g_ExName,zhVal);
+        if pos>0
+ {
+                zh=g_ExVal[pos];
+                h_mid_z=h_mid_a-2*zh;       //-- Высота двойного зазора среднего профиля
+  }
+return;
+//==============================================================================
+substrv:
+    nEl=SplitByDelim(strzh,",",aStr);
+    parVal="";
+    iex=0;
+    labexZh:
+    if iex<nEl
+    {
+       iex=iex+1;
+       parVal=parVal+iif(len(parVal)>0,",","")+str(aStr[iex]);
+       iex=iex+1;
+       parVal=parVal+iif(len(parVal)>0,",","")+str(h-aStr[iex]);
+       goto labexZh;
+    }
+    // putmsg(parVal,1);
+return;
+//==============================================================================
+substrm:
+    nEl=SplitByDelim(strzh,",",aStr);
+    parVal="";
+    iex=0;
+    labexZhm:
+    if iex<nEl
+    {
+       iex=iex+1;
+       parVal=parVal+iif(len(parVal)>0,",","")+str(aStr[iex]);
+       iex=iex+1;
+       parVal=parVal+iif(len(parVal)>0,",","")+str((h-2*aStr[iex])/2);
+       goto labexZhm;
+    }
+    // putmsg(parVal,1);
+return;
+//==============================================================================
+//-- Вывод окна сообщения об ошибке
+//-- Входные параметры:
+//-- errcode - сод ошибки
+err1:
+// =g_CLTop
+// =g_CLDown
+// =g_CLMid
+// =g_CLDer
+// =g_CLVer
+// =g_CLVerR
+// =g_CLVerL
+// =g_DRP;
+
+#ok_flag
+     alternative "Ошибка базы данных"
+     msgbox text "Некорректно заполнена база данных систем дверей"
+     " "
+     errcode
+     done
+     "  OK  "
+     done;
+return;

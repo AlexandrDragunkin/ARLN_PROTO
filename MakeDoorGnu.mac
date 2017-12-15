@@ -1,0 +1,314 @@
+//-- Одна из основных макропрограмм построения распашной гнутой двери
+
+global D_DxU D_DzU D_DxN D_DzN D_DxD;
+global ProtoPath;
+global g_FurnType;  //-- Тип мебельного объекта
+KarkasNumb=getcarcnumb();
+global HoldName;      //-- Имя хозяина
+global MacroSw;       //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+
+global		// Для фасадов и дверей
+DoorKonst,            //-- Тип конструкции двери
+DoorPlace, // Сторона открывания
+DoorDuble, // Двойная/одинарная
+DoorOpen,  // Открытая/закрытая
+DoorType,  // Утопленная0/накладная1/Свободная2
+DoorHinge, // Петля
+DoorKorp,   // Толщина материала корпуса ниши
+DoorAngle;  // Угол установки
+
+global		// Для фасадов и дверей
+DoorMater ,  // Материал панелей двери
+DoorPict,    // тип фасада(рисунка)
+DoorBCol ,   // Цвет кромки фасада
+DoorBand ,   // Тип кромки фасада
+DoorMatVS1 , // Материал вставки 1 фасада
+DoorMatVS2 ; // Материал вставки 2 фасада
+
+global		            //-- Для ручек
+HandleType,           //-- Тип ручки
+HandleX,              //-- Сдвиг ручки по x
+HandleZ,              //-- Сдвиг ручки по z
+HandleA,              //-- Поворот ручки
+HandleD,	            //-- Двойная или одиночная ручка
+HandleR;	            //-- Тип положения ручки (0-свободно 1-по центру 3-сверху 4-снизу)
+
+global PanDir;	//-- Направление текстуры 1=D 2=B 0-игнорируется
+
+getpar
+x y z		//-- Правый нижний дальний угол
+w d h     	//-- Размер по ширине, глубине и высоте
+Rad             // Радиус
+R1              // Размер трапеции справа
+R2              // Размер трапеции слева
+  R_Fas         // Изменения фасада: справа
+  L_Fas         // Слева
+  U_Fas         // Сверху
+  D_Fas         //  Снизу
+  Door_Zw       // Зазор по ширине
+;
+DoorID=getprotoid("Shkaf","Распашная угловая дверь","ProtoMacro","DoorGnp");  //-- ID прототипа угловой двери
+//-----------------------------------------------------------------
+
+FurnType="230400";
+if MacroSw==0
+{
+  NULLOUT=getsnap();
+  gosub SimpleDoor;
+  NULLOUT=resnap();
+  
+}
+else
+{
+//  NULLOUT=getsnap();
+  protoobj create "Shkaf.ptl" DoorID //-- 228-й прототип "Распашная угловая дверь"
+  "S" w
+  "G" D
+  "Hd" h
+  "Radius" Rad
+  "R1" R1
+  "R2" R2
+  "R_Fas" R_Fas
+  "L_Fas" L_Fas
+  "U_Fas" U_Fas
+  "D_Fas" D_Fas
+  "Door_Zw"  Door_Zw
+  "Nshp"     PanDir
+  "PrMater"  DoorMater
+  "Face_col" DoorBCol
+  "Rplace"   DoorPlace
+  "Fasrtype" DoorPict
+  "Double"   DoorDuble
+  "Open"     DoorOpen
+  "rx"       HandleX
+  "rz"       HandleZ
+  "ra"       HandleA
+  "HanType"  HandleType
+  "Rpl_r"	   HandleR
+  "Doub_r"   HandleD
+  "P_Type"   DoorHinge
+  "Band" 	   DoorBand
+  "PrMatVs1" DoorMatVS1
+  "PrMatVs2" DoorMatVS2
+  done
+  x y z;
+  MacroSw=1;
+//  NULLOUT=resnap();
+}
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done last 1 done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+}
+if (isassign("HoldName",0))
+{
+  attrobj copy record "HoldName" done last 1 done;
+}
+else
+{
+  attrobj attach "HoldName" done last 1 HoldName ;
+}
+//attrobj attach "Posit" done last 1 position;
+attrobj attach "FurnType" done last 1 FurnType;
+attrobj attach "Assembly" done last 1 1;        //-- Признак сборочной единицы
+macro ProtoPath+"EndDoor.mac" x y z w h DoorKorp;
+exit;
+//=============================================================================
+SimpleDoor:
+x1=x;
+y1=y;
+z1=z;
+HaveCinP=0;
+ALOpen=60;
+object_0=sysvar(60);
+HaveCinP=0;
+if (DoorDuble==1) //-- Двойная дверь  Может открываться только справа и слева
+{
+    W1=int((W-Door_Zw)/2);         // Правая дверь
+    H1=H;
+    z1=z;
+    D1=d;
+    x1=x+w;
+    Variant=2;
+    //-- Строим Правая дверь
+    object_1=sysvar(60);
+    macro ProtoPath+"MakeGnuWing.mac"
+		x1,y1,z1, //-- Положение
+		D1, W1, H1,   //-- Ширина и высота  У двойных меняем право и лево
+                Rad             // Радиус
+                R1              // Размер трапеции справа
+                R2              // Размер трапеции слева
+                0         // Изменения фасада: справа
+                L_Fas         // Слева
+                 U_Fas         // Сверху
+                D_Fas         //  Снизу
+		Variant                 // вариант расположения
+    ;
+    object_2=sysvar(60)-object_1;
+		objPosle=sysvar(60);
+		objDo=object_1;
+    if (object_2>0)
+    {
+      rotate last object_2 done 2points x1,y1,z1 x1,y1,z1+10 -90 nocopy;
+      if (DoorOpen==1) //-- Если открытая дверь
+      {
+        rotate last object_2 done 2points x y-d z x y-d z+10 ALOpen nocopy;
+      }
+			macro ProtoPath+"SetCinemaFromObj.mac" byref HaveCinP byref ScrCinO1 DoorAngle objDo objPosle w 0 0 0 0;
+			if (HaveCinP==1)
+			{
+				NULLOUT=AddScratch(ScrCinO1,"Main","Control",0);
+				macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0000" ;
+				NULLOUT=AddScratch(ScrCinO1,"Main","Control",2);
+				macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0406" ;
+				macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0408" ;
+			}
+    }
+    x1=x; //W1+Door_Zw;
+    y1=-d;
+    D1=d;
+    Variant=1;
+    //-- Строим левую дверь
+    object_1=sysvar(60);
+    macro ProtoPath+"MakeGnuWing.mac"
+		x1,y1,z1, //-- Положение
+		D1, W1, H1,   //-- Ширина и высота    У двойных меняем право и лево
+                Rad             // Радиус
+                R1              // Размер трапеции справа
+                R2              // Размер трапеции слева
+                R_Fas         // Изменения фасада: справа
+                0         // Слева
+                U_Fas         // Сверху
+                D_Fas         //  Снизу
+		Variant                 // вариант расположения
+    ;
+		objDo=object_1;
+		objPosle=sysvar(60);
+    object_2=sysvar(60)-object_1;
+    if (object_2>0)
+    {
+      rotate last object_2 done 2points x1,y1,z1 x1,y1,z1+10 90 nocopy;
+      if (DoorOpen==1) //-- Если открытая дверь
+      {
+        rotate last object_2 done 2points x+W y-d z x+w y-d z+10 -ALOpen nocopy;
+      }
+			macro ProtoPath+"SetCinemaFromObj.mac" byref HaveCinP byref ScrCinO1 DoorAngle objDo objPosle w 0 0 0 0;
+			if (HaveCinP==1)
+			{
+				NULLOUT=AddScratch(ScrCinO1,"Main","Control",0);
+				macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0000" ;
+				NULLOUT=AddScratch(ScrCinO1,"Main","Control",2);
+				macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0406" ;
+				macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0408" ;
+			}
+    }
+nodoor:
+}
+else //-- Если дверь одинарная
+{
+  W1=W;
+  H1=H;
+  D1=d;
+  z1=z;
+
+  Variant=DoorPlace;
+  //-- Строим дверь
+
+    object_1=sysvar(60);
+    macro ProtoPath+"MakeGnuWing.mac"
+		0,0,0, //-- Положение
+		W1, D1, H1,   //-- Ширина и высота
+                Rad             // Радиус
+                R1              // Размер трапеции справа
+                R2              // Размер трапеции слева
+                R_Fas         // Изменения фасада: справа
+                L_Fas         // Слева
+                U_Fas         // Сверху
+                D_Fas         //  Снизу
+		Variant                 // вариант расположения
+    ;
+		objPosle=sysvar(60);
+    object_2=sysvar(60)-object_1;
+		objDo=object_1;
+		if (object_2>0)
+		{
+    move last  object_2 done 2points 0,0,0 x1,y1,z1 nocopy;
+    if (DoorOpen==1)
+			{
+				if (DoorPlace==1)
+				{
+					rotate last object_2 done 2points x y 0 x y 10 ALOpen nocopy;
+				}
+				if (DoorPlace==2)
+				{
+					rotate last object_2 done 2points x+W y 0 x+w y 10 -ALOpen nocopy;
+				}
+				if (DoorPlace==3)
+				{
+					rotate last object_2 done 2points x y z1 x+1 y z1 -ALOpen nocopy;
+				}
+				if (DoorPlace==4)
+				{
+					rotate last object_2 done 2points x y z1+H1 x+1 y z1+H1 ALOpen nocopy;
+				}
+			 //-- Если дверь не имеет стороны открывания, ее не открываем
+			}
+		}
+		macro ProtoPath+"SetCinemaFromObj.mac" byref HaveCinP byref ScrCinO1 DoorAngle objDo objPosle w 0 0 0 0;
+		if (object_2>0&&HaveCinP==1)
+		{
+			NULLOUT=AddScratch(ScrCinO1,"Main","Control",0);
+			macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0000" ;
+			NULLOUT=AddScratch(ScrCinO1,"Main","Control",2);
+			macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0406" ;
+			macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0408" ;
+		}
+}
+object_3=sysvar(60)-object_0;
+#DoorDone group last  object_3 done;
+
+  dn="Дверь "+priceinfo(DoorKonst,"NAME","Угловая распашная",2);
+  attrobj attach "ElemName" done last 1 dn;
+
+FurnType="230400";
+//==================================
+Namescr="ProtoParams";
+
+g_FurnType=FurnType;
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"S",w);
+err=AddScratch(ScrMod,FurnType,"Hd",H);
+err=AddScratch(ScrMod,FurnType,"G",D);
+err=AddScratch(ScrMod,FurnType,"Radius",Rad);
+err=AddScratch(ScrMod,FurnType,"R1",R1);
+err=AddScratch(ScrMod,FurnType,"R2",R2);
+err=AddScratch(ScrMod,FurnType,"R_Fas",R_Fas);
+err=AddScratch(ScrMod,FurnType,"L_Fas",L_Fas);
+err=AddScratch(ScrMod,FurnType,"U_Fas",U_Fas);
+err=AddScratch(ScrMod,FurnType,"D_Fas",D_Fas);
+err=AddScratch(ScrMod,FurnType,"Door_Zw",Door_Zw);
+err=AddScratch(ScrMod,FurnType,"Rplace",DoorPlace);
+err=AddScratch(ScrMod,FurnType,"Fasrtype",DoorPict);
+err=AddScratch(ScrMod,FurnType,"PrMater",DoorMater);
+err=AddScratch(ScrMod,FurnType,"Band",DoorBand);
+err=AddScratch(ScrMod,FurnType,"Face_col",DoorBCol);
+err=AddScratch(ScrMod,FurnType,"HanType",HandleType);
+err=AddScratch(ScrMod,FurnType,"Rpl_r",HandleR);
+err=AddScratch(ScrMod,FurnType,"Doub_r",HandleD);
+err=AddScratch(ScrMod,FurnType,"rx",HandleX);
+err=AddScratch(ScrMod,FurnType,"rz",HandleZ);
+err=AddScratch(ScrMod,FurnType,"ra",HandleA);
+err=AddScratch(ScrMod,FurnType,"Double",DoorDuble);
+err=AddScratch(ScrMod,FurnType,"Open",DoorOpen);
+err=AddScratch(ScrMod,FurnType,"P_Type",DoorHinge);
+err=AddScratch(ScrMod,FurnType,"PrMatVs1",DoorMatVS1);
+err=AddScratch(ScrMod,FurnType,"PrMatVs2",DoorMatVS2);
+err=AddScratch(ScrMod,FurnType,"Nshp",PanDir);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+NULLOUT=addattrpi(DoorDone,1,DoorID);
+return;

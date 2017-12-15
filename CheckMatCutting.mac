@@ -1,0 +1,101 @@
+//-- Сверка материалов группы подстановки и раскроя
+
+defarr arr[2];
+defarr SQLarr[20];
+global ProtoPath;
+
+res=NPGetByWhere(1,"ID>0","ArrIDName",17);
+if res==0
+{
+	exit;
+}
+
+NULLOUT=udgetentity("CuttingType",Type,dval,sval);
+if (NULLOUT==0)
+{
+  putmsg("Отсутствуют данные о раскройных программах",0);
+  exit;
+}
+NULLOUT=udcombonext("CuttingType",dval,q,qq);
+if (NULLOUT==0)
+{
+  putmsg("Отсутствуют данные о раскройных программах",0);
+  exit;
+}
+// Проверяем наличие базы раскроя
+tab_place=GetCutData()+"\\"+str("dbRaskroy.mdb")
+if !FileExist(tab_place)
+{
+	putmsg("Отсутствует dbRaskroy.mdb",0);
+	exit;
+}
+
+szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+tab_place
+MyConn=adbCon(szSrc);
+if !adbChkMdbTbl(tab_place,"Rlst")
+{
+	putmsg("Отсутствует в dbRaskroy.mdb Rlst",0);	
+	exit;
+}
+
+// zp1="SELECT * FROM Rlst";
+// rcd=adbOpen(con,zp1);
+// total_s1=aDbRecCount(rcd);
+// if total_s1>0
+// {
+	// err=aDbMoveFirst(rcd);
+	// iex=0;
+	// exlab2:
+	// if !adbIsEOF(rcd)
+	// {
+	  // iex=iex+1;
+	  // ExVal1=adbGetValue(rcd,"Hold1");
+	  // ExVal2=adbGetValue(rcd,"NumValue");
+
+	  // NULLOUT=adbMoveNext(rcd);
+	  // goto exlab2;
+	// }
+// }
+
+i=0;
+nexti:
+i=i+1;
+if i<=res
+{
+	IDNom=ArrIDName[i];
+	NAMEMAT=PriceInfo(IDNom,"MATNAME","",1);
+	Thickness=PriceInfo(IDNom,"Thickness",16,1);
+	GabX=PriceInfo(IDNom,"GabX",2800,1);
+	GabY=PriceInfo(IDNom,"GabY",2070,1);
+	Transparency=PriceInfo(IDNom,"Transparency",0,1);
+	MatType=PriceInfo(IDNom,"MATTYPENAM","ДСтП",1)
+	if Transparency { goto nexti; }
+	zp1="SELECT * FROM Rlst WHERE MAT='"+str(NAMEMAT)+"' AND G3="+str(Thickness);
+	rcd=adbOpen(MyConn,zp1);
+	total_s1=aDbRecCount(rcd);
+	if !total_s1
+	{
+		nullout=initarray(SQLarr,"");
+		SQLarr[1]="INSERT INTO Rlst (";
+		SQLarr[2]=" Ch, NUMCELL, NLS, G1, G2, MAT,"
+		SQLarr[3]=" TMAT, G3, CNT, PRIM, OV, VID) VALUES (";
+		SQLarr[4]=str(1)+", ";
+		SQLarr[5]=str("''")+", ";
+		SQLarr[6]=str("''")+", ";
+		SQLarr[7]=str(GabX)+", ";
+		SQLarr[8]=str(GabY)+", '";
+		SQLarr[9]=str(NAMEMAT)+"', '";
+		SQLarr[10]=str(MatType)+"', ";
+		SQLarr[11]=str(Thickness)+",";
+		SQLarr[12]=str(100)+",";
+		SQLarr[13]=str("''")+", '";
+		SQLarr[14]=str(0)+"','";
+		SQLarr[15]=str(1)+"')";
+		MyRs=adbModify(MyConn,SQLarr);
+		putmsg("Добавлен "+str(NAMEMAT)+" ("+str(MatType)+")")
+	}
+	
+	goto nexti;
+}
+adbDisCon(MyConn);	
+exit;

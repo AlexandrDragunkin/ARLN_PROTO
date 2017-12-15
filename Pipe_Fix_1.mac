@@ -1,0 +1,92 @@
+//--Макро создания одностороннего держателя трубы для системы Komandor.
+global ProtoPath;
+getpar GoodsID;
+//GoodsID=2406;
+//--Читаем свойства сборочной единицы
+IDKom1=PriceInfo(GoodsID,"NomID1",1,2);			//-- Соединитель трубы односторонний			..54-1301-MS..
+NameKom1=PriceInfo(IDKom1,"MatName","",1);		//-- Наименование
+
+IDFix1=PriceInfo(GoodsID,"NomID2",1,2);			//-- Гайка 16х16мм					..54-1901..
+NameFix1=PriceInfo(IDFix1,"MatName","",1);		//-- Наименование
+
+IDFix2=PriceInfo(GoodsID,"NomID3",1,2);			//-- Заглушка 16х16мм					..54-1902..
+NameFix2=PriceInfo(IDFix2,"MatName","",1);		//-- Наименование
+
+IDFix3=PriceInfo(GoodsID,"NomID4",1,2);			//-- Шуруп М6х20					..59-0726..
+NameFix3=PriceInfo(IDFix3,"MatName","",1);		//-- Наименование
+
+IDFix4=PriceInfo(GoodsID,"NomID5",1,2);			//-- Вкладыш одностороннего соединителя трубы		..54-1303..
+NameFix4=PriceInfo(IDFix4,"MatName","",1);		//-- Наименование
+
+IDFix5=PriceInfo(GoodsID,"NomID6",1,2);			//-- Вкладыш соединителя трубы				..54-1305..
+NameFix5=PriceInfo(IDFix5,"MatName","",1);		//-- Наименование
+
+obj_do=sysvar(60); 
+//-- Добавляем первый соединитель
+macro ProtoPath+"MakeAcce.mac" IDKom1 "040000" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameKom1;
+//-- Добавляем второй соединитель
+macro ProtoPath+"MakeAcce.mac" IDKom1 "040000" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameKom1;
+rotate last 1 done 2points 0 0 0 0 1 0 180 nocopy;
+//-- Добавляем гайку
+macro ProtoPath+"MakeAcce.mac" IDFix1 "040000" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameFix1;
+move last 1 done 14 -24.5 0 nocopy;
+rotate last 1 done 2points 14 -24.5 0 14 -24 0 90 nocopy;
+rotate last 1 done 2points 14 -24.5 0 15 -24.5 0 -90 nocopy;
+//-- Добавляем заглушку
+macro ProtoPath+"MakeAcce.mac" IDFix2 "040000" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameFix2;
+move last 1 done -14 -24.5 0 nocopy;
+rotate last 1 done 2points -14 -24.5 0 -14 -24 0 -90 nocopy;
+rotate last 1 done 2points -14 -24.5 0 -15 -24.5 0 90 nocopy;
+//-- Добавляем шуруп
+macro ProtoPath+"MakeAcce.mac" IDFix3 "040400" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameFix3;
+rotate last 1 done 2points 0 0 0 0 1 0 90 nocopy;
+move last 1 done -14 -24.5 0 nocopy;
+//-- Добавляем первый вкладыш одностороннего соединителя трубы
+macro ProtoPath+"MakeAcce.mac" IDFix4 "041200" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameFix4;
+rotate last 1 done 2points 0 0 0 0 0 1 90 nocopy;
+move last 1 done 0 0 -6 nocopy;
+//-- Добавляем второй вкладыш одностороннего соединителя трубы
+macro ProtoPath+"MakeAcce.mac" IDFix4 "041200" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameFix4;
+rotate last 1 done 2points 0 0 0 0 0 1 90 nocopy;
+move last 1 done 0 0 6 nocopy;
+//-- Добавляем третий вкладыш одностороннего соединителя трубы
+macro ProtoPath+"MakeAcce.mac" IDFix4 "041200" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameFix4;
+rotate last 1 done 2points 0 0 0 0 0 1 90 nocopy;
+mirror last 1 done 3points 0 0 0 0 1 0 0 0 1 nocopy;
+move last 1 done 0 0 -6 nocopy;
+//-- Добавляем четвертый вкладыш одностороннего соединителя трубы
+macro ProtoPath+"MakeAcce.mac" IDFix4 "041200" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameFix4;
+rotate last 1 done 2points 0 0 0 0 0 1 90 nocopy;
+mirror last 1 done 3points 0 0 0 0 1 0 0 0 1 nocopy;
+move last 1 done 0 0 6 nocopy;
+//-- Добавляем первый вкладыш соединителя трубы
+macro ProtoPath+"MakeAcce.mac" IDFix5 "041200" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameFix5;
+rotate last 1 done 2points 0 0 0 0 0 1 90 nocopy;
+rotate last 1 done 2points 0 0 0 1 0 0 90 nocopy;
+move last 1 done 0 -43 0 nocopy;
+//-- Добавляем второй вкладыш соединителя трубы
+macro ProtoPath+"MakeAcce.mac" IDFix5 "041200" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameFix5;
+rotate last 1 done 2points 0 0 0 0 0 1 -90 nocopy;
+rotate last 1 done 2points 0 0 0 1 0 0 -90 nocopy;
+move last 1 done 0 -43 0 nocopy;
+
+obj_posle=sysvar(60);
+kol=obj_posle-obj_do;
+rotate last kol done 2points 0 0 0 1 0 0 -90 nocopy;
+group last kol done;
+FurnType=PriceInfo(GoodsID,"FurnType","350000",2);
+NameEl=PriceInfo(GoodsID,"Name","",2);
+attrobj attach "FurnType" done last 1 FurnType;
+attrobj attach "ElemName" Done last 1 NameEl;
+exit;

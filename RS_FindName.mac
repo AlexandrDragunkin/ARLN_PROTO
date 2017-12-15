@@ -1,0 +1,51 @@
+//-- Макро находит и выделяет объект по названию
+
+NULLOUT=getvarinst(2,"FailColor",FailColor,12);      //-- Цвет объектов, не прошедших провеору
+
+#aaa
+setvar
+"Поиск объектов по названию"
+""
+""
+done
+string auto default ""
+"Введите название объекта" var
+done;
+if (aaa==0)       // Если "Отмена"
+{
+ exit;
+}
+select stayblink partly attribute "ElemName=="+"\""+str(var)+"\"" done;
+obj=sysvar(61);
+if (obj==0)		//-- Если объектов нет
+{
+	#bbb alternative
+	"Поиск объектов по названию"
+  msgbox picture 3 beep 3
+	text left
+	"Объекты с названием "+"\""+str(var)+"\""+" не найдены"
+  done
+	"ОК"
+	done;
+  exit;
+}
+//-- Если объекты нашли
+#ok_flag
+alternative "Поиск объектов по названию"
+msgbox picture 4 beep 4 text left
+"Объекты с названием "+"\""+str(var)+"\""+" выделены мерцанием"
+"Всего найдено "+str(obj)+" объектов"
+""
+"Отключить мерцание найденных объектов?"
+done
+"Да"  "Нет" "Изменить цвет"
+done;
+if (ok_flag==1)
+{
+  select all done;
+}
+if (ok_flag==3)
+{
+  chprop color partly previous done FailColor ;
+}
+exit;

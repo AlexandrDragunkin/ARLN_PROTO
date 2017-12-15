@@ -1,0 +1,286 @@
+// Сверловка
+global NumFixMac;   // Для передачи количества из пользовательского макро
+NumFixMac=0;        // надо расчитать здесь
+defarr arr[10];
+getpar
+Lengh   // Длина пятна контакта
+hPanel	// закрепляемая панель
+Poly   // ID полилайна 1 - главный
+Side	// закрепляемая сторона   SIDE_D = 1, SIDE_C = 3, SIDE_E = 5, SIDE_B = 7
+IDHol   //  ID отверстия
+XHol    //  положение вдоль длины от начала
+YHol    //  положение поперек длины
+ZHol    //  положение внуть панели ? может и не надо
+;
+Shag=32;	//--Шаг крепежа
+Ots=30;		//--Минимальное расстояние от торцов.
+//-------------------------------------------------------------------------------------------
+//paths=sysvar(1);
+//tab_place=paths+"M71Main.mdb";
+//szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+tab_place;
+//K3BaseConn=adbCon(szSrc);
+//Zap=adbOpen(K3BaseConn,"SELECT HFIDH FROM HLFIX WHERE HFB=10");
+//K3BaseConn=adbdiscon(K3BaseConn);
+arr[1]=hPanel;
+err=GetPan6Par(1,arr);
+err=GetPan6Par(21,arr);
+Type=arr[3];
+Tip=Type;
+
+//---Проверка на количество пролетов между крепежами
+ColFix=1;
+if (Lengh>476&&Lengh<890)	//--Три крепежа
+{
+ ColFix=2;
+}
+if (Lengh>=890&&Lengh<=1302)	//--Четыре крепежа
+{
+ ColFix=3;
+}
+if (Lengh>1302&&Lengh<1716)	//--Пять крепежей
+{
+ ColFix=4;
+}
+if (Lengh>=1716&&Lengh<=2126)	//--Шесть крепежей
+{
+ ColFix=5;
+}
+if (Lengh>2126&&Lengh<2542)	//--Семь крепежей
+{
+ ColFix=6;
+}
+if (Lengh>=2542&&Lengh<=2800)	//--Восемь крепежей
+{
+ ColFix=7;
+}
+
+//-------Расчет -------------------------------------------------------------------
+LL=(Lengh-ots*2)/ColFix;	//--Длина одного пролета без учета кратности.
+LK=LL/Shag;			//--Количество шагов в пролете.
+LP=floor(LK);			//--Количество шагов в пролете округленное в меньшую сторону
+
+IstLengh=LP*Shag*ColFix;	//--Длина без отступов, с учетом шагов 
+otstup=(Lengh-IstLengh)/2;	//--Новый отступ
+//-------Условия расстановки-------------------------------------------------------------------
+if (Lengh>59&&Lengh<92)		//--Один крепеж
+{
+ IDHol[1]=Tip;
+ XHol[1]=Lengh/2;
+ YHol[1]=0;
+ zHol[1]=0;
+ NumFixMac=1;
+}
+
+if (Lengh>=92&&Lengh<=476)	//--Два крепежа
+{
+ IDHol[1]=Tip;
+ XHol[1]=otstup;
+ YHol[1]=0;
+ zHol[1]=0;
+
+ IDHol[2]=Tip;
+ XHol[2]=otstup+IstLengh;
+ YHol[2]=0;
+ zHol[2]=0;
+ NumFixMac=2;
+}
+
+if (Lengh>476&&Lengh<890)	//--Три крепежа
+{
+	IDHol[1]=Tip;
+	XHol[1]=otstup;
+	YHol[1]=0;
+	zHol[1]=0;
+
+	IDHol[2]=Tip;
+	XHol[2]=otstup+IstLengh/2;
+	YHol[2]=0;
+	zHol[2]=0;
+
+	IDHol[3]=Tip;
+	XHol[3]=otstup+IstLengh;
+	YHol[3]=0;
+	zHol[3]=0;
+	NumFixMac=3;
+}
+
+if (Lengh>=890&&Lengh<=1302)	//--Четыре крепежа
+{
+ IDHol[1]=Tip;
+ XHol[1]=otstup;
+ YHol[1]=0;
+ zHol[1]=0;
+
+ IDHol[2]=Tip;
+ XHol[2]=otstup+IstLengh/3;
+ YHol[2]=0;
+ zHol[2]=0;
+
+ IDHol[3]=Tip;
+ XHol[3]=otstup+(IstLengh/3)*2;
+ YHol[3]=0;
+ zHol[3]=0;
+
+ IDHol[4]=Tip;
+ XHol[4]=otstup+IstLengh;
+ YHol[4]=0;
+ zHol[4]=0;
+ NumFixMac=4;
+}
+
+if (Lengh>1302&&Lengh<1716)	//--Пять крепежей
+{
+ IDHol[1]=Tip;
+ XHol[1]=otstup;
+ YHol[1]=0;
+ zHol[1]=0;
+
+ IDHol[2]=Tip;
+ XHol[2]=otstup+IstLengh/4;
+ YHol[2]=0;
+ zHol[2]=0;
+
+ IDHol[3]=Tip;
+ XHol[3]=otstup+(IstLengh/4)*2;
+ YHol[3]=0;
+ zHol[3]=0;
+
+ IDHol[4]=Tip;
+ XHol[4]=otstup+(IstLengh/4)*3;
+ YHol[4]=0;
+ zHol[4]=0;
+
+ IDHol[5]=Tip;
+ XHol[5]=otstup+IstLengh;
+ YHol[5]=0;
+ zHol[5]=0;
+
+ NumFixMac=5;
+}
+
+if (Lengh>=1716&&Lengh<=2126)	//--Шесть крепежей
+{
+ IDHol[1]=Tip;
+ XHol[1]=otstup;
+ YHol[1]=0;
+ zHol[1]=0;
+
+ IDHol[2]=Tip;
+ XHol[2]=otstup+IstLengh/5;
+ YHol[2]=0;
+ zHol[2]=0;
+
+ IDHol[3]=Tip;
+ XHol[3]=otstup+(IstLengh/5)*2;
+ YHol[3]=0;
+ zHol[3]=0;
+
+ IDHol[4]=Tip;
+ XHol[4]=otstup+(IstLengh/5)*3;
+ YHol[4]=0;
+ zHol[4]=0;
+
+ IDHol[5]=Tip;
+ XHol[5]=otstup+(IstLengh/5)*4;
+ YHol[5]=0;
+ zHol[5]=0;
+
+ IDHol[6]=Tip;
+ XHol[6]=otstup+IstLengh;
+ YHol[6]=0;
+ zHol[6]=0;
+
+ NumFixMac=6;
+}
+
+if (Lengh>2126&&Lengh<2542)	//--Семь крепежей
+{
+ IDHol[1]=Tip;
+ XHol[1]=otstup;
+ YHol[1]=0;
+ zHol[1]=0;
+
+ IDHol[2]=Tip;
+ XHol[2]=otstup+IstLengh/6;
+ YHol[2]=0;
+ zHol[2]=0;
+
+ IDHol[3]=Tip;
+ XHol[3]=otstup+(IstLengh/6)*2;
+ YHol[3]=0;
+ zHol[3]=0;
+
+ IDHol[4]=Tip;
+ XHol[4]=otstup+(IstLengh/6)*3;
+ YHol[4]=0;
+ zHol[4]=0;
+
+ IDHol[5]=Tip;
+ XHol[5]=otstup+(IstLengh/6)*4;
+ YHol[5]=0;
+ zHol[5]=0;
+ 
+ IDHol[6]=Tip;
+ XHol[6]=otstup+(IstLengh/6)*5;
+ YHol[6]=0;
+ zHol[6]=0;
+
+ IDHol[7]=Tip;
+ XHol[7]=otstup+IstLengh;
+ YHol[7]=0;
+ zHol[7]=0;
+
+ NumFixMac=7;
+}
+
+if (Lengh>=2542&&Lengh<=2800)	//--Восемь крепежей
+{
+ IDHol[1]=Tip;
+ XHol[1]=otstup;
+ YHol[1]=0;
+ zHol[1]=0;
+
+ IDHol[2]=Tip;
+ XHol[2]=otstup+IstLengh/7;
+ YHol[2]=0;
+ zHol[2]=0;
+
+ IDHol[3]=Tip;
+ XHol[3]=otstup+(IstLengh/7)*2;
+ YHol[3]=0;
+ zHol[3]=0;
+
+ IDHol[4]=Tip;
+ XHol[4]=otstup+(IstLengh/7)*3;
+ YHol[4]=0;
+ zHol[4]=0;
+
+ IDHol[5]=Tip;
+ XHol[5]=otstup+(IstLengh/7)*4;
+ YHol[5]=0;
+ zHol[5]=0;
+ 
+ IDHol[6]=Tip;
+ XHol[6]=otstup+(IstLengh/7)*5;
+ YHol[6]=0;
+ zHol[6]=0;
+
+ IDHol[7]=Tip;
+ XHol[7]=otstup+(IstLengh/7)*6;
+ YHol[7]=0;
+ zHol[7]=0;
+
+ IDHol[8]=Tip;
+ XHol[8]=otstup+IstLengh;
+ YHol[8]=0;
+ zHol[8]=0;
+
+ NumFixMac=8;
+}
+
+if (Lengh>2800)	//--Восемь крепежей
+{
+ putmsg("Крепежная цепочка превышает длину листового материала-крепеж ставится вручную",0);
+}
+//--------------------------------------------------------------------------------------------
+exit

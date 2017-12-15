@@ -1,0 +1,16 @@
+//-- Установить текущий прогиб профиля
+global
+g_BendProf     // Признак гнутости профиля   0 - прямой, 2 - гнутый
+g_ProfAng      //-- Угол   гиба
+g_ProfRad      //-- Радиус   гиба
+g_GProfL       //-- Длина по Y
+g_ProfMir      //-- Симметрия
+;
+getpar  P1 P2  P3 P4 P5 ;
+g_BendProf=P1
+g_ProfAng=P2      //-- Угол   гиба
+g_ProfRad=P3      //-- Радиус   гиба
+g_GProfL=P4       //-- Длина по Y
+g_ProfMir=P5      //-- Симметрия
+
+exit;

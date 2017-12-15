@@ -1,0 +1,288 @@
+///////////////////////////////////////////////
+// YachCorr
+///////////////////////////////////////////////
+//	Назначение
+//	Корректировка размеров панели заполняющей ячейку между профилями
+//
+//	Вызов из Zap_Yach
+///////////////////////////////////////////////
+//	10/11/2002		учет угола поворота контура
+///////////////////////////////////////////////
+global YachP1 YachP2 YachP3 YachP4;           //  профили образующие ячейку
+global IntP1 IntP2 IntP3;         						// 	Точки углов ячейки
+//global panel;
+NULLOUT=GetVarInst(2,"g_eps",g_eps,0.01); // Погрешность округления
+Defarr W[10];
+Defarr g[6];
+defarr arr[16];
+Debug=0
+////////////////////////////////////////
+getpar	panel;		//	объект соответствующий панели
+//panel=panel1;
+ProtoPath=GetProtoMac("Shkaf.ptl")
+//
+if (!IsAttrDef("ProfCont"))	{
+	if (Debug>0) {
+	="В системе не определен атрибут ProfCont"
+	}
+//	#ok_flag   //Если после setvar будет 0 - Нажали кнопку "Отмена"
+//	setvar
+//	"Заполнение ячейки "     // Заголовок окна
+//	""                  // Имя файла иллюстрации
+//	// Пояснительный текст
+//	center         //с выравниванием слева
+//	"В системе не определен атрибут"
+//	done          // конец пояснительного текста
+//	done
+	Attribute Create "ProfCont" "контакты профиля" text 16 80 ;
+//   exit
+	}
+//////////////		центральная точка лежит на панели
+cx=(IntP1[1]+IntP2[1])/4+IntP3[1]/2
+cy=(IntP1[2]+IntP2[2])/4+IntP3[2]/2
+cz=(IntP1[3]+IntP2[3])/4+IntP3[3]/2
+#Centr Point cx cy cz done
+prof=YachP1
+strPP=""
+gosub ParaProf
+prof=YachP2
+strPP=""
+gosub ParaProf
+prof=YachP3
+strPP=""
+gosub ParaProf
+prof=YachP4
+strPP=""
+gosub ParaProf
+="корректировка завершена"
+//:
+delete Centr ;
+exit;
+
+///////////////////////////////////////////////
+//	определение строки параметров профиля
+//  strPP - определяется
+//
+ParaProf:
+///////////////////////////////////////////////
+PrProf=0
+pnt1=prof
+  gosub GetProfPar;
+FileName=FilePath
+
+if (len(FileName)==0) {
+	#ok_flag   //Если после setvar будет 0 - Нажали кнопку "Отмена"
+	setvar
+	"Заполнение ячейки "     // Заголовок окна
+	""                  // Имя файла иллюстрации
+	// Пояснительный текст
+	left         //с выравниванием слева
+	"Используемый профиль не содержит"
+	"ссылки на файл"
+	done          // конец пояснительного текста
+	done
+	strPP="N;N;N;N;N;N;N;N;"
+	return;
+	}
+//    macro ProtoPath+"AppendK3.mac" "\\Профили\\" FileName 0 0 0;
+//    objident last 1 Kont ;
+#Kont  Append FileName 0 0 0;
+if (!IsAssign("ProfCont",Kont)) {
+	delete Kont done
+	strPP="N;N;N;N;N;N;N;N;"
+	return;
+	}
+strPP=GetAttr(Kont,"ProfCont","N;N;N;N;N;N;N;N;")
+delete Kont done
+//:
+
+NULLOUT=splitbydelim(strPP,";",W);
+setucs lcs prof
+if (Debug>0) {
+	="перешли в систему координат профиля"
+	}
+ux=0
+uy=0
+uz=0
+PTransCS(3,0,cx,cy,cz,ux,uy,uz);
+/////////////////////////////////////////////////////////////////////
+//		учтем возможный поворот профиля вокруг оси
+//ugol=0
+//err=GetProtoVal(prof,"Angle",ugol)
+ugol=AnglePr
+//=ugol
+//:
+if (abs(ugol)>g_eps)	{
+	#ct point ux	uy	uz	done
+	="определена рабочая точка"
+	rotate ct done 2points 0 0 0 0 0 1 -ugol nocopy
+	getobjgeo(ct,g)
+	ux=g[1]
+	uy=g[2]
+	uz=g[3]
+	PTransCS(3,0,ux,uy,uz,ux,uy,uz);
+	delete ct done
+	}
+/////////////////////////////////////////////////////////////////////
+//numdir=0
+gosub NumDirect
+=numdir
+//:
+if (str(w[NumDir])=="N") 	{
+	select prof done
+	#ok_flag   //Если после setvar будет 0 - Нажали кнопку "Отмена"
+	setvar
+	"Заполнение ячейки "     // Заголовок окна
+	""                  // Имя файла иллюстрации
+	// Пояснительный текст
+	left         //с выравниванием слева
+	"профиль не может стыковываться"
+	"под заданным углом"
+	done          // конец пояснительного текста
+	done
+	if (Debug>0) {
+////		select prof done
+		="можем поглядеть"
+		}
+	}
+  else {
+//  =ObjGab1(prof,3)/2
+  =ObjGab3(prof,g)
+//  :
+	PTransCS(0,3,0,0,abs(g[6]-g[3])/2,ux,uy,uz);		//	здесь точно середину отрезка
+  ="Корректировать размер"
+	setucs lcs panel
+	PTransCS(3,0,ux,uy,uz,ux,uy,uz);
+	err=0
+  pan_x=0
+  pan_y=0
+  pan_type=0
+  pan_mater=0
+  P_E=0
+  P_D=0
+  P_B=0
+  P_C=0
+  gosub   GetPanPar;
+
+//  err=GetProtoVal(panel,"x",pan_x);
+//  err=GetProtoVal(panel,"y",pan_y);
+//  err=GetProtoVal(panel,"Type_pan",pan_type);
+//	err=GetProtoVal(panel,"PrMater",pan_mater);
+  if (abs(uz)<g_eps)	{  					// на нижней кромке панели
+  	//:
+//	  err=GetProtoVal(panel,"P_B",P_B);
+    P_B=P_B+w[NumDir]			//*10
+//    protoobj edit list panel nodc "P_B",P_B;
+//    objident last 1 panel;
+  	}
+  if (abs(uz-pan_x)<g_eps)	{ 		// на верхней кромке панели
+  	//:
+//	  err=GetProtoVal(panel,"P_C",P_C);
+    P_C=P_C+w[NumDir]			//*10
+    ="выполни select panel"
+  	//:
+    //////////////
+    //?????					 	почему теряется панель
+ //   protoobj edit list panel nodc "P_C",P_C;
+		//:
+//    objident last 1 panel;
+    //:
+  	}
+  if (abs(ux)<g_eps)	{ 					// на левой кромке панели
+  	//:
+//	  err=GetProtoVal(panel,"P_D",P_D);
+    P_D=P_B+w[NumDir]			//*10
+//    protoobj edit list panel nodc "P_D",P_D;
+//    objident last 1 panel;
+  	}
+  if (abs(ux-pan_y)<g_eps)	{ 		// на правой кромке панели
+  	//:
+//	  err=GetProtoVal(panel,"P_E",P_E);
+    P_E=P_E+w[NumDir]			//*10
+//    protoobj edit list panel nodc "P_E",P_E;
+//		objident last 1 panel;
+  	}
+	//="РАЗМЕР исправлен"
+  //:
+  }
+arr[1]=P_D  //Обрезка стороны D
+arr[2]=P_C  //Обрезка стороны C
+arr[3]=P_E  //Обрезка стороны E
+arr[4]=P_B  //Обрезка стороны B
+  NULLOUT=SetPan6Par(6,arr);  //-- Добавим фрезеровку на вырез
+
+//-- Делаем панель
+MBPanel execute  Panel ;
+objident last 1 Panel;
+setucs gcs;
+return;
+//
+
+///////////////////////////////////////////////
+//	определение направления
+//  NumDir - определяется направление
+//
+NumDirect:
+NumDir=0
+//:
+if (uy>g_eps) {
+	if (abs(ux)<g_eps) { NumDir=1; return; }
+  if (ux>0)	{	NumDir=2; }
+  		else	{	NumDir=8; }
+  return
+	}
+if (uy<-g_eps) {
+	if (abs(ux)<g_eps) { NumDir=5; return; }
+  if (ux>0)	{	NumDir=4; }
+  		else	{	NumDir=6; }
+  return
+	}
+if (ux>=0) {
+	NumDir=3
+  return
+	}
+NumDir=7
+return;
+// Получить параметры профиля
+GetProfPar:
+NULLOUT=InitArray(arr,0);
+    arr[1]=pnt1;
+    GetProf6Par(1,arr);
+    GetProf6Par(2,arr);
+    PrProf=arr[1];  //(ID) материала профиля
+    arr[1]=0;
+    GetProf6Par(3,arr);
+    Po1=arr[2]    //Величина подрезки начала профиля.
+    arr[1]=1;
+    GetProf6Par(3,arr);
+    Po2=arr[2]    //Величина подрезки конца профиля.
+    GetProf6Par(4,arr);
+    AnglePr=arr[2]  //Угол поворота профиля относительно оси Z его ЛСК.
+    SdX=arr[2]    //Сдвиг профиля относительно оси X его ЛСК.
+    Sdy=arr[3]    // Сдвиг профиля относительно оси Y его ЛСК.
+    GetProf6Par(5,arr);
+//    if (arr[1]!=0) { goto Loop; }
+    Length=arr[2];  //- Длина
+    FileProf=PriceInfo(PrProf,"K3file",""); //-- Имя файла с образующей
+    FilePath=MPathExpand("<K3files>\\"+FileProf)
+
+return;
+// Получить параметры панели
+GetPanPar:
+NULLOUT=InitArray(arr,0);
+arr[1]=panel;
+err=GetPan6Par(1,arr);
+err=GetPan6Par(11,arr);
+pan_type=arr[1] //Тип геометрии панели.
+pan_x=arr[2]   //Длина панели
+pan_y=arr[3]   //Ширина панели
+err=GetPan6Par(2,arr);
+pan_mater=arr[1]  //(ID) материала панели
+err=GetPan6Par(6,arr);
+P_D=arr[1]  //Обрезка стороны D
+P_C=arr[2]  //Обрезка стороны C
+P_E=arr[3]  //Обрезка стороны E
+P_B=arr[4]  //Обрезка стороны B
+return;
+
+

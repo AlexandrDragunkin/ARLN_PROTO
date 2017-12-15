@@ -1,0 +1,167 @@
+//-- Установить отверстие вручную
+global ProtoPath;
+defarr first[3] second[3] dir[3] xm[6];
+#ok_flag
+setvar
+"Параметры сверловки"
+ProtoPath+"Sverl.wmf"
+left
+"Определите параметры сверловки"
+done
+real     default 5   "Диаметр основного отверстия (d1):"  	d1
+real     default 7   "Диаметр ответногo отверстия (d2):"  	d2
+real     default 35  "Глубина основного отверстия (h1):"  	h1
+real     default 16  "Глубина ответного отверстия (h2):"  	h2
+done;
+if (ok_flag==0)
+{
+  cancel;
+}
+NSide=1;
+kobs=sysvar(60);
+if (kobs==0)
+{
+  ok_flag=1;
+}
+else
+{
+	#ok_flag
+	alternative "Установка отверстия сверловки"
+	msgbox picture 2 beep 2 text "Выберите тип установки:" done
+      "Свободно" "На пласть A" "На пласть F"
+      "На торец B" "На торец C" "На торец D" "На торец E" done;
+}
+NULLOUT=GetSnap();
+//-- Если выбрано "Свободно"
+if (ok_flag==1)
+{
+	h_dsp=0;
+	cool=sysvar(40);
+	get "Первая точка плоскости отверстия" point missing  first[1] first[2] first[3] endpoint :
+  get "Вторая точка плоскости отверстия" point first[1] first[2] first[3]
+  second[1] second[2] second[3] near :
+  color 14;
+	#lll line first[1] first[2] first[3] second[1] second[2] second[3] done;
+	get "Третья точка плоскости отверстия" point second[1] second[2] second[3] dir[1] dir[2] dir[3] near :
+	color cool;
+	delete lll done;
+  setucs first[1] first[2] first[3] second[1] second[2] second[3] dir[1] dir[2] dir[3] ;
+  goto PFix;
+}
+//-- Если выбрана панель
+newpan:
+onerror final;
+switch autosingle on;
+selbyattr "FurnType==\"010000\""
+  prompt "Укажите панель:" partly : ;
+//switch autosingle off;
+offerror;
+if (sysvar(61)==0)
+{
+  goto final;
+}
+pnt=getselnum(1);
+TPan=getattr(pnt,"Posit",-1);
+PrMater=0;
+err=GetProtoVal(pnt,"PrMater",PrMater);
+h_dsp=PriceInfo(PrMater,"N1",16)
+setucs lcs pnt;
+macro Protopath+"OverFixGet.mac" pnt;
+P_B=0;
+P_C=0;
+P_D=0;
+P_E=0;
+Xp=0;
+Yp=0;
+err=GetProtoVal(pnt,"P_b",P_B);
+err=GetProtoVal(pnt,"P_C",P_C);
+err=GetProtoVal(pnt,"P_D",P_D);
+err=GetProtoVal(pnt,"P_E",P_E);
+err=GetProtoVal(pnt,"x",Xp);
+err=GetProtoVal(pnt,"y",Yp);
+if (err==0)
+{
+  NULLOUT=objgab3(pnt,xm);
+  Xp=xm[4];
+  Yp=xm[5];
+}
+if (Tpan==11) //-- Стойка
+{
+  setucs rotate 2points 0 0 0 0 1 0 -90 ;
+  setucs move  0 0 -h_dsp;
+}
+if (Tpan==14) //-- Стенка
+{
+  setucs rotate 2points 0 0 0 0 1 0 -90 ;
+  setucs rotate 2points 0 0 0 1 0 0 -90 ;
+}
+if (ok_flag==2) //-- Пласть А
+{
+  setucs move 0 0 h_dsp;
+}
+if (ok_flag==3) //-- Пласть F
+{
+  setucs rotate 2points 0 0 0 0 1 0 180 ;
+}
+if (ok_flag==4) //--Торец B
+{
+  NSide=1;
+  setucs move P_B P_D h_dsp/2 ;
+  setucs rotate 2points 0 0 0 0 0 1 -90 ;
+  setucs rotate 2points 0 0 0 1 0 0 -90 ;
+}
+if (ok_flag==5) //-- Торец C
+{
+  NSide=2;
+  setucs move xp-P_C P_D h_dsp/2;
+  setucs rotate 2points 0 0 0 0 0 1 -90 ;
+  setucs rotate 2points 0 0 0 1 0 0 90 ;
+}
+if (ok_flag==6) //-- Торец D
+{
+  NSide=3;
+  setucs move P_B P_D h_dsp/2 ;
+  setucs rotate 2points 0 0 0 1 0 0 -90 ;
+}
+if (ok_flag==7) //-- Торец Е
+{
+  NSide=4;
+  setucs move  P_B yp-P_E  h_dsp/2 ;
+  setucs rotate 2points 0 0 0 1 0 0  90 ;
+}
+//---------------------------------------------------
+PFix:
+gosub PutHols;
+kobs=sysvar(60)-kobs;
+Attrobj Attach "AutoPlace" Done Last kobs 0 ;
+if (ok_flag>3)
+{
+  move last kobs done ortho : ;
+}
+else
+{
+  move last kobs done : ;
+}
+final:
+//switch autosingle off;
+NULLOUT=ReSnap();
+exit;
+//--------------------------------------------------
+PutHols:
+//-- Рисуем объект - сверловку
+protoobj create "Shkaf.ptl" 32
+"x" 0
+"y" 0
+"z" 0
+"xv" 0
+"yv" 1
+"zv" 0
+"h1" h1
+"d1" d1
+"h2" h2
+"d2" d2
+"AutoH" 0
+"TypeS" 0
+done
+0 0 0;
+return;

@@ -1,0 +1,9 @@
+//-- Установить текущий ID замка на фасад
+global g_Zamok g_RFas g_UFas;	//-- >0 ID замка на фасад 0-игнорируется
+getpar P1 P2 P3;
+g_Zamok=p1;
+g_RFas=p2;
+g_UFas=p3;
+NULLOUT=setvarinst(1,"g_Zamok",0);
+
+exit;

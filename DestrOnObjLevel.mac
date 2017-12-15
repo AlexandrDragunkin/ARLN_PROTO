@@ -1,0 +1,148 @@
+//-- Макропрограмма разбирает одно изделие по уровню
+//-- Входные параметры:
+//-- obj - изделие
+//-- Depth - глубина разбора. Если равно -1 - до конца разбираем
+
+global ProtoPath;
+g_MaxKarkas=getmcarcnumb();
+global g_result;
+
+getpar obj, depth;
+gosub IsNew;
+macro ProtoPath+"KarkasObj.mac" obj ;
+objident last 1 Karkas;
+km=getcarcnumb();
+explode obj done;
+i=0;
+attrobj attach "KarkasNumb" done group
+lll:
+let i=i+1
+let ao=ss[i]
+if (isvardef("ao")==16)
+{
+  ao
+}
+if (i<NULLOUT)
+{
+  goto lll
+}
+done km;
+depth=depth-1;
+if (depth==0) //-- Продолжить ли разбор
+{
+  goto end;
+}
+i=0;
+ll2:
+i=i+1;
+macro ProtoPath+"DestrOnUnitLevel.mac" ss[i], depth;
+if (i<NULLOUT)
+{
+  goto ll2;
+}
+end:
+mbcarcase groupall;
+exit;
+//---------------------------------------------------------------------
+//-- Проверяем, создан ли объект по новой технологии
+IsNew:
+NULLOUT=getcntobjg(obj);
+if (NULLOUT==0)
+{
+  exit;
+}
+defarr ss[NULLOUT];
+defarr in[NULLOUT];
+defarr nn[NULLOUT];
+NULLOUT=getarrobjg(obj,ss);
+i=0;
+j=0;
+k=0;
+loop:
+i=i+1;
+if (getobjvisual(ss[i])==0)
+{
+  j=j+1;
+  in[j]=ss[i];
+  ss[i]=0;
+  goto next;
+}
+if (!isassign("FurnType",ss[i]))
+{
+  k=k+1;
+  nn[k]=getattr(ss[i],"ElemName","<Без имени>");
+  if (nn[k]=="<Без имени>")
+  {
+    res=g_result;
+    macro ProtoPath+"GetRusName.mac" ss[i];
+    nn[k]=g_result+" "+nn[k];
+    g_result=res;
+  }
+  select stayblink partly ss[i];
+}
+next:
+if (i<NULLOUT)
+{
+  goto loop;
+}
+if (k>0)
+{
+  i=0;
+  iiz=getattr(obj,"ElemName","<Без имени>");
+  #ok_flag
+  alternative "Изделие '"+iiz+"' содержит немебельные элементы "
+  msgbox picture 2 beep 2 text left
+  "После разбора изделия в сцене появятся следующие немебельные элементы:"
+  lo:
+  let i=i+1
+  "     '"+nn[i]+"'"
+  if (i<k)
+  {
+    goto lo
+  }
+  "Эти элементы нельзя будет отредактировать."
+  " "
+  "Разобрать изделие?"
+  done
+  " Да " "Нет" "Разобрать по прототипу"
+  done;
+  if (ok_flag==2)
+  {
+    select;
+    exit;
+  }
+  if (ok_flag==3)
+  {
+    select;
+    macro ProtoPath+"destru01.mac" obj;
+    exit;
+  }
+}
+//-- Если ничего невидимого нет, выходим
+if (j==0)
+{
+  return;
+}
+//-- Удаляем все невидимые отрезки, надписи и пр.
+extract partly
+obj
+let i=0
+loo:
+let i=i+1
+in[i]
+if (i<j)
+{
+  goto loo
+}
+done;
+delete
+let i=0
+loo1:
+let i=i+1
+in[i]
+if (i<j)
+{
+  goto loo1
+}
+done;
+return;

@@ -1,0 +1,8 @@
+//-- Установка подъемников для двери
+global g_liftR, g_liftL ; //-- ID правого и левого подъемника для двери
+getpar R,L ;
+g_liftR=R;
+g_liftL=L;
+NULLOUT=setvarinst(1,"LiftTypeR",R);
+NULLOUT=setvarinst(1,"LiftTypeL",L);
+exit;

@@ -1,0 +1,19 @@
+global koldv;
+if isvardef("koldv")==0
+{
+   koldv=0;
+}
+//=============Блок копирования атрибута P1 в атрибут P1 при редактироывании створки
+
+If (IsAttrdef("P1")) {  // Если определен атрибут P1
+  If (IsAssign("P1",0)) { // Если он есть в "записи"
+    lkoldv=getattr(0,"P1","No"); // То мы его берем оттуда
+    Attrobj Attach "P1" Done  last 1 lkoldv; // Присваиваем значение koldv
+  }
+  else
+  {
+      Attrobj Attach "P1" Done  last 1 koldv; // Присваиваем значение koldv
+  }
+}
+
+//=============Блок копирования атрибута koldv (конец)

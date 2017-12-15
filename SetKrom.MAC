@@ -1,0 +1,89 @@
+//-- Установить текущие цвет кромки и типы кромки по сторонам панели
+global g_BandPan;  //-- Тип кромки по сторонам и углам в порядке D 1 C 2 E 3 B 4
+defarr g_BandPan[8];
+global g_CBandPan;  //-- Цвет кромки по сторонам и углам в порядке D 1 C 2 E 3 B 4
+defarr g_CBandPan[8];
+global BandPan;
+defarr BandPan[4];
+getpar BandCol BandB BandC BandD BandE;
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами
+
+
+// Проведем замену кромок, подобрав цвет к данному типу       Митин 5.05.11
+if (BandCol>0) {
+  TTexCol=PriceInfo(BandCol,"Texture","",1);
+  if (BandB>0) {
+    TTexB=PriceInfo(BandB,"Texture","",1);
+    if (TTexCol!=TTexB) {    // Не такая
+      TypeB=PriceInfo(BandB,"BandType",0,1);
+      if npgetbywhere(1,"[BandType] = "+str(TypeB)+" and [Texture] = '"+TTexCol+"'","qwe")==1 {
+        if (qwe[1]>0) {
+          BandB=qwe[1];//   = PriceInfo(qwe[1],"")
+        }
+      }
+    }
+  }
+  if (BandC>0) {
+    TTexB=PriceInfo(BandC,"Texture","",1);
+    if (TTexCol!=TTexB) {    // Не такая
+      TypeB=PriceInfo(BandC,"BandType",0,1);
+      if npgetbywhere(1,"[BandType] = "+str(TypeB)+" and [Texture] = '"+TTexCol+"'","qwe")==1 {
+        if (qwe[1]>0) {
+          BandC=qwe[1];//   = PriceInfo(qwe[1],"")
+        }
+      }
+    }
+  }
+  if (BandD>0) {
+    TTexB=PriceInfo(BandD,"Texture","",1);
+    if (TTexCol!=TTexB) {    // Не такая
+      TypeB=PriceInfo(BandD,"BandType",0,1);
+      if npgetbywhere(1,"[BandType] = "+str(TypeB)+" and [Texture] = '"+TTexCol+"'","qwe")==1 {
+        if (qwe[1]>0) {
+          BandD=qwe[1];//   = PriceInfo(qwe[1],"")
+        }
+      }
+    }
+  }
+  if (BandE>0) {
+    TTexB=PriceInfo(BandE,"Texture","",1);
+    if (TTexCol!=TTexB) {    // Не такая
+      TypeB=PriceInfo(BandE,"BandType",0,1);
+      if npgetbywhere(1,"[BandType] = "+str(TypeB)+" and [Texture] = '"+TTexCol+"'","qwe")==1 {
+        if (qwe[1]>0) {
+          BandE=qwe[1];//   = PriceInfo(qwe[1],"")
+        }
+      }
+    }
+  }
+}
+macro ProtoPath+"SetOneBand.mac"  7 BandB ;
+macro ProtoPath+"SetOneBand.mac"  3 BandC ;
+macro ProtoPath+"SetOneBand.mac"  1 BandD ;
+macro ProtoPath+"SetOneBand.mac"  8 BandD ;  //-- Углы по умолчанию
+macro ProtoPath+"SetOneBand.mac"  2 BandD ;
+macro ProtoPath+"SetOneBand.mac"  5 BandE ;
+macro ProtoPath+"SetOneBand.mac"  4 BandE ;  //-- Углы по умолчанию
+macro ProtoPath+"SetOneBand.mac"  6 BandE ;
+// Ниже старый вариант
+
+//-- Стороны
+g_BandPan[1]=BandD;
+g_BandPan[3]=BandC;
+g_BandPan[5]=BandE;
+g_BandPan[7]=BandB;
+//-- Старое описание
+BandPan[1]=BandD;
+BandPan[2]=BandC;
+BandPan[3]=BandE;
+BandPan[4]=BandB;
+//-- Углы по умолчанию
+g_BandPan[8]=BandD;
+g_BandPan[2]=BandD;
+g_BandPan[4]=BandE;
+g_BandPan[6]=BandE;
+//NULLOUT=InitArray(g_CBandPan,BandCol);
+//NULLOUT=setarrinst(1,"g_BandPan",g_BandPan);
+//NULLOUT=setarrinst(1,"g_CBandPan",g_CBandPan);
+exit;

@@ -1,0 +1,65 @@
+
+//-- Макропрограмма присваивает атрибут сверловки отрезку
+global ProtoPath;
+ProtoPath=MPathExpand("<Proto>")+"\\";
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+
+defarr fixarr[5];			//-- Массив параметров сверловки
+
+defarr Arr[3];
+
+NULLOUT=getvarinst(2,"DfFixPol",DfFixPol,0);      //-- Запрос  переменной FasDTyp из пользовательских умолчаний
+
+If (!IsAttrdef("FixHole"))
+{
+	Attribute Create "FixHole" "Крепеж комплектующих" String 15 80;
+}
+newotr:
+//-- Выбираем объект
+objident partly prompt "Выберите отрезок сверловки" : pnt;
+TypeOb=GetObjType(pnt);
+if (TypeOb!=2)  //-- Не отрезок
+{
+  #ok_flag
+  alternative "Назначить параметры сверловки"
+  msgbox picture 3 beep 3 text left
+  "Указанный объект не является отрезком"
+  "Необходимо указать отрезок, которому нужно назначить параметры сверловки"
+  done
+  "  OK  "
+  done;
+  goto newotr;
+}
+attrstr=getattr(pnt,"FixHole","0,0,0,0,0");
+NULLOUT=splitbydelim(attrstr,",",fixarr);
+if (fixarr[5]!=0)
+{
+  DfFixPol=fixarr[5];
+}
+DefFixDet=str(getyadsubst(13))+"#"+str(DfFixPol) ;
+#ok_flag
+setvar
+"Атрибуты сверловки комплектующих"
+PicturesPath+"sverl.wmf"
+left
+"Определите параметры сверловки"
+done
+string auto button 6 default DefFixDet         "Деталь крепежа:"          NFixDet
+real default fixarr[1] "Глубина основного отверстия (h1):"      	H1
+real default fixarr[2] "Диаметр основного отверстия (d1):"      	D1
+real default fixarr[3] "Глубина ответного отверстия (h2):"      	H2
+real default fixarr[4] "Диаметр ответного отверстия (d2):"      	D2
+done;
+if (ok_flag==0)
+{
+	exit;			//-- Если нажата отмена, ничего не присваиваем
+}
+kn=getcarcnumb()
+splitbydelim(NFixDet,"#",Arr);
+FixDet=Arr[2];
+attrstr=str(H1)+","+str(D1)+","+str(H2)+","+str(D2)+","+str(FixDet) ;
+Attrobj Attach "FixHole" "KarkasNumb" done Pnt attrstr kn;
+#gr1 group Pnt done;
+Fn="806000"
+Attrobj Attach "FurnType"  "KarkasNumb" done gr1 Fn kn;
+exit;

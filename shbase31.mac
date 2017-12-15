@@ -1,0 +1,43 @@
+//-- Создание объекта - телескопической обувной полки
+//-- Входные параметры:
+//-- xbase - координата начала длинной сетки по оси X
+//-- x - длина длинной сетки
+//-- y,z, - координаты длинной сетки по осям y и z
+//-- twigID - ID прута длинной сетки
+
+global ProtoPath;
+putmsg("shbase31.mac")
+getpar xbase,x,y,z,twigID,PocketID;
+//--------------------------------------------------------
+Col_Prof=PriceInfo(twigID,"Texture",0);  //-- Цвет прута
+FurnType="070000";
+// n=int((x-25)/25);        //-- Количество прутов в длинной сетке
+// width=PriceInfo(twigID,"Width",310);   //-- Размер прута
+ElemName=priceinfo(twigID,"MatName","Сетка обувной полки");
+//------------------------------------------------------
+NULLOUT=pushinst(1);
+D1=0;
+macro ProtoPath+"SetEnam.mac" ElemName ;
+macro ProtoPath+"SetECod.mac" "8501" ;
+
+macro ProtoPath+"SetEnam.mac" "Держатель полки телескопической2" ;
+macro ProtoPath+"SetECod.mac" "6105" ;
+// добавили правый штангодержатель
+Macro ProtoPath+"MakeAcce.mac" PocketID, 1, xbase, y+D1+100, z-15, 0 0 0 ; 
+
+objident last 1 p1;
+chprop mapbypars p1 done
+0,  -1          //-- Для всех секций
+1,  Col_Prof;   //-- Меняем код материала на материал в таблице материалов
+
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+// accessory Assign p1 FurnType twigID 0 yes;
+// attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 x, width 0; //-- Размеры сетки
+
+#r1 mirror last 1 done  3points xbase+x/2 y z
+	xbase+x/2 y z+10
+	xbase+x/2 y+10 z copy 1;
+
+NULLOUT=popinst(1);
+exit;
+

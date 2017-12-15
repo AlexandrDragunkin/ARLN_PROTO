@@ -1,0 +1,325 @@
+//-- Программа создания диалоговой карточки запроса информации по чертежу
+//-- Выходные параметры:
+//-- g_base(1...4) - Базовый угол для панели
+//-- g_chb, g_chc, g_chd, g_che =0 - размер боковых отверстий по стороне
+//-- цепочкой, инче от базы
+//-- g_lz - параметр размеров символов и засечекж
+//-- g_osn==1 - нужна основная надпись, иначе - не нужна
+//-- g_stoi==1 - повернуть чертеж
+//-- g_dorab==1 - предлагать доработать чертеж
+
+defarr temp[20];
+
+global g_base, g_chb, g_chc g_chd, g_che, g_lz, g_stoi, g_osn, g_dorab, g_begdraw, g_lza, g_band, g_grp, g_grr;
+global g_nbt, g_nbv, g_kbt, g_kbv, g_dbt, g_dbv, g_hbt, g_hbv, g_rbt, g_rbv, g_sbt, g_sbv, g_bus;
+global g_npt, g_npv, g_kpt, g_kpv, g_dpt, g_dpv, g_hpt, g_hpv, g_rpt, g_rpv, g_spt, g_spv, g_pus, g_upr;
+global g_dbp, g_hbp, g_xpp, g_ypp, g_dpp, g_glh;
+global coef, g_drawall, g_color, g_ov, g_stoi1;
+global L_SUPPORT;
+
+global ProtoPath;
+tex=ProtoPath+"drawdial.txt";
+
+Val1=0;
+Val2=0;
+Val3=0;
+
+g_dorab=0;
+g_color=0;
+
+g_xb=0;
+g_yb=0;
+NULLOUT=setVarinst(2,"g_xb",g_xb);
+NULLOUT=setVarinst(2,"g_yb",g_yb);
+
+g_base=1;
+g_chb=1;
+g_chc=1;
+g_chd=1;
+g_che=1;
+g_lz=1.;
+g_stoi=0;
+g_stoi1=0;
+g_ov=0;
+g_osn=1
+g_dorab=0;
+g_begdraw=1;
+g_lza=1;
+g_band=1;
+g_grp=0;
+g_grr=6000;
+
+g_nbt=1;
+g_nbv=1;
+g_kbt=0;
+g_kbv=0;
+g_dbt=1;
+g_dbv=0;
+g_hbt=1;
+g_hbv=0;
+g_rbt=1;
+g_rbv=0;
+g_sbt=1;
+g_sbv=0;
+g_bus=0;
+
+g_npt=1;
+g_npv=1;
+g_kpt=1;
+g_kpv=0;
+g_dpt=1;
+g_dpv=0;
+g_hpt=1;
+g_hpv=0;
+g_rpt=1;
+g_rpv=0;
+g_spt=1;
+g_spv=0;
+g_upr=1;
+g_pus=0;
+
+g_dbp=0;
+g_hbp=0;
+
+g_xpp=0;
+g_ypp=0;
+g_dpp=0;
+g_glh=0;
+
+//------------------------------------------------------------------------------
+//-- Формируем основную диалоговую карточку
+#ok_flag
+setvar
+"Параметры чертежа"
+""
+left
+"Определите параметры чертежа"
+done
+str listonly current "Собственные настройки"
+                     "Максимально по ЕСКД"
+                     "Изменить настройки"
+                     "Профверсия чертежей длинномеров"
+    done "Настройки" options
+real default g_lz "Высота символов и засечек" slz
+logical default 1 "Размер символов с учетом масштаба" g_lza
+logical default 1 "Повернуть чертеж" sstoi
+logical default 1 "Оформлять основную надпись" osn
+logical default g_dorab "Предлагать доработать чертеж" g_dorab
+logical default g_begdraw "Интеллектуализировать размеры" g_begdraw
+logical default g_band "Обозначать кромку" g_band
+logical default g_color "Цветной чертеж" g_color
+done;
+
+if (ok_flag==0)
+{
+  cancel;
+}
+if (options!="Максимально по ЕСКД")       //-- ЗДЕСЬ МОЖНО ОПРЕДЕЛИТЬ ПОЛЬЗОВАТЕЛЬСКИЕ НАСТРОЙКИ
+{
+    i=0;
+		cg=getcount(tex);
+		looii:
+		i=i+1;
+    ttt=getstr(tex,i);
+		expression ttt,aaa,bbb;
+		if (i<cg)	{	goto looii; }
+}
+if (options=="Изменить настройки")
+{
+    #ok_flag
+    setvar
+    "Ручная настройка параметров"
+    ""
+    left
+    "Определите параметры чертежа"
+    done
+    str auto listonly
+        current "1"
+                "2"
+						    "3"
+                "4"
+        done "Базовый угол" sbase
+    logical default g_chb "Размер по стороне B от базы" g_chb
+    logical default g_chc "Размер по стороне C от базы" g_chc
+    logical default g_chd "Размер по стороне D от базы" g_chd
+    logical default g_che "Размер по стороне E от базы" g_che
+    logical default g_grp "Группировка отверстий" g_grp
+    real default g_grr "Расстояние группировки" g_grr
+    logical default 0   "===Сохранить как умолчания==="    Val1
+    done;
+
+    if (ok_flag==0)
+    {
+      cancel;
+    }
+
+    #ok_flag
+    setvar
+    "Параметры боковых отверстий"
+    ""
+    left
+    "Определите параметры отверстий"
+    done
+    logical default g_nbt "Номер отверстия в таблице" g_nbt
+    logical default g_nbv "               на выноске" g_nbv
+    logical default g_kbt "Координаты отверстия в таблице" g_kbt
+    logical default g_kbv "                    на выноске" g_kbv
+    logical default g_dbt "Диаметр отверстия в таблице" g_dbt
+    logical default g_dbv "                 на выноске" g_dbv
+    logical default g_dbp "                 на чертеже" g_dbp
+    logical default g_hbt "Глубина отверстия в таблице" g_hbt
+    logical default g_hbv "                 на выноске" g_hbv
+    logical default g_hbp "                 на чертеже" g_hbp
+    logical default g_rbt "Крепеж отверстия в таблице" g_rbt
+    logical default g_rbv "                на выноске" g_rbv
+    logical default g_sbt "Сторона отверстия в таблице" g_sbt
+    logical default g_sbv "                 на выноске" g_sbv
+    logical default g_bus "Обозначать отверстия условно" g_bus
+    logical default 0   "===Сохранить как умолчания==="    Val2
+    done;
+
+		if (ok_flag==0)
+    {
+      cancel;
+    }
+    #ok_flag
+    setvar
+    "Параметры отверстий в пласти"
+    ""
+    left
+    "Определите параметры отверстий"
+    done
+    logical default g_npt "Номер отверстия в таблице" g_npt
+    logical default g_npv "               на выноске" g_npv
+    logical default g_kpt "Координаты отверстия в таблице" g_kpt
+    logical default g_kpv "                    на выноске" g_kpv
+    logical default g_xpp "X - координата на чертеже" g_xpp
+    logical default g_ypp "Y - координата на чертеже" g_ypp
+    logical default g_dpt "Диаметр отверстия в таблице" g_dpt
+    logical default g_dpv "                 на выноске" g_dpv
+    logical default g_dpp "                 на чертеже" g_dpp
+    logical default g_hpt "Глубина отверстия в таблице" g_hpt
+    logical default g_hpv "                 на выноске" g_hpv
+    logical default g_rpt "Крепеж отверстия в таблице" g_rpt
+    logical default g_rpv "                на выноске" g_rpv
+    logical default g_spt "Сторона отверстия в таблице" g_spt
+    logical default g_spv "                 на выноске" g_spv
+    logical default g_glh "Помечать глухое отверстие" g_glh
+    logical default g_pus "Обозначать отверстия условно" g_pus
+    real default g_upr "Увеличение отверстия в пласти" g_upr
+    logical default 0   "===Сохранить как умолчания==="    Val3
+    done;
+
+    if (ok_flag==0)
+    {
+      cancel;
+    }
+    g_base=val(sbase);
+    g_osn=osn;
+}
+if (options=="Профверсия чертежей длинномеров") // доп 2009-12-03 ДАР
+{
+   L_SUPPORT="\\SUPPORT\\";
+}
+fin:
+if (Val1!=0)
+{
+    //-- Общие параметры
+    NULLOUT=ReplaceStr(tex,"g_base="+str(g_base),1);	//-- Базовый угол
+    NULLOUT=ReplaceStr(tex,"g_chb="+str(g_chb),2);		//-- Размер по стороне B от базы
+    NULLOUT=ReplaceStr(tex,"g_chc="+str(g_chc),3);		//-- Размер по стороне C от базы
+    NULLOUT=ReplaceStr(tex,"g_chd="+str(g_chd),4);		//-- Размер по стороне D от базы
+    NULLOUT=ReplaceStr(tex,"g_che="+str(g_che),5);		//-- Размер по стороне E от базы
+    NULLOUT=ReplaceStr(tex,"g_grp="+str(g_grp),6);		//-- Группировать отверстия
+    NULLOUT=ReplaceStr(tex,"g_grr="+str(g_grr),7);		//-- Расстояние группировки
+}
+if (Val2!=0)
+{
+    //-- Настройки торцевых отверстий
+    NULLOUT=ReplaceStr(tex,"g_nbt="+str(g_nbt),8);		//-- Номер отверстия в таблице
+    NULLOUT=ReplaceStr(tex,"g_nbv="+str(g_nbv),9);		//--                на выноске
+    NULLOUT=ReplaceStr(tex,"g_kbt="+str(g_kbt),10);		//-- Координаты отверстия в таблице
+    NULLOUT=ReplaceStr(tex,"g_kbv="+str(g_kbv),11);		//--                     на выноске
+    NULLOUT=ReplaceStr(tex,"g_dbt="+str(g_dbt),12);		//-- Диаметр отверстия в таблице
+    NULLOUT=ReplaceStr(tex,"g_dbv="+str(g_dbv),13);		//--                  на выноске
+    NULLOUT=ReplaceStr(tex,"g_dbp="+str(g_dbp),14);		//--                  на чертеже
+    NULLOUT=ReplaceStr(tex,"g_hbt="+str(g_hbt),15);		//-- Глубина отверстия в таблице
+    NULLOUT=ReplaceStr(tex,"g_hbv="+str(g_hbv),16);		//--                  на выноске
+    NULLOUT=ReplaceStr(tex,"g_hbp="+str(g_hbp),17);		//--                  на чертеже
+    NULLOUT=ReplaceStr(tex,"g_rbt="+str(g_rbt),18);		//-- Крепеж отверстия в таблице
+    NULLOUT=ReplaceStr(tex,"g_rbv="+str(g_rbv),19);		//--                 на чертеже
+    NULLOUT=ReplaceStr(tex,"g_sbt="+str(g_sbt),20);		//-- Сторона отверстия в таблице
+    NULLOUT=ReplaceStr(tex,"g_sbv="+str(g_sbv),21);		//--                  на выноске
+    NULLOUT=ReplaceStr(tex,"g_bus="+str(g_bus),22);		//-- Обозначать отверстия условно
+}
+if (Val3!=0)
+{
+    //-- Настройка отверстий в пласти
+    NULLOUT=ReplaceStr(tex,"g_npt="+str(g_npt),23);		//-- Номер отверстия в таблице
+    NULLOUT=ReplaceStr(tex,"g_npv="+str(g_npv),24);		//--                на выноске
+    NULLOUT=ReplaceStr(tex,"g_kpt="+str(g_kpt),25);		//-- Координаты отверстия в таблице
+    NULLOUT=ReplaceStr(tex,"g_kpv="+str(g_kpv),26);		//--                     на выноске
+    NULLOUT=ReplaceStr(tex,"g_xpp="+str(g_xpp),27);		//-- X - координата на чертеже
+    NULLOUT=ReplaceStr(tex,"g_ypp="+str(g_ypp),28);		//-- Y - координата на чертеже
+    NULLOUT=ReplaceStr(tex,"g_dpt="+str(g_dpt),29);		//-- Диаметр отверстия в таблице
+    NULLOUT=ReplaceStr(tex,"g_dpv="+str(g_dpv),30);		//--                  на выноске
+    NULLOUT=ReplaceStr(tex,"g_dpp="+str(g_dpp),31);		//--                  на чертеже
+    NULLOUT=ReplaceStr(tex,"g_hpt="+str(g_hpt),32);		//-- Глубина отверстия в таблице
+    NULLOUT=ReplaceStr(tex,"g_hpv="+str(g_hpv),33);		//--                  на выноске
+    NULLOUT=ReplaceStr(tex,"g_rpt="+str(g_rpt),34);		//-- Крепеж отверстия в таблице
+    NULLOUT=ReplaceStr(tex,"g_rpv="+str(g_rpv),35);		//--                 на выноске
+    NULLOUT=ReplaceStr(tex,"g_spt="+str(g_spt),36);		//-- Сторона отверстия в таблице
+    NULLOUT=ReplaceStr(tex,"g_spv="+str(g_spv),37);		//--                  на выноске
+    NULLOUT=ReplaceStr(tex,"g_glh="+str(g_glh),38);		//-- Помечать глухое отверстие
+    NULLOUT=ReplaceStr(tex,"g_upr="+str(g_upr),39);		//-- Во сколько раз увеличивать отверстия в пласти
+    NULLOUT=ReplaceStr(tex,"g_pus="+str(g_pus),40);		//-- Обозначать отверстия условно
+}
+g_stoi=sstoi;
+g_lz=slz;
+g_lz=g_lz*2;
+regen 3;
+g_osn=osn
+exit;
+		//-- Общие параметры
+    g_base=getstr(tex,1);		//-- Базовый угол
+    g_chb=getstr(tex,2);		//-- Размер по стороне B от базы
+    g_chc=getstr(tex,3);		//-- Размер по стороне C от базы
+    g_chd=getstr(tex,4);		//-- Размер по стороне D от базы
+    g_che=getstr(tex,5);		//-- Размер по стороне E от базы
+    g_grp=getstr(tex,6);		//-- Группировать отверстия
+    g_grr=getstr(tex,7);		//-- Расстояние группировки
+		//-- Настройки торцевых отверстий
+	  g_nbt=getstr(tex,8));		//-- Номер отверстия в таблице
+    g_nbv=getstr(tex,9));		//--                на выноске
+    g_kbt=getstr(tex,10);		//-- Координаты отверстия в таблице
+    g_kbv=getstr(tex,11);		//--                     на выноске
+    g_dbt=getstr(tex,12);		//-- Диаметр отверстия в таблице
+    g_dbv=getstr(tex,13);		//--                  на выноске
+    g_dbp=getstr(tex,14);		//--                  на чертеже
+    g_hbt=getstr(tex,15);		//-- Глубина отверстия в таблице
+    g_hbv=getstr(tex,16);		//--                  на выноске
+    g_hbp=getstr(tex,17);		//--                  на чертеже
+    g_rbt=getstr(tex,18);		//-- Крепеж отверстия в таблице
+    g_rbv=getstr(tex,19);		//--                 на чертеже
+    g_sbt=getstr(tex,20);		//-- Сторона отверстия в таблице
+    g_sbv=getstr(tex,21);		//--                  на выноске
+    g_bus=getstr(tex,22);		//-- Обозначать отверстия условно
+    //-- Настройка отверстий в пласти
+    g_npt=getstr(tex,23);		//-- Номер отверстия в таблице
+    g_npv=getstr(tex,24);		//--                на выноске
+    g_kpt=getstr(tex,25);		//-- Координаты отверстия в таблице
+    g_kpv=getstr(tex,26);		//--                     на выноске
+    g_xpp=getstr(tex,27);		//-- X - координата на чертеже
+    g_ypp=getstr(tex,28);		//-- Y - координата на чертеже
+    g_dpt=getstr(tex,29);		//-- Диаметр отверстия в таблице
+    g_dpv=getstr(tex,30);		//--                  на выноске
+    g_dpp=getstr(tex,31);		//--                  на чертеже
+    g_hpt=getstr(tex,32);		//-- Глубина отверстия в таблице
+    g_hpv=getstr(tex,33);		//--                  на выноске
+    g_rpt=getstr(tex,34);		//-- Крепеж отверстия в таблице
+    g_rpv=getstr(tex,35);		//--                 на выноске
+    g_spt=getstr(tex,36);		//-- Сторона отверстия в таблице
+    g_spv=getstr(tex,37);		//--                  на выноске
+    g_glh=getstr(tex,38);		//-- Помечать глухое отверстие
+    g_upr=getstr(tex,39);		//-- Во сколько раз увеличивать отверстия в пласти
+    g_pus=getstr(tex,40);		//-- Обозначать отверстия условно

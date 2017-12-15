@@ -1,0 +1,76 @@
+// —верловка
+global NumFixMac;   // ƒл€ передачи количества из пользовательского макро
+NumFixMac=0;        // надо расчитать здесь
+defarr arr[10];
+getpar
+Lengh   // ƒлина п€тна контакта
+hPanel	// закрепл€ема€ панель
+Poly   // ID полилайна 1 - главный
+Side	// закрепл€ема€ сторона   SIDE_D = 1, SIDE_C = 3, SIDE_E = 5, SIDE_B = 7
+IDHol   //  ID отверсти€
+XHol    //  положение вдоль длины от начала
+YHol    //  положение поперек длины
+ZHol    //  положение внуть панели ? может и не надо
+;
+
+//-------------------------------------------------------------------------------------------
+//paths=sysvar(1);
+//tab_place=paths+"M71Main.mdb";
+//szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+tab_place;
+//K3BaseConn=adbCon(szSrc);
+//Zap=adbOpen(K3BaseConn,"SELECT HFIDH FROM HLFIX WHERE HFB=10");
+//K3BaseConn=adbdiscon(K3BaseConn);
+arr[1]=hPanel;
+err=GetPan6Par(1,arr);
+err=GetPan6Par(21,arr);
+Type=arr[3];
+Tip=Type;
+
+//---ѕроверка на количество пролетов между крепежами
+ColFix=1;
+otstup=30;
+if (Lengh>100&&Lengh<150)
+{
+	ColFix=2;
+}
+if (Lengh>=150&&Lengh<500)
+{
+	ColFix=2;
+	otstup=50;
+}
+if Lengh>=500
+{
+	ColFix=2;
+	otstup=100;
+}
+
+if ColFix==1	//--ќдин крепеж
+{
+ IDHol[1]=Tip;
+ XHol[1]=Lengh/2;
+ YHol[1]=0;
+ zHol[1]=0;
+ NumFixMac=1;
+}
+
+if ColFix==2	//--ƒва крепежа
+{
+ IDHol[1]=Tip;
+ XHol[1]=otstup;
+ YHol[1]=0;
+ zHol[1]=0;
+
+ IDHol[2]=Tip;
+ XHol[2]=Lengh-otstup;
+ YHol[2]=0;
+ zHol[2]=0;
+ NumFixMac=2;
+}
+
+
+if (Lengh>2800)	//--¬осемь крепежей
+{
+ putmsg(" репежна€ цепочка превышает длину листового материала-крепеж ставитс€ вручную",0);
+}
+//--------------------------------------------------------------------------------------------
+exit

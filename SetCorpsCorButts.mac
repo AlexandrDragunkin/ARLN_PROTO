@@ -1,0 +1,9 @@
+//-- Задание скосов для углового корпуса
+//-- Входные параметры:
+//-- ChamfLeft - Наличие скоса слева
+//-- ChamfRight - Наличие скоса справа
+
+getpar ChamfLeft, ChamfRight;
+NULLOUT=setvarinst(1,"ChamfLeft",ChamfLeft);
+NULLOUT=setvarinst(1,"ChamfRight",ChamfRight);
+exit;

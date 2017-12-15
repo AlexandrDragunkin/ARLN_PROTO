@@ -1,0 +1,83 @@
+//-- Установка отверстия сверловки
+global ProtoPath;
+global MacroSw  ; //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global ElemName ; //-- Имена мебельных элементов
+global HoldName ; //-- Имя хозяина
+
+getpar
+D1 H1     //-- Диаметр и глубина основного отверстия
+D2 H2		  //-- Диаметр и глубина ответного отверстия
+xn yn zn	//-- Положение начала локальной системы координат
+xv yv zv	//-- Направление оси отверстия
+FixType;  //-- Тип крепежа отверстия
+
+FurnType="800600";      //-- Отверстие
+Namescr="ProtoParams";
+NULLOUT=getsnap();
+setucs xn,yn,zn oz xn+xv, yn+yv,zn+zv done;
+if MacroSw!=0
+{
+  protoobj create "Shkaf.ptl" 32
+  "d1" D1
+  "h1" H1
+  "d2" D2
+  "h2" H2
+  "TypeS" FixType
+  "xv" 0
+  "yv" 0
+  "zv" 1
+  "AutoH"  0
+  done
+  0 0 0;
+  objident last 1 Elem;
+}
+else
+{
+  approximation meridians 8;
+  if (h1!=0&&d1!=0)
+  {
+    cylinder 0,0,0 0,0,h1 d1/2 ;
+    ALL_Ok=1;
+    objident last 1 Hole;
+    attrobj attach "HoleType" done Hole 2;
+		attrobj attach "FurnType" done Hole FurnType ;
+    ScrMod=initscratch();
+    err=addscratch(ScrMod,FurnType,"h1",h1);
+    err=addscratch(ScrMod,FurnType,"d1",d1);
+    err=addscratch(ScrMod,FurnType,"TypeS",FixType);
+    writescratch(ScrMod,Namescr,Hole);
+    NULLOUT=termscratch(ScrMod);
+  }
+  if (h2!=0&&d2!=0)
+  {
+    cylinder 0,0,0 0,0,h2 d2/2;
+    ALL_Ok=1;
+    objident last 1 Hole;
+    attrobj attach "HoleType" done Hole 3;
+		attrobj attach "FurnType" done Hole FurnType ;
+    ScrMod=initscratch();
+    err=addscratch(ScrMod,FurnType,"h2",h2);
+    err=addscratch(ScrMod,FurnType,"d2",d2);
+    err=addscratch(ScrMod,FurnType,"TypeS",FixType);
+    writescratch(ScrMod,Namescr,Hole);
+    NULLOUT=termscratch(ScrMod);
+  }
+  line 0,0,-h2
+       0,0,h1;
+  approximation meridians 24;
+  ALL_Ok=1;
+  #Elem group last 3 done ;
+}
+NULLOUT=resnap();
+if (isattrdef("ElemName"))
+{
+  attrobj attach "ElemName" done Elem ElemName ;
+}
+if (isattrdef("HoldName"))
+{
+  attrobj attach "HoldName" done Elem HoldName ;
+}
+attrobj attach "HoleType" "AutoPlace" "ConnectT" "DbCode" done Elem 1 0 FixType " ";
+//macro ProtoPath+"AddAttrPI.mac" Elem "Shkaf" 32 ;
+NULLOUT=addattrpi(Elem,1,32);
+exit;

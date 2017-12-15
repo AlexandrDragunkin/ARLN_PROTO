@@ -1,0 +1,9 @@
+// Установить профиль (Объект К3)   и цвет фиктивного профиля
+global g_PrfColor  g_PrCont;
+
+getpar Cont IdLookCol;
+g_PrCont=Cont
+  g_PrfColor=IdLookCol;
+
+exit
+

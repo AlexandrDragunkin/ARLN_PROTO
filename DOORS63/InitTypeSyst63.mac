@@ -1,0 +1,230 @@
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+//Инициализация производителя системы и числа створок
+nullout=getvarinst(2,"Doors63",Doors63,"Doors63.zmc|");
+global ProtoPath;
+global g_VstSt; // Пока оставляю, хранит материал створки для умолчания
+global g_DRSysN,g_DRSysI,g_DRNumb,g_Ndors,g_DRS;
+global g_nameSf;
+// global Pl_Color1;
+global g_DRVarN g_DRVarI g_DRVarNb g_DrVar;
+global g_movetype;
+defarr Arr[2];
+
+//==========
+getpar g_key_prev;
+//==========
+//g_VstSt - последний используемый материал
+// PL_Color1=iif(isvardef("g_VstSt")==0,0,g_VstSt);
+next:
+//Выбираем прозводителя
+//-- Заполняем массив названиями производителей систем дверей
+macro ProtoPath+Doors63+"GetDR63.mac"
+"SELECT * FROM DSNameSystem WHERE (((DSNameSystem.SelSystem)=True)) ORDER BY DSNameSystem.Number;";
+//g_DRS=iif(IsVarDef("g_DRS")==0,g_DRSysN[1],g_DRS);
+
+nullout=getvarinst(1,"g_DRS",g_DRS,1);
+g_DRS_Name=g_DRSysN[findinarray(g_DRSysI,g_DRS)]; // Получаем для карточки название по полученному в GetDR63 ID сист.дв.
+
+if g_DRNumb==1     // Если в списке всего один производитель, то он и выбирается.
+{
+	DRS=g_DRSysN[1]
+}
+
+if g_DRNumb>1
+{
+	#ok_flag
+	setvar
+	"Установка систем дверей в нишу"
+	""
+	left
+	"Определите параметры системы дверей"
+	done
+	str 	listonly
+	let j=1
+	LoopJ3:
+	if g_DRSysN[j]==g_DRS_Name
+	{
+		current
+	}
+	g_DRSysN[j]
+	if (j<g_DRNumb) { Let j=j+1 goto LoopJ3 }
+	done
+	"Тип дверной системы:"    DRS
+	done;
+	
+	if ok_flag==0
+	{
+		g_key_prev=0
+		exit;
+	}
+}
+
+g_nameSf=DRS;
+g_DRS=g_DRSysI[findinarray(g_DRSysN,DRS,1,g_DRNumb)];   //--Определение ID производителя
+nullout=setvarinst(1,"g_DRS",g_DRS);
+
+next1:
+//-- Заполняем массив типами открывания присущими данному производителю
+;macro ProtoPath+Doors63+"GetDR63.mac"
+"SELECT * FROM DSNameSystem WHERE (((DSNameSystem.SelSystem)=True) AND ((DSNameSystem.ID)="+str(g_DRS)+")) ORDER BY DSNameSystem.Number;";
+
+if g_DRVarNb==1     // Если в списке всего один вариант движения, то он и выбирается.
+{
+	DRVar=g_DRVarN[1]
+}
+if g_DRVarNb>1
+{
+	#ok_flag
+	;setvar
+	"Установка систем дверей в нишу"
+	""
+	left
+	"Определите параметры системы дверей"
+	done
+	str 	listonly
+	let j=1
+	LoopJ6:
+	let val=iif(isvardef("g_movetype")==0,1,g_movetype)
+	// let putmsg(val,1)
+	if (g_DRVarI[J]==val)
+	{
+		current g_DRVarN[j]
+	}
+	else
+	{
+		let valV=g_DRVarN[j]
+		if isvardef("valV")==6
+		{
+			g_DRVarN[j]
+		}
+	}
+	if (j<g_DRVarNb)
+	{
+		Let j=j+1
+		goto LoopJ6
+	}
+	done
+	"Вариант открывания:"    DRVar
+	done;
+	if ok_flag==0
+	{
+		g_key_prev=0
+		cancel;
+		goto next;
+	}
+}
+
+g_DrVar=g_DRVarI[findinarray(g_DRVarN,DRVar,1,g_DRVarNb)];
+g_Ndors=iif(isvardef("g_Ndors")==0,2,g_Ndors);
+next2:
+#ok_flag
+setvar
+"Установка систем дверей в нишу"
+""
+left
+"Определите количество створок"
+done
+str auto	listonly
+if g_Ndors==1 { current } "1"
+if g_Ndors==2 { current } "2"
+if g_DrVar!=2
+{
+	if g_Ndors==3 { current } "3"
+	if g_Ndors==4 { current } "4"
+	if g_Ndors==5 { current } "5"
+	if g_Ndors==6 { current } "6"
+	"другое"
+}
+done
+"Количество створок:" S_NDoors
+
+done;
+if ok_flag==0
+{
+	g_key_prev=0
+	goto next1;
+}
+
+if S_NDoors=="другое"
+{
+	#ok_flag
+	setvar
+	"Установка систем дверей в нишу"
+	""
+	left
+	"Уточните количество створок"
+	done
+	real auto "Количество створок:"      	NDoors
+
+	done;
+	if ok_flag==0
+	{
+	  g_key_prev=0
+	  goto next1;
+	}
+}
+else
+{
+	NDoors=Val(S_NDoors);
+}
+
+// global g_Doorscon;
+// IDGR=36;
+// strq="SELECT IDGrMatVst FROM DSNameSystem WHERE DSNameSystem.ID="+str(g_DRS);
+// Rs=adbOpen(g_Doorscon,strq);
+// ij=adbRecCount(Rs);
+// if (ij<1)
+// {
+  // Rs=adbClose(Rs);
+// }
+// NULLOUT=adbMoveFirst(Rs);
+// IDGrMatVst=adbGetValue(Rs,"IDGrMatVst");
+// if IDGrMatVst>0
+// {
+	// IDGR=IDGrMatVst;
+	// res=NPGetByWhere(1,"ID>0","ArrIDName",IDGR);
+	// if res>0
+	// {
+		// PL_Color1=ArrIDName[1];
+	// }
+// }
+
+// next3:
+// #ok_flag
+// setvar
+// "Установка систем дверей в нишу"
+// ""
+// left
+// "Определите параметры системы дверей"
+// done
+// string button 6 auto default str(IDGR)+"#"+str(PL_Color1)
+// "Материал створок:" PL_Color1
+// done;
+// if ok_flag==0
+// {
+	// g_key_prev=0
+	// goto next2;
+// }
+
+NDoors=int(NDoors);
+if (NDoors<1)
+{
+  #ok_flag
+     alternative "Ошибка"
+     msgbox text "Количество створок должно быть больше нуля"
+     done
+     "  OK  "
+     done;
+  goto next;
+}
+// splitbydelim(PL_Color1,"#",Arr);
+// g_VstSt=Arr[2];
+
+g_Ndors=NDoors;
+g_key_prev=1
+exit;

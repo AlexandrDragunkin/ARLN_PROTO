@@ -1,0 +1,75 @@
+setucs save "%%DrawVbTabl%%" ;
+global
+CBDpath
+TyZnak
+L_SUPPORT
+ProtoPath
+;
+
+getpar Obj AnObjSt ;
+
+
+
+
+="Тип длинномера "+str(3)
+visible attribute "LongsType==3" ;
+select attribute  "LongsType==3" done
+N=sysvar(61)
+=N
+if (N==0)	{
+	#ok_flag alternative "Внимание!" msgbox text "Сцена не содержит оъектов типа водоотбойник" done "Ок" done
+	exit
+	}
+defarr ObjSt[N] ;
+i=0
+met1:
+if i<N {
+   i=i+1
+   ObjSt[i]=GetSelNum(i) ;  //Все засвеченные объекты засунули в массив
+   goto met1 ;
+}
+macro L_Support+"AddChainVb.mac"
+Obj     //массив объектов образующих цепочки
+ObjSt   //массив объектов-кандидатов в цепочку
+AnObjSt //Размер массива объектов
+N       //Размер массива кандидатов
+;
+
+
+//По найденным объектам составляем   таблицу и делаем примитивную графику
+fnk=CBDpath+"VbDb.dbf"
+if GetCount(fnk) {  DbOpen rcdCBD,fnk; } // ищем, есть ли такая база?
+DbFilter rcdCBD,"" ;
+err=DbRecCount(rcdcbd) ;//ОПРЕДЕЛИЛИ ЧИСЛО ЗАПИСЕЙ В ОТКРЫТОМ НАБОРЕ
+if err>0 {
+   DBMoveLast rcdCBD ;
+   counter=DbGetValue(rcdcbd,1,0)  ;  //счетчик
+   }
+else { counter=0 ; }
+i=0
+met2:
+if i<N {
+   i=i+1
+   Length=GetAttr(ObjSt[i],"Length",0); //Определили длинну
+   PriceID=GetAttr(ObjSt[i],"PriceID",0); //Определили ID материала
+   //=PriceID
+   name=PriceInfo(PriceID,"Matname",0) ;
+
+//   Пишем
+   //Формируем запись в dbf файл
+   DbAddNew rcdcbd ;
+   DbSetValue rcdcbd,"NUM",i ;
+   DbSetValue rcdcbd,"PRICEVB",PriceID ;
+   DbSetValue rcdcbd,"LENGTHVB",Length ;
+   DbSetValue rcdcbd,"PRIZ",0 ;
+   DbUpdate rcdcbd ;
+   goto met2 ;
+}
+invisible attribute "LongsType==3" ;
+setucs restore "%%DrawVbTabl%%" ;
+setucs delete "%%DrawVbTabl%%" ;
+metend1:
+DbClose rcdcbd;
+exit;
+
+

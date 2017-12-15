@@ -1,0 +1,89 @@
+//-- Макропрограмма создания чертежей длинномеров.
+
+global ProtoPath, g_osn, g_dorab, g_drawall, g_pict, g_scala, g_draw g_dparln;
+global g_h, g_w;
+ProtoPath=getprotomac("Shkaf");
+defarr DN[8],ExtN[8];
+global
+g_legenda
+L_support
+support
+g_DirDrawLn           //Все файлы чертежей длинномеров размещать в отдельной папке 0-нет 1-да
+g_DrawBlank           //Чертежи на бланках 0-нет 1-да
+g_DrawSpec            //Формировать спецификацию 0-нет 1-да
+g_DrawCod             //Способ обозначения чертежа 0-относительный по первому вхождению 1-абстрагированный код
+g_DrawStamp           //Ключ запроса информации для штампа бланка из файла stamp.dbf и из файла ZAKAZ.dbf =0 только stamp.dbf =1
+g_FormStamp           //Ключ запроса формы штампа 0-не запрашивать 1-регулярно
+g_PgFileDraw          //Каждый лист чертежа в отдельном файле 0-нет 1-да
+g_PgFileSpec          //Каждый лист спецификации в отдельном файле 0-нет 1-да
+g_GroupDoc;           //Формировать групповой чертеж по всем документам 0-нет 1-да
+global g_draw, g_table1, g_tablei1, g_table2, g_tablei2;
+global DRWZPath g_nameFK3 g_nameFWMF;
+//DRWZPath=GetProtoMac("Shkaf.ptl")+"DrwZip.zk3|";
+//L_support="\\Support.zk3|"
+//support="\\Support.zk3|"
+g_nameFK3="\\k3_longs\\" 
+g_nameFWMF="\\wmf_longs\\"
+
+g_table1=0;
+g_tablei1=0;
+g_table2=0;
+g_tablei2=0;
+g_dorab=0;
+
+DN[1]="Столешницы";
+DN[2]="Карнизы";
+DN[3]="Стеновая панель";
+DN[4]="Водоотбойник";
+DN[5]="Профиль";
+DN[6]="Цоколь";
+DN[7]="Нижний профиль";
+DN[8]="Балюстрада";
+ExtN[1]="st";
+ExtN[2]="kr";
+ExtN[3]="pn";
+ExtN[4]="vo";
+ExtN[5]="pr";
+ExtN[6]="ck";
+ExtN[7]="np";
+ExtN[8]="Bl";
+
+
+g_drawall=0;
+g_pict=3; //-- wmf файл по третьему виду
+g_h=297;
+g_w=210;
+valcoeff absolute 1;
+grfcoeff 1;
+//NULLOUT=GetSnap();
+
+getpar LT wmf;
+projname=sysvar(2);
+grfcoeff absolute 1;
+ProjPath=getfilepath(sysvar(2));
+title=getfiletitle(projname)-3
+numWmf=ProjPath+"Reports"+g_nameFWMF+title+".wmf"
+if (wmf=="")
+{
+	wmf=numWmf;
+}
+select partly attribute "LongsType=="+str(Lt) done;
+
+N=sysvar(61);
+if (N==0)
+{
+    macro ProtoPath+"ShowError.mac" "Невозможно построить чертеж" ""
+    "Сцена не содержит оъектов типа '"+DN[Lt+1]+"'";
+	exit;
+}
+//macro DRWZPath+"drawdial.mac" ;
+if (isvardef("g_dparln")==0)
+{
+    macro ProtoPath+"ShowError.mac" "Неопределены параметры чертежей" ""
+    "Вызовите диалог параметров чертежей";
+	exit;
+}
+
+   ;macro L_support+"DRAW_DR.MAC"  LT wmf;
+
+exit;

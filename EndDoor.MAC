@@ -1,0 +1,20 @@
+//-- Макропрограмма присваивает двери все необходимые атрибуты
+//-- Входные параметры:
+//-- x,y,z - Координаты точки установки двери
+//-- w h - Габариты двери по ширине и высоте соответственно
+//-- hdsp_p - Толщина материала двери
+global UnitCode;  //-- Код изделия (текст)
+global DoorMater; //-- Материал панелей (обрамления) фасада
+global DoorKonst; //-- Тип конструкции двери
+
+getpar x y z w h hdsp_p;
+
+hdsp=priceinfo(DoorMater,"Thickness",16);
+attrobj attach "UnitCode" done last 1 "2D00";
+attrobj attach "GroupID" done last 1 37;        //-- 37 - YAD группа типов дверей
+attrobj attach "GoodsID" done last 1 DoorKonst;  //-- ID конструкции двери
+dn=priceinfo(DoorKonst,"NAME"," распашная",2);
+dn="Дверь "+dn;
+attrobj attach "ElemName" done last 1 dn ;
+attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 h w hdsp_p;
+exit;

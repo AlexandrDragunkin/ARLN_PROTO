@@ -1,0 +1,214 @@
+//RdimPath692.mac
+// Простановка размеров радиуса контурам
+//              Драгункин А.Р.
+//              ГеоС 2006-08 г.
+//*********************************************
+//
+//
+//
+//
+fst=1
+//=======================================
+
+global NextPS ProtoPath;     //
+// Умолчания для типов линий
+global
+TiLDef    // Толщина тонких линий (умолчание)
+TiLDet    // Толщина линий детали
+TiLPaz    // Толщина линий паза
+TiLKrom   // Толщина линий кромки
+TiLOs     // Толщина осевых линий
+TyLOs     // Тип осевых линий
+;
+Global
+Pl_Obozn
+Pl_MatrZag
+Pl_Razrab
+Bl_OverPlot
+Pl_Pref
+Bl_OverVis
+Bl_OverEdit
+DrawType;
+//Допуска
+global
+TTip1
+TTip2
+Tpol1
+Tpol2
+;
+global
+Cv
+CurrVi
+PlFlags
+;
+
+name=11
+//vimage off ;
+//done "Ок" done // Конец команды
+
+D_Drill=1.1  // было 0.5 18.06.03 Допуск на отклонение
+DS_Drill=D_Drill
+NextPS=0 ;
+global h_dsp ;
+//----------------------------------------------------
+defarr w1[3] w2[3] xm[6] p1[3] p2[3] dim[2] xmm[30] Flag[48];
+defarr CenCoor[3] pc[3];// для п/п CenLCS;
+
+defarr AriAx[200], AriAy[200];
+
+defarr xp[300] yp[300] Np[300] Dp[300] Lp[300] Fp[300];
+//*********************************************************************
+//*********************************************************************
+//*********************************************************************
+
+//objident : CutsPh   // Указатель на контур
+getpar CutsPh ;  // Указатель на контур
+setucs save "%%Rdim%%" ;
+setucs gcs ;
+
+SdDim=Sysvar(76)*10;
+//BaseX=0
+//BaseY=0
+//============7.06.06=========================================
+TVLBase=14
+TVLConte=10
+//*********************************************************************
+//*********************************************************************
+
+
+select all ;
+rr=objgab3(CutsPh,xm)  // В ПСК панели
+w1[1]=xm[1];
+w1[2]=xm[2];
+w1[3]=xm[3];
+w2[1]=xm[4];
+w2[2]=xm[5];
+w2[3]=xm[6];
+
+CentX=w1[1]+(w2[1]-w1[1])/2;  // Центр
+CentY=w1[2]+(w2[2]-w1[2])/2;
+DDX=(w2[1]-w1[1]) // Размер
+DDY=(w2[2]-w1[2])
+
+
+vport 3;
+'vport zoom,,
+//  PovPan=0;
+
+
+//===========================================================
+
+i=0
+TypeSo=0;
+lab_2:
+
+//===========================================================
+// Чертеж
+ltype 0;
+lwidth TiLDef;
+
+
+//=================14/06/06
+//Добавляем точки размеров контура
+//goto mettonext ;
+ip=0;  // счетчик точек образмеривания
+TypO=GetObjType(CutsPH);
+if TypO==4 { n_TypO=1 ; i_TypO=0 ; defarr objs[n_TypO]; objs[n_TypO]=CutsPH ; goto metTo ;  }
+if TypO==5 {
+
+   n_TypO=getcntobjga(CutsPH);
+   defarr objs[n_TypO];
+   scang(CutsPH,objs);
+   i_TypO=0
+   metTo:
+   if (i_TYpO<n_TypO) {    // &&(N_Typo>4)
+      i_TypO=i_Typo+1
+         GetObjGeo(objs[i_TYpO],xmm) ;
+         Typi=GetObjType(objs[i_TYpO]);
+         if Typi==4 { //Дуга
+
+            PTransCS(3,2,xmm[8],xmm[9],xmm[10],xmm[8],xmm[9],xmm[10]);
+            PTransCS(3,2,xmm[11],xmm[12],xmm[13],xmm[11],xmm[12],xmm[13]);
+            PTransCS(3,2,xmm[5],xmm[6],xmm[7],xmm[5],xmm[6],xmm[7]);
+            PTransCS(3,2,xmm[2],xmm[3],xmm[4],xmm[2],xmm[3],xmm[4]);
+
+            #ast Angle xmm[5] xmm[6] xmm[7] xmm[5]+10 xmm[6] xmm[7]  xmm[8] xmm[9] xmm[10] ;
+            ast=radian(ast)
+            ndt=Random(2,6);
+            OX=cos(xmm[14]+xmm[15]/ndt);
+            OY=sin(xmm[14]+xmm[15]/ndt);
+            setucs save "ucs158" ;
+            setucs vcs ;
+            PTransCS(3,2,xmm[5],xmm[6],xmm[7],arcx,arcy,arcz);
+            PTransCS(3,2,xmm[2],xmm[3],xmm[4],xmm[2],xmm[3],xmm[4]);
+            setucs move arcx arcy,arcz ;
+            if xmm[4]==-1 { setucs rotate 2points 0 0 0 1 0 0 180 ; }
+//*******Изменено 12.11.2007 для версии 6.0.656 функция PutDimIfo
+//            Nstr=GetCount(Protopath+"temp.cfg") ;
+//            if Nstr==0 {
+//               config Protopath+"temp.cfg" ; //сохраняем все параметры
+//            }
+//            else {
+//                 config Protopath+"temp.cfg"  overwrite ;
+//            }
+//*******Изменено 12.11.2007 для версии 6.0.656 функция PutDimIfo
+            #Rd Rdim objs[i_TYpO] ^OX OY 0 ;  //*******Изменено 12.11.2007 для версии 6.0.656 функция PutDimIfo
+           Nulout=GetDimInfo(Rd,Flag) ;            //*******Изменено 12.11.2007 для версии 6.0.656 функция PutDimIfo
+            if xmm[1]>100 {
+//               dimlnflags 1 ; // Не отображать размерную линии //*******Изменено 12.11.2007 для версии 6.0.656 функция PutDimIfo
+               LnFlags=1                      //*******Изменено 12.11.2007 для версии 6.0.656 функция PutDimIfo
+               if 0>OX {
+//                  dimtplace  left ;          //*******Изменено 12.11.2007 для версии 6.0.656 функция PutDimIfo
+                    PlFlags=1 //left          //*******Изменено 12.11.2007 для версии 6.0.656 функция PutDimIfo
+                  }
+               else {
+                 if 0<OX {
+//                    dimtplace  right ;       //*******Изменено 12.11.2007 для версии 6.0.656 функция PutDimIfo
+                      PlFlags=2 //right       //*******Изменено 12.11.2007 для версии 6.0.656 функция PutDimIfo
+                    }
+                 else {
+                    if 0<OY {
+//                       dimtplace  right ;    //*******Изменено 12.11.2007 для версии 6.0.656 функция PutDimIfo
+                         PlFlags=2 //right    //*******Изменено 12.11.2007 для версии 6.0.656 функция PutDimIfo
+                       }
+                    else {
+//                    dimtplace  left ;        //*******Изменено 12.11.2007 для версии 6.0.656 функция PutDimIfo
+                      PlFlags=1 //left        //*******Изменено 12.11.2007 для версии 6.0.656 функция PutDimIfo
+                    }
+                 }
+               }
+             Flag[33]=LnFlags
+             Flag[34]=PlFlags
+            Nulout=PutDimInfo(Rd,Flag) ;
+            }
+            else { //рисуем осевые
+            line xmm[1]  0      0 -xmm[1]  0        0 ;
+            line 0       xmm[1] 0 0        -xmm[1]  0 ;
+            Chprop lwidth Last 1 done TiLOs     // Толщина осевых линий
+            Chprop ltype  Last 2 done TyLOs     // Тип осевых линий
+            Chprop layer  Last 2 done CV        // Уровень отображения
+            Attrobj Attach  "AutoPlace"    Done Last 2 1 ;
+            Attrobj Attach  "VidDimPlace"  Done Last 2 CurrVi;
+            }
+//            #Rd Rdim objs[i_TYpO] ^OX OY 0 ;  //*******Изменено 12.11.2007 для версии 6.0.656 функция PutDimIfo
+//            rconfig Protopath+"temp.cfg" ; //загружаем все параметры   *******Изменено 12.11.2007 для версии 6.0.656 функция PutDimIfo
+            setucs restore "ucs158" ;
+            setucs delete "ucs158" ;
+            //Rdim objs[i_TYpO] ^xmm[5]+xmm[1]*cos(ast+xmm[15]/2) xmm[6]+xmm[1]*sin(ast+xmm[15]/2) 0 ;
+            //text "R"+str(xmm[1]) done xmm[5] xmm[6] 0 @-10 0 0 ;
+         }
+    goto metTo ;
+   }
+}
+
+//****************14/06/06
+
+metTonext:
+//======================================================
+
+setucs restore "%%Rdim%%" ;
+setucs delete "%%Rdim%%" ;
+
+exit;
+
+

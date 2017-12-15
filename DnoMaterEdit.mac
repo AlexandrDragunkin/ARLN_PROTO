@@ -1,0 +1,102 @@
+//-- Изменить материал дна ящика
+selbyattr "Posit==10" child all done;
+karkas_kol=sysvar(61);
+karkas_num=GetCarcNumb();
+if (karkas_kol==0)
+{
+ putmsg("Сначала надо создать мебельный каркас",0);
+ exit;
+}
+if (karkas_kol==1)
+{
+ #karkas MBCarcase set yes;
+}
+if (karkas_kol>1&&karkas_num==0)
+{
+ #karkas MBCarcase set no yes :
+}
+
+
+global ProtoPath;
+global pnt, iPNT;
+NULLOUT=getvarinst(2,"BDMater",BDMater,0);          //-- Умолчание для материалов дна ящика
+DefDMater=str(getyadsubst(28))+"#"+str(BDMater) ;                    // Формируем строку умолчаний.
+defarr arr[3];
+
+#ok_flag
+setvar
+"Изменить материал ящика"
+""
+left
+"Определите параметры замены"
+done
+//str listonly
+//let j=1
+//LoopJ3:
+//if (1==J)
+//{
+//  current
+//}
+//S_PrFBox[j]
+//if (j<N_PrBBox)
+//{
+//  let j=j+1
+//  goto LoopJ3
+//}
+//done
+//"Материал:"    E_Col
+string auto button 6 default DefDMater     "Материал дна:" NDMater
+str listonly
+current "По указанию"
+        "Все ящики"
+done
+"Способ замены:"    S_zam
+done;
+if (ok_flag==0)
+{
+  exit;
+}
+macro Protopath+"ChgSel.mac" S_zam ;
+splitbydelim(NDMater,"#",Arr);
+E_col=Arr[2];
+if (S_zam=="По указанию")
+{
+  Loop3:
+  onerror final;
+  switch autosingle on;
+  selbyattr "Left(FurnType,2)==\"31\"" prompt "Укажите ящик:" wholly : ;
+  switch autosingle off;
+  offerror;
+  if (sysvar(61)==0)
+  {
+    goto final;
+  }
+  pnt1=getselnum(1);
+  err=1;
+  err=GetProtoVal(pnt1,"PrMatDv",PrMat);
+  if (err==1)
+  {
+    protoobj edit list pnt1 nodc "PrMatDv" E_col ;
+  }
+  goto Loop3;
+}
+else
+{
+  i=0;
+  LoopAll3:
+  if (i<iPNT)
+  {
+    i=i+1;
+    pnt1=pnt[i];
+    err=1;
+    err=GetProtoVal(pnt1,"PrMatDv",PrMat);
+    if (err==1)
+    {
+      protoobj edit list pnt1 nodc "PrMatDv" E_col ;
+    }
+    goto LoopAll3;
+  }
+}
+final:
+switch autosingle off;
+exit;

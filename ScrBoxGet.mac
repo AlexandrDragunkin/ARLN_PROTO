@@ -1,0 +1,257 @@
+//-- Макропрограмма извлекает из scratch атрибута типы ящиков
+//-- в глобальный массив gs_BTypeX (размер 100)
+//-- Если в атрибуте будет 0, то будет установлено умолчание
+//-- BxType = умолчание.
+//-- gs_IDsec - номер текущей секции изделия, сбрасывается в 0
+//-- Входные параметры:
+//-- IsNull - если ноль - обнуляем количество ящиков. Это необходимо при перестроении
+//-- !!!!!Не забывай про файл ScrcopAtr.mac //-- Копирование атрибутов ScrBox и FasadPar из записи в последний объект
+global ProtoPath;
+
+global	gs_BTypeX,			//-- Типы ящиков
+		gs_IDsec,			//-- Cчетчик обработанных в объекте ящиков
+		gs_FasTyp,			//-- Типы фасадов
+		gs_Kbox,			//-- Количество ящиков из скретча
+		gs_ZFt,				//-- Высота фасадов ящиков из скрейча
+		gs_ZFtS,			//-- Подрез фасадов ящиков из скрейча
+		gs_ZmFt,  			//-- Наличие замка на фасаде ящика из скрейча
+		gs_ZmZ,  			//-- Сдвиг  замка по высотеа фасаде ящика из скрейча
+		g_zamokBx			//-- Наличие замка по умолчанию
+		gs_HmFt,  			//-- Наличие ручки на фасаде скрытого ящика из скрейча
+		g_grDec, 			//-- массив групп отделок
+		g_Dec				//-- массив материалов отделок
+		g_TipOn				//-- массив наличия доводчиков TipOn
+		gs_ZFtDn			//-- дельта зазора снизу между дном ящика и корпусом
+		gs_Hk	            //-- высота короба ящика
+		gs_LBox				//-- Глубина короба ящика
+		gs_BFasMat			//-- Материал фасада ящика
+		;
+
+BoxMax=100;
+NULLOUT=GetVarInst(2,"BoxMax",BoxMax,10);  //-- Максимальное число ящиков
+defarr gs_BTypeX[BoxMax], gs_FasTyp[BoxMax], gs_ZFt[BoxMax], gs_ZFtS[BoxMax], gs_ZmFt[BoxMax], gs_BFasMat[BoxMax];
+defarr gs_ZmZ[BoxMax], gs_HmFt[BoxMax], g_grDec[BoxMax] g_Dec[BoxMax] g_TipOn[BoxMax] gs_ZFtDn[BoxMax];
+defarr gs_Hk[BoxMax] gs_LBox[BoxMax];
+global gs_NBoxobj         //-- Счетчик числа ящиков в объекте
+	   gs_Nfasad,         //-- Счетчик фасадов в объекте
+       gs_Kfasad;         //-- Количество фасадов (будет расчет после редактирования)
+
+getpar IsNull;            //-- Если ноль, обнуляем количество ящиков
+// putmsg("SCRBoxGet.mac");
+// putmsg(IsNull);
+gs_NBoxobj=0;
+gs_Nfasad=0;
+gs_Kfasad=0;
+gs_IDsec=0;
+g_zamokBx=0;
+// g_zamokBx=iif(isvardef("g_zamokBx")==0,0,g_zamokBx);
+
+err=0;
+NULLOUT=InitArray(gs_BtypeX,0);
+NULLOUT=InitArray(gs_FasTyp,0);
+NULLOUT=InitArray(gs_ZFt,0);
+NULLOUT=InitArray(gs_ZFtS,0);
+NULLOUT=InitArray(gs_ZmZ,0);
+NULLOUT=InitArray(gs_ZmFt,g_zamokBx);
+NULLOUT=InitArray(gs_HmFt,0);
+NULLOUT=InitArray(g_grDec,150);
+NULLOUT=InitArray(g_Dec,0);
+NULLOUT=InitArray(g_TipOn,0);
+NULLOUT=InitArray(gs_ZFtDn,0);
+NULLOUT=InitArray(gs_Hk,0);
+NULLOUT=InitArray(gs_LBox,0);
+NULLOUT=InitArray(gs_BFasMat,0);
+
+ScrMod=0;
+if (isassign("ScrBox",0))
+{
+  ScrMod=readscratch("ScrBox",0);   //-- Читаем из записи
+}
+else
+{
+  //ScrMod=filetoscrtch(ProtoPath+"ScrBox.scr");
+}
+if (ScrMod==0)
+{
+  ScrMod=InitScratch();
+  err=AddScratch(ScrMod,"Ящик","Колво",0); 	//-- Количество ящиков по умолчанию
+  i=1;
+  LoopS:
+  if (i<=10)
+  {
+    err=AddScratch(ScrMod,"Тип","Ящ"+str(i),0);				//-- Тип ящика
+    err=AddScratch(ScrMod,"ТипФас","Ящ"+str(i),0);			//-- Тип фасада
+	err=AddScratch(ScrMod,"ВысФас","Ящ"+str(i),0);			//-- Высота фасада ящика
+	err=AddScratch(ScrMod,"ПодФас","Ящ"+str(i),0);			//-- Высота фасада ящика
+	err=AddScratch(ScrMod,"ЗамФас","Ящ"+str(i),g_zamokBx);	//-- Замок фасада ящика
+	err=AddScratch(ScrMod,"ЗамФасZ","Ящ"+str(i),0);			//-- Замок фасада ящика
+	err=addscratch(ScrMod,"ГрпОтд","Ящ"+str(i),150);		//-- группа отделки
+	err=addscratch(ScrMod,"HmFt","Ящ"+str(i),0);			//-- Ручка скрытого ящика
+	err=addscratch(ScrMod,"МатОтд","Ящ"+str(i),0);			//-- материал отделки
+	err=addscratch(ScrMod,"TipOn","Ящ"+str(i),0);			//-- Blum TipON 
+	err=addscratch(ScrMod,"ZFtDn","Ящ"+str(i),0);			//-- дельта дна снизу
+	err=addscratch(ScrMod,"Hk","Ящ"+str(i),0);				//-- высота короба ящика
+	err=addscratch(ScrMod,"LBox","Ящ"+str(i),0);			//-- Глубина короба ящика
+	err=addscratch(ScrMod,"BFasMat","Ящ"+str(i),0);			//-- Материал фасада ящика
+    i=i+1;
+    goto LoopS;
+  }
+}
+SubstName="";
+i=0;
+Kpar=CntVarScr(ScrMod,"Тип");
+if (IsNull==0)
+{
+  gs_Kbox=0;
+}
+else
+{
+  err=GetScratch(ScrMod,"Ящик","Колво",gs_Kbox,SubstName);
+}
+if (Kpar<1)
+{
+  goto ENDM;
+}
+Loop1:
+i=i+1;
+if (i<=Kpar)
+{
+  NNbox="Ящ"+str(i);
+  BoxType=0;
+  err=GetScratch(ScrMod,"Тип",NNbox,BoxType,SubstName);
+  if (err==0)
+  {
+    gs_BTypeX[i]=0;
+  }
+  gs_BTypeX[i]=BoxType;
+  FasType=0;
+  err=GetScratch(ScrMod,"ТипФас",NNbox,FasType,SubstName);
+  if (err==0)
+  {
+    gs_FasTyp[i]=0;
+  }
+  gs_FasTyp[i]=FasType;
+  //-- Высота фасадов ящиков из скрейча
+  ZFt=0;
+  err=GetScratch(ScrMod,"ВысФас",NNbox,ZFt,SubstName); 
+  if (err==0)
+  {
+    gs_ZFt[i]=0;
+  }
+  gs_ZFt[i]=ZFt;
+  //-- Подрез фасадов ящиков из скрейча
+  ZFtS=0;
+  err=GetScratch(ScrMod,"ПодФас",NNbox,ZFtS,SubstName); 
+  if (err==0)
+  {
+    gs_ZFtS[i]=0;
+  }
+  gs_ZFtS[i]=ZFtS;
+  
+  //-- замок на фасаде ящика из скрейча
+  ZmFt=0;
+  err=GetScratch(ScrMod,"ЗамФас",NNbox,ZmFt,SubstName); 
+  if (err==0)
+  {
+    gs_ZmFt[i]=0;
+  }
+  gs_ZmFt[i]=ZmFt;
+  //-- Сдвиг замка на фасаде ящика из скрейча
+  ZmZ=0;
+  err=GetScratch(ScrMod,"ЗамФасZ",NNbox,ZmZ,SubstName); 
+  if (err==0)
+  {
+    gs_ZmZ[i]=0;
+  }
+  gs_ZmZ[i]=ZmZ; 
+  //-- Группа отделки на фасаде ящика из скрейча
+  GrF=150;
+  err=GetScratch(ScrMod,"ГрпОтд",NNbox,GrF,SubstName); 
+  if (err==0)
+  {
+    g_grDec[i]=150;
+  }
+  g_grDec[i]=GrF; 
+  //-- Материал отделки на фасаде ящика из скрейча
+  MtF=150;
+  err=GetScratch(ScrMod,"МатОтд",NNbox,MtF,SubstName); 
+  if (err==0)
+  {
+    g_Dec[i]=0;
+  }
+  g_Dec[i]=MtF; 
+    //-- Доводчик или толкатель
+  tipon=0;
+  err=GetScratch(ScrMod,"TipOn",NNbox,tipon,SubstName); 
+  if (err==0)
+  {
+	g_TipOn[i]=0;
+  }
+  g_TipOn[i]=tipon;
+	//--  дельта сдвига дна
+  bxDn=0;
+  err=GetScratch(ScrMod,"ZFtDn",NNbox,bxDn,SubstName); 
+  if (err==0)
+  {
+	gs_ZFtDn[i]=0;
+  }
+  gs_ZFtDn[i]=bxDn;
+  //-- Высота короба ящиков из скрейча
+  Hk=0;
+  err=GetScratch(ScrMod,"Hk",NNbox,Hk,SubstName); 
+  if (err==0)
+  {
+    gs_Hk[i]=0;
+  }
+  gs_Hk[i]=Hk;
+  //-- Ручка скрытого ящика из скрейча
+  HmFt=0;
+  err=GetScratch(ScrMod,"HmFt",NNbox,HmFt,SubstName); 
+  if (err==0)
+  {
+    gs_HmFt[i]=0;
+  }
+  gs_HmFt[i]=HmFt;
+  
+  //-- Глубина ящика из скрейча
+  LBox=0;
+  err=GetScratch(ScrMod,"LBox",NNbox,LBox,SubstName); 
+  if (err==0)
+  {
+    gs_LBox[i]=0;
+  }
+  gs_LBox[i]=LBox;
+  
+  BFasMat=0;
+  err=GetScratch(ScrMod,"BFasMat",NNbox,BFasMat,SubstName); 
+  if (err==0)
+  {
+    gs_BFasMat[i]=0;
+  }
+  gs_BFasMat[i]=BFasMat;
+  //*******************************
+  goto Loop1;
+}
+ENDM:
+
+NULLOUT=setarrinst(1,"gs_BTypeX",gs_BTypeX);
+NULLOUT=setarrinst(1,"gs_FasTyp",gs_FasTyp);
+NULLOUT=setvarinst(1,"gs_IDsec",gs_IDsec);
+NULLOUT=setvarinst(1,"gs_Kbox",gs_Kbox);
+NULLOUT=setvarinst(1,"gs_Nfasad",gs_Nfasad);
+NULLOUT=setvarinst(1,"gs_Kfasad",gs_Kfasad);
+NULLOUT=setvarinst(1,"gs_ZFt",gs_ZFt);
+NULLOUT=setvarinst(1,"gs_ZFtS",gs_ZFtS);
+NULLOUT=setvarinst(1,"gs_ZmFt",gs_ZmFt);
+NULLOUT=setarrinst(1,"gs_ZmZ",gs_ZmZ);
+NULLOUT=setarrinst(1,"g_grDec",g_grDec);
+NULLOUT=setarrinst(1,"g_Dec",g_Dec);
+NULLOUT=setarrinst(1,"g_TipOn",g_TipOn);
+NULLOUT=setarrinst(1,"gs_ZFtDn",gs_ZFtDn);
+NULLOUT=setarrinst(1,"gs_Hk",gs_Hk);
+NULLOUT=setarrinst(1,"gs_HmFt",gs_HmFt);
+NULLOUT=setarrinst(1,"gs_LBox",gs_LBox);
+NULLOUT=setarrinst(1,"gs_BFasMat",gs_BFasMat);
+writescratch(ScrMod,"ScrBox",0);
+NULLOUT=TermScratch(ScrMod);
+exit;

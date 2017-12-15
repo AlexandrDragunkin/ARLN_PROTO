@@ -1,0 +1,107 @@
+//-- Программа присваивает мебельные атрибуты объекту
+//-- Входные параметры:
+//-- obj - объект
+//-- Article - артикул объекта
+//-- AngleType - тип подрезки длинномера на объекте
+//-- Top - элемент верха (1) или элемент низа (0)
+//-- kark - номер каркаса объекта
+//-- ContType - тип приставки объекта
+//-- ObjType - тип объекта
+//-- PlaceType - тип размещения объекта
+//-- CutType - тип подрезки угла
+//-- GapValue - зазоры объекта
+//-- position - порядковый номер объекта
+//-- FurnType - атрибут FurnType объекта
+//-- FurnKind - атрибут FurnKind объекта
+//-- ElemName - Имя объекта
+global ProtoPath;
+getpar obj, Article, AngleType, Top, kark, ContType,
+ObjType, PlaceType, CutType, GapValue, position, FurnType, FurnKind, ElemName;
+
+defarr w[6], tmp[8];
+defarr l[sysvar(62)];
+
+NULLOUT=getsnap();
+NULLOUT=objgab3(obj,w);
+ttt=sysarr(81,tmp);
+attrobj attach "Article" done obj str(ttt) done;
+//------------------------------------------------------------------------------
+//-- Присваиваем атрибуты объекту
+if (kark==-1)
+{
+  setucs lcs obj;
+  setucs w[1],w[2],w[3] w[1]+10,w[2],w[3] oz w[1],w[2],w[3]+10;
+  NULLOUT=objgab3(obj,w);
+	naa=sysvar(60);
+  ot=getobjtype(obj);
+	if (ot==7)	//-- Если объект - группа
+	{
+		cot=Getcntobjga(obj);
+		Scang(obj,L);
+		iii=0;
+    delete partly
+		loopi:
+		let iii=iii+1
+		let zco=getattr(L[iii],"Contact",-10)
+		if (zco!=-10) //-- Если - линия контакта или служебный объект
+		{
+      L[iii]
+		}
+		if (iii<cot)
+		{
+			goto loopi
+		}
+    done;
+	}
+  select attribute "Article==\""+str(ttt)+"\"";
+  obj=getselnum(1);
+	macro ProtoPath+"aContLine.mac" w[4]-w[1],w[5]-w[2],w[5]-w[2],w[6]-w[3],0,ContType,Top;
+	macro ProtoPath+"aDimLine.mac" w[4]-w[1],w[5]-w[2],w[6]-w[3],ContType,Top;
+	naaa=sysvar(60)-naa;
+  if (ot==7)
+	{
+    #obj add obj last naaa done;
+	}
+	else
+	{
+		#obj group obj last naaa done;
+    if (isassign("Article",obj))
+    {
+      attrobj delete obj "Article" ;
+    }
+	}
+}
+if (isassign("Article",obj))
+{
+  attrobj delete obj "Article" ;
+}
+Attrobj Attach "ObjType" Done obj ObjType;
+Attrobj Attach "PlaceType" Done obj PlaceType;
+Attrobj Attach "AngleType" Done obj AngleType;
+if (len(Article)>0)
+{
+  Attrobj Attach "Article" Done obj Article;
+}
+if (len(ElemName)>0)
+{
+  Attrobj Attach "ElemName" Done obj ElemName;
+  Attrobj Attach "UnitName" Done obj ElemName;
+}
+Attrobj Attach "CutType" Done obj CutType;
+Attrobj Attach "FurnType" Done obj FurnType;
+if (len(FurnKind)>0)
+{
+  Attrobj Attach "FurnKind" Done obj FurnKind;
+}
+Attrobj Attach "GapValue" Done obj GapValue;
+if (kark==-1)
+{
+	#obj smart putpos obj;
+}
+else
+{
+	Attrobj Attach "Position" Done obj position;
+}
+//--------------------------------------------------------------------------------
+NULLOUT=ReSnap();
+exit;

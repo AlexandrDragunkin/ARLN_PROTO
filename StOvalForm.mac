@@ -1,0 +1,38 @@
+//-- Создание панели овальной столешницы
+//-- Входные параметры:
+//-- x - Длина
+//-- y - Ширина
+//-- r - Радиус скругления
+//-- PrMater - Материал панели
+//-- Nshp - Направление шпона
+//-- Typ_Kro - Материал кромки
+//-- ColDKro - Цвет кромки
+
+getpar x,y,r,PrMater,Nshp,Typ_Kro,ColDKro;
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами 
+NULLOUT=getvarinst(2,"FigDeskColor",col,4);         //-- Цвет фигурных столешниц 
+NULLOUT=getvarinst(2,"IsColorUse",icu,1);           //-- Использовать ли цвета 
+
+sy=sysvar(60);
+//-- Построение контура овальной столешницы
+macro ProtoPath+"StOvalS.mac" x,y,r;
+sy=sysvar(60)-sy;
+if (sy!=1)
+{
+  exit;
+}
+objident last 1 pa;
+if (icu==1)
+{
+  curcol=sysvar(40);
+  color col;
+}
+Ta=iif(Nshp==1,0,iif(Nshp==2,90,-1));
+macro ProtoPath+"NestandAuto.mac" pa PrMater ColDKro Typ_Kro Ta;
+if (icu==1)
+{
+  color curcol;
+}
+delete pa done;
+exit;

@@ -1,0 +1,518 @@
+//-- Расчерт стоимости заказа
+
+global ProtoPath;
+defarr Arr[26];
+
+putmsg("Рассчитываем стоимость! ",0);
+
+NCurrency="у.е."
+
+// NCurrency=getorderinfo("NCurrency");  //-- Валюта
+// // putmsg(NCurrency)
+// if (NCurrency=="р.")
+// {
+	// #ok_flag
+	// alternative "Внимание!"
+	// msgbox picture 4 beep 4 text left
+	// "Выбрана валюта рубль. Необходимо изменить в реестре заказов на У.Е."
+	// done
+	// "  OK  "
+	// done;
+	// cancel;
+// }
+
+nullout=getvarinst(1,"KeyInput",KeyInput,1)
+
+onerror finale;
+// Удалим неиспользуемые слои
+layers delete all;
+// Находим слой с доп. элементами для просчета
+nullout=getvarinst(2,"SCLayName",LayName,"SumCostOther");
+res=CountLayers();
+defarr Lay[res], OnOff[res];
+err=NameLayers(Lay,OnOff);
+
+i=0;
+keylay=0;
+nexti:
+i=i+1;
+if i<=res
+{
+	if Lay[i]==LayName
+	{
+		if OnOff[i]==1
+		{
+			layers on LayName;
+			keylay=1;
+			goto finlay;
+		}
+		else { goto finlay; }
+		goto nexti;
+	}
+	goto nexti
+}
+finlay:
+
+AttrScrName="SumCostInfo";
+If (!IsAttrdef(AttrScrName)) { Attribute Create AttrScrName "Инфо по расчету стоимости" text 30 150 ; } 
+NULLOUT=setvarinst(2,"AttrScrName",AttrScrName);
+
+//-- Смотрим валюту, скидку и курс
+Discount=getorderinfo("Discount");    //-- Скидка/наценка
+Rate=getorderinfo("Rate");            //-- Курс условной единицы
+// Firm=getorderinfo("Firm");
+
+// Задать параметры расчета стоимости
+SumChildren=1; // 1 - Стоимость элемента равна стоимости составляющих
+
+//-- Макрос расчета
+MacroSumCost="SumCost.mac";
+NULLOUT=udSetEntity("MacroSumCost",MacroSumCost);
+nullout=setvarinst(2,"MacroSumCost",MacroSumCost);
+
+con=adbCon(3); // Главная база
+strQuery="UPDATE udEntity SET udEntity.sVal=\""+str(MacroSumCost)+"\" WHERE udEntity.Query=\"MacroSumCost\"";
+rkd=adbModify(con,strQuery);
+err=aDbUpdate(rkd);
+
+// tab_place=ProtoPath+"\\Arline\\AR_SumCost.mdb";
+// szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+tab_place;
+// conArlBase=adbCon(szSrc);
+// nullout=setvarinst(2,"conArlBase",conArlBase);
+
+// NPRefresh;
+
+//-- Обнулим стартовые правила
+//-- Алгоритм расчета кромок
+SumCostBand=0;
+NULLOUT=setvarinst(2,"SumCostBand",SumCostBand);
+NULLOUT=SumCost(1,"05",SumCostBand);
+//-- Алгоритм расчета профилей
+SumCostProf=MacroSumCost;
+NULLOUT=setvarinst(2,"SumCostProfile",SumCostProf);
+NULLOUT=SumCost(1,"02",SumCostProf);
+//-- Алгоритм расчета балюстрад
+SumCostBalus=0;
+NULLOUT=setvarinst(2,"SumCostProfile",SumCostBalus);
+NULLOUT=SumCost(1,"0307",SumCostBalus);
+//-- Алгоритм расчета панелей
+// SumCostPanel=MacroSumCost;
+SumCostPanel=MacroSumCost;
+NULLOUT=setvarinst(2,"SumCostPanel",SumCostPanel);
+NULLOUT=SumCost(1,"01",SumCostPanel);
+//-- Алгоритм расчета фигурных панелей
+SumCostFiPan=0;
+NULLOUT=setvarinst(2,"SumCostCommon",SumCostFiPan);
+NULLOUT=SumCost(1,"011",SumCostFiPan);
+//-- Алгоритм расчета комплектующих
+SumCostAcces=MacroSumCost;
+NULLOUT=setvarinst(2,"SumCostAcces",SumCostAcces);
+NULLOUT=SumCost(1,"04",SumCostAcces);
+//-- Алгоритм расчета крепежа
+SumCostAcces=MacroSumCost;
+NULLOUT=setvarinst(2,"SumCostAcces",SumCostAcces);
+NULLOUT=SumCost(1,"06",SumCostAcces);
+//-- Алгоритм расчета изделий
+SumCostObj=SumChildren;
+NULLOUT=setvarinst(2,"SumCostObject",SumCostObj);
+NULLOUT=SumCost(1,"10",SumCostObj);
+//-- Алгоритм расчета сеток
+SumCostProf=0;
+NULLOUT=setvarinst(2,"SumCostProfile",SumCostProf);
+NULLOUT=SumCost(1,"07",SumCostProf);
+//-- Алгоритм расчета для всего остального
+SumCostCom=SumChildren;
+NULLOUT=setvarinst(2,"SumCostCommon",SumCostCom);
+NULLOUT=SumCost(1,"",SumCostCom);
+
+//-- Устанавливаем способы расчета
+// //NULLOUT=SumCost(1,"50",MacroSumCost); // Фасады по макро
+NULLOUT=SumCost(1,"310999",MacroSumCost); // Корпус ящика по макро
+// //NULLOUT=SumCost(1,"999999",MacroSumCost); // Дополнительные элементы по макро
+// NULLOUT=SumCost(1,"000001",MacroSumCost); // Штапик
+// NULLOUT=SumCost(1,"500100",MacroSumCost); // Трехрадиусный фасад
+NULLOUT=SumCost(1,"210999",MacroSumCost); // Дверь-купе
+NULLOUT=SumCost(1,"210998",MacroSumCost); // Дверь-купе
+NULLOUT=SumCost(1,"340201",MacroSumCost); // Обувные телескопические полки
+
+//-- Верхние элементы для записи стоимости в атрибут
+//-- SumCost вернет стоимость верхних элементов сцены, поэтому необходимо их ВСЕ задать ниже
+// NULLOUT=SumCost(1,"23",SumChildren); // Группа фасадов
+// NULLOUT=SumCost(1,"50",SumChildren); // Фасады
+// // NULLOUT=SumCost(1,"310000",SumChildren); // Группа ящиков (63)
+// // NULLOUT=SumCost(1,"310100",SumChildren); // Ящик
+// // NULLOUT=SumCost(1,"111101",SumChildren); // Ниша прямая
+=udLoadSave(1);
+
+err=renumerate(); // Присвоим UnitPos и TopParentPos
+
+// Массивы и счетчик для введенных вручную цен на материалы без правила расчета
+NULLOUT=getvarinst(2,"N_ManualArr",N_ManualArr,500);  //-- Читаем размерность массива
+NULLOUT=getvarinst(2,"indexm",indexm,0); // Последний заполненный индекс
+defarr manual[N_ManualArr], manualP[N_ManualArr];
+NULLOUT=getarrinst(2,"manual",manual);
+NULLOUT=getarrinst(2,"manualP",manualP);
+NULLOUT=setvarinst(2,"N_ManualArr",N_ManualArr);
+NULLOUT=setvarinst(2,"indexm",indexm);
+NULLOUT=setarrinst(2,"manual",manual);
+NULLOUT=setarrinst(2,"manualP",manualP);
+
+// Прозрачность
+N_ArrTran=NPGetByWhere(1,"[Transparency]=1","ArrTran",0);
+nullout=setArrinst(2,"ArrTran",ArrTran);
+nullout=setVarinst(2,"N_ArrTran",N_ArrTran);
+
+// Заполнение массива МДФ материалами
+N_ArrMDF=NPGetByWhere(1,"[MDF]=1","ArrMDF",0);
+nullout=setArrinst(2,"ArrMDF",ArrMDF);
+nullout=setVarinst(2,"N_ArrMDF",N_ArrMDF);
+
+// Исключение из расчета стоимости
+N_ArrESC=NPGetByWhere(1,"[ExcSumCost]=1","ArrESC",0);
+if N_ArrESC>0
+{
+	nullout=setArrinst(2,"ArrESC",ArrESC);
+}
+nullout=setVarinst(2,"N_ArrESC",N_ArrESC);
+
+
+// Явно исключаемые UnitCode
+N_ExcUC=5;
+defarr ExcUC[5];
+// Панели ящиков исключаются для шкафов
+// ExcUC[1]=str(UCSonataD2);
+// ExcUC[1]=str(11011);
+// ExcUC[2]=str(11021);
+// ExcUC[3]=str(11031);
+// ExcUC[4]=str(11041);
+// ExcUC[5]=str(12011);
+nullout=setArrinst(2,"ExcUC",ExcUC);
+nullout=setVarinst(2,"N_ExcUC",N_ExcUC);
+
+
+// Найдем все корпуса ящиков
+select partly attribute "FurnType==\"310999\"" done;
+N_CorpBox=SysVar(61);
+//putmsg(N_CorpBox)
+if N_CorpBox>0
+{
+	defarr ArrCorpBox[N_CorpBox];
+	i=0;
+	met2:
+	if i<N_CorpBox
+	{
+		i=i+1;
+		ArrCorpBox[i]=GetAttr(getselnum(i),"UnitPos",0);
+		goto met2;
+	}
+	nullout=setArrinst(2,"ArrCorpBox",ArrCorpBox);
+	//putmsg(ArrCorpBox)
+}
+nullout=setVarinst(2,"N_CorpBox",i);
+
+// Двери-купе
+// select partly attribute "FurnType==\"210999\"||FurnType==\"210998\"" done;
+select partly attribute "FurnType==\"210999\"" done;
+N_SysDoor=SysVar(61);
+//putmsg(N_SysDoor)
+if N_SysDoor>0
+{
+	defarr ArrSysDoor[N_SysDoor], SDElem[N_SysDoor];
+	i=0;
+	met3:
+	if i<N_SysDoor
+	{
+		i=i+1;
+		SDElem[i]=getselnum(i);
+		ArrSysDoor[i]=GetAttr(getselnum(i),"UnitPos",0);
+		goto met3;
+	}
+	nullout=setArrinst(2,"ArrSysDoor",ArrSysDoor);
+}
+nullout=setVarinst(2,"N_SysDoor",i);
+
+// ntmp=sysvar(62);
+// putmsg(ntmp)
+
+// g=32767;
+// i=0; j=0;
+// nxttmp:
+// if i<ntmp
+// {
+	// i=i+1;
+	// // up=GetAttr(getselnum(i),"UnitPos",0);
+	// up=GetAttr(getobjnums(i),"UnitPos",0);
+	// if up>0
+	// {
+		// putmsg(up);
+		// j=j+1;
+	// }
+	// goto nxttmp;
+// }
+
+// scanscene()
+
+
+// nvis=j;
+// putmsg(nvis)
+// j=0;
+
+// if nvis>0
+// {
+	// defarr isVis1[iif(nvis>1000,iif(nvis>g,g,nvis),nvis)];
+	// if nvis>g
+	// {
+		// defarr isVis2[iif(nvis-g>1000,iif(nvis-g>g,g,nvis),nvis-g)];
+	// }
+	// i=0;
+	// if i!=g
+	// {
+		// met4:
+		// if i<ntmp
+		// {
+			// i=i+1;
+			// // up=GetAttr(getselnum(i),"UnitPos",0);
+			// up=GetAttr(getobjnums(i),"UnitPos",0);
+			// if up==255 { putmsg("255") }
+			// if up>0
+			// {
+				// j=j+1;
+				// isVis1[j]=up;
+			// }
+			// goto met4;
+		// }
+	// }
+	// else
+	// {
+		// met5:
+		// if i<ntmp
+		// {
+			// i=i+1;
+			// up=GetAttr(getobjnums(i),"UnitPos",0);
+			// // up=GetAttr(getselnum(i),"UnitPos",0);
+			// if up>0
+			// {
+				// j=j+1;
+				// isVis2[j]=up;
+			// }
+			// goto met5;
+		// }
+	// }
+	// nullout=setArrinst(2,"isVis1",isVis1);
+	// if nvis>g
+	// {
+		// nullout=setArrinst(2,"isVis2",isVis2);
+	// }
+
+// }
+// nullout=setVarinst(2,"nvis",nvis);
+
+Sc=0;
+SumCost(2,Sc);  //-- Сумма без скидок и наценок
+Sc=0;
+/// Считывать стоимость с SumCostInfo
+// Панель выдает стоимость верхнего уровня. Крепеж панели не попадает
+// но имеет записи SumCost и SumCostInfo
+
+<?python
+import Utilites_K3 as Ut
+SC=k3.Var('SC')
+psc=k3.Var('psc')
+ArrScene = Ut.getListArrayAllObjectsScene(AttrFilter=\
+"IsAssign(\"SumCostInfo\")&&FurnType!=\"999999\"")
+for elem in [elem for Arr in ArrScene for elem in Arr]:
+	ScrNum=k3.readscratch("SumCostInfo",elem.value)
+	if not ScrNum:
+		continue
+	num = k3.cntgroupscr(ScrNum)
+	if not num:
+		continue
+	k3Arr = k3.VarArray(int(num))
+	k3.namegroupscr(ScrNum,k3Arr)
+	for ParGroup in k3Arr:
+		output = k3.Var('output')
+		numpar=k3.cntvarscr(ScrNum,ParGroup)
+		if not numpar: 
+			continue
+		ArrScrPar = k3.VarArray(int(numpar))
+		k3.namevarscr(ScrNum,ParGroup,ArrScrPar)
+		for ScrPar in ArrScrPar:
+			if ScrPar.value == "Cost":
+				nullout=k3.getscratch(ScrNum,ParGroup,ScrPar,output,psc)
+				SC.value += float(output.value)
+?>
+
+// putmsg(Sc)
+select partly attribute "FurnType==\"999999\"" done;
+N_DopElem=SysVar(61);
+
+// Вычислим отдельно дополнительные элементы
+// так как может быть указана разная скидка
+ui=0;
+SDopCost=0;
+ScN=0;
+Ndopelem:
+ui=ui+1;
+if ui<=N_DopElem
+{
+	obj=getselnum(ui);
+	if IsAssign("SumCostInfo",obj)
+	{
+		ScrNum=readscratch("SumCostInfo",obj);
+		if (ScrNum==0)
+		{
+			goto exit;
+		}
+		psc="";
+		Count=0;
+		SumCostElem=0;
+		Discont=1;
+		//NULLOUT=getscratch(ScrNum,"OtherElem","Cost",ScN,psc);
+		nullout=getscratch(ScrNum,"OtherElem","Number",Count,psc);
+		nullout=getscratch(ScrNum,"OtherElem","SumCostElem",SumCostElem,psc);
+		nullout=getscratch(ScrNum,"OtherElem","Discont",Discont,psc);
+		//putmsg(ScN)
+		if Discont>0
+		{
+			ScN=Count*SumCostElem*Discont;
+		}
+		else
+		{
+			ScN=Count*SumCostElem;
+		}
+		
+		SDopCost=SDopCost+ScN;
+	}
+	goto Ndopelem;
+}
+
+ScD=Sc*(1-Discount/100); //-- C учетом скидки/наценки
+// putmsg(ScD)
+ScD=ScD+SDopCost;
+NULLOUT=iif(Sc>=0,1,0);
+if (NULLOUT==0)
+{
+  NULLOUT=getvarinst(2,"FailColor",FailColor,12);      //-- Цвет объектов, не прошедших проверку
+  sy=sysvar(62);
+  defarr hobj[sy],hobj1[sy];;
+  NULLOUT=scanscene(hobj);
+  jj=0;
+  ssy=0;
+  loopjj:
+  jj=jj+1;
+  if (jj>sy)
+  {
+    goto loop1;
+  }
+  if (!IsAssign("SumCost",hobj[jj]))
+  {
+    goto loopjj;
+  }
+  ScrNum=readscratch("SumCost",hobj[jj]);
+  if (ScrNum==0)
+  {
+    goto loopjj;
+  }
+  NULLOUT=getscratch(ScrNum,"CalcSum","SumCost",ScN,psc);
+  if (NULLOUT==0)
+  {
+    goto loopjj;
+  }
+  NULLOUT=termscratch(ScrNum);
+  if (ScN==-1)
+  {
+    ssy=ssy+1;
+    hobj1[ssy]=hobj[jj];
+  }
+  if (jj<=sy)
+  {
+    goto loopjj;
+  }
+  loop1:
+  NULLOUT=initselected();
+  jj=1;
+  select stayblink wholly
+  loop:
+  hobj1[jj]
+  let jj=jj+1
+  if (jj<=ssy)
+  {
+    goto loop
+  }
+  done;
+  #ok_flag
+  alternative "Расчет стоимости заказа"
+  msgbox picture 3 beep 3 text left
+  "При расчете стоимости заказа произошли ошибки."
+  "Остались нерасчитанными объектов: "+str(ssy)
+  ""
+  "Стоимость: "+str(round(Sc,0.01))+" "+NCurrency
+  if (Discount>0)
+  {
+    "Скидка "+str(Discount)+"%: "+str(round(Discount/100*Sc,0.01))+" "+NCurrency
+    "С учетом скидки: "+str(round(ScD,0.01))+" "+NCurrency
+  }
+  if (Discount<0)
+  {
+    "Наценка "+str(-Discount)+"%: "+str(round(-Discount/100*Sc,0.01))+" "+NCurrency
+    "С учетом наценки: "+str(round(ScD,0.01))+" "+NCurrency
+  }
+  if (NCurrency!="руб.")
+  {
+    "В рублях по курсу (1:"+str(Rate)+"): "+str(round(ScD*Rate,0.01))+" руб."
+  }
+  ""
+  "Нерасчитанные объекты выделены мерцанием"
+  ""
+  "Отключить мерцание нерасчитанных объектов?"
+  done
+  "Да"  "Нет" "Изменить цвет"
+  done;
+  if (ok_flag==1)
+  {
+    select all done;
+  }
+  if (ok_flag==3)
+  {
+    chprop color partly previous done FailColor ;
+  }
+  goto finale;
+}
+if KeyInput
+{
+	#ok_flag
+	alternative "Расчет стоимости заказа"
+	msgbox picture 4 beep 4 text left
+	"Расчет стоимости заказа успешно завершен."
+	""
+
+	"Стоимость: "+str(round(Sc,0.01))+" "+NCurrency
+	"Дополнительные элементы "+str(SDopCost)+" "+NCurrency
+	if (Discount>0)
+	{
+	  "Скидка на стоимость "+str(Discount)+"%: "+str(round(Discount/100*Sc,0.01))+" "+NCurrency
+	  "С учетом скидки и доп.элементов: "+str(round(ScD,0.01))+" "+NCurrency
+	}
+	if (Discount<0)
+	{
+	  "Наценка "+str(-Discount)+"%: "+str(round(-Discount/100*Sc,0.01))+" "+NCurrency
+	  "С учетом наценки: "+str(round(ScD,0.01))+" "+NCurrency
+	}
+	if (NCurrency!="рубль")
+	{
+	  "В рублях по курсу (1:"+str(Rate)+"): "+str(round(ScD*Rate,0.01))+" рубль"
+	}
+	
+	// if (SumCostPanel==20||SumCostPanel==21||SumCostPanel==22)
+	// {
+	  // " "
+	  // "Внимание! В расчет стоимости включена оценка необходимого крепежа."
+	// }
+	done
+	"  OK  "
+	done;
+}
+finale:
+// nullout=adbDisCon(conArlBase);
+if keylay { layers off LayName; }
+exit;

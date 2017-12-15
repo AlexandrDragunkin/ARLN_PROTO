@@ -1,0 +1,2485 @@
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//               Александр Драгункин
+//                   Федор Медисов
+//
+//********************(с)ГеоС 2009*******************
+nullout=getvarinst(2,"Doors63",Doors63,"Doors63.zmc|");
+nullout=getvarinst(2,"Doors64",Doors64,"Doors64.zmc|");
+
+//-- Подпрограмма создания сложной створки раздвижной двери
+global		// Для фасадов и дверей
+g_SlipTop    // Зазор над створкой сверху
+g_SlipBottom // Зазор снизу створки
+;
+global g_TypRis;         // Тип стандартной раскладки
+global g_NStVst;         // число вставок стандартной раскладки
+global g_nameVVis;       // Надпись на вставках
+global BottomLim;
+global g_DLFK g_DLFN;
+global ProtoPath g_deltaz;
+// global g_rplace;                   // [Типы открывания]
+global
+       gs_IdMid             // -- Id Разделительных профилей
+       gs_MidHV             // -- Массив с парметрами эквидистанты для расчета вставок в районе средних профилей
+       gs_XmidS  gs_ZmidS   // -- координаты начальных точек разделительных профилей в створке
+       gs_XmidE  gs_ZmidE   // -- координаты конечных  точек разделительных профилей в створке
+       gs_AngS   gs_AngE    // -- Углы подрезки профиля вначале и в конце разделительного профиля
+       gs_FlMater           // -- материалы вставок
+       gs_FlNshp            // -- направление текстуры шпона вставок
+	   gs_FlOtdelA			// -- материалы отделок A
+	   gs_FlOtdelAN			// -- количество отделок A
+	   gs_FlOtdGrA			// -- группы отделок A
+	   gs_FlOtdelF			// -- материалы отделок F
+	   gs_FlOtdelFN			// -- количество отделок F
+	   gs_FlOtdGrF			// -- группы отделок F
+       gs_IdFl              // -- Cчетчик обработанных в объекте вставок
+       gs_IdMpr             // -- Cчетчик обработанных в объекте средних профилей
+       gs_KFL               // -- Количество вставок из скретча
+       gs_KMpr              // -- Количество средних профилей из скретча
+       gd_IdMid             // -- Id Разделительных профилей
+       gd_MidHV             // -- Массив с парметрами эквидистанты для расчета вставок в районе средних профилей
+       gd_XmidS  gd_ZmidS   // -- координаты начальных точек разделительных профилей в створке
+       gd_XmidE  gd_ZmidE   // -- координаты конечных  точек разделительных профилей в створке
+       gd_AngS   gd_AngE    // -- Углы подрезки профиля вначале и в конце разделительного профиля
+       gd_FlMater           // -- материалы вставок
+       // gd_FlOtdel           // -- материалы отделки вставки
+       // gd_FlOtdelN          // -- Число отделок вставки
+       gd_FlNshp            // -- направление текстуры шпона вставок
+       gd_Iotd              // -- Cчетчик обработанных в объекте отделок
+       gd_IdFl              // -- Cчетчик обработанных в объекте вставок
+       gd_IdMpr             // -- Cчетчик обработанных в объекте средних профилей
+       gd_KFL               // -- Количество вставок из скретча
+       gd_KMpr              // -- Количество средних профилей из скретча
+       ;
+global
+	   gs_FlMater2			// -- материал 2-й вставки
+	   gs_FlOtdel2A			// -- материалы отделок A 2-й вставки
+	   gs_FlOtd2AN			// -- количество отделок A 2-й вставки
+	   gs_FlOtdGr2A			// -- группы отделок A 2-й вставки
+	   gs_FlOtdel2F			// -- материалы отделок A 2-й вставки тыл
+	   gs_FlOtd2FN			// -- количество отделок A 2-й вставки тыл
+	   gs_FlOtdGr2F			// -- группы отделок A 2-й вставки тыл
+	   ;
+global
+       gs_ProfX1               //-- массив с координатами X начала толстых профилей
+       gs_ProfZ1               //-- массив с координатами Z начала толстых профилей
+       gs_ProfX2               //-- массив с координатами X конца толстых профилей
+       gs_ProfZ2               //-- массив с координатами Z конца толстых профилей
+       gs_ProfHM               //-- Массив с парметрами эквидистанты для расчета средних профилей
+       gs_ProfHV               //-- Массив с парметрами эквидистанты для расчета вставок
+       gd_ProfHM               //-- Массив с парметрами эквидистанты для расчета средних профилей
+       gd_ProfHV               //-- Массив с парметрами эквидистанты для расчета вставок
+       // Все сложнее.  этих значений может быть несколько    для различных толщин вставок  поэтому запись в этот массив
+       // может выглядеть так (толщина1,значение эквидистанты1,толщина2,значение эквидистанты2,....,толщинаN,значение эквидистантыN)
+       gs_NProf                //-- число толстых профилей, участвующих в построении максимально их может быть 8. 4-е стороны+4-е вставки
+       ;
+global
+       gs_TlinX1               //-- массив с координатами X начала теоретических линий(осей)
+       gs_TlinZ1               //-- массив с координатами Z начала теоретических линий(осей)
+       gs_TlinX2               //-- массив с координатами X конца теоретических линий(осей)
+       gs_TlinZ2               //-- массив с координатами Z конца теоретических линий(осей)
+       gs_TlinHM               //-- Массив с парметрами эквидистанты для расчета средних профилей
+       gs_TlinHV               //-- Массив с парметрами эквидистанты для расчета вставок
+       gs_NTLin                //-- число теоретических линий(осей)
+       gd_TlinX1               //-- массив с координатами X начала теоретических линий(осей)
+       gd_TlinZ1               //-- массив с координатами Z начала теоретических линий(осей)
+       gd_TlinX2               //-- массив с координатами X конца теоретических линий(осей)
+       gd_TlinZ2               //-- массив с координатами Z конца теоретических линий(осей)
+       gd_TlinHM               //-- Массив с парметрами эквидистанты для расчета средних профилей
+       gd_TlinHV               //-- Массив с парметрами эквидистанты для расчета вставок
+       gd_NTLin                //-- число теоретических линий(осей)
+	   g_DimPstr			   //-- координаты точек для простановки размеров проемов
+	   i_dimpstr			   //-- число элементов массива для простановки размеров проемов
+	   g_DimVstr			   //-- координаты точек для простановки размеров вставок
+	   i_dimVstr			   //-- число элементов массива для простановки размеров вставок	   
+       ;
+global g_tab_place, g_keyDS63, g_Doorscon;
+global g_CLTop  g_CLDown  g_CLMid  g_CLDer  g_CLVer g_CLVerR g_CLVerL g_DRP g_hmida g_hmidz g_hmidZhg;
+global g_SimZx;
+global g_SimZx logFrame;
+global g_VstSt; // материал вставки по умолчанию
+global
+      g_DirAng_1  //-- Направление угла подрезки  1 стороны    0- без 1 -  угол по ширине 2 - угол по высоте
+      g_DirAng_2  //-- Направление угла подрезки  2 стороны    0- без 1 -  угол по ширине 2 - угол по высоте
+;
+global g_ProfColor; //-- Цвет профиля для передачи в PutOnProfile63
+global MacroSw; //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+// global g_R800;			//-- Для серии R+800
+// global IDPrMtVN;
+
+gs_NProf=0;
+
+putnum=0; //-- (0 - не проставлять номера вставок, 1 - проставлять)
+
+defarr errArr[4]; initarray(errArr,"");
+defarr px[4], pz[4] arrxm[6] Mprof[50] SqlArr[10] ObjPl[50] xm[6] diminf[100] g_delElem[200];
+defarr grf_Vs[28] aStr[28] aStrzw[28] awdVs[28] grf_Pr[28];
+defarr splitArr[50], splitArrGr[50];
+
+getpar
+xn,              //-- Координаты установки правого нижнего дальнего угла створки двери
+yn,
+zn,
+dx,              //-- Размер створки двери по горизонтали
+dz,              //-- Размер створки двери по вертикали
+ProfBottom,      //-- Нижний горизонтальный профиль обрамления
+cl_horiz_d
+N_PB             //-- число профилей
+ProfTop,         //-- Верхний горизонтальный профиль обрамления
+cl_horiz_u
+ProfVertR,        //-- Вертикальный профиль обрамления правый
+cl_vertR
+ProfVertL,        //-- Вертикальный профиль обрамления левый
+cl_vertL
+ProfMid,         //-- Средний профиль (между вставками)
+cl_mid
+//ProfAdaptH,      //-- Адаптер (уплотнительный профиль) горизонтальный
+//ProfAdaptV,      //-- Адаптер (уплотнительный профиль) вертикальный
+//ProfAdaptMid,    //-- Адаптер (уплотнительный профиль) средний
+h_horiz_d_a,     //-- Полная высота нижнего профиля
+h_hor_d_zhg,
+h_horiz_u_a,     //-- Полная высота верхнего профиля
+h_hor_u_zhg,
+h_horiz_d_z,     //-- Высота зазора нижнего профиля
+h_horiz_u_z,     //-- Высота зазора верхнего профиля
+w_horiz_d_z,     //-- Боковое расстояние до зазора  нижнего профиля
+w_horiz_u_z,     //-- Боковое расстояние до зазора верхнего профиля
+        w_horiz_d_a,     //-- Полная ширина нижнего профиля
+        w_horiz_u_a,     //-- Полная ширина верхнего профиля
+h_vertR_a,        //-- Полная высота вертикального профиля
+h_vertR_z,        //-- Высота зазора вертикального профиля
+        w_vertR_a,        //-- Полная ширина вертикального профиля
+w_vertR_z,        //-- Боковое расстояние до зазора вертикального профиля
+h_vertR_zhg,      //-- Высота заглубления сопрягаемых горизонтальных профилей
+h_vertL_a,        //-- Полная высота вертикального профиля
+h_vertL_z,        //-- Высота зазора вертикального профиля
+        w_vertL_a,        //-- Полная ширина вертикального профиля
+w_vertL_z,        //-- Боковое расстояние до зазора вертикального профиля
+h_vertL_zhg,      //-- Высота заглубления сопрягаемых горизонтальных профилей
+h_mid_a,         //-- Полная высота среднего профиля
+h_mid_z,         //-- Высота двойного зазора среднего профиля
+w_mid_a,         //-- Полная ширина среднего профиля
+w_mid_z,         //-- Боковое расстояние до зазора среднего профиля
+//h_adap_a,        //-- Полная высота профиля адаптера
+//h_adap_z,        //-- Высота зазора профиля адаптера
+//w_adap_a,        //-- Полная ширина профиля адаптера
+//w_adap_z,        //-- Боковое расстояние до зазора профиля адаптера
+//h_adap_v_a,      //-- Полная высота вертикального профиля адаптера
+//h_adap_v_z,      //-- Высота зазора вертикального профиля адаптера
+//w_adap_v_a,      //-- Полная ширина вертикального профиля адаптера
+//w_adap_v_z,      //-- Боковое расстояние до зазора вертикального профиля адаптера
+thin,            //-- Идентификаторы "толстых профилей"
+dx1,             //-- Фаска по X угла 1                            // |2              1|
+dz1,
+dx2,             //-- Фаска по X угла 2                            // |                |
+dz2,
+dx3,             //-- Фаска по X угла 3                            // |                |
+dz3,
+dx4,             //-- Фаска по X угла 4                            // |3______________4|
+dz4
+P_L            // 	Подрез слева
+P_R            // 	Подрез справа
+P_D            // 	Подрез снизу
+strZw          //  строка или 0  если строка, то параметры смещения осей вставок в зависимости от толщины
+h_horiz_dms    //-- Имя макроса установки нижнего горизонтального профиля створки из поля MacroSet
+h_horiz_ums    //-- Имя макроса установки верхнего горизонтального профиля створки из поля MacroSet
+h_horiz_Vms    //-- Имя макроса установки вертикального профиля створки из поля MacroSet
+h_horiz_Mms    //-- Имя макроса установки соединительного профиля створки из поля MacroSet
+;
+DimPstr=""; // храним координаты точек для простановки размеров проемов
+
+// putmsg(ProfBottom);
+// putmsg(ProfTop);
+// putmsg(ProfVertR);
+// putmsg(ProfVertL);
+
+//putmsg("ProfMid="+str(ProfMid),0)
+defarr ProfRm[10] Ang_shp[1] agab[6];
+defarr
+      arGrafPx[100] //-- массив координат X точек
+      arGrafPy[100] //-- массив координат Y точек
+      arTypeOb[100] //-- массив типов элементов графа 1-линия 2-дуга
+      arGrafEq[100] //-- массив велечин смещения 4-й параметр  AddEdgeGraph
+;
+defarr
+      arObjPar[10,5] //-- массив частей при делении для FindObjParts
+      arEquidi[100] arEquidp[100]  //-- массив указателей эквидистант
+      arGrafCu[6]   //-- массив точек для AddEdgeGraph
+	  aTMP[6]
+;
+
+g_DLFN=0;  g_DLFK=0;  
+
+//================Проверяем и открываем доступ к базе=================================
+C_key=0
+if g_keyDS63!=1
+{
+   macro ProtoPath+Doors64+"CrtSysDoor63.mac" ;
+   C_key=1 // Признак что база открыта в этом макро
+}
+//====================================================================================
+sDirAng_1=g_DirAng_1;
+sDirAng_2=g_DirAng_2;
+macro ProtoPath+"SetProfD.mac" 1 1;        //  Направление угла подрезки  с 30-10-2009 в новый профиль
+
+// objs=sysvar(60);
+gosub frame;
+
+// objf=sysvar(60);
+
+// // #gr group last objf-objs;
+
+// selbyattr "P1==1" child last objf-objs done;
+
+// NGrElems=sysvar(61);
+// #gr group previous done;
+
+// if NGrElems>0
+// {
+	// //-- Читаем информацию о профилях
+	// str_tab="SELECT * FROM DSGabProfile INNER JOIN DSFlapProfile ON DSGabProfile.ID = DSFlapProfile.PSYSTEM WHERE DSFlapProfile.ID="+str(ProfVertR) ;
+
+	// ProfRs=adbOpen(g_DoorsCon,str_tab);
+	// ij=adbRecCount(ProfRs);
+	// if (ij<1)
+	// {
+	  // errcode="Количество профилей с ID "+str(ProfVertR)+" равно "+str(ij);
+	  // gosub err;
+	  // goto end;
+	// }
+	// NULLOUT=adbMoveFirst(ProfRs);
+
+	// ProfMater=adbGetValue(ProfRs,"IDProfile");
+	// attrobj attach "PriceID" done Last 1 ProfMater;
+	// attrobj attach "FurnType" done Last 1 "210999";
+	// attrobj attach "ElemName" done Last 1 "Створка двери-купе по таблице";
+// }
+
+g_ProfColor=cl_mid;
+gosub StdPproem;
+
+gs_NProf=i_prof;
+
+dx1=iif(P_R>=dx1,0,dx1);      // Обрабатываем подрезы и фаски
+dz1=iif(P_R>=dx1,0,dz1);
+dx2=iif(P_L>=dx2,0,dx2);
+dz2=iif(P_L>=dx2,0,dz2);
+
+ProfMidCur=ProfMid;
+
+gosub InitStGraf;
+
+Nmprof=i_prof
+=initarray(Mprof,0);
+N_CopyArr=copyArray(Mprof,1,ProfRm,1);
+ptptptp=Mprof[1]
+//putmsg("Mprof[1]= "+str(isvardef("ptptptp")),1)
+iMpr=0
+iCmpr=0
+lbMidPr:
+if iMpr<gd_KMpr
+{
+   iMpr=iMpr+1
+   ProfMid=iif(gd_IdMid[iMpr]!=0,gd_IdMid[iMpr],ProfMidCur); // -- Id Разделительных профилей
+   //putmsg("gd_IdMid["+str(iMpr)+"]="+str(gd_IdMid[iMpr]),0);
+   XmidS=gd_XmidS[iMpr]
+   ZmidS=gd_ZmidS[iMpr]
+   XmidE=gd_XmidE[iMpr]
+   ZmidE=gd_ZmidE[iMpr] ;
+   AngS=gd_AngS[iMpr]  ; AngE=gd_AngE[iMpr]    // -- Углы подрезки профиля вначале и в конце разделительного профиля
+   cut11=0
+
+   gosub midd;
+   goto lbMidPr;
+}
+g_DirAng_1=sDirAng_1;
+g_DirAng_2=sDirAng_2;
+macro ProtoPath+"SetProfD.mac" sDirAng_1 sDirAng_2;        //  Направление угла подрезки  с 30-10-2009 в новый профиль
+// gosub DebugMsg;
+//====================================================================================
+if C_key==1
+{
+	macro ProtoPath+Doors64+"ClosSysDoor63.mac";
+}
+gosub sDelTrof;
+exit;
+//==============================================================================
+//-- Подпрограмма отрисовки соединительного профиля.
+//-- Входные параметры:
+//-- hhh - высота установки профиля по левой границе створки
+//-- alp - угол наклона профиля
+//-- dx - ширина створки
+//-- dz - высота створки
+midd:
+
+	macro ProtoPath+"SetEnam.mac" "Профиль разделительный" ;
+	AngMp=0
+	DeltaXM=-w_mid_z;   // -w_mid_a+
+	DeltaYM=-h_mid_a/2
+	CutN=-1*abs(DeltaYM*Tan(radian(Angs)));
+	CutE=-1*abs(DeltaYM*Tan(radian(AngE)));
+	SgnA=iif(sgn(XmidS-XmidE)>0,-1,1);
+	if sgn(XmidS-XmidE)==0
+	{
+	   SgnA=iif(sgn(ZmidS-ZmidE)>0,-1,-1);
+	}
+	macro ProtoPath+"SetProfS.mac" 0 0;
+	macro ProtoPath+"SetProfC.mac" ProfMid cutN cutE DeltaXM DeltaYM  AngMp -AngS AngE cl_horiz_d; //cl_mid;
+	macro ProtoPath+"SetProfA.mac"  0 0 Angs*sgnA AngE*SgnA;
+	g_ProfColor=cl_mid;
+	#DsM dist XmidS yn ZmidS XmidE yn ZmidE ;
+	if DsM<50
+	{
+	return ;
+	}
+	i_mprof=0
+	DSN=0 ; DsnMin=999999
+	DSE=0 ; DseMin=999999
+	labMdd:
+	if i_mprof<Nmprof
+	{
+	   i_mprof=i_mprof+1
+	   ptptptp=Mprof[i_mprof]
+	   ttobj=isvardef("ptptptp") 
+	   //putmsg("Mprof["+str(i_mprof)+"]= "+str(ttobj),1)
+	   if ttobj==0 { goto labmdd; }
+	   #DSN Dist XmidS yn+DeltaXM ZmidS object Mprof[i_mprof]; DsnMin=min(DsnMin,Dsn);
+	   #DSE Dist XmidE yn+DeltaXM ZmidE object Mprof[i_mprof]; DseMin=min(DseMin,Dse);
+	   goto labmdd;
+	}
+	//PutMsg("Flapdraw DsnMin="+str(DsnMin),1);
+	//PutMsg("Flapdraw DseMin="+str(DseMin),1);
+	if DsnMin>10||DseMin>10
+	{
+	   return;
+	}
+	g_DLFN=0;  g_DLFK=0;
+	Nobj=SysVar(60);
+	if abs(XmidS-XmidE)<0.1
+	{
+	   macro ProtoPath+"SetECod.mac" "5505v" ;  // вертикальный
+	}
+	else
+	{
+	  if abs(ZmidS-ZmidE)<0.1
+	  {
+	   macro ProtoPath+"SetECod.mac" "5505g" ;  // горизонтальный
+	  }
+	  else
+	  {
+		macro ProtoPath+"SetECod.mac" "5505a" ;  // под углом
+	  }
+	}
+
+	//putmsg("************************",1)
+	//putmsg("Имеем "+str(sysvar(60)),1)
+	// putmsg(h_horiz_mms)
+	Macro ProtoPath+Doors64+h_horiz_mms XmidS yn ZmidS XmidE yn ZmidE;
+	//putmsg("Стало "+str(sysvar(60)),1)
+	iCmpr=iCmpr+1
+	gosub AddProfArr;
+
+return;
+//============================= F R A M E ========================================
+frame:
+//-- Строим рамку из профилей
+  gosub AngFas;       // расчет угла подрезки и удлиннения профиля
+  i_prof=0
+  g_SimZx=(xn+(h_vertR_a-h_vertR_zhg))+((xn+dx-(h_vertL_a-h_vertL_zhg))-(xn+(h_vertR_a-h_vertR_zhg)))/2
+  //color 9 ;
+      //тип профиля - нижний
+      nobj=sysvar(60);
+      A1=grad(Ang4)
+      A2=grad(Ang3)
+	  g_ProfColor=cl_horiz_d;
+      macro ProtoPath+"SetECod.mac" "5601" ;
+      macro ProtoPath+"SetEnam.mac" "Профиль нижний" ;
+      macro ProtoPath+"SetProfS.mac" 0 0;
+      macro ProtoPath+"SetProfA.MAC" 0 0 0 0 ;
+      ;
+      macro ProtoPath+"SetProfC.mac" ProfBottom                  // Материал профиля
+                                     h_vertR_a-h_vertR_zhg      // Подрез начальной точки
+                                     h_vertL_a-h_vertL_zhg      // Подрез конечной точки
+                                     w_horiz_d_z                // Сдвиг по Х ЛСК
+                                     h_horiz_d_a                // Сдвиг по У ЛСК
+                                     180                         // Угол поворота вокруг оси (град)
+                                     -A1                         // Угол подрезки 1 стороны
+                                     -A2                          // Угол подрезки 2 стороны
+                                     cl_horiz_d;                // Цвет профиля из прайса
+       g_DLFN=DLF4_d;  g_DLFK=DLF3_d;
+       St_o=SysVar(60)
+
+       Macro ProtoPath+Doors64+"MakeProfG63.mac" xn+dx4-DLF4_d+P_R yn zn+P_D xn+dx-dx3+DLF3_d-P_L yn zn+P_D;
+
+       //St_o=SysVar(60)
+       St_o=SysVar(60)-St_o
+       if St_o>0
+       {
+        i_prof=i_prof+1
+        gs_ProfX2[i_prof]=xn+dx-dx3+DLF3_d-P_L;
+        gs_ProfZ2[i_prof]=zn+P_D;
+        gs_ProfX1[i_prof]=xn+dx4-DLF4_d+P_R;
+        gs_ProfZ1[i_prof]=zn+P_D;
+        gd_ProfHM[i_prof]=h_horiz_d_a-h_hor_d_zhg;
+        gd_ProfHV[i_prof]=h_horiz_d_z;
+        ptVd=zn+P_D+h_horiz_d_a
+        gosub AddPRM;
+       }
+
+      nobj1=sysvar(60)-nobj;
+      //sss="UnitCode!=\"DR2\"";
+      sss="left(UnitCode,2)!=\"66\"";
+      macro ProtoPath+Doors64+"Select_remove.mac" nobj1, sss ;
+      nobj1=sysvar(61);
+      if (nobj1>0)
+      {
+         //move previous done 0 -(w_horiz_d_a-w_horiz_d_z) -30 nocopy;
+         move previous done 0 0 -g_SlipBottom nocopy;
+      }
+
+      //тип профиля - ручка (левая)
+      nobj=sysvar(60);
+      A1=grad(Ang3/2);
+      A2=grad(Ang2/2);
+	  g_ProfColor=cl_vertL;
+      if dx1<dx
+      {
+      }
+      else
+      {
+        //PutMsg("Ang1="+str(grad(Ang1)),1);
+        A2=(90-grad(Ang1/2));
+      }
+      macro ProtoPath+"SetECod.mac" "6302" ;
+      macro ProtoPath+"SetEnam.mac" "Профиль вертикальный" ;
+      macro ProtoPath+"SetProfS.mac" 0 0;
+      macro ProtoPath+"SetProfA.MAC" 0 0 0 0 ;
+      ;
+      macro ProtoPath+"SetProfC.mac" ProfVertL 0 0 h_vertL_a -w_vertL_z 90 A1 A2 cl_vertL;
+      St_o=SysVar(60)
+      g_DLFN=0;  g_DLFK=0;
+      Macro ProtoPath+Doors64+"MakeProfG63.mac" xn+dx-P_L yn zn+dz3+P_D xn+dx-P_L yn zn+dz-(dz2-iif(P_L==0,0,P_L*dz2/(dx2+0.0001)))-iif(dx1==dx,P_L*dz1/(dx1+0.0001),0);
+       //St_o=SysVar(60)
+
+       St_o=SysVar(60)-St_o
+       if St_o>0
+       {
+        i_prof=i_prof+1
+        gs_ProfX2[i_prof]=xn+dx-P_L;
+        gs_ProfZ2[i_prof]=zn+dz-(dz2-iif(P_L==0,0,P_L*dz2/(dx2+0.0001)))-iif(dx1==dx,P_L*dz1/(dx1+0.0001),0);
+        gs_ProfX1[i_prof]=xn+dx-P_L;
+        gs_ProfZ1[i_prof]=zn+dz3+P_D;
+        gd_ProfHM[i_prof]=h_vertL_a-h_vertL_zhg;
+        gd_ProfHV[i_prof]=h_vertL_z;
+        gosub AddPRM;
+       }
+      nobj1=sysvar(60)-nobj;
+//      sss="UnitCode!=\"DR2\"&&UnitCode!=\"DR1\"&&UnitCode!=\"DR17\"&&UnitCode!=\"DR18\"";
+      //sss="UnitCode==\"6302\"";
+      //macro ProtoPath+Doors64+"Select_remove.mac" nobj1, sss ;
+      //nobj1=sysvar(61);
+      //if (nobj1>0)
+      //{
+	 //rotate previous done 2points xn+dx,yn,zn xn+dx,yn,zn+dz 180 nocopy;
+	 //move previous done 2points xn+dx,yn,zn xn+dx-30,yn,zn nocopy;
+     // }
+
+      
+      //тип профиля - ручка  (правая)
+      nobj=sysvar(60);
+      A1=grad(Ang4/2)
+      A2=grad(Ang1/2)
+	  g_ProfColor=cl_vertR;
+      if dx2<dx
+      {
+      }
+      else
+      {
+        //PutMsg("Ang2="+str(grad(Ang1)),1);
+        A2=(90-grad(Ang2/2));
+      }
+      macro ProtoPath+"SetECod.mac" "6304" ;
+      macro ProtoPath+"SetEnam.mac" "Профиль вертикальный" ;
+      macro ProtoPath+"SetProfS.mac" 1 0;
+      macro ProtoPath+"SetProfA.MAC" 0 0 0 0 ;
+	  // putmsg(-h_vertR_a)
+	  // putmsg(-w_vertR_z)
+      macro ProtoPath+"SetProfC.mac" ProfVertR 0 0 -h_vertR_a -w_vertR_z 90 -A1 -A2 cl_vertR ;
+      St_o=SysVar(60)
+      
+      Macro ProtoPath+Doors64+"MakeProfG63.mac" xn+P_R yn zn+dz4+P_D xn+P_R yn zn+dz-(dz1-iif(P_R==0,0,P_R*dz1/(dx1+0.0001)))-iif(dx2==dx,P_R*dz2/(dx2+0.0001),0);
+       //St_o=SysVar(60)
+       St_o=SysVar(60)-St_o
+       if St_o>0
+       {
+        i_prof=i_prof+1
+        gs_ProfX2[i_prof]=xn+P_R;
+        gs_ProfZ2[i_prof]=zn+dz4+P_D;
+        gs_ProfX1[i_prof]=xn+P_R;
+        gs_ProfZ1[i_prof]=zn+dz-(dz1-iif(P_R==0,0,P_R*dz1/(dx1+0.0001)))-iif(dx2==dx,P_R*dz2/(dx2+0.0001),0);
+        gd_ProfHM[i_prof]=h_vertR_a-h_vertR_zhg;
+        gd_ProfHV[i_prof]=h_vertR_z;
+        gosub AddPRM;
+       }
+     nobj1=sysvar(60)-nobj;
+//      sss="UnitCode!=\"DR2\"&&UnitCode!=\"DR1\"&&UnitCode!=\"DR17\"&&UnitCode!=\"DR18\"";
+      sss="UnitCode==\"6304\"";
+      macro ProtoPath+Doors64+"Select_remove.mac" nobj1, sss ;
+      nobj1=sysvar(61);
+      if (nobj1>0)
+      {
+	 //move previous done 2points xn,yn,zn xn+30,yn,zn nocopy;
+      }
+      if (dx1+dx2)<(dx-P_L-P_R)
+      {
+
+       // если сумма фасок по X меньше ширины створки
+       //тип профиля - верхний
+       nobj=sysvar(60);
+       A1=grad(Ang1)
+       A2=grad(Ang2)
+		g_ProfColor=cl_horiz_u;
+       macro ProtoPath+"SetECod.mac" "5503" ;
+       macro ProtoPath+"SetEnam.mac" "Профиль верхний" ;
+       macro ProtoPath+"SetProfS.mac" 0 1;
+       macro ProtoPath+"SetProfA.MAC" 0 0 0 0 ;
+
+       macro ProtoPath+"SetProfC.mac"  ProfTop
+                                       h_vertR_a-h_vertR_zhg
+                                       h_vertL_a-h_vertL_zhg
+                                       w_horiz_u_z
+                                       -h_horiz_u_a
+                                       0 -A1 -A2
+                                       cl_horiz_u; //  w_horiz_u_a-w_horiz_u_z
+       g_DLFN=DLF1_u;  g_DLFK=DLF2_u;
+       St_o=SysVar(60)
+       Macro ProtoPath+Doors64+"MakeProfG63.mac" xn+dx1-DLF1_u+iif(dz1==0,P_R,0) yn zn+dz xn+dx-dx2+DLF2_u-iif(dz2==0,P_L,0) yn  zn+dz;
+       objident last 1 prUp ;
+       g_DLFN=0;  g_DLFK=0;
+       //St_o=SysVar(60)
+       St_o=SysVar(60)-St_o
+       if St_o>0
+       {
+        i_prof=i_prof+1
+        gs_ProfX2[i_prof]=xn+dx1-DLF1_u+iif(dz1==0,P_R,0);
+        gs_ProfZ2[i_prof]=zn+dz;
+        gs_ProfX1[i_prof]=xn+dx-dx2+DLF2_u-iif(dz2==0,P_L,0);
+        gs_ProfZ1[i_prof]=zn+dz;
+        gd_ProfHM[i_prof]=h_horiz_u_a-h_hor_u_zhg;;
+        gd_ProfHV[i_prof]=h_horiz_u_z;
+        ptVt=zn+dz-h_horiz_u_a
+        gosub AddPRM;
+       }
+
+        =Objgab3(prUp,xm);
+        Xc=Xm[1]+(xm[4]-xm[1])/2
+        Yc=Xm[2]+(xm[5]-xm[2])/2
+        Zc=Xm[3]+(xm[6]-xm[3])/2
+        #tx text "pos"  done Xc+10 Yc Zc-100
+                            normal 0 -1 0
+                            Xc Yc Zc-100 ;
+       nobj1=sysvar(60)-nobj;
+       //sss="UnitCode!=\"DR3\"||UnitCode!=\"DR1\"";
+       sss="left(UnitCode,2)!=\"67\"||left(UnitCode,2)!=\"65\"";
+       macro ProtoPath+Doors64+"Select_remove.mac" nobj1, sss ;
+       nobj1=sysvar(61);
+       if (nobj1>0)
+       {
+         //rotate previous done 2points xn+dx-h_vertL_a,yn+w_vertL_a-w_vertL_z+w_horiz_u_z,zn+dz-h_horiz_u_a
+	//			     xn+dx-h_vertL_a+10,yn+w_vertL_a-w_vertL_z+w_horiz_u_z,zn+dz-h_horiz_u_a
+	//			     180 nocopy;
+       }
+       nobj1=sysvar(60)-nobj;
+       //sss="UnitCode!=\"DR1\"";
+       sss="left(UnitCode,2)!=\"65\"";
+       macro ProtoPath+Doors64+"Select_remove.mac" nobj1, sss ;
+       nobj1=sysvar(61);
+       if (nobj1>0)
+       {
+         //move previous done 0 -15 20 nocopy;
+       }
+
+      }
+      if (dx1!=0)&&(dz1!=0)
+      {
+          // фаска угла 1 тип профиля - ручка
+         nobj=sysvar(60);
+        if dx1<dx
+        {
+         A1=grad(Ang1/2)
+         A2=grad(Ang1)
+        }
+        else
+        {
+         A1=grad(Ang1/2)
+         A2=(90-grad(Ang1/2))*(-1)
+         DLF1_vx=0
+         DLF1_vz=0
+        }
+		g_ProfColor=cl_vertR;
+        macro ProtoPath+"SetECod.mac" "6302" ;
+        macro ProtoPath+"SetEnam.mac" "Профиль вертикальный" ;
+        macro ProtoPath+"SetProfS.mac" 0 1;
+
+           macro ProtoPath+"SetProfA.MAC" 0 0 0 0 ;
+
+        // w_vertR_z, h_vertR_a Работают только для MakeProfD63.mac
+        macro ProtoPath+"SetProfC.mac" ProfVertR 0 0 w_vertR_z -h_vertR_a 0 A1 -A2 cl_vertR ;
+        St_o=SysVar(60)
+        Macro ProtoPath+Doors64+"MakeProfG63.mac" xn+P_R yn zn+dz-(dz1-P_R*dz1/(dx1+0.0001))  xn+(dx1-iif(dx1==dx,P_L,0))+DLF1_vx yn zn+dz-iif(P_L<=0,0,P_L*dz1/(dx1+0.0001))+DLF1_vz ; //
+        //St_o=SysVar(60)
+        St_o=SysVar(60)-St_o
+        if St_o>0
+        {
+         i_prof=i_prof+1
+         gs_ProfX2[i_prof]=xn+P_R;
+         gs_ProfZ2[i_prof]=zn+dz-(dz1-P_R*dz1/(dx1+0.0001));
+         gs_ProfX1[i_prof]=xn+(dx1-iif(dx1==dx,P_L,0))+DLF1_vx;
+         gs_ProfZ1[i_prof]=zn+dz-iif(P_L<=0,0,P_L*dz1/(dx1+0.0001))+DLF1_vz;
+         gd_ProfHM[i_prof]=h_vertR_a-h_vertR_zhg;
+         gd_ProfHV[i_prof]=h_vertR_z;
+         gosub AddPRM;
+        }
+        nobj1=sysvar(60)-nobj;
+        //      sss="UnitCode!=\"DR2\"&&UnitCode!=\"DR1\"&&UnitCode!=\"DR17\"&&UnitCode!=\"DR18\"";
+        sss="UnitCode==\"6304\"";
+        macro ProtoPath+Doors64+"Select_remove.mac" nobj1, sss ;
+        nobj1=sysvar(61);
+        if (nobj1>0)
+        {
+
+            //move previous done 2points xn,yn,zn xn+30,yn,zn nocopy;
+        }
+
+      }
+      Macro ProtoPath+"SetProfS.mac" 0 0;
+
+      if (dx2!=0)&&(dz2!=0)
+      {
+          // фаска угла 2 тип профиля - ручка  (левая)
+         nobj=sysvar(60);
+        if dx2<dx
+        {
+         A1=grad(Ang2)
+         A2=grad(Ang2/2)
+        }
+        else
+        {
+         A2=grad(Ang2/2)
+         A1=(90-grad(Ang2/2))*(-1)
+         DLF2_vx=0
+         DLF2_vz=0
+        }
+		g_ProfColor=cl_vertL;
+        macro ProtoPath+"SetECod.mac" "6302" ;
+        macro ProtoPath+"SetEnam.mac" "Профиль вертикальный" ;
+        macro ProtoPath+"SetProfS.mac" 0 1;
+        macro ProtoPath+"SetProfA.MAC" 0 0 0 0 ;
+        macro ProtoPath+"SetProfC.mac" ProfVertL 0 0 w_vertL_z -h_vertL_a  0 -A1 A2 cl_vertL ;
+        St_o=SysVar(60)
+        Macro ProtoPath+Doors64+"MakeProfG63.mac" xn+dx-(dx2-iif(dx2==dx,P_R,0))-DLF2_vx yn zn+(dz-iif(dx2==dx,P_R*dz2/(dx2+0.0001),0))+DLF2_vz xn+dx-P_L yn zn+dz-(dz2-iif(P_L==0,0,P_L*dz2/(dx2+0.0001)))  ; //
+        //St_o=SysVar(60)
+        St_o=SysVar(60)-St_o
+        if St_o>0
+        {
+         i_prof=i_prof+1
+         gs_ProfX2[i_prof]=xn+dx-(dx2-iif(dx2==dx,P_R,0))-DLF2_vx;
+         gs_ProfZ2[i_prof]=zn+(dz-iif(dx2==dx,P_R*dz2/(dx2+0.0001),0))+DLF2_vz;
+         gs_ProfX1[i_prof]=xn+dx-P_L;
+         gs_ProfZ1[i_prof]=zn+dz-(dz2-iif(P_L==0,0,P_L*dz2/(dx2+0.0001)));
+         gd_ProfHM[i_prof]=h_vertL_a-h_vertL_zhg;
+         gd_ProfHV[i_prof]=h_vertL_z;
+         gosub AddPRM;
+        }
+        nobj1=sysvar(60)-nobj;
+        //      sss="UnitCode!=\"DR2\"&&UnitCode!=\"DR1\"&&UnitCode!=\"DR17\"&&UnitCode!=\"DR18\"";
+        sss="UnitCode==\"6304\"";
+        macro ProtoPath+Doors64+"Select_remove.mac" nobj1, sss ;
+        nobj1=sysvar(61);
+        if (nobj1>0)
+        {
+
+            //move previous done 2points xn,yn,zn xn+30,yn,zn nocopy;
+        }
+
+      }
+      Macro ProtoPath+"SetProfS.mac" 0 0;
+      if (dx3!=0)&&(dz3!=0)
+      {
+          // фаска угла 3 тип профиля - ручка  (левая)
+         nobj=sysvar(60);
+         A1=grad(Ang3/2)
+         A2=grad(Ang3)
+		 g_ProfColor=cl_vertL;
+        macro ProtoPath+"SetECod.mac" "6302" ;
+        macro ProtoPath+"SetEnam.mac" "Профиль вертикальный" ;
+        macro ProtoPath+"SetProfS.mac" 1 0;
+        macro ProtoPath+"SetProfA.MAC" 0 0 0 0 ;
+        macro ProtoPath+"SetProfC.mac" ProfVertL 0 0  -w_vertL_z  h_vertL_a  0 -A1 A2 cl_vertL ;
+        St_o=SysVar(60)
+        Macro ProtoPath+Doors64+"MakeProfG63.mac"   xn+dx yn zn+dz3 xn+dx-dx3-DLF3_vx yn zn-DLF3_vz; //
+        //St_o=SysVar(60)
+        St_o=SysVar(60)-St_o
+        if St_o>0
+        {
+         i_prof=i_prof+1
+         gs_ProfX2[i_prof]=xn+dx;
+         gs_ProfZ2[i_prof]=zn+dz3;
+         gs_ProfX1[i_prof]=xn+dx-dx3-DLF3_vx;
+         gs_ProfZ1[i_prof]=zn-DLF3_vz;
+         gd_ProfHM[i_prof]=h_vertL_a-h_vertL_zhg;
+         gd_ProfHV[i_prof]=h_vertL_z;
+         gosub AddPRM;
+        }
+        nobj1=sysvar(60)-nobj;
+        //      sss="UnitCode!=\"DR2\"&&UnitCode!=\"DR1\"&&UnitCode!=\"DR17\"&&UnitCode!=\"DR18\"";
+        sss="UnitCode==\"6304\"";
+        macro ProtoPath+Doors64+"Select_remove.mac" nobj1, sss ;
+        nobj1=sysvar(61);
+        if (nobj1>0)
+        {
+
+            //move previous done 2points xn,yn,zn xn+30,yn,zn nocopy;
+        }
+
+      }
+      Macro ProtoPath+"SetProfS.mac" 0 0;
+      if (dx4!=0)&&(dz4!=0)
+      {
+          // фаска угла 4 тип профиля - ручка  (левая)
+         nobj=sysvar(60);
+         A1=grad(Ang4)
+         A2=grad(Ang4/2)
+		 g_ProfColor=cl_vertL;
+        macro ProtoPath+"SetECod.mac" "6302" ;
+        macro ProtoPath+"SetEnam.mac" "Профиль вертикальный" ;
+        macro ProtoPath+"SetProfS.mac" 1 0;
+        macro ProtoPath+"SetProfA.MAC" 0 0 0 0 ;
+        macro ProtoPath+"SetProfC.mac" ProfVertL 0 0  -w_vertL_z  h_vertL_a  0 A1 -A2 cl_vertL ;
+        St_o=SysVar(60)
+        Macro ProtoPath+Doors64+"MakeProfG63.mac" xn+dx4+DLF4_vx yn zn-DLF4_vz xn yn zn+dz4  ; //
+        //St_o=SysVar(60)
+        St_o=SysVar(60)-St_o
+        if St_o>0
+        {
+         i_prof=i_prof+1
+         gs_ProfX2[i_prof]=xn+dx4+DLF4_vx;
+         gs_ProfZ2[i_prof]=zn-DLF4_vz;
+         gs_ProfX1[i_prof]=xn;
+         gs_ProfZ1[i_prof]=zn+dz4;
+         gd_ProfHM[i_prof]=h_vertR_a-h_vertR_zhg;
+         gd_ProfHV[i_prof]=h_vertR_z;
+         gosub AddPRM;
+        }
+        nobj1=sysvar(60)-nobj;
+        //      sss="UnitCode!=\"DR2\"&&UnitCode!=\"DR1\"&&UnitCode!=\"DR17\"&&UnitCode!=\"DR18\"";
+        sss="UnitCode==\"6304\"";
+        macro ProtoPath+Doors64+"Select_remove.mac" nobj1, sss ;
+        nobj1=sysvar(61);
+        if (nobj1>0)
+        {
+
+            //move previous done 2points xn,yn,zn xn+30,yn,zn nocopy;
+        }
+
+      }
+      Macro ProtoPath+"SetProfS.mac" 0 0;
+
+     // delete grrr done ;
+	     //Верхний
+	i_dimpstr=i_dimpstr+1
+	g_dimPstr[i_dimpstr]=xn+dx1+iif(dz1==0,P_R,0) 
+	i_dimpstr=i_dimpstr+1
+	g_dimPstr[i_dimpstr]=yn 
+	i_dimpstr=i_dimpstr+1
+	g_dimPstr[i_dimpstr]=zn+dz 
+	i_dimpstr=i_dimpstr+1
+	g_dimPstr[i_dimpstr]=xn+dx-dx2-iif(dz2==0,P_L,0) 
+	i_dimpstr=i_dimpstr+1
+	g_dimPstr[i_dimpstr]=yn  
+	i_dimpstr=i_dimpstr+1
+	g_dimPstr[i_dimpstr]=zn+dz
+	   
+	//Ручка левая
+	if dz2>0
+	{
+		i_dimpstr=i_dimpstr+1
+		g_dimPstr[i_dimpstr]=xn+dx-P_L 
+		i_dimpstr=i_dimpstr+1
+		g_dimPstr[i_dimpstr]=yn 
+		i_dimpstr=i_dimpstr+1
+		g_dimPstr[i_dimpstr]=zn+dz-(dz2-iif(P_L==0,0,P_L*dz2/(dx2+0.0001)))-iif(dx1==dx,P_L*dz1/(dx1+0.0001),0)
+	}
+	if dz3>0
+	{
+		i_dimpstr=i_dimpstr+1
+		g_dimPstr[i_dimpstr]=xn+dx-P_L 
+		i_dimpstr=i_dimpstr+1
+		g_dimPstr[i_dimpstr]=yn 
+		i_dimpstr=i_dimpstr+1
+		g_dimPstr[i_dimpstr]=zn+dz3+P_D 
+	}  
+	  //Нижний
+	i_dimpstr=i_dimpstr+1
+	g_dimPstr[i_dimpstr]=xn+dx-dx3-P_L 
+	i_dimpstr=i_dimpstr+1
+	g_dimPstr[i_dimpstr]=yn 
+	i_dimpstr=i_dimpstr+1
+	g_dimPstr[i_dimpstr]=zn+P_D
+	i_dimpstr=i_dimpstr+1
+	g_dimPstr[i_dimpstr]=xn+dx4+P_R 
+	i_dimpstr=i_dimpstr+1
+	g_dimPstr[i_dimpstr]=yn 
+	i_dimpstr=i_dimpstr+1
+	g_dimPstr[i_dimpstr]=zn+P_D 
+	  //Ручка правая
+	if dz4>0
+	{
+		i_dimpstr=i_dimpstr+1
+		g_dimPstr[i_dimpstr]=xn+P_R 
+		i_dimpstr=i_dimpstr+1
+		g_dimPstr[i_dimpstr]=yn 
+		i_dimpstr=i_dimpstr+1
+		g_dimPstr[i_dimpstr]=zn+dz4+P_D
+	}
+	if dz1>0
+	{
+		i_dimpstr=i_dimpstr+1
+		g_dimPstr[i_dimpstr]=xn+P_R 
+		i_dimpstr=i_dimpstr+1
+		g_dimPstr[i_dimpstr]=yn 
+		i_dimpstr=i_dimpstr+1
+		g_dimPstr[i_dimpstr]=zn+dz-(dz1-iif(P_R==0,0,P_R*dz1/(dx1+0.0001)))-iif(dx2==dx,P_R*dz2/(dx2+0.0001),0) // правая
+		// putmsg("g_dimPstr="+str(g_dimPstr[i_dimpstr]),1)
+	}
+	i_dimpstr=i_dimpstr+1
+	g_dimPstr[i_dimpstr]=xn+dx1+iif(dz1==0,P_R,0) 
+	i_dimpstr=i_dimpstr+1
+	g_dimPstr[i_dimpstr]=yn 
+	i_dimpstr=i_dimpstr+1
+	g_dimPstr[i_dimpstr]=zn+dz 
+return;
+
+
+//======================================
+DebugMsg:
+#okFlag alternative
+"debugmode"
+info
+
+//default 1
+//text left
+Str(xn)+"  "+"xn  -- Координаты установки правого нижнего дальнего угла створки двери"
+Str(yn)+"  "+"yn"
+Str(zn)+"  "+"zn"
+Str(dx)+"  "+"dx  -- Размер створки двери по горизонтали"
+Str(dz)+"  "+"dz  -- Размер створки двери по вертикали"
+Str(ProfBottom)+"  "+"ProfBottom  -- Нижний горизонтальный профиль обрамления"
+Str(ProfTop)+"  "+"ProfTop -- Верхний горизонтальный профиль обрамления"
+Str(ProfVertR)+"  "+"ProfVertR-- Вертикальный профиль обрамления правый"
+Str(ProfVertL)+"  "+"ProfVertL-- Вертикальный профиль обрамления левый"
+Str(ProfMid)+"  "+"ProfMid -- Средний профиль (между вставками)"
+//Str(ProfAdaptH)+"  "+"ProfAdaptH  -- Адаптер (уплотнительный профиль) горизонтальный"
+//Str(ProfAdaptV)+"  "+"ProfAdaptV  -- Адаптер (уплотнительный профиль) вертикальный"
+//Str(ProfAdaptMid)+"  "+"ProfAdaptMid-- Адаптер (уплотнительный профиль) средний"
+Str(h_horiz_d_a)+"  "+"h_horiz_d_a -- Полная высота нижнего профиля"
+Str(h_horiz_u_a)+"  "+"h_horiz_u_a -- Полная высота верхнего профиля"
+Str(h_horiz_d_z)+"  "+"h_horiz_d_z -- Высота зазора нижнего профиля"
+Str(h_horiz_u_z)+"  "+"h_horiz_u_z -- Высота зазора верхнего профиля"
+Str(w_horiz_d_z)+"  "+"w_horiz_d_z -- Боковое расстояние до зазора  нижнего профиля"
+Str(w_horiz_u_z)+"  "+"w_horiz_u_z -- Боковое расстояние до зазора верхнего профиля"
+Str(w_horiz_d_a)+"  "+"w_horiz_d_a -- Полшая ширина нижнего профиля"
+Str(w_horiz_u_a)+"  "+"w_horiz_u_a -- Полшая ширина верхнего профиля"
+Str(h_vertR_a)+"  "+"h_vertR_a-- Полная высота вертикального профиля"
+Str(h_vertR_zhg)+"  "+"h_vertR_zhg-- Высота заглубления сопрягаемых горизонтальных профилей"
+Str(h_vertR_z)+"  "+"h_vertR_z-- Высота зазора вертикального профиля"
+Str(w_vertR_a)+"  "+"w_vertR_a-- Полшая ширина вертикального профиля"
+Str(w_vertR_z)+"  "+"w_vert_z-- Боковое расстояние до зазора вертикального профиля"
+Str(h_vertL_a)+"  "+"h_vertL_a-- Полная высота вертикального профиля"
+Str(h_vertL_z)+"  "+"h_vertL_z-- Высота зазора вертикального профиля"
+Str(w_vertL_a)+"  "+"w_vertL_a-- Полшая ширина вертикального профиля"
+Str(w_vertL_z)+"  "+"w_vert_z-- Боковое расстояние до зазора вертикального профиля"
+Str(h_mid_a)+"  "+"h_mid_a -- Полная высота среднего профиля"
+Str(h_mid_z)+"  "+"h_mid_z -- Высота двойного зазора среднего профиля"
+Str(w_mid_a)+"  "+"w_mid_a -- Полная ширина среднего профиля"
+Str(w_mid_z)+"  "+"w_mid_z -- Боковое расстояние до зазора среднего профиля"
+//Str(h_adap_a)+"  "+"h_adap_a-- Полная высота профиля адаптера"
+//Str(h_adap_z)+"  "+"h_adap_z-- Высота зазора профиля адаптера"
+//Str(w_adap_a)+"  "+"w_adap_a-- Полная ширина профиля адаптера"
+//Str(w_adap_z)+"  "+"w_adap_z-- Боковое расстояние до зазора профиля адаптера"
+//Str(h_adap_v_a)+"  "+"h_adap_v_a  -- Полная высота вертикального профиля адаптера"
+//Str(h_adap_v_z)+"  "+"h_adap_v_z  -- Высота зазора вертикального профиля адаптера"
+//Str(w_adap_v_a)+"  "+"w_adap_v_a  -- Полная ширина вертикального профиля адаптера"
+//Str(w_adap_v_z)+"  "+"w_adap_v_z  -- Боковое расстояние до зазора вертикального профиля адаптера"
+//Str(isvardef("thin"))+"  "+"thin -- Идентификаторы толстых профилей"
+//Str(hss)+"  "+"hss  -- толщина вставки"
+//str(grad(Ang1))+" Угол 1"
+//str(grad(Ang2))+" Угол 2"
+//str(grad(Ang3))+" Угол 3"
+//str(grad(Ang4))+" Угол 4"
+//str(DLF1_u)+" DLF1_u"
+//str(DLF2_u)+" DLF2_u"
+
+
+done
+//"Закончить"
+//done;
+return;
+//=======================
+
+AngFas:       // расчет углов подрезки и удлиннений профилей по углам рамки
+      Ang1=iif(dz1!=0,Atan(dx1/dz1),0);     // Угол подреза правого и верхнего профиля
+      Ang11=Ang1/2
+      Ang2=iif(dz2!=0,Atan(dx2/dz2),0);     // Угол подреза левого и верхнего профиля
+      Ang22=Ang2/2
+      Ang3=iif(dz3!=0,Atan(dx3/dz3),0);     // Угол подреза левого и нижнего профиля
+      Ang33=Ang3/2
+      Ang4=iif(dz4!=0,Atan(dx4/dz4),0);     // Угол подреза правого и нижнего профиля
+      Ang44=Ang4/2
+      DLF1_v=iif(ang1!=0,h_vertR_a*tan(ang1),0); // Удлиннение вертикального профиля в фаске 1
+      DLF1_vx=iif(ang1!=0,h_vertR_a*sin(ang1)*tan(ang1),0); // Удлиннение вертикального профиля в фаске 1 по X
+      DLF1_vz=iif(ang1!=0,h_vertR_a*sin(ang1),0); // Удлиннение вертикального профиля в фаске 1 по X
+
+      DLF2_v=iif(ang2!=0,h_vertL_a*tan(ang2),0); // Удлиннение вертикального профиля в фаске 2
+      DLF2_vx=iif(ang2!=0,h_vertL_a*sin(ang2)*tan(ang2),0); // Удлиннение вертикального профиля в фаске 2 по X
+      DLF2_vz=iif(ang2!=0,h_vertL_a*sin(ang2),0); // Удлиннение вертикального профиля в фаске 2 по X
+
+
+      DLF3_v=iif(ang3!=0,h_vertL_a*tan(ang3),0); // Удлиннение вертикального профиля в фаске 3
+      DLF3_vx=iif(ang3!=0,h_vertL_a*sin(ang3)*tan(ang3),0); // Удлиннение вертикального профиля в фаске 3 по X
+      DLF3_vz=iif(ang3!=0,h_vertL_a*sin(ang3),0); // Удлиннение вертикального профиля в фаске 3 по X
+
+      DLF4_v=iif(ang4!=0,h_vertR_a*tan(ang4),0); // Удлиннение вертикального профиля в фаске 4
+      DLF4_vx=iif(ang4!=0,h_vertR_a*sin(ang4)*tan(ang4),0); // Удлиннение вертикального профиля в фаске 4 по X
+      DLF4_vz=iif(ang4!=0,h_vertR_a*sin(ang4),0); // Удлиннение вертикального профиля в фаске 4 по X
+
+      Lfas1=(dx1*dx1+dz1*dz1)+DLF1_v  // Длина вертикального профиля фаски 1
+      Lfas2=(dx2*dx2+dz2*dz2)+DLF2_v  // Длина вертикального профиля фаски 2
+      Lfas3=(dx3*dx3+dz3*dz3)+DLF3_v  // Длина вертикального профиля фаски 3
+      Lfas4=(dx4*dx4+dz4*dz4)+DLF4_v  // Длина вертикального профиля фаски 4
+
+
+      DLF1_u=iif(ang1!=0,h_horiz_u_a*tan(ang1)-h_vertR_a/cos(ang1)+h_vertR_a,0);  // Удлиннение горизонтального профиля в фаске 1
+      DLF2_u=iif(ang2!=0,h_horiz_u_a*tan(ang2)-h_vertL_a/cos(ang2)+h_vertL_a,0);  // Удлиннение горизонтального профиля в фаске 2
+      DLF3_d=iif(ang3!=0,h_horiz_d_a*tan(ang3)-h_vertL_a/cos(ang3)+h_vertL_a,0);  // Удлиннение горизонтального профиля в фаске 3
+      DLF4_d=iif(ang4!=0,h_horiz_d_a*tan(ang4)-h_vertR_a/cos(ang4)+h_vertR_a,0);  // Удлиннение горизонтального профиля в фаске 4
+
+
+return;
+
+//============================ G R A P H ============================
+InitStGraf:
+// putmsg("InitStGraf")
+NobjGraf=0
+   gd_KMpr=0
+   KFL=gd_KFL               // -- Количество вставок из скретча
+   KMpr=gd_KMpr             // -- Количество средних профилей из скретча
+
+NProf=gs_NProf           //-- число толстых профилей
+   NTLin=gd_NTLin           //-- число теоретических линий(осей)
+nEl=1;
+iArrGr=1;
+grf_st=begingraph();  // Инициализируем граф  (средние профили)
+//grf_Pr=begingraph();  // Инициализируем граф
+linigrvs:
+grf_Vs[iArrGr]=begingraph();  // Инициализируем граф (вставки)
+grf_Pr[iArrGr]=begingraph();  // Инициализируем граф (проемы)
+if iArrGr<28 
+{ 
+	iArrGr=iArrGr+1; 
+	goto linigrvs; 
+}
+   i_isg=0
+   // putmsg(NProf)
+   lb_ISG1:
+   if i_isg<NProf
+   {
+      i_isg=i_isg+1
+      arGrafCu[1]=gs_ProfX1[i_isg];
+      arGrafCu[2]=gs_ProfZ1[i_isg];
+      arGrafCu[3]=gs_ProfX2[i_isg];
+      arGrafCu[4]=gs_ProfZ2[i_isg];
+      arTypeOb[i_isg]=1
+      ee=addedgegraph(grf_st,arTypeOb[i_isg],arGrafCu,gd_ProfHM[i_isg]);  // Добавляем в граф ребро
+	  // putmsg("gd_ProfHM["+str(i_isg)+"]= "+str(gd_ProfHM[i_isg]),1)
+      vTMP=gd_ProfHV[i_isg];
+	  // putmsg(vTMP)
+      IsStr=IsVarDef("vTMP");
+      if IsStr==5    // число
+      {
+		  iArrGr=1;
+		  ee=addedgegraph(grf_vs[iArrGr],arTypeOb[i_isg],arGrafCu,gd_ProfHV[i_isg]);  // Добавляем в граф ребро
+		  ee=addedgegraph(grf_pr[iArrGr],arTypeOb[i_isg],arGrafCu,gd_ProfHM[i_isg]);  // Добавляем в граф ребро
+		  awdVs[1]=1
+      }
+      if IsStr==6    // строка
+      {
+         nEl=SplitByDelim(gd_ProfHV[i_isg],",",aStr);
+         iArrGr=0;
+         iIsStr=0;
+         lIsStr:
+         if iIsStr<nEl
+         {
+            iIsStr=iIsStr+2;
+            wdVs=aStr[iIsStr-1]; // толщина вставок для этого графа
+            ee=addedgegraph(grf_vs[wdVs],arTypeOb[i_isg],arGrafCu,aStr[iIsStr]);  // Добавляем в граф ребро
+			ee=addedgegraph(grf_pr[wdVs],arTypeOb[i_isg],arGrafCu,aStr[iIsStr]);  // Добавляем в граф ребро
+            iArrGr=iArrGr+1;
+            awdVs[iArrGr]=wdVs;
+            goto lIsStr;
+         }
+      }      
+      gosub Putline;
+      goto lb_ISG1;
+   }
+   j_isg=0
+   lb_ISG2:
+   // putmsg(NTLin)
+   if i_isg<NProf+NTLin
+   {
+      i_isg=i_isg+1
+      j_isg=j_isg+1
+      arGrafCu[1]=gd_TLinX1[j_isg];
+      arGrafCu[2]=gd_TLinZ1[j_isg];
+      arGrafCu[3]=gd_TLinX2[j_isg];
+      arGrafCu[4]=gd_TLinZ2[j_isg];
+      arTypeOb[i_isg]=1
+      EkvM=gd_TLinHM[j_isg]
+
+	  // putmsg("*********************",1);
+	  // putmsg("gd_TLinHM["+str(i_isg)+"]= "+str(gd_TLinHM[j_isg]));
+	  // putmsg("gd_TLinHV["+str(i_isg)+"]= "+str(gd_TLinHV[j_isg]));
+	  // putmsg("*********************",1);
+	  vTMP=gd_TLinHV[j_isg];
+      IsStr=IsVarDef("vTMP");
+      if IsStr==5    // число
+      {
+		  EkvV=iif(abs(gd_TLinHV[j_isg]/2-gd_TLinHM[j_isg])<0.5,0,gd_TLinHV[j_isg]/2);
+		  // gosub addNewLGraf;
+		  // gosub Putline;
+	  }
+      if IsStr==6    // строка
+      {
+          EkvV=h_mid_z // 1 25.03.2015
+      }
+      // EkvV=iif(abs(gd_TLinHV[j_isg]/2-gd_TLinHM[j_isg])<0.5,0,gd_TLinHV[j_isg]/2);
+	  
+	  
+      gosub addNewLGraf;
+      gosub Putline;
+      goto lb_ISG2;
+   }
+   ivs=0;
+   lVswd:
+   if ivs<nEl/iif(nel>1,2,1)
+   {
+      ivs=ivs+1;
+      gd_IdFl=0;
+      NULLOUT=InterGraph(grf_vs[awdVs[ivs]]);  // Находим точки пересечения и корректируем граф
+	  NULLOUT=InterGraph(grf_pr[awdVs[ivs]]);  // Находим точки пересечения и корректируем граф
+      NG=FindLoops(grf_vs[awdVs[ivs]]);  // Находим циклы в графе
+	  NG1=FindLoops(grf_pr[awdVs[ivs]]);  // Находим циклы в графе
+    // putmsg("NG="+str(NG),1);
+	// putmsg("NG1="+str(NG1),1);
+   if (NG==0)
+   {
+      return;
+   }
+   ii=0;
+   loop:
+   ii=ii+1;
+   arEquidi[ii]=EquidLoop(grf_vs[awdVs[ivs]],ii);  // Строим эквидистанту к циклу
+   arEquidp[ii]=EquidLoop(grf_pr[awdVs[ivs]],ii);  // Строим эквидистанту к циклу
+   if (ii<NG)
+   {
+      goto loop;
+   }
+   gri=0;
+   loogri:
+   gri=gri+1;
+   looi=0;
+   looi1=0;
+   if (arEquidi[gri]==0)
+   {
+      goto nextGraph;
+   }
+   //PutMsg("arEquidi[gri]="+str(arEquidi[gri]),1);
+   nedges=GetNumEdges(arEquidi[gri]);  // Получаем число ребер
+   if nedges<3
+   {
+      goto nextGraph;
+   }
+   objVstavd=SysVar(60);
+   ObjLin=SysVar(60);
+   //putmsg("============",1)
+   #pl1 pline
+   normal 0 1 0
+   loolooi:
+   let looi=looi+1
+   let nz=GetEdgeGraph(arEquidi[gri],looi,arGrafCu)  // Получаем по очереди все ребра каждого цикла
+   // Строим ребра
+   if (nz==4)
+   {
+     if looi==1
+     {
+        arGrafCu[1],yn,arGrafCu[2]
+		let i_dimvstr=i_dimvstr+1
+		let g_dimVstr[i_dimvstr]=arGrafCu[1]
+		let i_dimVstr=i_dimvstr+1
+		let g_dimVstr[i_dimvstr]=yn
+		let i_dimVstr=i_dimvstr+1
+		let g_dimVstr[i_dimvstr]=arGrafCu[2]
+     }
+     arGrafCu[3],yn,arGrafCu[4]
+	 let i_dimvstr=i_dimvstr+1
+     let g_dimVstr[i_dimvstr]=arGrafCu[3]
+	 let i_dimVstr=i_dimvstr+1
+	 let g_dimVstr[i_dimvstr]=yn
+	 let i_dimVstr=i_dimvstr+1
+	 let g_dimVstr[i_dimvstr]=arGrafCu[4]	 
+      //#l1 line arGrafCu[1],yn,arGrafCu[2], arGrafCu[3],yn,arGrafCu[4] done;
+      //chprop color l1 done 12 ;
+   }
+   if (nz==6)
+   {
+      //arc arGrafCu[1],arGrafCu[2],0 arGrafCu[3],arGrafCu[4],0 arGrafCu[5],arGrafCu[6],0;
+   }
+   if (looi<nedges)
+   {
+      goto loolooi;
+   }
+   else
+   {
+       ; // done
+   }
+   //=============================
+   //#pl2 pline
+   //normal 0 1 0
+   looloop:
+   let looi1=looi1+1
+   let nz=GetEdgeGraph(arEquidp[gri],looi1,arGrafCu)  // Получаем по очереди все ребра каждого цикла
+   // Строим ребра
+   if (nz==4)
+   {
+     if looi1==1
+     {
+        //arGrafCu[1],yn,arGrafCu[2]
+		i_dimpstr=i_dimpstr+1
+		g_dimPstr[i_dimpstr]=arGrafCu[1]
+		i_dimpstr=i_dimpstr+1
+		g_dimPstr[i_dimpstr]=yn
+		i_dimpstr=i_dimpstr+1
+		g_dimPstr[i_dimpstr]=arGrafCu[2]		
+     }
+     //arGrafCu[3],yn,arGrafCu[4]
+     i_dimpstr=i_dimpstr+1
+	 g_dimPstr[i_dimpstr]=arGrafCu[3]
+	 i_dimpstr=i_dimpstr+1
+	 g_dimPstr[i_dimpstr]=yn
+	 i_dimpstr=i_dimpstr+1
+	 g_dimPstr[i_dimpstr]=arGrafCu[4]
+   }
+   if (nz==6)
+   {
+      //arc arGrafCu[1],arGrafCu[2],0 arGrafCu[3],arGrafCu[4],0 arGrafCu[5],arGrafCu[6],0;
+   }
+   if (looi1<nedges)
+   {
+      goto looloop;
+   }
+   else
+   {
+       ; // done
+   }   
+   //=============================
+   lnpl1:
+   if isvardef("pl1")==16
+   {
+     gd_IdFl=gd_IdFl+1;  // Номер вставки
+     // putmsg(" flap_draw63 gd_FlMater["+str(gd_IdFl)+"]="+str(gd_FlMater[gd_IdFl]),1);
+      if gd_FlMater[gd_IdFl]==0
+	  {
+		gd_FlMater[gd_IdFl]=g_VstSt;
+		// putmsg(g_VstSt)
+	  }
+      h_dsp=PriceInfo(gd_FlMater[gd_IdFl],"Thickness",16);
+      // putmsg("awdVs["+str(ivs)+"]-"+str(h_dsp)+"="+str((awdVs[ivs]-h_dsp)),1);
+      if ((awdVs[ivs]-h_dsp)>1.1||(awdVs[ivs]-h_dsp)<0)&&(awdVs[ivs]>1)
+      {
+         delete pl1 done;
+		 // putmsg("goto lnpl1");
+         goto lnpl1;
+      }
+      NameMAt=PriceInfo(gd_FlMater[gd_IdFl],"MATNAME","");
+	  h_vst=PriceInfo(gd_FlMater[gd_IdFl],"Thickness",4);
+		if (h_vst>BottomLim)
+		{
+			errArr[1]="Материал вставки в фасад не соответствует текущим профилям рамки.";
+			errArr[2]=" ";
+			errArr[3]="Для данного профиля рамки толщина материала вставки должна быть меньше или равна '"+str(BottomLim)+"' мм."
+			errArr[4]="Выбранный вами материал '"+NameMAt+"' имеет толщину '"+str(h_vst)+"' мм.";
+			macro Protopath+"ShowSmartError.mac" "Некорректные параметры фасада."
+			4 errArr;
+			delete pl1 done;
+			goto lnpl1;
+		}
+	  
+      Ang_shp[1]=gd_FlNSHP[gd_idfl];
+		// putmsg(gd_FlNSHP[gd_idfl])
+      //macro ProtoPath+Doors64+"NestandAuto.mac"  pl1 Ang_shp gs_FlMater[gs_IdFl] 0 0 ;
+	  
+	  // Двойная вставка
+	  isDoubleVst=0;
+	  if gs_FlMater2[gd_IdFl]>0
+	  {
+		isDoubleVst=1;
+		// Для зеркала должна быть 4, дабы уплотнитель пришел
+		h_ddsp=PriceInfo(gs_FlMater2[gd_IdFl],"Thickness",4,1)
+		h_dsp=h_dsp+h_ddsp;
+		NameMAt=NameMAt+"+"+PriceInfo(gs_FlMater2[gd_IdFl],"MATNAME","");
+	  }
+		//-----------------------------------------
+        gosub SetAdapt;
+		//-----------------------------------------
+
+	  TypKr=0;
+	  
+	  macro ProtoPath+"SetDecorate.mac" 0 0 0 0; 
+	  
+	  // Если есть отделки или обработки по пластям создаем
+      // sgMotd=iif(logFrame==2,1,-1);
+	  // putmsg(gd_IdFl)
+      if gs_FlOtdelAN[gd_IdFl]>0  // Есть отделки
+      {
+         Notd=gs_FlOtdelAN[gd_IdFl]; //Число отделок
+		 // putmsg("A_"+str(Notd))
+		 NameMAt=NameMAt+" /ЛИЦО: ";
+		 nullout=initarray(splitArr,0);
+		 nullout=initarray(splitArrGr,0);
+		 // putmsg(gs_FlOtdelA[gd_IdFl])
+		 if InStr(1,str(gs_FlOtdelA[gd_IdFl]),";",1)
+		 {
+			splitbydelim(str(gs_FlOtdelA[gd_IdFl]),";",splitArr);
+		 }
+		 if InStr(1,str(gs_FlOtdGrA[gd_IdFl]),";",1)
+		 {
+			splitbydelim(str(gs_FlOtdGrA[gd_IdFl]),";",splitArrGr);
+		 }
+         Plast=5;
+         jotd=0
+         lotd11:
+         if jotd<Notd
+         {
+            jotd=jotd+1
+            gd_Iotd=gd_Iotd+1              // -- Cчетчик обработанных в объекте отделок
+			// putmsg(splitArr[jotd])
+			macro ProtoPath+"SetDecorate.mac" Plast splitArrGr[jotd] splitArr[jotd] 1 ;
+			
+			zp1="SELECT ID, Name FROM TProtoParType WHERE ID="+str(splitArrGr[jotd]);
+			rcd=adbOpen(adbCon(2),zp1);
+			total_s1=aDbRecCount(rcd);
+			if total_s1>0 {	err=aDbMoveFirst(rcd); GrName=adbGetValue(rcd,"Name",0); }
+			else { GrName=""; }
+			// Возможно переполнение текстовой константы
+			txt=str(GrName)+" "+PriceInfo(splitArr[jotd],"MATNAME","")+" ; ";
+			if len(str(NameMAt))+len(str(txt))<256
+			{
+				NameMAt=NameMAt+txt;
+			}
+			else
+			{
+				putmsg("Превышено ограничение по размеру текстового примечания. Внимание, оберезано!",0);
+				putmsg(txt,0);
+			}
+            goto lotd11;
+         }
+      }
+	  // putmsg(gs_FlOtdelF)
+      if gs_FlOtdelFN[gd_IdFl]>0  // Есть отделки
+      {
+         Notd=gs_FlOtdelFN[gd_IdFl]; //Число отделок
+		 // putmsg("F_"+str(Notd))
+		 txt=" / ТЫЛ: ";
+		 if len(str(NameMAt))+len(txt)<256
+		 {
+			NameMAt=NameMAt+txt;
+		 }
+		else
+		{
+			putmsg("Превышено ограничение по размеру текстового примечания. Внимание, оберезано!",0);
+			putmsg(txt,0);
+		}
+		 nullout=initarray(splitArr,0);
+		 nullout=initarray(splitArrGr,0);
+		 // putmsg("1283--"+str(gs_FlOtdelF[gd_IdFl]))
+		 // putmsg(gs_FlOtdelF[gd_IdFl])
+		 // putmsg(splitArr[1])
+		 if InStr(1,str(gs_FlOtdelF[gd_IdFl]),";",1)
+		 {
+			splitbydelim(str(gs_FlOtdelF[gd_IdFl]),";",splitArr);
+		 }
+		 if InStr(1,str(gs_FlOtdGrF[gd_IdFl]),";",1)
+		 {
+			splitbydelim(str(gs_FlOtdGrF[gd_IdFl]),";",splitArrGr);
+		 }
+		 
+         Plast=6;
+         jotd=0
+         lotd12:
+         if jotd<Notd
+         {
+            jotd=jotd+1
+            gd_Iotd=gd_Iotd+1              // -- Cчетчик обработанных в объекте отделок
+			macro ProtoPath+"SetDecorate.mac" Plast splitArrGr[jotd] splitArr[jotd] 1 ;
+			
+			zp1="SELECT ID, Name FROM TProtoParType WHERE ID="+str(splitArrGr[jotd]);
+			rcd=adbOpen(adbCon(2),zp1);
+			total_s1=aDbRecCount(rcd);
+			if total_s1>0 {	err=aDbMoveFirst(rcd); GrName=adbGetValue(rcd,"Name",0); }
+			else { GrName=""; }
+			txt=iif(splitArrGr[jotd]==103," ПОДЛОЖКА - ","")+str(GrName)+" "+PriceInfo(splitArr[jotd],"MATNAME","")+" ; "
+			if len(str(NameMAt))+len(str(txt))<256
+			{
+				NameMAt=NameMAt+txt;
+			}
+			else
+			{
+				putmsg("Превышено ограничение по размеру текстового примечания. Внимание, оберезано!",0);
+				putmsg(txt,0);
+			}
+            goto lotd12;
+         }
+      }
+	  
+      objVstav=SysVar(60);
+	  //Line 0 0 0 0 1000 0;
+      macro ProtoPath+Doors64+"NestandAuto.mac"  pl1 Ang_shp gd_FlMater[gd_IdFl] TypKr 0 ;
+      Attrobj Attach "SNumb" Done Last 1 gd_IdFl;
+	  
+	  if isDoubleVst
+	  {
+		Attrobj Attach "ElemName" Done last 1 "Вставка снизу";
+	  }
+	  
+	  macro ProtoPath+"SetDecorate.mac" 0 0 0 0; 
+      if gs_FlOtd2AN[gd_IdFl]>0  // Есть отделки
+      {
+         Notd=gs_FlOtd2AN[gd_IdFl]; //Число отделок
+		 // putmsg("A_"+str(Notd))
+		 NameMAt=NameMAt+" /ЛИЦО: ";
+		 nullout=initarray(splitArr,0);
+		 nullout=initarray(splitArrGr,0);
+		 if InStr(1,str(gs_FlOtdel2A[gd_IdFl]),";",1)
+		 {
+			splitbydelim(str(gs_FlOtdel2A[gd_IdFl]),";",splitArr);
+		 }
+		 if InStr(1,str(gs_FlOtdGr2A[gd_IdFl]),";",1)
+		 {
+			splitbydelim(str(gs_FlOtdGr2A[gd_IdFl]),";",splitArrGr);
+		 }
+         Plast=5;
+         jotd=0
+         lotd21:
+         if jotd<Notd
+         {
+            jotd=jotd+1
+            gd_Iotd=gd_Iotd+1              // -- Cчетчик обработанных в объекте отделок
+			macro ProtoPath+"SetDecorate.mac" Plast splitArrGr[jotd] splitArr[jotd] 1 ;
+			
+			zp1="SELECT ID, Name FROM TProtoParType WHERE ID="+str(splitArrGr[jotd]);
+			rcd=adbOpen(adbCon(2),zp1);
+			total_s1=aDbRecCount(rcd);
+			if total_s1>0 {	err=aDbMoveFirst(rcd); GrName=adbGetValue(rcd,"Name",0); }
+			else { GrName=""; }
+			// Возможно переполнение текстовой константы
+			txt=str(GrName)+" "+PriceInfo(splitArr[jotd],"MATNAME","")+" ; ";
+			if len(str(NameMAt))+len(str(txt))<256
+			{
+				NameMAt=NameMAt+txt;
+			}
+			else
+			{
+				putmsg("Превышено ограничение по размеру текстового примечания. Внимание, оберезано!",0);
+				putmsg(txt,0);
+			}
+            goto lotd21;
+         }
+      }
+	  
+      if gs_FlOtd2FN[gd_IdFl]>0  // Есть отделки
+      {
+         Notd=gs_FlOtd2FN[gd_IdFl]; //Число отделок
+		 NameMAt=NameMAt+" /ТЫЛ: ";
+		 nullout=initarray(splitArr,0);
+		 nullout=initarray(splitArrGr,0);
+		 if InStr(1,str(gs_FlOtdel2F[gd_IdFl]),";",1)
+		 {
+			splitbydelim(str(gs_FlOtdel2F[gd_IdFl]),";",splitArr);
+		 }
+		 if InStr(1,str(gs_FlOtdGr2F[gd_IdFl]),";",1)
+		 {
+			splitbydelim(str(gs_FlOtdGr2F[gd_IdFl]),";",splitArrGr);
+		 }
+         Plast=6;
+         jotd=0
+         lotd23:
+         if jotd<Notd
+         {
+            jotd=jotd+1
+            gd_Iotd=gd_Iotd+1              // -- Cчетчик обработанных в объекте отделок
+			macro ProtoPath+"SetDecorate.mac" Plast splitArrGr[jotd] splitArr[jotd] 1 ;
+			
+			zp1="SELECT ID, Name FROM TProtoParType WHERE ID="+str(splitArrGr[jotd]);
+			rcd=adbOpen(adbCon(2),zp1);
+			total_s1=aDbRecCount(rcd);
+			if total_s1>0 {	err=aDbMoveFirst(rcd); GrName=adbGetValue(rcd,"Name",0); }
+			else { GrName=""; }
+			// Возможно переполнение текстовой константы
+			txt=str(GrName)+" "+PriceInfo(splitArr[jotd],"MATNAME","")+" ; ";
+			if len(str(NameMAt))+len(str(txt))<256
+			{
+				NameMAt=NameMAt+txt;
+			}
+			else
+			{
+				putmsg("Превышено ограничение по размеру текстового примечания. Внимание, оберезано!",0);
+				putmsg(txt,0);
+			}
+            goto lotd23;
+         }
+      }
+	  
+	  if isDoubleVst
+	  {
+		macro ProtoPath+Doors64+"NestandAuto.mac"  pl1 Ang_shp gs_FlMater2[gd_IdFl] 0 0 ;
+		Move last 1 done 0 h_ddsp 0 nocopy;
+		Attrobj Attach "ElemName" Done last 1 "Вставка сверху";
+	  }
+	
+	macro ProtoPath+"SetDecorate.mac" 0 0 0 0; 
+	
+	// Для резинового шкафа номера в лоб
+	nullout=getvarinst(1,"numVst",numVst,0);
+	if numVst>0
+	{
+	  attrobj attach "CommonPos" done Last 1 val(str(numVst)+"."+str(gd_IdFl));
+	  attrobj attach "Number" done Last 1 numVst;
+	}
+	
+		// Тут можно изменить названия для ПЗ
+      // Attrobj Attach "ElemName" Done last 1 "Вставка";
+	  
+      //delete pl1 done;
+      objVstav=SysVar(60)-objVstav+1;
+      group last objVstav done ;
+      objident last 1 vst;
+      // Номер вставки. Пишем номер Название материала габаритные размеры.
+      //PutMsg(" flap_draw63 894 gs_IdFl="+str(gs_IdFl),1);
+      if g_nameVVis
+      {
+         macro ProtoPath+Doors64+"vstObosn63.mac" "NumbVstav" vst gd_IdFl NameMAt h_dsp;
+      }
+
+      //macro ProtoPath+Doors64+"vstObosn63.mac" "NumbLayer" vst logFrame " " h_dsp;          //
+      If (!IsAttrdef("NumbVstav")) // NumbVstav
+      { Attribute Create "NumbVstav" "Номер" Real 5 0 ; }
+      Attrobj Attach "NumbVstav" Done vst gd_IdFl;
+      If (!IsAttrdef("NumbLayer")) // NumbLayer
+      { Attribute Create "NumbLayer" "Номер слоя" Real 5 0 ; }
+      Attrobj Attach "NumbLayer" Done vst logFrame;
+	  Attrobj Attach "FurnType" Done vst "654321";
+      if logFrame==0
+      {
+        Move vst done 0 iif(h_dsp==10,-1,-1)*h_dsp/2 0 nocopy;
+      }
+      if logFrame==2
+      {
+		Move vst done 0 -h_dsp 0 nocopy;
+      }
+      gosub sIZW;
+      objident last 1 NmVstmat;
+      //============================
+      // goto nmtxnx;
+      nulout=objgab3(NmVstmat,xm);
+      xnT=xm[1]
+      xeT=xm[4]
+      znT=xm[6]
+	  // strng="Текстура";
+	  strng=" ";
+      dimtext 0  strng done;
+      #nTex ldim 3ddim
+            iif(Ang_shp[1]!=0,xm[4],xm[1])+0.1*(xm[4]-xm[1]) xm[2] xm[3]
+            iif(Ang_shp[1]!=0,xm[1]-0.1*(xm[4]-xm[1]),xm[1]+0.1*(xm[4]-xm[1]))  xm[2] iif(Ang_shp[1]!=0,xm[3],xm[6]+0.3*(xm[6]-xm[3]))
+            parallel
+            iif(Ang_shp[1]!=0,xm[1]-0.1*(xm[4]-xm[1]),xm[1]+0.1*(xm[4]-xm[1])+1)  xm[2] iif(Ang_shp[1]!=0,xm[3]+1,xm[6]+0.3*(xm[6]-xm[3]))
+            ;
+       dimtext 0  "<>" done;
+      If (!IsAttrdef("NoHide"))
+      { Attribute Create "NoHide" "не гасить" Real 5 0 ; }
+      attrobj attach "NoHide" done nTex 1;
+      nulout=objgab3(nTex,xm);
+      
+      err=GetDimInfo(nTex,diminf);
+      if err>0
+      {
+        diminf[1]=strng;
+        diminf[33]=0*1+1*2+1*4
+        err=PutDimInfo(nTex,diminf);
+      }
+      if Ang_shp[1]!=0 { move  nTex done 2points xm[1] xm[2] xm[3] xm[1] xm[2] znT+0.5*diminf[23]*sysvar(76) nocopy; }
+      if Ang_shp[1]==0 { move  nTex done 2points xm[4] xm[2] xm[3] xnT xm[2] xm[3] nocopy; }
+     //putmsg("gdiminf[23]="+str(diminf[23]),0);
+      //add Vst  nTex done ;
+      nmtxnx:
+      //============================
+      //add Vst NmVstmat  done ;
+   //PutMsg("g_matVst["+str(gri)+"]="+str(g_matVst[gri]),0);
+   }
+   nextGraph:
+   if (gri<NG)
+   {
+      goto loogri;
+   }  
+   gri=0;
+   llof:
+   gri=gri+1;
+   if (arEquidi[gri]>0)
+   {
+      NULLOUT=FreeGraph(arEquidi[gri]); // Удаляем графы с эквидистантами
+	  NULLOUT=FreeGraph(arEquidp[gri]); // Удаляем графы с эквидистантами
+   }
+   if (gri<NG)
+   {
+      goto llof;
+   }
+   goto lVswd;
+   }
+   NULLOUT=FreeGraph(grf_st);  // Удаляем исходный граф
+   //NULLOUT=FreeGraph(grf_Pr);  // Удаляем исходный граф
+   iVs=1;
+   lFrGrVs:
+   NULLOUT=FreeGraph(grf_Vs[iVs]);  // Удаляем исходный граф
+   NULLOUT=FreeGraph(grf_pr[iVs]);  // Удаляем исходный граф
+   if iVs<28 { iVs=iVs+1; goto lFrGrVs; }
+return;
+//========================
+putline:
+ //#lg1 line arGrafCu[1] -10 arGrafCu[2]  arGrafCu[3] -10 arGrafCu[4]  ;
+
+return;
+//========================
+addNewLGraf:
+            //-- добавляем отрезок в граф
+
+            Lin1=AddUnObj2D(1,0,arGrafCu); // Добавляем отрезок в UnObj
+
+            //NULLOUT=EquidGraph(grf_st,grf_Pr);       // Строим эквидистантный граф
+            //N_til=FindObjParts(grf_Pr,Lin1,arObjPar);
+            N_til=FindObjEq(grf_st,Lin1,arObjPar);
+            ee=addedgegraph(grf_st,1,arGrafCu,EkvM) ;  // Добавляем в граф ребро
+            gosub  sAddGrVs ;
+
+            x=arGrafCu[3]
+            y=arGrafCu[4]
+            arGrafCu[3]=arGrafCu[1]
+            arGrafCu[4]=arGrafCu[2]
+            arGrafCu[1]=x
+            arGrafCu[2]=y
+            ee=addedgegraph(grf_st,1,arGrafCu,EkvM);  // Добавляем в граф ребро
+			//putmsg("EkvM= "+str(EkvM),1)
+            gosub  sAddGrVs ;
+            //gosub sarObjPar;
+            i_Nlg=0
+            lbNLG:
+            if i_NLG<N_til
+            {
+              i_Nlg=i_Nlg+1;
+              aa=GetUnObj2D(arObjPar[i_Nlg,1],ObTyp,arGrafCu);
+              gd_KMpr=iif(isvardef("gd_KMpr")==0,0,gd_KMpr);
+              gd_KMpr=gd_KMpr+1
+              gd_XmidS[gd_KMpr]=arGrafCu[1]  gd_ZmidS[gd_KMpr]=arGrafCu[2]   // -- координаты начальных точек разделительных профилей в створке
+              gd_XmidE[gd_KMpr]=arGrafCu[3]  gd_ZmidE[gd_KMpr]=arGrafCu[4]   // -- координаты конечных  точек разделительных профилей в створке
+			  //line gd_XmidS[gd_KMpr] 0  gd_ZmidS[gd_KMpr] gd_XmidE[gd_KMpr] 0  gd_ZmidE[gd_KMpr] ;
+              gd_IdMid[gd_KMpr]=g_CLMid;
+              Ang1=grad(arObjPar[i_Nlg,3]);
+              Ang2=grad(arObjPar[i_Nlg,5]);
+              SgnAng1=iif(Sgn(Ang1)==0,1,Sgn(Ang1));
+              SgnAng2=iif(Sgn(Ang2)==0,1,Sgn(Ang2));
+              Ang1=Abs(Ang1);
+              Ang2=Abs(Ang2);
+              gd_AngS[gd_KMpr]=SgnAng1*(Ang1-90); // угол сопряжения первой точки объекта
+              gd_AngE[gd_KMpr]=SgnAng1*(Ang2-90); // угол сопряжения второй точки объекта
+              goSub PutLine;
+              if isvardef("lg1")==16 { chprop color lg1 done 12 }
+
+              goto lbNLG;
+            }
+            //PutMsg("Результат FindObjParts N_til = "+str(N_til),1);
+            NULLOUT=FreeUnObj2D(Lin1);  // Удаляем объект из списка UnObj
+return;
+
+sarObjPar:
+i_sop=0
+ lb_sop:
+ if i_sop<N_til
+ {
+  i_sop=i_sop+1
+  =arObjPar[i_sop,1] // номер объекта в списке объектов
+  =arObjPar[i_sop,2] // код первой точки объекта (0 - нормальная вершина, 1 - проходит через вершину графа);
+  =grad(arObjPar[i_sop,3]) // угол сопряжения первой точки объекта
+  =arObjPar[i_sop,4] // код второй точки объекта (0 - нормальная вершина, 1 - проходит через вершину графа);
+  =grad(arObjPar[i_sop,5]) // угол сопряжения второй точки объекта
+  =gd_KMpr
+
+  goto lb_sop;
+ }
+
+return;
+
+addTlinP:
+           gd_NTLin=gd_NTLin+1
+           NTLin=gd_NTLin
+           gd_TLinX1[NTLin]=arGrafCu[1];
+           gd_TLinZ1[NTLin]=arGrafCu[2];
+           gd_TLinX2[NTLin]=arGrafCu[3];
+           gd_TLinZ2[NTLin]=arGrafCu[4];
+           gd_TLinHM[NTLin]=g_hmida/2;
+
+           gd_TLinHV[NTLin]=g_hmidz/2;
+return;
+
+// ********************************************
+
+AddProfArr:
+	Nobj=SysVar(60)-Nobj;
+	Group last Nobj done;
+	objident last 1 MPR ;
+		 if XmidS==XmidE
+		 {
+		 nulout=objgab3(mpr,arrxm);
+		 rotate last 1 done 2points arrxm[4]-w_mid_z arrxm[2]+(arrxm[5]-arrxm[2])/2 arrxm[3]  //(arrxm[4]-arrxm[1])/2
+								  arrxm[4]-w_mid_z arrxm[2]+(arrxm[5]-arrxm[2])/2 arrxm[6]
+								  90 nocopy ;
+	   }
+	explode Mpr done;
+	Nmprof=Nmprof+1
+
+	  sss="ProfDoorSys=="+str(1);
+	  //sss="left(FurnType,2)==\"02\"";
+	  //macro ProtoPath+Doors64+"Select_remove.mac" Nobj, sss ;
+	  selbyattr sss last Nobj done ;
+	  if sysvar(61)>0
+	  {
+		 Mprof[Nmprof]=getselnum(1)
+		 //macro ProtoPath+Doors64+"vstObosn63.mac" "NumbMid" Mprof[Nmprof] iCmpr "." 20;
+		 
+	  }
+
+	//objident last 1 Mprof[Nmprof] ;
+return;
+
+AddPRM:
+  sss="left(FurnType,2)!=\"02\"";
+  macro ProtoPath+Doors64+"Select_remove.mac" St_o, sss ;
+
+  sss="ProfDoorSys=="+str(1);
+  //macro ProtoPath+Doors64+"Select_remove.mac" St_o, sss ;
+  selbyattr sss last st_o done ;
+  if sysvar(61)>0
+  {
+     ProfRm[i_prof]=getselnum(1)
+  }
+//putmsg("ProfRmProfRmProfRmProfRm"+str(sysvar(61)),1)
+return;
+
+
+//------------------------------------------------------------------------------
+//-- Программа читает параметры профиля
+//-- Входные данные:
+//-- CurP -  ID профиля из таблицы DSFlapProfile
+//-- g_DRP - ID Системы створки из DSSystemFlap
+//-- Выходные данные:
+//-- w, h, zh, zw, s, zhg - параметры контура профиля
+
+SetAdapt:
+
+	SqlArr[1]="SELECT DSFlapSostav.IDSyst, DSFlapSostav.IDProf, DSGabProfile.TypProfile,DSGabProfile.w,"
+	SqlArr[2]="DSGabProfile.h, DSGabProfile.zh, DSGabProfile.zw, DSGabProfile.s, DSGabProfile.zhg, DSFlapProfile.IDProfile"
+	SqlArr[3]=" FROM (DSFlapSostav INNER JOIN DSGabProfile ON DSFlapSostav.IDProf = DSGabProfile.ID)"
+	SqlArr[4]=" INNER JOIN DSFlapProfile ON DSFlapSostav.IDProf = DSFlapProfile.PSYSTEM"
+	SqlArr[5]=" WHERE (((DSFlapSostav.IDSyst)="+str(g_DRP)+") AND"
+	SqlArr[6]=" ((DSGabProfile.TypProfile)=11) AND ((DSGabProfile.s)="+str(int(h_dsp))+"))"
+	SqlArr[7]=" ORDER BY DSFlapSostav.IDSyst;"
+
+	if g_Doorscon==0
+	{
+		macro ProtoPath++Doors63+"CrtSysDoor63.mac" ;
+	}
+	ProfRs=adbOpen(g_Doorscon,SqlArr,7);
+
+	ij=adbRecCount(ProfRs);
+	// putmsg(ij)
+	if (ij<1)
+	{
+		// errcode="err1036 FD63: Количество профилей с ID "+str(CurP)+" равно "+str(ij);
+		ProfRs=adbClose(ProfRs);
+		// gosub err1;
+		return;
+	}
+	NULLOUT=adbMoveFirst(ProfRs);
+	w=adbGetValue(ProfRs,"w");
+	h=adbGetValue(ProfRs,"h");
+	zh=adbGetValue(ProfRs,"zh");
+	zw=adbGetValue(ProfRs,"zw");
+	s=adbGetValue(ProfRs,"s");
+	zhg=adbGetValue(ProfRs,"zhg");
+	//IDCollor=adbGetValue(ProfRs,"PriceID");
+	IDProf=adbGetValue(ProfRs,"IDProfile");
+	ProfRs=adbClose(ProfRs);
+	//PutMsg("FlapDraw63 1051 IDPROF="+str(IDPROF),1);
+	if nedges>2 { gosub Adapter; }
+	typpl1=getobjtype(pl1);
+	//PutMsg("FlapDraw63 1055 typpl1="+str(typpl1),1);
+	//macro ProtoPath+Doors64+"Nestprof63.mac" pl1 IDProf 0 0;
+	pline path pl1;
+	delete pl1 done ;
+	objident last 1 pl1;
+
+	if (zh-h)!=0
+	{
+		PolyEquidistant pl1 zh-h ;
+		delete pl1 done;
+		objident last 1 pl1;
+	}
+return;
+
+Adapter:
+	setucs save "adapter" ;
+	Nobjpl=sysvar(60);
+	explode pl1 done;
+	Nobjpl=sysvar(60)-Nobjpl+1;
+	#pl1 path select last Nobjpl done last 1 ;
+	// Определяем центр габаритов
+	nulout=objgab3(pl1,arrxm);
+	XcPl=arrxm[1]+(arrxm[4]-arrxm[1])/2
+	YcPl=arrxm[2]+(arrxm[5]-arrxm[2])/2
+	ZcPl=arrxm[3]+(arrxm[6]-arrxm[3])/2
+	NobjPl=Scang(pl1,ObjPl);
+	// Процедура проверки и упрощения контура на сонаправленные отрезки
+	macro protopath+Doors64+"AprocPathLine.mac" pl1;
+	if isvardef("pl1")!=16
+	{
+		objident last 1 pl1;
+	}
+	//============
+	NobjPl=Scang(pl1,ObjPl);
+	iAdap=0
+	//PutMsg("FlapDraw63 1079 NobjPl="+str(NobjPl),1);
+	LabAdap:
+	if NobjPl>iAdap
+	{
+		iAdap=iAdap+1
+		//nz=GetEdgeGraph(arEquidi[gri],iAdap,arGrafCu)  // Получаем по очереди все ребра каждого цикла
+		setucs restore "adapter" ;
+		nullout=GetobjGeo(ObjPl[iAdap],arGrafCu);
+		ittmp=fmod(iAdap+2,3);
+		ittmp=iif(ittmp<0.1,iAdap+2,ittmp);
+		ittmp=iif(ittmp>NobjPl,iAdap-1,ittmp);
+		nullout=GetobjGeo(ObjPl[ittmp],aTmp);
+		#DlProf dist arGrafCu[1],arGrafCu[2],arGrafCu[3] arGrafCu[4],arGrafCu[5],arGrafCu[6] ;
+		//PutMsg("FlapDraw63 1088 DlProf="+str(DlProf),1);
+		PtransCS(3,0,arGrafCu[1],arGrafCu[2],arGrafCu[3],arGrafCu[1],arGrafCu[2],arGrafCu[3]);
+		PtransCS(3,0,arGrafCu[4],arGrafCu[5],arGrafCu[6],arGrafCu[4],arGrafCu[5],arGrafCu[6]);
+		PtransCS(3,0,aTmp[1],aTmp[2],aTmp[3],aTmp[1],aTmp[2],aTmp[3]);
+		PtransCS(3,0,aTmp[4],aTmp[5],aTmp[6],aTmp[4],aTmp[5],aTmp[6]);
+		//putmsg("arGrafCu[1] arGrafCu[2] arGrafCu[3] "+str(arGrafCu[1])+"  "+str(arGrafCu[2])+"  "+str(arGrafCu[3])+"  ",1);
+		//putmsg("arGrafCu[4] arGrafCu[5] arGrafCu[6] "+str(arGrafCu[4])+"  "+str(arGrafCu[5])+"  "+str(arGrafCu[6])+"  ",1);
+		//putmsg("aTmp[1],aTmp[2],aTmp[3] "+str(aTmp[1])+"  "+str(aTmp[2])+"  "+str(aTmp[3])+"  ",1);
+		//putmsg("aTmp[4],aTmp[5],aTmp[6] "+str(aTmp[4])+"  "+str(aTmp[5])+"  "+str(aTmp[6])+"  ",1);
+		//putmsg("логика="+str((arGrafCu[1]==aTmp[1]&&arGrafCu[2]==aTmp[2]&&arGrafCu[3]==aTmp[3])||(arGrafCu[4]==aTmp[1]&&arGrafCu[5]==aTmp[2]&&arGrafCu[6]==aTmp[3])),1);
+		if (arGrafCu[1]==aTmp[1]&&arGrafCu[2]==aTmp[2]&&arGrafCu[3]==aTmp[3])||(arGrafCu[4]==aTmp[1]&&arGrafCu[5]==aTmp[2]&&arGrafCu[6]==aTmp[3])
+		{
+			ttax=aTmp[4]; ttay=aTmp[5]; ttaz=aTmp[6]
+			//putmsg("вариант 1 ",1);
+		}
+		else
+		{
+			ttax=aTmp[1]; ttay=aTmp[2]; ttaz=aTmp[3]
+			//putmsg("вариант 2",1);
+		}
+		setucs arGrafCu[1] arGrafCu[2] arGrafCu[3]
+			  OZ  arGrafCu[4] arGrafCu[5] arGrafCu[6]
+			  OY  ttax ttay ttaz;
+			  nz=4
+		// Строим ребра
+		if (nz==4)
+		{
+			macro ProtoPath+"SetECod.mac" "5900" ;
+			macro ProtoPath+"SetEnam.mac" "Профиль уплотнительный" ;
+			macro ProtoPath+"SetProfS.mac" 0 0;
+			macro ProtoPath+"SetProfC.mac" IDProf h-zh h-zh 0 0 0 0 0 0;
+			Macro ProtoPath+Doors64+"MakeProf.mac"  0,0,0
+			0 0 DlProf;
+			attrobj attach "P1" done Last 1 1;
+		}
+		
+		if (nz==6)
+		{
+		  //arc arGrafCu[1],arGrafCu[2],0 arGrafCu[3],arGrafCu[4],0 arGrafCu[5],arGrafCu[6],0;
+		}
+
+		goto LabAdap;
+   }
+   
+   setucs restore "adapter" ;
+   setucs delete  "adapter" ;
+return;
+
+Adapterold:
+   iAdap=0
+   //PutMsg("FlapDraw63 1065 nedges="+str(nedges),1);
+   LabAdap1:
+   iAdap=iAdap+1
+   nz=GetEdgeGraph(arEquidi[gri],iAdap,arGrafCu)  // Получаем по очереди все ребра каждого цикла
+   // Строим ребра
+   if (nz==4)
+   {
+       macro ProtoPath+"SetECod.mac" "5900" ;
+       macro ProtoPath+"SetEnam.mac" "Профиль уплотнительный" ;
+       macro ProtoPath+"SetProfS.mac" 0 0;
+
+       macro ProtoPath+"SetProfC.mac" IDProf 0 0 0 0 0 0 0 0;
+       Macro ProtoPath+Doors64+"MakeProf.mac"  arGrafCu[3],yn,arGrafCu[4]
+       arGrafCu[1],yn,arGrafCu[2]
+       ;
+
+   }
+   if (nz==6)
+   {
+      //arc arGrafCu[1],arGrafCu[2],0 arGrafCu[3],arGrafCu[4],0 arGrafCu[5],arGrafCu[6],0;
+   }
+   if (iAdap<nedges)
+   {
+      goto LabAdap1;
+   }
+return;
+
+//==========================================================================================================
+StdPproem:
+
+// ptVt - высота створки - высота верхнего профиля
+// ptVd - подрез снизу + высота нижнего профиля
+
+nullout=getvarinst(1,"VstH1",VstH1,0);
+nullout=getvarinst(1,"VstH2",VstH2,0);
+iStp=0
+if VstH1>0||VstH2>0
+{
+	if VstH1>0
+	{
+		iStp=iStp+1
+		gd_TlinX1[iStp]=xn+P_R
+		gd_TlinZ1[iStp]=ptVd+VstH1+h_mid_a/2
+		gd_TlinX2[iStp]=xn+dx-P_L
+		gd_TlinZ2[iStp]=ptVd+VstH1+h_mid_a/2
+		gd_TLinHM[iStp]=g_hmida/2;
+		gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);
+		gd_NTLin=gd_NTLin+1
+	}	
+	if VstH2>0
+	{ 
+		iStp=iStp+1
+		gd_TlinX1[iStp]=xn+P_R
+		gd_TlinZ1[iStp]=ptVt-VstH2-h_mid_a/2
+		gd_TlinX2[iStp]=xn+dx-P_L
+		gd_TlinZ2[iStp]=ptVt-VstH2-h_mid_a/2
+		gd_TLinHM[iStp]=g_hmida/2;
+		gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);
+		gd_NTLin=gd_NTLin+1
+	}
+	g_TypRis=0;
+}
+
+iStp=0
+if g_TypRis>0
+{
+ gd_NTLin=0
+   if g_TypRis==1
+   {
+      dSmid=(ptVt-ptVd-h_mid_a*(g_NStVst-1))/g_NStVst
+      lStpV:
+      if iStp<(g_NStVst-1)
+      {
+       iStp=iStp+1
+              dSmid_1=(ptVt-ptVd-g_hmida*(g_NStVst-1))/g_NStVst+g_hmida/2;
+       dSmid_N=(ptVt-ptVd-g_hmida*(g_NStVst-1))/g_NStVst+g_hmida;
+       gd_TlinX2[iStp]=xn+P_R-1
+       gd_TlinZ1[iStp]=zn+ptVd+dSmid_1+iif(iStp>1,(dSmid_N*(iStp-1)),0);
+       gd_TlinX1[iStp]=xn+dx-P_L+1
+       gd_TlinZ2[iStp]=gd_TlinZ1[iStp]
+       gd_TLinHM[iStp]=g_hmida/2;	   
+       gd_TLinHV[iStp]=g_hmidz //iif(g_hmida==g_hmidz,0,g_hmidz);;
+       gd_NTLin=gd_NTLin+1
+       goto lStpV;
+      }
+   }
+   if g_TypRis==2
+   {
+      ptVr=xn+P_R+h_vertR_a
+	  ptVl=xn+dx-P_R-P_L-h_vertL_a
+      dSmid=(ptVl-ptVr-h_mid_a*(g_NStVst-1))/g_NStVst
+      lStpV1:
+      if iStp<(g_NStVst-1)
+      {
+       iStp=iStp+1
+       gd_TlinX1[iStp]=ptVr+iif(iStp!=1,h_mid_a*(iStp-1),0)+dSmid*iStp+h_mid_a/2
+       gd_TlinZ1[iStp]=zn+P_D-1
+       gd_TlinX2[iStp]=ptVr+iif(iStp!=1,h_mid_a*(iStp-1),0)+dSmid*iStp+h_mid_a/2
+       gd_TlinZ2[iStp]=zn+dz+1
+       gd_TLinHM[iStp]=g_hmida/2;
+       gd_TLinHV[iStp]=g_hmidz //iif(g_hmida==g_hmidz,0,g_hmidz);;
+       gd_NTLin=gd_NTLin+1
+       goto lStpV1;
+      }
+   }
+   if g_TypRis==3
+   {
+      ptVr=xn+P_R+h_vertR_a
+	  ptVl=xn+dx-P_R-P_L-h_vertL_a
+      dSmid=(ptVl-ptVr-h_mid_a*2)/3
+       iStp=1
+       gd_TlinX1[iStp]=ptVr+iif(iStp!=1,h_mid_a*(iStp-1),0)+dSmid*2+h_mid_a/2
+       gd_TlinZ1[iStp]=zn+P_D-1
+       gd_TlinX2[iStp]=ptVr+iif(iStp!=1,h_mid_a*(iStp-1),0)+dSmid*2+h_mid_a/2
+       gd_TlinZ2[iStp]=zn+dz+1
+       gd_TLinHM[iStp]=g_hmida/2;
+       gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);;
+       gd_NTLin=gd_NTLin+1
+   }
+   if g_TypRis==4
+   {
+	  k_v=5
+      dSmid=(ptVt-ptVd-h_mid_a*(k_v-1))/k_v
+      lStpV2:
+      if iStp<(2)
+      {
+       iStp=iStp+1
+	   z_mid=iif(iStp==1,ptVd+dSmid+h_mid_a/2,ptVt-dSmid-h_mid_a/2);
+       gd_TlinX1[iStp]=xn+P_R-1
+       gd_TlinZ1[iStp]=z_mid
+       gd_TlinX2[iStp]=xn+dx-P_L+1
+       gd_TlinZ2[iStp]=z_mid
+       gd_TLinHM[iStp]=g_hmida/2;
+       gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);;
+       gd_NTLin=gd_NTLin+1
+       goto lStpV2;
+      }
+   }
+   if g_TypRis==5
+   {
+	  k_v=5
+	  ptVr=xn+P_R+h_vertR_a
+	  ptVl=xn+dx-P_R-P_L-h_vertL_a
+	  dSmid_v=(ptVl-ptVr-h_mid_a*2)/3
+      dSmid=(ptVt-ptVd-h_mid_a*(k_v-1))/k_v
+	  gd_TlinX1[1]=xn+P_R-1
+	  gd_TlinZ1[1]=ptVd+dSmid+h_mid_a/2
+	  gd_TlinX2[1]=xn+dx-P_L+1
+	  gd_TlinZ2[1]=ptVd+dSmid+h_mid_a/2
+          gd_TLinHM[1]=g_hmida/2;
+          gd_TLinHV[1]=iif(g_hmida==g_hmidz,0,g_hmidz);;
+	  gd_TlinX1[2]=xn+P_R-1
+	  gd_TlinZ1[2]=ptVt-dSmid-h_mid_a/2
+	  gd_TlinX2[2]=xn+dx-P_L+1
+	  gd_TlinZ2[2]=ptVt-dSmid-h_mid_a/2
+          gd_TLinHM[2]=g_hmida/2;
+          gd_TLinHV[2]=iif(g_hmida==g_hmidz,0,g_hmidz);;
+	  gd_TlinX1[3]=ptVr+dSmid_v*2+h_mid_a/2
+	  gd_TlinZ1[3]=ptVd+dSmid-50
+	  gd_TlinX2[3]=ptVr+dSmid_v*2+h_mid_a/2
+	  gd_TlinZ2[3]=ptVt-dSmid+50
+          gd_TLinHM[3]=g_hmida/2;
+          gd_TLinHV[3]=iif(g_hmida==g_hmidz,0,g_hmidz);;
+	  
+      gd_NTLin=gd_NTLin+3
+   }
+   if g_TypRis==6
+   {
+	  k_v=3
+      dSmid=(ptVt-ptVd-h_mid_a*(k_v-1))/k_v
+      lStpV3:
+      if iStp<(k_v-1)
+      {
+       iStp=iStp+1
+       gd_TlinX1[iStp]=xn+P_R-1
+       gd_TlinZ1[iStp]=ptVd+iif(iStp!=1,h_mid_a*(iStp-1),0)+dSmid*iStp+h_mid_a/2
+       gd_TlinX2[iStp]=xn+dx-P_L+1
+       gd_TlinZ2[iStp]=ptVd+iif(iStp!=1,h_mid_a*(iStp-1),0)+dSmid*iStp+h_mid_a/2
+       gd_TLinHM[iStp]=g_hmida/2;
+       gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);;
+       gd_NTLin=gd_NTLin+1
+       goto lStpV3;
+      }
+   }  
+   if g_TypRis==7
+   {
+	  k_v=5
+      dSmid=(ptVt-ptVd-h_mid_a*(k_v-1))/k_v
+      lStpV4:
+      if iStp<(k_v-1)
+      {
+       iStp=iStp+1
+       gd_TlinX1[iStp]=xn+P_R-1
+       gd_TlinZ1[iStp]=ptVd+iif(iStp!=1,h_mid_a*(iStp-1),0)+dSmid*iStp+h_mid_a/2
+       gd_TlinX2[iStp]=xn+dx-P_L+1
+       gd_TlinZ2[iStp]=ptVd+iif(iStp!=1,h_mid_a*(iStp-1),0)+dSmid*iStp+h_mid_a/2
+       gd_TLinHM[iStp]=g_hmida/2;
+       gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);;
+       gd_NTLin=gd_NTLin+1
+       goto lStpV4;
+      }
+   }      
+   if g_TypRis==8
+   {
+      k_v=3
+	  ptVr=xn+P_R+h_vertR_a
+	  ptVl=xn+dx-P_R-P_L-h_vertL_a
+	  dSmid_v=(ptVl-ptVr-h_mid_a)/2
+      dSmid=(ptVt-ptVd-h_mid_a*(k_v-1))/k_v
+      lStpV5:
+      if iStp<(k_v-1)
+      {
+       iStp=iStp+1
+       gd_TlinX1[iStp]=xn+P_R-1
+       gd_TlinZ1[iStp]=ptVd+iif(iStp!=1,h_mid_a*(iStp-1),0)+dSmid*iStp+h_mid_a/2
+       gd_TlinX2[iStp]=xn+dx-P_L+1
+       gd_TlinZ2[iStp]=ptVd+iif(iStp!=1,h_mid_a*(iStp-1),0)+dSmid*iStp+h_mid_a/2
+       gd_TLinHM[iStp]=g_hmida/2;
+       gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);;
+       gd_NTLin=gd_NTLin+1
+       goto lStpV5;
+      }
+	  iStp=iStp+1
+	  gd_TlinX1[iStp]=ptVr+dSmid_v+h_mid_a/2
+	  gd_TlinZ1[iStp]=zn+P_D-20
+	  gd_TlinX2[iStp]=ptVr+dSmid_v+h_mid_a/2
+	  gd_TlinZ2[iStp]=zn+dz+20
+          gd_TLinHM[iStp]=g_hmida/2;
+          gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);;
+	  gd_NTLin=gd_NTLin+1
+   }
+   
+   if g_TypRis==11
+   {
+	  k_v=3;
+      dSmid=(ptVt-ptVd-h_mid_a*(k_v-1))/k_v
+      lStpV11:
+      if iStp<(k_v-1)
+      {
+       iStp=iStp+1
+       gd_TlinX1[iStp]=xn+P_R-1
+       gd_TlinZ1[iStp]=ptVd+iif(iStp!=1,h_mid_a*(iStp-1),0)+dSmid*iStp+h_mid_a/2
+       gd_TlinX2[iStp]=xn+dx-P_L+1
+       gd_TlinZ2[iStp]=ptVd+iif(iStp!=1,h_mid_a*(iStp-1),0)+dSmid*iStp+h_mid_a/2
+       gd_TLinHM[iStp]=g_hmida/2;
+       gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);
+       gd_NTLin=gd_NTLin+1
+       goto lStpV11;
+      }
+   }
+   
+   if g_TypRis==12
+   {
+		k_v=3;
+		dSmid=(ptVt-ptVd-h_mid_a*(k_v-1))/k_v
+
+		iStp=iStp+1
+		gd_TlinX1[iStp]=xn+P_R-1
+		gd_TlinZ1[iStp]=ptVd+dSmid*iStp+h_mid_a/2
+		gd_TlinX2[iStp]=xn+dx-P_L+1
+		gd_TlinZ2[iStp]=ptVd+dSmid*iStp+h_mid_a/2
+		gd_TLinHM[iStp]=g_hmida/2;
+		gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);
+		gd_NTLin=gd_NTLin+1
+   }
+   
+   if g_TypRis==13
+   {
+		// k_v=3;
+		dSmid1=400;
+		dSmid2=dSmid1+200;
+		iStp=iStp+1
+		gd_TlinX1[iStp]=xn+P_R-1
+		gd_TlinZ1[iStp]=ptVd+dSmid1+h_mid_a/2
+		gd_TlinX2[iStp]=xn+dx-P_L+1
+		gd_TlinZ2[iStp]=ptVd+dSmid1+h_mid_a/2
+		gd_TLinHM[iStp]=g_hmida/2;
+		gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);
+		gd_NTLin=gd_NTLin+1
+		
+		iStp=iStp+1
+		gd_TlinX1[iStp]=xn+P_R-1
+		gd_TlinZ1[iStp]=ptVd+dSmid2+h_mid_a+h_mid_a/2
+		gd_TlinX2[iStp]=xn+dx-P_L+1
+		gd_TlinZ2[iStp]=ptVd+dSmid2+h_mid_a+h_mid_a/2
+		gd_TLinHM[iStp]=g_hmida/2;
+		gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);
+		gd_NTLin=gd_NTLin+1
+   }
+   
+   if g_TypRis==14
+   {
+		// k_v=3;
+		dSmid1=500;
+		dSmid2=dSmid1+300;
+		iStp=iStp+1
+		gd_TlinX1[iStp]=xn+P_R-1
+		gd_TlinZ1[iStp]=ptVd+dSmid1+h_mid_a/2
+		gd_TlinX2[iStp]=xn+dx-P_L+1
+		gd_TlinZ2[iStp]=ptVd+dSmid1+h_mid_a/2
+		gd_TLinHM[iStp]=g_hmida/2;
+		gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);
+		gd_NTLin=gd_NTLin+1
+		
+		iStp=iStp+1
+		gd_TlinX1[iStp]=xn+P_R-1
+		gd_TlinZ1[iStp]=ptVd+dSmid2+h_mid_a+h_mid_a/2
+		gd_TlinX2[iStp]=xn+dx-P_L+1
+		gd_TlinZ2[iStp]=ptVd+dSmid2+h_mid_a+h_mid_a/2
+		gd_TLinHM[iStp]=g_hmida/2;
+		gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);
+		gd_NTLin=gd_NTLin+1
+   }
+   
+   if g_TypRis==15
+   {
+		// k_v=3;
+		dSmid1=700;
+		dSmid2=dSmid1+400;
+		iStp=iStp+1
+		gd_TlinX1[iStp]=xn+P_R-1
+		gd_TlinZ1[iStp]=ptVd+dSmid1+h_mid_a/2
+		gd_TlinX2[iStp]=xn+dx-P_L+1
+		gd_TlinZ2[iStp]=ptVd+dSmid1+h_mid_a/2
+		gd_TLinHM[iStp]=g_hmida/2;
+		gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);
+		gd_NTLin=gd_NTLin+1
+		
+		iStp=iStp+1
+		gd_TlinX1[iStp]=xn+P_R-1
+		gd_TlinZ1[iStp]=ptVd+dSmid2+h_mid_a+h_mid_a/2
+		gd_TlinX2[iStp]=xn+dx-P_L+1
+		gd_TlinZ2[iStp]=ptVd+dSmid2+h_mid_a+h_mid_a/2
+		gd_TLinHM[iStp]=g_hmida/2;
+		gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);
+		gd_NTLin=gd_NTLin+1
+   }
+   
+   if g_TypRis==16
+   {
+		// k_v=3;
+		dSmid1=300;
+		dSmid2=ptVt-ptVd-dSmid1-2*h_mid_a;
+		iStp=iStp+1
+		gd_TlinX1[iStp]=xn+P_R-1
+		gd_TlinZ1[iStp]=ptVd+dSmid1+h_mid_a/2
+		gd_TlinX2[iStp]=xn+dx-P_L+1
+		gd_TlinZ2[iStp]=ptVd+dSmid1+h_mid_a/2
+		gd_TLinHM[iStp]=g_hmida/2;
+		gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);
+		gd_NTLin=gd_NTLin+1
+		
+		iStp=iStp+1
+		gd_TlinX1[iStp]=xn+P_R-1
+		gd_TlinZ1[iStp]=ptVd+dSmid2+h_mid_a+h_mid_a/2
+		gd_TlinX2[iStp]=xn+dx-P_L+1
+		gd_TlinZ2[iStp]=ptVd+dSmid2+h_mid_a+h_mid_a/2
+		gd_TLinHM[iStp]=g_hmida/2;
+		gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);
+		gd_NTLin=gd_NTLin+1
+   }
+   
+   if g_TypRis==17
+   {
+		// k_v=3;
+		dSmid1=400;
+		dSmid2=ptVt-ptVd-dSmid1-2*h_mid_a;
+		iStp=iStp+1
+		gd_TlinX1[iStp]=xn+P_R-1
+		gd_TlinZ1[iStp]=ptVd+dSmid1+h_mid_a/2
+		gd_TlinX2[iStp]=xn+dx-P_L+1
+		gd_TlinZ2[iStp]=ptVd+dSmid1+h_mid_a/2
+		gd_TLinHM[iStp]=g_hmida/2;
+		gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);
+		gd_NTLin=gd_NTLin+1
+		
+		iStp=iStp+1
+		gd_TlinX1[iStp]=xn+P_R-1
+		gd_TlinZ1[iStp]=ptVd+dSmid2+h_mid_a+h_mid_a/2
+		gd_TlinX2[iStp]=xn+dx-P_L+1
+		gd_TlinZ2[iStp]=ptVd+dSmid2+h_mid_a+h_mid_a/2
+		gd_TLinHM[iStp]=g_hmida/2;
+		gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);
+		gd_NTLin=gd_NTLin+1
+   }
+   
+   if g_TypRis==18
+   {
+		// k_v=3;
+		dSmid1=500;
+		dSmid2=ptVt-ptVd-dSmid1-2*h_mid_a;
+		iStp=iStp+1
+		gd_TlinX1[iStp]=xn+P_R-1
+		gd_TlinZ1[iStp]=ptVd+dSmid1+h_mid_a/2
+		gd_TlinX2[iStp]=xn+dx-P_L+1
+		gd_TlinZ2[iStp]=ptVd+dSmid1+h_mid_a/2
+		gd_TLinHM[iStp]=g_hmida/2;
+		gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);
+		gd_NTLin=gd_NTLin+1
+		
+		iStp=iStp+1
+		gd_TlinX1[iStp]=xn+P_R-1
+		gd_TlinZ1[iStp]=ptVd+dSmid2+h_mid_a+h_mid_a/2
+		gd_TlinX2[iStp]=xn+dx-P_L+1
+		gd_TlinZ2[iStp]=ptVd+dSmid2+h_mid_a+h_mid_a/2
+		gd_TLinHM[iStp]=g_hmida/2;
+		gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);
+		gd_NTLin=gd_NTLin+1
+   }
+   
+   if g_TypRis==19
+   {
+		k_v=3;
+		dSmid=400;
+		dSmid1=(ptVt-ptVd-2*h_mid_a)/2;
+		iStp=iStp+1
+		gd_TlinX1[iStp]=xn+P_R-1
+		gd_TlinZ1[iStp]=ptVd+dSmid1-dSmid/2+h_mid_a/2
+		gd_TlinX2[iStp]=xn+dx-P_L+1
+		gd_TlinZ2[iStp]=ptVd+dSmid1-dSmid/2+h_mid_a/2
+		gd_TLinHM[iStp]=g_hmida/2;
+		gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);
+		gd_NTLin=gd_NTLin+1
+		
+		iStp=iStp+1
+		gd_TlinX1[iStp]=xn+P_R-1
+		gd_TlinZ1[iStp]=ptVd+dSmid1+dSmid/2+h_mid_a+h_mid_a/2
+		gd_TlinX2[iStp]=xn+dx-P_L+1
+		gd_TlinZ2[iStp]=ptVd+dSmid1+dSmid/2+h_mid_a+h_mid_a/2
+		gd_TLinHM[iStp]=g_hmida/2;
+		gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);
+		gd_NTLin=gd_NTLin+1
+   }
+   
+   // ВАЛЕНСИЯ
+   if g_TypRis==30
+   {
+		// ptVt - высота створки - высота верхнего профиля
+		// ptVd - подрез снизу + высота нижнего профиля
+		// h_mid_a - Полная высота среднего профиля
+		// putmsg(g_hmida)
+		// putmsg(h_mid_a)
+		// putmsg(ptVd)
+		// putmsg(h_mid_z)
+
+		dSmid=341-2*h_mid_z-2;
+		
+		dSmid1=(ptVt-ptVd-2*h_mid_a-dSmid)/2;
+		iStp=iStp+1
+		gd_TlinX1[iStp]=xn+P_R-1
+		gd_TlinZ1[iStp]=ptVd+dSmid1+h_mid_a/2
+		gd_TlinX2[iStp]=xn+dx-P_L+1
+		gd_TlinZ2[iStp]=ptVd+dSmid1+h_mid_a/2
+		gd_TLinHM[iStp]=g_hmida/2;
+		gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);
+		gd_NTLin=gd_NTLin+1
+		
+		iStp=iStp+1
+		gd_TlinX1[iStp]=xn+P_R-1
+		gd_TlinZ1[iStp]=ptVt-dSmid1-h_mid_a/2
+		gd_TlinX2[iStp]=xn+dx-P_L+1
+		gd_TlinZ2[iStp]=ptVt-dSmid1-h_mid_a/2
+		gd_TLinHM[iStp]=g_hmida/2;
+		gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);
+		gd_NTLin=gd_NTLin+1
+		
+		// dSmid1=(ptVt-ptVd-2*h_mid_a)/2;
+		// iStp=iStp+1
+		// gd_TlinX1[iStp]=xn+P_R-1
+		// gd_TlinZ1[iStp]=ptVd+dSmid1-dSmid/2+h_mid_a/2
+		// gd_TlinX2[iStp]=xn+dx-P_L+1
+		// gd_TlinZ2[iStp]=ptVd+dSmid1-dSmid/2+h_mid_a/2
+		// gd_TLinHM[iStp]=g_hmida/2;
+		// gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);
+		// gd_NTLin=gd_NTLin+1
+		
+		// iStp=iStp+1
+		// gd_TlinX1[iStp]=xn+P_R-1
+		// gd_TlinZ1[iStp]=ptVd+dSmid1+dSmid/2+h_mid_a+h_mid_a/2
+		// gd_TlinX2[iStp]=xn+dx-P_L+1
+		// gd_TlinZ2[iStp]=ptVd+dSmid1+dSmid/2+h_mid_a+h_mid_a/2
+		// gd_TLinHM[iStp]=g_hmida/2;
+		// gd_TLinHV[iStp]=iif(g_hmida==g_hmidz,0,g_hmidz);
+		// gd_NTLin=gd_NTLin+1
+		
+		global g_DRP;
+		
+		// Нижняя вставка
+		if gd_FlMater[2]==0
+		{
+			gd_FlMater[2]=g_VstSt;
+		}
+	  
+		if !priceinfo(gs_FlMater[2],"Transparency",0,1)&&gs_FlMater[2]>0
+		{
+			if g_DRP==110	// Ромбы
+			{
+				gs_FlOtdelAN[2]=2;
+				gs_FlOtdGrA[2]="347;354";
+				gs_FlOtdelA[2]="10635;11800"; // капри+поролон
+			}
+			if g_DRP==111	// Орнамент
+			{
+				gs_FlOtdelAN[2]=2;
+				gs_FlOtdGrA[2]="347;354";
+				gs_FlOtdelA[2]="10632;11800"; // Бенгал+поролон
+			}
+		}
+		else
+		{
+			gs_FlOtdelAN[2]=0;
+			gs_FlOtdGrA[2]=0;
+			gs_FlOtdelA[2]=0;
+		}
+		
+		// Верхняя вставка
+		if gd_FlMater[3]==0
+		{
+			gd_FlMater[3]=g_VstSt;
+		}
+		gs_FlOtdelAN[3]=0;
+		gs_FlOtdGrA[3]=0;
+		gs_FlOtdelA[3]=0;
+		if !priceinfo(gs_FlMater[3],"Transparency",0,1)&&gs_FlMater[3]>0
+		{
+			if g_drp==110 // Ромбы
+			{
+				gs_FlOtdelAN[3]=2;
+				gs_FlOtdGrA[3]="347;354";
+				gs_FlOtdelA[3]="10635;11800";
+				// Босфор Капри белый_2469 + Поролон
+			}
+			if g_drp==111 // Орнамент
+			{
+				gs_FlOtdelAN[3]=2;
+				gs_FlOtdGrA[3]="347;354";
+				gs_FlOtdelA[3]="10632;11800";
+				// Бенгал бежевый + Поролон
+			}
+		}
+		
+		// Средняя вставка
+		gd_FlMater[1]=5251;
+		gs_FlOtdelAN[1]=0;
+		gs_FlOtdGrA[1]=0;
+		gs_FlOtdelA[1]=0;
+		
+		if gs_FlMater2[1]==0
+		{
+			gs_FlOtd2AN[1]=2;
+			gs_FlOtdGr2A[1]="335;338";
+			gs_FlOtd2FN[1]=2;
+			gs_FlOtdGr2F[1]="335;338";
+			
+			if g_DRP==110	// Ромбы
+			{
+				gs_FlMater2[1]=12424;
+				gs_FlOtdel2A[1]="12406;9301"; // A1 + матовый
+				gs_FlOtdel2F[1]="12406;9301";
+			}
+			if g_DRP==111	// Орнамент
+			{
+				gs_FlMater2[1]=12425;
+				gs_FlOtdel2A[1]="7467;9301";
+				gs_FlOtdel2F[1]="7467;9301";
+			}
+		}
+	}
+}
+return;
+
+sDelTrof:
+
+  if logFrame!=0
+  {
+	  DelName="DeleteObject";
+
+	   OnError nxSDT;
+	   selbyattr "DeleteObject>"+str(0)  all done;
+	   nnn=sysvar(61) ;
+	   if nnn>0 { delete  prev done ; }
+
+	   //putmsg("удалено====="+str(nnn),0);
+	   nxSDT:
+	   OffError;
+  }
+return;
+
+sAddGrVs:
+IsStr=IsVarDef("EkvV");
+if IsStr==5    // число
+{
+   if EkvV!=0
+   {
+      iArrGr=1;
+      ee=addedgegraph(grf_vs[iArrGr],1,arGrafCu,EkvV) ;  // Добавляем в граф ребро
+	  ee=addedgegraph(grf_pr[iArrGr],1,arGrafCu,EkvM) ;  // Добавляем в граф ребро
+   }
+}
+if IsStr==6    // строка
+{
+     nEl=SplitByDelim(EkvV,",",aStr);
+     iIsStr=0;
+     iArrGr=0;
+     lIsStrM:
+     //putmsg("iIsStr="+str(iIsStr)+"  nEl="+str(nEl),1);
+     if iIsStr<nEl
+     {
+        iIsStr=iIsStr+2;
+        wdVs=aStr[iIsStr-1]; // толщина вставок для этого графа
+		// PutMsg(wdVs);
+        if aStr[iIsStr]!=0
+        {
+			ee=addedgegraph(grf_vs[wdVs],1,arGrafCu,aStr[iIsStr]);  // Добавляем в граф ребро
+			// PutMsg(iArrGr);
+			ee=addedgegraph(grf_pr[wdVs],1,arGrafCu,EkvM) ;  // Добавляем в граф ребро
+			
+			iArrGr=iArrGr+1;
+			awdVs[iArrGr]=wdVs;
+        }
+        goto lIsStrM;
+     }
+  }
+return
+// сдвигаем вставку на определенный размер в зависимости от толщины материала
+sIZW:
+if IsVarDef("Strzw")==6    // строка
+      {
+         nElw=SplitByDelim(strzw,",",aStrzw);
+         izw=0;
+         lIzw:
+         if izw<nElw
+         {
+            izw=izw+1;
+            if (h_dsp-aStrzw[izw])<1.1&&(h_dsp-aStrzw[izw])>=0
+            {
+              objVstavd=SysVar(60)-objVstavd;
+              Move last objVstavd done 0 aStrzw[izw+1] 0 nocopy;
+            }
+            izw=izw+1;
+            goto lIzw;
+         }
+      }
+return;

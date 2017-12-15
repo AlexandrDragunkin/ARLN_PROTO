@@ -1,0 +1,142 @@
+//-- Создание профиля
+//-- Входные параметры:
+//-- xp1 yp1 zp1 - Первая точка профиля
+//-- xp2 yp2 zp2 - Вторая точка профиля
+global ProtoPath ;
+global ElemName  ; //-- Имена мебельных элементов
+global HoldName  ; //-- Имя хозяина
+global UnitCode  ; //-- Код изделия (текст)
+global ElemCode  ; //-- Код мебельных элементов
+KarkasNumb=getcarcnumb();     //-- Порядковый номер каркаса в сцене
+nullout=getvarinst(1,"g_eps",g_eps,0.01);
+
+global
+PrfMater    //-- Материал профиля
+PrfP_1      //-- Подрез начальной точки
+PrfP_2      //-- Подрез конечной точки
+PrfSd_X     //-- Сдвиг по Х ЛСК
+PrfSd_Y     //-- Сдвиг по У ЛСК
+PrfAngle    //-- Угол поворота вокруг оси (град)
+PrfAng_1    //-- Угол подрезки 1 стороны по оси Y
+PrfAng_2    //-- Угол подрезки 2 стороны  по оси Y
+g_PrfAng_3  //-- Угол подрезки 1 стороны  по оси X
+g_PrfAng_4  //-- Угол подрезки 2 стороны  по оси X
+g_DirAng_1  //-- Направление угла подрезки  1 стороны    0- без 1 -  угол по ширине 2 - угол по высоте
+g_DirAng_2  //-- Направление угла подрезки  2 стороны    0- без 1 -  угол по ширине 2 - угол по высоте
+PrfColor    //-- Цвет профиля из прайса
+g_symx      //- Зеркальное отображение относительно оси X ЛСК
+g_symy;     //- Зеркальное отображение относительно оси Y ЛСК
+// putmsg(PrfMater)
+defarr arr[16];
+
+getpar
+xp1 yp1 zp1		//-- Первая точка профиля
+xp2 yp2 zp2		//-- Вторая точка профиля
+;
+
+NULLOUT=getsnap();
+setucs xp1 yp1 zp1 oz xp2 yp2 zp2 done ;
+dx=xp2-xp1;
+dy=yp2-yp1;
+dz=zp2-zp1;
+Dlina=sqrt(dx*dx+dy*dy+dz*dz);
+
+nullout=SetProf6Par(1,arr);
+
+NULLOUT=InitArray(arr,0);
+arr[1]=PrfMater;         //-- ID материала профиля
+arr[2]=PrfColor;         //-- ID цвета профиля
+nullout=SetProf6Par(2,arr);      //-- Задание материала
+
+NULLOUT=InitArray(arr,0);
+arr[1]=0;                //-- Начало профиля
+arr[2]=PrfP_1;           //-- Подрезка профиля
+if (abs(PrfAng_1)>g_eps)
+{
+  arr[2]=0;           //-- Подрезка
+  arr[3]=g_DirAng_1;              //-- Тип подрезки - угол по высоте
+  arr[4]=iif(g_symx,-PrfAng_1,PrfAng_1);       //-- Величина угла подрезки
+}
+nullout=SetProf6Par(3,arr);         // Задание Подрезок по концам
+
+NULLOUT=InitArray(arr,0);
+arr[1]=1;                //-- Конец профиля
+arr[2]=PrfP_2;           //-- Подрезка
+if (abs(PrfAng_2)>g_eps)
+{
+  arr[2]=0;           //-- Подрезка
+  arr[3]=g_DirAng_2;              //-- Тип подрезки - угол по высоте
+  arr[4]=iif(g_symx,-PrfAng_2,PrfAng_2);       //-- Величина угла подрезки
+}
+nullout=SetProf6Par(3,arr);      //-- Задание подрезок конца профиля
+
+NULLOUT=InitArray(arr,0);
+arr[1]=0;                //-- Угол поворота образующей профиля
+arr[2]=0;                //-- Сдвиг по оси Х
+arr[3]=0;                //-- Сдвиг по оси Y
+arr[4]=g_symx;           //-- Симметрия по оси Х
+arr[5]=g_symy;           //-- Симметрия по оси Y
+nullout=SetProf6Par(4,arr);      //-- Задание положения образующей профиля
+
+NULLOUT=InitArray(arr,0);
+arr[1]=0;                //-- Форма направляющей - прямая
+arr[2]=Dlina;            //-- Длина
+arr[3]=0;                //-- Прогиб
+arr[4]=0;                //-- Зарезервировано
+arr[5]=0;                //-- Зарезервировано
+nullout=SetProf6Par(5,arr);      //-- Задание формы направляющей
+
+#Elem MBProfile create 0 0 0 ;
+err=isvardef("Elem");
+if (err!=16)   //-- Объект не построили
+{
+  NULLOUT=resnap();
+  exit;
+}
+rotate Elem done 2points 0 0 0 0 0 1 PrfAngle nocopy ;
+move Elem done PrfSd_X PrfSd_Y 0 nocopy ;
+
+if (isassign("ElemName",0))
+{
+  attrobj copy record "ElemName" done Elem done;
+}
+else
+{
+  attrobj attach "ElemName" done Elem "Профиль";
+}
+attrobj attach "Objtype" "PlaceType" done Elem 0 0;
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done Elem done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done Elem KarkasNumb;
+}
+if (ElemName!=" ")
+{
+  attrobj attach "ElemName" done Elem ElemName ;
+}
+else
+{
+  attrobj attach "ElemName" Done Elem "Профиль" ;
+}
+attrobj attach "HoldName" done Elem HoldName ;
+if (len(UnitCode+ElemCode)>0)
+{
+  attrobj attach "UnitCode" done Elem ElemCode ;
+}
+else
+{
+  attrobj attach "UnitCode" done Elem "XXX" ;
+}
+
+//-- Признак криволинейного (1) или прямолинейного (0) профиля
+attrobj attach "CurvePath" done Elem 0;
+attrobj attach "GroupID" done Elem 41 ;       //-- 41 - Группа материалов профиля
+attrobj attach "PriceID" done Elem PrfMater ; //-- Id материала профиля
+attrobj attach "XUnit" "YUnit" "ZUnit" done Elem round(Dlina-PrfP_1-PrfP_2) 0 0 ; //-- Размеры профиля
+attrobj attach "KID" "KBID" done Elem PrfColor 1 ; //-- Цвет профиля
+NULLOUT=resnap();
+exit;

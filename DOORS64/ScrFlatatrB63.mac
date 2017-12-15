@@ -1,0 +1,160 @@
+//-- Копирование атрибутов  записи в последний объект
+
+global ProtoPath;
+global
+       gsb_IdMid  g_CLMid           // -- Id Разделительных профилей
+       gsb_MidHV             // -- Массив с парметрами эквидистанты для расчета вставок в районе средних профилей
+       gsb_XmidS  gsb_ZmidS   // -- координаты начальных точек разделительных профилей в створке
+       gsb_XmidE  gsb_ZmidE   // -- координаты конечных  точек разделительных профилей в створке
+       gsb_AngS   gsb_AngE    // -- Углы подрезки профиля вначале и в конце разделительного профиля
+       gsb_FlMater           // -- материалы вставок
+       gsb_FlOtdel           // -- материалы отделки вставки
+       gsb_FlOtdelN          // -- Число отделок вставки
+
+       gsb_FlNshp            // -- направление текстуры шпона вставок
+       gsb_IdFl              // -- Cчетчик обработанных в объекте вставок
+       gsb_IdMpr             // -- Cчетчик обработанных в объекте средних профилей
+       gsb_Iotd              // -- Cчетчик обработанных в объекте отделок
+       gsb_KFL               // -- Количество вставок из скретча
+       gsb_KMpr              // -- Количество средних профилей из скретча
+       ;
+global
+       gsb_ProfHM               //-- Массив с парметрами эквидистанты для расчета средних профилей
+       gsb_ProfHV               //-- Массив с парметрами эквидистанты для расчета вставок
+       gs_NProf
+       ;
+global
+       gsb_TlinX1               //-- массив с координатами X начала теоретических линий(осей)
+       gsb_TlinZ1               //-- массив с координатами Z начала теоретических линий(осей)
+       gsb_TlinX2               //-- массив с координатами X конца теоретических линий(осей)
+       gsb_TlinZ2               //-- массив с координатами Z конца теоретических линий(осей)
+       gsb_TlinHM               //-- Массив с парметрами эквидистанты для расчета средних профилей
+       gsb_TlinHV               //-- Массив с парметрами эквидистанты для расчета вставок
+       gsb_NTLin                //-- число теоретических линий(осей)
+       gsb_YSl                  //-- Сдвиг лицевой вставки по Y если 0, то ее нет
+       ;
+
+getpar IsRec  ;  // -- Куда записывать 0-объекту 1-оставляем в записи
+if IsRec==0
+{
+   getpar  pntFl ; // -- если объекту то какому PNT
+}
+ScrMod=InitScratch();
+//putMsg("gsb_NProf="+str(gsb_NProf),1);
+if (!isvardef("gsb_IdMpr"))
+{
+  goto FFas1;
+}
+if (gsb_IdMpr==0)
+{
+  //goto FFas1;
+}
+//putmsg("g_CLMid="+str(g_CLMid),0);
+i=1;
+KMpr=gsb_KMpr;
+err=AddScratch(ScrMod,"Профиль","Колво",KMpr); 	//-- Количество средних профилей по факту
+err=AddScratch(ScrMod,"ID профиля ","IDmidG",g_CLMid);
+  LoopS:
+  if (i<=KMpr)
+  {
+    err=AddScratch(ScrMod,"X начала","Xn"+str(i),gsb_XmidS[i]); // начальных точек разделительных профилей в створке BxType);	//-- Тип ящика
+    err=AddScratch(ScrMod,"Z начала","Zn"+str(i),gsb_ZmidS[i]);
+    err=AddScratch(ScrMod,"X конца","Xk"+str(i),gsb_XmidE[i]);
+    err=AddScratch(ScrMod,"Z конца","Zk"+str(i),gsb_ZmidE[i]);
+    err=AddScratch(ScrMod,"Угол начала","An"+str(i),gsb_AngS[i]);
+    err=AddScratch(ScrMod,"Угол конца","Ak"+str(i),gsb_AngE[i]);
+    err=AddScratch(ScrMod,"ID профиля ","IDmid"+str(i),gsb_IdMid[i]); // ID конкретных разделительных профилей в створке
+    i=i+1;
+    goto LoopS;
+  }
+FFas1:
+if (!isvardef("gsb_IdFl"))
+{
+  goto FFas2;
+}
+if (gsb_IdFl<0)
+{
+  goto FFas2;
+}
+IdFl=gsb_IdFl
+
+err=AddScratch(ScrMod,"Вставка","Колво",IdFl); 	//-- Количество вставок по умолчанию
+err=AddScratch(ScrMod,"Вставка","Сдвиг_Y",gsb_YSl); //-- Сдвиг лицевой вставки по глубине
+iotd=0;
+i=1;
+LoopS1:
+if (i<=IdFl)
+{
+err=AddScratch(ScrMod,"ВставкаМ","Материал"+str(i),gsb_FlMater[i]); // материал i-й вставки в створке
+err=AddScratch(ScrMod,"Текстура","Направ"+str(i),gsb_FlNshp[i]);    // направление шпона i-й вставки в створке
+err=AddScratch(ScrMod,"ОтделкаВс","КлвОтдел"+str(i),gsb_FlOtdelN[i]); //
+  j=0
+  lOtd1:
+  if j<gsb_FlOtdelN[i]
+  {
+        iotd=iotd+1;
+        j=j+1;
+        //putmsg(" ScrFlatr63 gsb_FlOtdel["+str(iotd)+"]="+str(gsb_FlOtdel[iotd]),0);
+        err1=AddScratch(ScrMod,"ОтделкаМ","Отд_"+str(i)+"_"+str(j),gsb_FlOtdel[iotd]);
+        goto lOtd1;
+  }
+
+i=i+1;
+goto LoopS1;
+}
+FFas2:
+i=1;
+
+KMprT=gs_NProf;
+err=AddScratch(ScrMod,"Т-Пофиль","Колво",KMprT); 	//-- Количество Толстых профилей по факту
+  LoopS2:
+  if (i<=KMprT)
+  {
+    err=AddScratch(ScrMod,"Экв проф","Hm"+str(i),gsb_ProfHM[i]);  // парметрами эквидистанты для расчета профиля
+    err=AddScratch(ScrMod,"Экв вст","Hv"+str(i),gsb_ProfHV[i]);  // парметрами эквидистанты для расчета вставок
+    i=i+1;
+    goto LoopS2;
+  }
+
+i=1;
+
+NTLin=gsb_NTLin;
+err=AddScratch(ScrMod,"ТеорЛинии","Колво",NTLin); 	//-- Количество теоретических линий(осей) по факту
+
+  LoopS3:
+  if (i<=NTLin)
+  {
+    err=AddScratch(ScrMod,"Xl начала","Xln"+str(i),gsb_TLinX1[i]); // начальных точек толстых теоретических линий(осей)
+    err=AddScratch(ScrMod,"Zl начала","Zln"+str(i),gsb_TLinZ1[i]); // начальных точек толстых теоретических линий(осей)
+    err=AddScratch(ScrMod,"Xl конца","Xlk"+str(i),gsb_TLinX2[i]);  // конечных точек толстых теоретических линий(осей)
+    err=AddScratch(ScrMod,"Zl конца","Zlk"+str(i),gsb_TLinZ2[i]);  // конечных точек толстых теоретических линий(осей)
+    err=AddScratch(ScrMod,"Экв проф","Hlm"+str(i),gsb_TLinHM[i]);  // парметрами эквидистанты для расчета профиля
+    err=AddScratch(ScrMod,"Экв вст","Hlv"+str(i),gsb_TLinHV[i]);  // парметрами эквидистанты для расчета вставок
+    i=i+1;
+    goto LoopS3;
+  }
+  
+if (!IsAttrdef("ScrFlatB"))
+{
+  attribute create "ScrFlatB" "Параметры тыльных вставок 63" text 30 80;
+}
+objident last 1 pnt;
+
+writescratch(ScrMod,"ScrFlatB",0);
+TermScratch(ScrMod);
+
+FFas:
+If (IsAssign("ScrFlatB",0))
+ {
+ //attrobj delete record "ScrFlat" done;
+ //putmsg("ScrFlatAtr63 ScrFlatB определен",1)
+ }
+if !IsRec
+{
+ If (IsAssign("ScrFlatB",0))
+ {
+  attrobj copy record "ScrFlatB" done pntFL done;
+  }
+attrobj delete record "ScrFlatB" done;
+}
+exit;

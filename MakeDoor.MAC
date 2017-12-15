@@ -1,0 +1,173 @@
+//-- Создание распашной двери
+global ProtoPath;
+global MacroSw;       //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+KarkasNumb=getcarcnumb();  //-- Порядковый номер каркаса в сцене
+// global g_NHinges;     //-- Количество петель
+nullout=getvarinst(1,"g_NHinges",g_NHinges,0);
+global g_FurnType;    //-- Тип мебельного объекта
+global g_FasPlas;
+
+global		            //-- Для фасадов и дверей
+DoorKonst,            //-- Тип конструкции двери
+DoorMater,            //-- Материал панелей двери
+DoorBCol,             //-- Цвет кромки двери
+DoorBand,             //-- Тип кромки фасада
+DoorPlace,            //-- Сторона открывания
+DoorPict,             //-- Тип рисунка
+DoorDuble,            //-- Двойная/одинарная
+DoorOpen,             //-- Открытая/закрытая
+DoorType,             //-- Утопленная/накладная
+DoorHinge,            //-- Петля
+DoorAngle,            //-- Угол установки
+DoorKorp,             //-- Толщина материала корпуса ниши
+PanDir,               //-- Направление шпона фасада
+DoorMatVS1,           //-- Материал первой вставки фасада
+DoorMatVS2;           //-- Материал второй вставки фасада
+
+global		            //-- Для ручек
+HandleType,           //-- Тип ручки
+HandleX,              //-- Сдвиг ручки по x
+HandleZ,              //-- Сдвиг ручки по z
+HandleA,              //-- Поворот ручки
+HandleD,	            //-- Двойная или одиночная ручка
+HandleR;	            //-- Тип положения ручки (0-свободно 1-по центру 3-сверху 4-снизу)
+
+global ElemName;      //-- Имена мебельных элементов
+global HoldName;      //-- Имя хозяина
+global FasPropC;      //-- Код двери
+//-- Параметры для расчета распашных дверей
+global D_DxU D_DzU D_DxN D_DzN D_DxD;
+
+getpar
+x y z		//-- Правый нижний дальний угол
+w h; 	  //-- Размер по ширине и высоте
+//------------------------------------------------------------------------------
+h_fas=priceinfo(DoorMater,"Thickness",16);
+
+FurnType="230100";
+Namescr="ProtoParams";
+position=20;  //-- Номер прототипа распашной двери
+ElemDoorName=priceinfo(DoorPict,"NAME"," ",2); //-- Имя фасада из прайс-листа
+if (ElemDoorName!=" ")
+{
+  ElemDoorName="Фасад "+ElemDoorName;
+}
+
+G=y;
+if (DoorType==0)
+{
+  R_Fas=-g_FasPlas[1];
+  L_Fas=-g_FasPlas[2];
+  U_Fas=-g_FasPlas[3];
+  D_Fas=-g_FasPlas[4];
+
+//  R_Fas=-D_DxU;
+//  L_Fas=-D_DxU;
+//  U_Fas=-D_DzU;
+//  D_Fas=-D_DzU;
+  G=y-h_fas;
+}
+if (DoorType==1)
+{
+  R_Fas=DoorKorp-g_FasPlas[1];
+  L_Fas=DoorKorp-g_FasPlas[2];
+  U_Fas=DoorKorp-g_FasPlas[3];
+  D_Fas=DoorKorp-g_FasPlas[4];
+
+//  R_Fas=DoorKorp-D_DxN;
+//  L_Fas=DoorKorp-D_DxN;
+//  U_Fas=DoorKorp-D_DzN;
+//  D_Fas=DoorKorp-D_DzN;
+}
+if (DoorType==2)
+{
+  R_Fas=0;
+  L_Fas=0;
+  U_Fas=0;
+  D_Fas=0;
+}
+macro ProtoPath+"HingeSN.mac" g_NHinges, 0, 1;
+macro ProtoPath+"SetHinge.mac" 0;
+macro ProtoPath+"BegDoor.mac" ; //-- Затычка для МП
+NULLOUT=getsnap();
+if MacroSw==0
+{
+  gosub SimpleDoor;
+  
+}
+else
+{
+  protoobj create "Shkaf.ptl" 121
+  "S" w
+  "G" G
+  "Hd" h
+  "R_Fas" R_Fas
+  "L_Fas" L_Fas
+  "U_Fas" U_Fas
+  "D_Fas" D_Fas
+  "Door_Zw"  D_DxD
+  "Nshp"     PanDir
+  "PrMater"  DoorMater
+  "Face_col" DoorBCol
+  "Rplace"   DoorPlace
+  "Fasrtype" DoorPict
+  "Double"   DoorDuble
+  "Open"     DoorOpen
+  "rx"       HandleX
+  "rz"       HandleZ
+  "ra"       HandleA
+  "HanType"  HandleType
+  "Rpl_r"	   HandleR
+  "Doub_r"   HandleD
+  "Angle"    DoorAngle
+  "P_Type"   DoorHinge
+  "Band" 	   DoorBand
+  "hdsp_k"   DoorKorp
+  "Door"     DoorKonst
+  "PrMatVs1" DoorMatVS1
+  "PrMatVs2" DoorMatVS2
+  done
+  x 0 z;
+  MacroSw=1;
+}
+NULLOUT=resnap();
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done last 1 done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+}
+if (isassign("HoldName",0))
+{
+  attrobj copy record "HoldName" done last 1 done;
+}
+else
+{
+  attrobj attach "HoldName" done last 1 HoldName ;
+}
+attrobj attach "Posit" done last 1 position;
+attrobj attach "FurnType" done last 1 FurnType;
+attrobj attach "Assembly" done last 1 1;        //-- Признак сборочной единицы
+macro ProtoPath+"EndDoor.mac" x y z w h DoorKorp;
+exit;
+//=============================================================================
+SimpleDoor:
+object_1=sysvar(60);
+macro ProtoPath+"DoorUnivers.mac"
+0 0 0		//-- Правый нижний дальний угол
+w h     	//-- Размер по ширине и высоте
+  R_Fas         // Изменения фасада: справа
+  L_Fas         // Слева
+  U_Fas         // Сверху
+  D_Fas         // Снизу
+  D_DxD         // Зазор
+;
+object_2=sysvar(60)-object_1;
+#hdoor group last object_2 done;
+move  hdoor done x y z nocopy ;
+attrobj copy record Namescr done hdoor done;
+NULLOUT=addattrpi(hdoor,1,121);
+return;

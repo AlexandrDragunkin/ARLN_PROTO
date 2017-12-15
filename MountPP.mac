@@ -1,0 +1,124 @@
+////////////////////////////////////////////////////////////////////////////////
+//		К3
+//		ПРОФИЛЬНЫЕ СИСТЕМЫ
+//		MountPP
+//		поиск параметров установки объекта профильной системы
+//
+////////////////////////////////////////////////////////////////////////////////
+//		глобальные переменные
+global ProtoPath ;
+global CurentVit ;
+global PrMnBuf;
+Defarr PrMnBuf[300,16];		//	кэш для парметров профилей
+////////////////////////////////////////////////////////////////////////////////
+// получим параметры
+//
+getpar
+	Pro		//	Описание профильной системы
+	Obj		//	параметры элемента
+	Var   //	вариант исполнения
+	Pos   //	положение внутри элемента
+	MNT		//	параметры установки
+	;
+////////////////////////////////////////////////////////////////////////////////
+Elm=CurentVit;
+id=0
+PrSto=0
+Elt=1
+Elt=Obj[1]
+PrSto=Obj[2];
+////////////////////////////////////////////////////////////////////////////////
+//	проверим буфер
+//	PrMnBuf[i,1]==текущая витрина			Elm
+//	PrMnBuf[i,2]==тип элемента        Elt
+//	PrMnBuf[i,3]==вариант исполнения  Var
+//	PrMnBuf[i,4]==положение           Pos
+//	PrMnBuf[i,5]==id профиля         	Obj[4]
+i=0
+CashFind:i=i+1
+if (PrMnBuf[i,1]!=0)	{
+	////////////////////////////////////
+	if ((PrMnBuf[i,1]==Elm)&&(PrMnBuf[i,2]==Elt)&&(PrMnBuf[i,5]==Obj[4]))	{
+		if ((PrMnBuf[i,3]==Var)&&(PrMnBuf[i,4]==Pos))	{
+		//////////////////////////////////
+		//	запись найдена в кэше
+			MNT[1]=PrMnBuf[i,8+1];
+			MNT[2]=PrMnBuf[i,8+2];
+			MNT[3]=PrMnBuf[i,8+3];
+			MNT[4]=PrMnBuf[i,8+4];
+			MNT[5]=PrMnBuf[i,8+5];
+			MNT[6]=PrMnBuf[i,8+6];
+			MNT[7]=PrMnBuf[i,8+7];
+			exit;
+			}
+		}
+	////////////////////////////////////
+	if (i<300)	{
+		goto CashFind;
+		}
+	}
+////////////////////////////////////////////////////////////////////////////////
+//	база с составом
+filter="(id=="+str(Obj[4])+")";
+filter=filter+"&&(eltype=="+str(Elt)+")"
+filter=filter+"&&(posit=="+str(Pos)+")"
+filter=filter+"&&(elem=="+str(Elm)+")"
+filter=filter+"&&(variant=="+str(Var)+")"
+MNT[1]=0
+MNT[2]=0
+MNT[3]=0
+MNT[4]=0
+MNT[5]=0
+MNT[6]=0
+MNT[7]=0
+DbOpen id,ProtoPath+Pro[3],filter;
+
+if (DbRecCount(id)<1)	{
+	DbClose id;
+	exit;
+	}
+Rating=-1
+DbRead:
+
+p_1=DbGetValue(id,"p_1",0);
+p_2=DbGetValue(id,"p_2",0);
+sdx=DbGetValue(id,"sdx",0);
+sdy=DbGetValue(id,"sdy",0);
+angle=DbGetValue(id,"angle",0);
+over=DbGetValue(id,"over",0);
+
+MNT[1]=p_1
+MNT[2]=p_2
+MNT[3]=sdx
+MNT[4]=sdy
+MNT[5]=angle
+MNT[6]=over
+DbClose id
+////////////////////////////////////////////////////////////////////////////////
+//	здесь запишем в кэш найденное
+i=0
+Cashsave:i=i+1
+if (PrMnBuf[i,1]==0)	{
+	////////////////////////////////////
+	//	запись в кэш
+	//
+	PrMnBuf[i,1]=Elm;
+	PrMnBuf[i,2]=Elt;
+	PrMnBuf[i,3]=Var;
+	PrMnBuf[i,4]=Pos;
+	PrMnBuf[i,5]=Obj[4];
+	PrMnBuf[i,8+1]=MNT[1];
+	PrMnBuf[i,8+2]=MNT[2];
+	PrMnBuf[i,8+3]=MNT[3];
+	PrMnBuf[i,8+4]=MNT[4];
+	PrMnBuf[i,8+5]=MNT[5];
+	PrMnBuf[i,8+6]=MNT[6];
+	PrMnBuf[i,8+7]=MNT[7];
+	////////////////////////////////////
+	} else {
+		if (i<300)	{
+			goto CashSave;
+			}
+	}
+////////////////////////////////////////////////////////////////////////////////
+exit

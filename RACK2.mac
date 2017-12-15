@@ -1,0 +1,27 @@
+//-- Макропрограмма создания продольной вешалки
+global ProtoPath;
+//global g_FurnType;
+
+xsec=DbVar("x",1000);
+ybase=DbVar("y",450);
+zspan=DbVar("z",1870);
+RackID=DbVar("colo",1);
+
+Hor_Gap=3;  //-- Зазор от штанги до стойки
+D1=25;      //-- Сдвиг штангодержателя
+FurnType="350100";
+Namescr="ProtoParams";
+
+NULLOUT=pushinst(1);
+macro ProtoPath+"bear2.mac" 0,ybase,zspan+15,D1,Hor_Gap,xsec,RackID;
+macro ProtoPath+"pipe2.mac" 0,ybase,zspan+15,xsec,D1,Hor_Gap,RackID;
+NULLOUT=popinst(1);
+NULLOUT=setvarinst(1,"FurnType",FurnType);
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"x",xsec);
+err=AddScratch(ScrMod,FurnType,"y",ybase);
+err=AddScratch(ScrMod,FurnType,"z",zspan);
+err=AddScratch(ScrMod,FurnType,"colo",RackID);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+exit;

@@ -1,0 +1,68 @@
+//--Макро создания профиля с крепежем
+global ProtoPath;
+
+PrProf=DbVar("PrProf",0);		//-- Материал профиля
+W=DbVar("Шир",330);			//-- Ширина
+FixB=DbVar("КрепежНач",0);		//-- Крепеж начала профиля
+FixE=DbVar("КрепежКон",0);		//-- Крепеж конца профиля
+AngB=DbVar("Ang1",0);			//-- Угол поворота начального крепежа
+AngE=DbVar("Ang2",0);			//-- Угол поворота конечного крепежа
+DX_B=DbVar("dx1",0);			//-- Отступ начального крепежа
+DX_E=DbVar("dx2",0);			//-- Отступ конечного крепежа
+Angl=DbVar("Angle",0);			//-- Угол поворота профиля
+Fd_B=DbVar("Fd_1",0);			//-- Фаска начала профиля
+Fd_E=DbVar("Fd_2",0);			//-- Фаска конца профиля
+Symmetry=DbVar("Symmetry",0);	//-- Признак симметрии
+// putmsg("Prof_Ward")
+// putmsg(PrProf)
+//------------------------- Обработка симметрии ----------------------------
+if (Symmetry==1)							
+{
+	rem=FixB;
+	FixB=FixE;
+	FixE=rem;
+
+	rem=AngB;
+	AngB=AngE;
+	AngE=rem;
+
+	rem=DX_B;
+	DX_B=DX_E;
+	DX_E=rem;
+
+	rem=Fd_B;
+	Fd_B=Fd_E;
+	Fd_E=rem;
+	//-- Переписываем значения параметров
+	err=DbSetVar("КрепежНач",FixB);
+	err=DbSetVar("КрепежКон",FixE);
+	err=DbSetVar("Ang1",AngB);
+	err=DbSetVar("Ang2",AngE);
+	err=DbSetVar("dx1",DX_B);
+	err=DbSetVar("dx2",DX_E);
+	err=DbSetVar("Fd_1",Fd_B);
+	err=DbSetVar("Fd_2",Fd_E);
+}
+err=DbSetVar("Symmetry",0);
+//-- Создаем профиль с крепежем
+macro ProtoPath+"SetProfWFix.mac" FixB DX_B AngB FixE DX_E AngE;
+macro ProtoPath+"SetProfWard.mac" PrProf 0 0 Angl AngB AngE 0;
+macro ProtoPath+"MakeProfWard.mac" 0 0 0 W 0 0;
+FurnType="350600";
+Namescr="ProtoParams";
+NULLOUT=setvarinst(1,"FurnType",FurnType);
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"PrProf",PrProf);
+err=AddScratch(ScrMod,FurnType,"Шир",W);
+err=AddScratch(ScrMod,FurnType,"КрепежНач",FixB);
+err=AddScratch(ScrMod,FurnType,"КрепежКон",FixE);
+err=AddScratch(ScrMod,FurnType,"Ang1",AngB);
+err=AddScratch(ScrMod,FurnType,"Ang2",AngE);
+err=AddScratch(ScrMod,FurnType,"dx1",DX_B);
+err=AddScratch(ScrMod,FurnType,"dx2",DX_E);
+err=AddScratch(ScrMod,FurnType,"Angle",Angl);
+err=AddScratch(ScrMod,FurnType,"Fd_1",Fd_B);
+err=AddScratch(ScrMod,FurnType,"Fd_2",Fd_E);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+exit;

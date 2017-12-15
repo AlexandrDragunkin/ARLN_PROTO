@@ -1,0 +1,481 @@
+//-- Cоздание одиночного ящика
+global ProtoPath;
+global MacroSw;     //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global g_FurnType;  //-- Тип мебельного объекта
+
+global PanMater;  //-- Материал панелей
+global PanCKro;   //-- Цвет кромки
+
+NULLOUT=GetVarInst(2,"TypKroB",TypKroB,0); // тип кромки для ящиков
+global PanDir;    //-- Направление шпона
+
+global g_Fstype SdX_Fasad SdZ_Fasad ;  //-- Тип фасада, и сдвиги для формирования пропила в фасаде
+KarkasNumb=getcarcnumb();                    //-- Порядковый номер каркаса в сцене
+
+global DoorBCol DoorBand ;   //-- Цвет и тип кромки фасада
+
+global    //-- Для фасадов и дверей
+DoorMater,    //-- Материал панелей двери
+DoorPict,     //-- Тип рисунка
+DoorMatVS1,   //-- Материал первой вставки фасада
+DoorMatVS2;   //-- Материал второй вставки фасада
+
+global    //-- Для ящика
+BoxDMater,    //-- Материал дна ящика
+BoxKType;     //-- Тип корпуса ящика
+
+global g_BoxBottom, g_BottomOts; //-- Тип дна ящика и dеличина отступа для врезного дна
+global g_Zamok g_RFas g_UFas;
+global gs_NBoxobj;         //-- Счетчик числа ящиков в объекте
+
+
+global            //-- Для ручек
+HandleType,   //-- Тип ручки
+HandleX,      //-- Сдвиг ручки по оси X
+HandleZ,      //-- Сдвиг ручки по оси Z
+HandleA,      //-- Поворот ручки
+HandleD,        //-- Двойная или одиночная ручка
+HandleR;        //-- Тип положения ручки 0-свободно 1-по центру 3-сверху 4-снизу
+
+global ElemName; //-- Имена мебельных элементов
+global g_FasPlas;
+
+global DOUD, OpenD;
+OpenD=0; //-- Ящики открытыми не бывают
+DOUD=0;  //-- Ящики двойными не бывают
+
+getpar
+xn yn zn	//-- Правый нижний дальний угол ящика
+XF          //-- Размеры фасада
+ZF
+wk			//-- Размеры ящика
+y
+hk
+X_Sk		//-- Сдвиг ящика
+Z_Sk
+Khandl;		//-- Количество ручек
+
+//-------------------------------------------------------
+FurnType="310000";
+Namescr="ProtoParams";
+position=51;  //-- Номер прототипа ящика
+ElemBoxName=priceinfo(BoxKType,"NAME"," ",2); //-- Имя ящика из прайс-листа
+if (ElemBoxName!=" ")
+{
+  ElemBoxName="Ящик "+ElemBoxName;
+}
+DoorMater=PriceInfo(DoorPict,"matid",DoorMater,2);
+h_fas=priceinfo(DoorMater,"Thickness",16);
+e=setvarinst(1,"h_fas",h_fas)
+h_dsp=priceinfo(PanMater,"Thickness",16);
+
+
+NULLOUT=getsnap();
+NULLOUT=pushinst(1);
+NULLOUT=getvarinst(1,"ArcY",ArcY,0);
+NULLOUT=getvarinst(1,"ZmZ",ZmZ,0);				//-- Сдвиг  замка по высотеа фасаде ящика из скрейча
+NULLOUT=getvarinst(1,"gFDGroup",gFDGroup,0);	//-- Массив групп отделок    
+NULLOUT=getvarinst(1,"gFDMat",gFDMat,0);
+
+NULLOUT=getvarinst(2,"BNUp",BNUp,14);			//-- Нахлест фасада накладного ящика сверху
+NULLOUT=getvarinst(2,"BNDown",BNDown,14);		//-- Нахлест фасада накладного ящика снизу
+NULLOUT=getvarinst(2,"BNLeft",BNLeft,14);		//-- Нахлест фасада накладного ящика слева
+NULLOUT=getvarinst(2,"BNRight",BNRight,14);		//-- Нахлест фасада накладного ящика справа
+NULLOUT=getvarinst(2,"BUUp",BUUp,2);			//-- Зазор фасада утопленного ящика сверху
+NULLOUT=getvarinst(2,"BUDown",BUDown,2);		//-- Зазор фасада утопленного ящика снизу
+NULLOUT=getvarinst(2,"BULeft",BULeft,2);		//-- Зазор фасада утопленного ящика слева
+NULLOUT=getvarinst(2,"BURight",BURight,2);		//-- Зазор фасада утопленного ящика справа
+
+// коррекция y
+NULLOUT=SetVarInst(2,"R_Fas",DbVar("R_Fas",0)); //-- Увеличение фасада справа
+NULLOUT=SetVarInst(2,"L_Fas",DbVar("L_Fas",0)); //-- Увеличение фасада слева
+NULLOUT=SetVarInst(2,"U_Fas",DbVar("U_Fas",0)); //-- Увеличение фасада сверху
+NULLOUT=SetVarInst(2,"D_Fas",DbVar("D_Fas",0)); //-- Увеличение фасада снизу
+NULLOUT=GetVarInst(2,"R_Fas",R_Fas,0);			//-- Увеличение фасада справа
+NULLOUT=GetVarInst(2,"L_Fas",L_Fas,0);			//-- Увеличение фасада слева
+NULLOUT=GetVarInst(2,"U_Fas",U_Fas,0);			//-- Увеличение фасада сверху
+NULLOUT=GetVarInst(2,"D_Fas",D_Fas,0);			//-- Увеличение фасада снизу
+
+
+if R_Fas<0&&L_Fas<0	// для скрытого ящика требуется коррекция положения и размера по Y
+{
+	d_y=h_dsp-h_fas-2;
+}
+else
+{
+	d_y=0;
+}
+
+if (MacroSw==0)
+{
+  gosub SimpleBox;
+}
+else
+{
+  gosub New_box;
+}
+NULLOUT=popinst(1);
+NULLOUT=resnap();
+ElemName=ElemBoxName;
+attrobj attach "Posit" done last 1 position;
+attrobj attach "FurnType" done last 1 FurnType;
+attrobj attach "Assembly" done last 1 1;        //-- Признак сборочной единицы
+macro ProtoPath+"EndBox.mac" BoxKType wk y hk;
+exit;
+//===============================================================
+New_box:
+// putmsg("NewBox");
+protoobj create "Shkaf.ptl" 51
+  "Wk"       wk
+  "y"        y
+  "Hk"       hk
+  "X_Fas"    XF
+  "Z_Fas"    ZF
+  "Nshp"     PanDir
+  "X_Sk"     X_Sk
+  "Z_Sk"     Z_Sk
+  "PrMater"  PanMater
+  "PrMatDv"  BoxDMater
+  "FsMater"  DoorMater
+  "Face_col" PanCKro
+  "Face_cof" DoorBCol
+  "FsType"   DoorPict
+  "BxType"   BoxKType
+  "HanType"  HandleType
+  "rx"       HandleX
+  "rz"       HandleZ
+  "ra"       HandleA
+  "Rpl_r"    HandleR
+  "Doub_r"   HandleD
+  "PrMatVs1" DoorMatVS1
+  "PrMatVs2" DoorMatVS2
+  "Band_F"   DoorBand
+  "Band"     TypKroB
+  "dnotype"  g_BoxBottom
+  "ots"      g_BottomOts
+  "DY"       ArcY
+  done
+  xn yn zn;
+MacroSw=1;
+return;
+//============================================================================
+SimpleBox:
+object_1=sysvar(60);
+objDo=sysvar(60);
+g_Fstype=DoorPict;
+SdX_Fasad=X_Sk;
+SdZ_Fasad=Z_Sk;
+NULLOUT=GetVarInst(2,"vZFtDn",ZFtDn,0);		//-- Дельта зазора снизу между дном ящика и корпусом
+NULLOUT=GetVarInst(1,"DopBox",DopBox,0);	//-- Дельта сдвига ящика в верхней секции
+NULLOUT=GetVarInst(1,"vZ_Fas",vZ_Fas,ZF)	//-- Реальная высота при делении высоты ниши на равные
+NULLOUT=setvarinst(1,"cZ_Fas",ZF);			//-- Высота фасада
+
+defarr dfzup[4];
+// putmsg(BoxKType)
+HideTyp=priceinfo(BoxKType,"BoxTypeHideFas",0,2);
+nullout=setvarinst(1,"boxhidetyp",HideTyp)
+H_FasMin=priceinfo(BoxKType,"boxH_FasMin",0,2);
+S_BT=DoorPict
+dops_y=0; //доп сдвиг по глубине для скрытого
+zcorkb=0; // доп сдвиг по высоте для скрытого вверх
+tDoorMater=DoorMater;
+if HideTyp>0
+{		
+	hidehand=priceinfo(BoxKType,"fasСutHandMacro","",2);
+	// putmsg(BoxKType)
+	// putmsg(hidehand)
+	if len(hidehand)>1
+	{
+		NULLOUT=setvarinst(1,"fasСutHandMacro",hidehand);
+	}	
+    if HideTyp==1 { DoorPict=0 }
+    else
+	{ 
+		if HideTyp==2
+		{
+			DoorPict=318;	
+		}
+		else
+		{
+			DoorPict=HideTyp
+		}
+	}
+
+	DoorMater=PanMater;
+	
+	h_fas=priceinfo(DoorMater,"Thickness",16);
+	// dfzup[1]=BNRight+BURight;
+	// dfzup[2]=BNLeft+BULeft;
+	// dfzup[3]=BNUp+BUUp;
+	// dfzup[4]=BNDown+BUDown;
+	
+	dfzup[1]=int(R_Fas)+BURight;
+	dfzup[2]=int(L_Fas)+BULeft;
+	dfzup[3]=int(U_Fas)+BUUp;
+	dfzup[4]=int(D_Fas)+BUDown;
+	
+	zcorkb=vZ_Fas;
+	// putmsg(H_FasMin);
+	if H_FasMin<500&&H_FasMin>0
+	{
+		ZF=H_FasMin+dfzup[1]+dfzup[2];	
+	}
+	else
+	{
+		NULLOUT=getvarinst(1,"BoxHk",vhk,hk);
+		// putmsg(vhk)
+		if vhk==0
+		{
+			vhk=hk
+		}
+		
+		
+		// ZF=vhk+54; // для скрытого
+		
+		
+		//dfzup[4]=0
+	}
+	
+	zcorkb=zcorkb-ZF;
+	// zcorkb=0;
+	
+	dops_y=-20;
+	
+	
+	// putmsg(hk)
+	// putmsg(ZF)
+}
+else
+{
+	// if D_Fas<0
+	// {
+		// // Z_Sk=Z_Sk-h_dsp;
+		// Z_Sk=Z_Sk-(BNUp-BUUp);
+		// // hk=hk+16; // Убрал увеличение короба на разницу в зазорах накладного и вкладного
+	// }
+}
+// putmsg(hk)
+// putmsg(Z_Sk)
+// putmsg(ZFtDn)
+// putmsg(DopBox)
+// putmsg(zcorkb)
+macro ProtoPath+"BoxKorp.mac"
+wk
+y+d_y+dops_y
+hk
+X_Sk
+Z_Sk+ZFtDn+DopBox+zcorkb
+BoxKType PanMater BoxDMater PanCKro;
+
+if HideTyp {
+    object_kr=sysvar(60)-object_1;
+    if object_kr>0 {
+        //move nocopy last object_kr done 0 dops_y 0 ;
+    }
+}
+RealYBox=y;
+nullout=getvarinst(1,"RealYBox",RealYBox,y);
+
+
+//FurnType=g_FurnType;
+FurnType=PriceInfo(BoxKType,"FurnType","310000",2);
+
+// putmsg(DoorPict)
+if (DoorPict>0) //-- Если есть фасад
+{
+	xsd=0;
+	zsd=zcorkb;
+	PanMaterT=PanMater;
+	macro ProtoPath+"SetDir.mac" PanDir;
+	macro ProtoPath+"SetFasPlas.mac"
+				dfzup[1]*-1		// Изменения фасада: Справа
+				dfzup[2]*-1		// Слева
+				dfzup[3]*-1		// Сверху
+				dfzup[4]*-1		// Снизу
+	;
+	// putmsg(dfzup[3]*-1)
+	// putmsg(dfzup[4]*-1)
+
+	//-- Проверяем, а может фасад дугообразный
+
+	TypeF=priceinfo(DoorPict,"FurnType","",2);       //-- FurnType фасада из справочника сборочных единиц
+	DecId=priceinfo(DoorPict,"DecorID",-563,2);       //-- Возможность отделки лицевой -563 произвольное число из головы 
+	if (right(TypeF,2)=="02")  //-- Фасад дугообразный
+	{
+		macro Protopath+"MakeGnuFas.mac" xsd+h_dsp, y+dops_y+d_y, zsd, XF-2*h_dsp, 0, ZF, ArcY, 0, 0, 0;
+	}
+	else  //-- Фасад прямой
+	{
+		if DecId!=-563
+		{ 
+			macro ProtoPath+"SetDecorate.mac" 5 gFDGroup gFDMat 1 ;
+		}
+		// "Метим" фасад на исключение из расчета стоимости
+		
+		NULLOUT=getvarinst(2,"MaxHKorobBox",MaxHKorobBox,200);
+		if hk<MaxHKorobBox
+		{
+			nullout=setvarinst(1,"KeyFasBox",1);
+		}
+		macro ProtoPath+"MakeFas.mac" xsd y+dops_y+d_y zsd XF ZF;
+		nullout=setvarinst(1,"KeyFasBox",0);
+		objident last 1 Fasd;
+
+		//-- Установка замка
+		if isvardef("g_Zamok")>0
+		{
+			if g_zamok>0
+			{
+				macro ProtoPath+"MakeZamok.mac" g_Zamok
+				0			//-- FurnType
+				xsd+g_RFas+50
+				y+h_fas+dops_y+d_y
+				// zsd+ZF-g_UFas-priceinfo(g_Zamok,"Height",20)-3+ZmZ
+				zsd+ZF-priceinfo(g_Zamok,"Height",10)+ZmZ
+				-90 0 0;
+				// -90 -90 0;
+				// всегда сверху справа
+			}
+		}
+		else
+		{
+			g_zamok=0;
+		}
+	}
+	PanMater=PanMaterT;
+	DoorMater=tDoorMater;
+
+	//-- Установка ручки
+	object_h=sysvar(60);
+	HND_mac="";
+	Handle=HandleType;
+	Fastype=DoorPict;
+
+	if (Handle!=0)&&HideTyp==0
+	{
+		HND_mac=PriceInfo(Fastype,"HNDMac","",2);
+		dRucR=PriceInfo(Handle,"Height",0);
+		if (right(TypeF,2)=="02")  //-- Фасад дугообразный
+		{
+			if (Len(HND_Mac)!=0) //-- Читаем макро установки ручки
+			{
+				macro Protopath+HND_Mac    0 0 0 XF ArcY ZF 0 Handle XF/2 HandleZ HandleA;
+				move last 1 done xsd y zsd nocopy;
+				//  macro Protopath+HND_Mac    xsd y zsd XF ArcY ZF 0 Handle HandleX+XF/2 HandleZ HandleA-90;
+			}
+			else //-- Или используем макро по-умолчанию
+			{
+				macro Protopath+"BoxHND.Mac" xsd y+h_fas zsd XF  ZF 0 Handle HandleX HandleZ HandleA;
+			}
+		}
+		else
+		{
+			if (Len(HND_Mac)!=0) //-- Читаем макро установки ручки
+			{
+				macro Protopath+HND_Mac    xsd y+h_fas zsd XF  ZF 0 Handle HandleX HandleZ HandleA;
+			}
+			else //-- Или используем макро по-умолчанию
+			{
+				macro Protopath+"BoxHND.Mac" xsd y+h_fas zsd XF  ZF 0 Handle HandleX HandleZ HandleA;
+				objident last 1 hhh1;
+			}
+		}
+		object_h=sysvar(60)-object_h;
+
+		NULLOUT=getvarinst(1,"Xhandl",Xh,-99);
+		NULLOUT=getvarinst(1,"Zhandl",Zh,-99);
+
+		macro ProtoPath+"getGabsDrillFasToHandle.mac" Fasd Xh y Zh 5 ByRef minV ByRef maxV ;
+
+		if y+h_fas!=maxV&&Xh!=-99
+		{
+			move nocopy last object_h done 0 maxV-(y+h_fas) 0 nocopy ;
+		}
+	} 
+}
+BoxKType=DoorPict;
+
+object_2=sysvar(60)-object_1;
+objPosle=sysvar(60);
+move last object_2 done xn yn zn nocopy ;
+setucs move xn yn zn;
+HaveCinP=0;                            //-- признак того, что в комплектующих нет информации для движения
+macro ProtoPath+"SetCinemaFromObj.mac" byref HaveCinP byref ScrCinO1 0 objDo objPosle 0 0 0 0 0;
+// putmsg(HaveCinP)
+if (HaveCinP==0)
+{
+    macro ProtoPath+"SetCinMain.mac" ByRef scarr, 0, 0, 10, 1;
+	// putmsg((RealYBox-iif(gs_NBoxobj==1,50,0))/gs_NBoxobj)
+    macro ProtoPath+"SetCinMove.mac" scarr,0,(RealYBox-iif(gs_NBoxobj==1,50,0))/gs_NBoxobj,0, 0, 10, 0; 
+    macro ProtoPath+"SetCinemaByType.mac" objDo objPosle scarr "0000" ;
+	// macro ProtoPath+"SetCinMove.mac" scarr,0,0,0, 0, 10, 0; 
+	// putmsg(scarr)
+	
+	// macro ProtoPath+"SetCinMain.mac" ByRef scarr, 2, 0, 10, 1;
+	// // macro ProtoPath+"SetCinMove.mac" scarr,0,0,0, 0, 10, 0;
+	// macro ProtoPath+"SetCinMove.mac" scarr,0,(RealYBox-iif(gs_NBoxobj==1,50,0))/gs_NBoxobj,0, 0, 10, 0;
+    // macro ProtoPath+"SetCinemaByType.mac" objDo objPosle scarr "0409" ;
+	
+	// macro ProtoPath+"SetCinMain.mac" ByRef scarr, 1, 0, 10, 1;
+	// macro ProtoPath+"SetCinMove.mac" scarr,0,(RealYBox-iif(gs_NBoxobj==1,50,0))/gs_NBoxobj,0, 0, 10, 0;
+	// macro ProtoPath+"SetCinemaByType.mac" objDo objPosle scarr "0403" ;
+    kol=CinemaScr(99,scarr);
+}
+if (HaveCinP==1)
+{
+	NULLOUT=getvarinst(1,"col_box_cin",Kbox,1);
+	NULLOUT=getvarinst(1,"num_box_cin",Nbox,1);
+	NULLOUT=GetScratch(ScrCinO1,"Move0","MoveY",LBoxC,SN);
+	if (NULLOUT==1&&Nbox>1)
+	{
+		NULLOUT=AddScratch(ScrCinO1,"Move0","MoveY",LBoxC-(Nbox-1)*(LBoxC/(Kbox+1)));
+	}
+    NULLOUT=AddScratch(ScrCinO1,"Main","Control",0);
+    macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0000" ;
+    NULLOUT=AddScratch(ScrCinO1,"Main","Control",2);
+    macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0403" ;
+}
+
+#kbx group last object_2 done;
+if (isassign("FasadPar",0))
+{
+  attrobj copy record "FasadPar" done kbx done;
+}
+if (isassign("ScrBox",0))
+{
+  attrobj copy record "ScrBox" done kbx done;
+}
+//-------------------------------------------------------------
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"wk",wk);
+err=AddScratch(ScrMod,FurnType,"Hk",hk);
+err=AddScratch(ScrMod,FurnType,"y",y);
+err=AddScratch(ScrMod,FurnType,"X_Fas",XF);
+err=AddScratch(ScrMod,FurnType,"Z_Fas",ZF);
+err=AddScratch(ScrMod,FurnType,"Nshp",PanDir);
+err=AddScratch(ScrMod,FurnType,"X_Sk",X_Sk);
+err=AddScratch(ScrMod,FurnType,"Z_Sk",Z_Sk);
+err=AddScratch(ScrMod,FurnType,"PrMater",PanMater);
+err=AddScratch(ScrMod,FurnType,"FsMater",DoorMater);
+err=AddScratch(ScrMod,FurnType,"PrMatDv",BoxDMater);
+err=AddScratch(ScrMod,FurnType,"Face_col",PanCKro);
+err=AddScratch(ScrMod,FurnType,"Band",TypKroB);
+err=AddScratch(ScrMod,FurnType,"Face_cof",DoorBCol);
+err=AddScratch(ScrMod,FurnType,"Band_F",DoorBand);
+err=AddScratch(ScrMod,FurnType,"Fstype",DoorPict);
+err=AddScratch(ScrMod,FurnType,"BxType",BoxKType);
+err=AddScratch(ScrMod,FurnType,"Doub_r",HandleD);
+err=AddScratch(ScrMod,FurnType,"HanType",HandleType);
+err=AddScratch(ScrMod,FurnType,"Rpl_r",HandleR);
+err=AddScratch(ScrMod,FurnType,"rx",HandleX);
+err=AddScratch(ScrMod,FurnType,"rz",HandleZ);
+err=AddScratch(ScrMod,FurnType,"ra",HandleA);
+err=AddScratch(ScrMod,FurnType,"PrMatVs1",DoorMatVS1);
+err=AddScratch(ScrMod,FurnType,"PrMatVs2",DoorMatVS2);
+err=AddScratch(ScrMod,FurnType,"dnotype",g_BoxBottom);
+err=AddScratch(ScrMod,FurnType,"ots",g_BottomOts);
+err=AddScratch(ScrMod,FurnType,"DY",ArcY);
+NULLOUT=writescratch(ScrMod,Namescr,kbx);
+NULLOUT=TermScratch(ScrMod);
+NULLOUT=addattrpi(kbx,1,position);
+return;

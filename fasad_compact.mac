@@ -1,0 +1,313 @@
+//-- Создание фасада-витрины
+//-- Входные параметры:
+//-- xn,yn,zn - координаты правого нижнего дальнего угла фасада
+//-- dx,dz - размеры фасада по ширине и высоте
+//-- Глобальные переменные:
+//-- FsMater - материал фасада
+//-- DoorBCol - цвет кромки фасада
+//-- DoorBand - тип кромки фасада
+//-- DoorMatVS1 - материал первой вставки фасада
+//-- DoorMatVS2 - материал второй вставки фасада
+global ProtoPath;
+global g_FurnType;    //-- Тип мебельного объекта
+global DoorPict;   //-- Рисунок фасада
+global FsMater;
+// global DoorBand;
+global DoorMatVS1, DoorMatVS2;
+//global FindMatID;
+global PanDir;            //-- Направление шпона
+global DrwzPath;
+//global g_Scratch;
+
+getpar xn,yn,zn,dx,dz;
+
+// NULLOUT=getvarinst(1,"DoorPict",DoorPict,0); // тип фасада(рисунка)
+// NULLOUT=getvarinst(1,"FsMater",FsMater,281); // Материал панелей двери
+// NULLOUT=getvarinst(1,"DoorMatVS1",DoorMatVS1,0); // Материал вставки 1 фасада
+// // NULLOUT=getvarinst(1,"DoorMatVS2",DoorMatVS2,0); // Материал вставки 2 фасада
+// NULLOUT=getvarinst(1,"PanDir",PanDir,0);
+
+defarr errArr[4]; initarray(errArr,"");
+defarr xm[6];
+
+macro ProtoPath+"CheckGabFas.mac" DoorPict, FsMater, dx, dz;
+
+DefGood=PriceInfo(FsMater,"GoodID1",0,1);  //-- Читаем ID записи для свойств профилей
+// MaxWidth=PriceInfo(DefGood,"MaxWidth",500,2);
+// MinWidth=PriceInfo(DefGood,"MinWidth",200,2);
+// MaxHeight=PriceInfo(DefGood,"MaxHeight",1800,2);
+// MinHeight=PriceInfo(DefGood,"MinHeight",400,2);
+
+// //-- Проверяем на соответствие диапазону
+// KeyErr=0;
+// if (dx>MaxWidth)
+// {
+  // errArr[1]="Ширина фасада ("+str(dx)+") больше допустимой ("+str(MaxWidth)+")";
+  // KeyErr=1;
+// }
+// if (dx<MinWidth)
+// {
+  // errArr[2]="Ширина фасада ("+str(dx)+") меньше допустимой ("+str(MinWidth)+")";
+  // KeyErr=1;
+// }
+// if (dz>MaxHeight)
+// {
+  // errArr[3]="Высота фасада ("+str(dz)+") больше допустимой ("+str(MaxHeight)+")";
+  // KeyErr=1;
+// }
+// if (dz<MinHeight)
+// {
+  // errArr[4]="Высота фасада ("+str(dz)+") меньше допустимой ("+str(MinHeight)+")";
+  // KeyErr=1;
+// }
+
+// if KeyErr
+// {
+	// #ok_flag
+	 // alternative "Некорректные параметры фасада"
+	 // msgbox picture 3 beep 3 text ""
+	 // errArr[1]
+	 // errArr[2]
+	 // errArr[3]
+	 // errArr[4]
+	 // done
+	 // "  OK  "
+	 // done;
+// }
+// initarray(errArr,"");
+
+nmfdeco="(";
+nmadeco="(";
+macro ProtoPath+"ScrFasAr.mac" DoorPict ByRef nmfdeco ByRef nmadeco "Fasad_compact";
+
+// Namescr="prof_atr"; //-- Имя scratch-атрибута профиля
+h_vst=PriceInfo(DoorMatVS1,"Thickness",4);
+hdsp_where=iif(h_vst>4,10,4)
+
+// Для Палермо нужно строить профиль под вставку
+nelem=NPGetByWhere(1,"ParentID="+str(FsMater)+" AND [SlotW1]="+str(hdsp_where),"ArrID");
+if nelem>0
+{
+	FsMater=ArrID[1];
+}
+RmMater=FsMater;
+StMater=PriceInfo(DefGood,"SealID",0,2);  //-- Читаем ID уплотнительного профиля рамки
+AcMater=PriceInfo(DefGood,"AccessID",0,2);  //-- Читаем ID Крепления рамки
+
+//RmMater=1139; //-- Профиль
+//RmColor=603;  //-- Цвет профиля
+//RmGroup=85;   //-- Тип отделки профиля рамки
+//RmColGr=68;   //-- Группа цветов профилей
+
+//wr=19;	  //-- Ширина профиля рамки
+//dr=12.5;  //-- Сдвиг вставки по оси Y от заднего края профиля рамки
+hr=1;     //-- Подрезка вставки по профилю рамки
+wt=7;     //-- Ширина уплотнительного профиля
+dt=1.5;   //-- Сдвиг вставки по оси Y от заднего края уплотнительного профиля
+zt=2;     //-- Подрезка вставки по уплотнительному профилю
+//FileName="Профили\\ramf0_al.k3";
+par1=4;   //-- Допустимая Толщина материала вставки
+//tr=18;    //-- Глубина паза для вставки
+//vt=5.3;   //-- Ширина зазора у профиля
+
+RmColor=0
+// RmColGr=0
+FasType=0
+RmGroup=0;
+//goto NoSCR;
+// macro Protopath+"ScrFasadGet.mac" DoorPict ByRef Scratch;
+// ScGrName="fasad_compact";
+// if (Scratch!=0)
+// {
+   // FT=0
+   // SubstName="";
+   // err=GetScratch(Scratch,ScGrName,"FasType",FT,SubstName);
+   // if (FT!=DoorPict) {
+      // macro ProtoPath+"ScrFasCr.mac" DoorPict Scratch ;
+   // }
+   // #res CalcVarScr  Scratch  ScGrName;
+      // if (res==0)    // Этого скорее всего не будет
+      // {
+        // err=AddScratch(Scratch,ScGrName,"RmMater",RmMater);
+        // err=AddScratch(Scratch,ScGrName,"RmColor",RmColor);
+        // err=AddScratch(Scratch,ScGrName,"RmGroup",RmGroup);
+        // err=AddScratch(Scratch,ScGrName,"FasType",DoorPict);
+        // WriteScratch(Scratch,"FasadPar",0);
+      // }
+  // TermScratch(Scratch);
+// }
+//NoSCR:
+//------------------------------------------------------------------
+// dr=PriceInfo(DefGood,"ShiftY",5,2);   //-- Сдвиг вставки по оси Y от заднего края профиля рамки
+dr=PriceInfo(FsMater,"ShiftY",5);   //-- Сдвиг вставки по оси Y от заднего края профиля рамки
+// tr=PriceInfo(DefGood,"SlotH1",10,2);   //-- Глубина паза - Размер "заглубления" вставки в профиль
+tr=PriceInfo(FsMater,"SlotH1",10);   //-- Глубина паза - Размер "заглубления" вставки в профиль
+vt=PriceInfo(FsMater,"SlotW1",10,1);  //-- Ширина паза с профиля
+// wr=PriceInfo(DefGood,"ProfX",20,2);   //-- Ширина профиля рамки фасада
+wr=PriceInfo(FsMater,"ProfX",26);   //-- Ширина профиля рамки фасада
+// thin=PriceInfo(DefGood,"ProfY",20,2);   //-- Толщина профиля рамки фасада
+thin=PriceInfo(FsMater,"ProfY",20);   //-- Толщина профиля рамки фасада
+StMater=PriceInfo(FsMater,"SealID",StMater);  //-- Попытаемся читать ID уплотнителя из профиля
+// DopMater=PriceInfo(RmMater,"MatID",0);        //-- Попытаемся читать ID дополнительного профиля
+DopMater=0;
+zt=PriceInfo(StMater,"ShiftX",zt);   //-- Подрезка вставки по уплотнительному профилю
+dt=PriceInfo(StMater,"ShiftY",dt);   //-- Сдвиг вставки по оси Y от заднего края уплотнительного профиля
+yt=PriceInfo(StMater,"profY",dt); // Габарит уплотнителя
+// для ДС нужно лс в середине уплотнителя, а тут края
+
+// putmsg("FsMater="+str(FsMater));
+// putmsg("DefGood="+str(DefGood));
+// putmsg("ShiftY="+str(dr));
+// putmsg("SlotH1="+str(tr));
+// putmsg("SlotW1="+str(vt));
+// putmsg("ProfX="+str(wr));
+// putmsg("ProfY="+str(thin));
+// putmsg("SealID="+str(StMater));
+// putmsg("MatID="+str(DopMater));
+// putmsg("SealID_ShiftX="+str(zt));
+// putmsg("SealID_ShiftY="+str(dt));
+
+par1=vt;   //-- Допустимая Толщина материала вставки
+
+NULLOUT=setvarinst(1,"FrameFasadThin",thin);      // Запомним толщину и ширину рамки
+NULLOUT=setvarinst(1,"FrameFasadWidth",wr);
+hr=wr-tr;     //-- Подрезка вставки по профилю рамки
+
+//------------------------------------------------------------------------------
+//-- Отрисовка фасада
+//-- Рамка из профиля
+//macro ProtoPath+"SetEnam.mac" "Профиль для фасада" ;
+//macro Protopath+"us_pr.mac"	xn,yn,zn,dx,dz,RmMater,RmColor;
+
+macro ProtoPath+"SetECod.mac" "2501";
+nullout=setvarinst(1,"symProf",1);
+macro Protopath+"ProfFrame.mac"	xn,yn,zn,dx,dz,FsMater,RmGroup,RmColor,"Рамка","Профиль фасада";
+if (DopMater!=0) {
+  macro Protopath+"ProfFrame.mac"	xn,yn,zn,dx,dz,DopMater,RmGroup,RmColor,"Рамка","Профиль фасада";
+}
+nullout=setvarinst(1,"symProf",0);
+
+//-- Крепление алюминиевых профилей(Уголок)
+macro ProtoPath+"SetECod.mac" "3005" ;
+macro ProtoPath+"SetEnam.mac" PriceInfo(AcMater,"MATNAME","Крепление профилей");
+// macro Protopath+"us_acce.mac"	xn,yn+3,zn,dx,dz,AcMater;
+
+yd=3;
+sd=1.5 // Сдвиг крепления внутрь
+Macro ProtoPath+"SetAccPLace.mac"   0;
+macro ProtoPath+"SetECod.mac" "9105" ;
+Macro ProtoPath+"MakeAcce.mac" AcMater,0,xn+sd,yn+yd,zn+sd,0,90,0;
+Macro ProtoPath+"MakeAcce.mac" AcMater,0,xn+dx-sd,yn+yd,zn+sd,180,90,180;
+Macro ProtoPath+"MakeAcce.mac" AcMater,0,xn+dx-sd,yn+yd,zn+dz-sd,270,90,180;
+Macro ProtoPath+"MakeAcce.mac" AcMater,0,xn+sd,yn+yd,zn+dz-sd,90,90,0;
+
+//-- Винты для уголков
+FixType=PriceInfo(AcMater,"FixerID",0);
+ShiftX=PriceInfo(AcMater,"ShiftX",32);
+// ShiftY=PriceInfo(AcMater,"ShiftY",8);
+ShiftY=5.5;
+sgl=4; // Заглубление в профиль
+
+macro ProtoPath+"SetECod.mac" "3005" ;
+// Правый нижний
+macro ProtoPath+"MakeFixer.mac"  xn+ShiftX yn+sgl zn+ShiftY 0 -1 0 0 0 1 FixType;
+macro ProtoPath+"MakeFixer.mac"  xn+ShiftY yn+sgl zn+ShiftX 0 -1 0 0 0 1 FixType;
+// Правый верхний
+macro ProtoPath+"MakeFixer.mac"  xn+ShiftX yn+sgl dz-ShiftY 0 -1 0 0 0 1 FixType;
+macro ProtoPath+"MakeFixer.mac"  xn+ShiftY yn+sgl dz-ShiftX 0 -1 0 0 0 1 FixType;
+// Левый нижний
+macro ProtoPath+"MakeFixer.mac"  dx-ShiftX yn+sgl zn+ShiftY 0 -1 0 0 0 1 FixType;
+macro ProtoPath+"MakeFixer.mac"  dx-ShiftY yn+sgl zn+ShiftX 0 -1 0 0 0 1 FixType;
+// Левый верхний
+macro ProtoPath+"MakeFixer.mac"  dx-ShiftX yn+sgl dz-ShiftY 0 -1 0 0 0 1 FixType;
+macro ProtoPath+"MakeFixer.mac"  dx-ShiftY yn+sgl dz-ShiftX 0 -1 0 0 0 1 FixType;
+
+//-- Заглушки на винты
+ChokeID=PriceInfo(FsMater,"Choke14_18",7030);
+macro ProtoPath+"SetECod.mac" "3000" ;
+macro ProtoPath+"SetEnam.mac" "Заглушка" ;
+macro Protopath+"us_acce.mac" xn,yn+3,zn,dx,dz,ChokeID;
+macro Protopath+"us_acce.mac" xn,yn+3,zn,dx,dz,ChokeID;
+
+if (DoorMatVS1!=0)
+{
+  ss=str(vt);
+
+  if (h_vst>vt)
+  {
+	  errArr[1]="Материал вставки в фасад не соответствует текущим профилям рамки.";
+	  errArr[2]=" ";
+	  errArr[3]="Для данного профиля рамки толщина материала вставки должна быть меньше или равна '"+ss+"' мм."
+	  errArr[4]="Выбранный вами материал '"+PriceInfo(DoorMatVS1,"MATNAME","")+"' имеет толщину '"+str(h_vst)+"' мм.";
+	  macro Protopath+"ShowSmartError.mac" "Некорректные параметры фасада."
+	  4 errArr;
+//	  cancel;
+	}
+	// putmsg(h_vst)
+	// putmsg(vt)
+	// putmsg(dr)
+  // if (int(h_vst)>=int(vt))||(dr==0)  // Если нет сдвига сзади, нельзя ставить уплотнитель
+  // {
+  if h_vst>=8&&vt>=8
+  {
+    macro ProtoPath+"SetMat.mac" DoorMatVS1 ;
+    macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+    macro ProtoPath+"SetECod.mac" "2205" ;
+    // macro ProtoPath+"SetKCod.mac" "ДВЕР" dz-2*hr dx-2*hr ;
+    macro ProtoPath+"SetEnam.mac" "Вставка в фасад" ;
+    macro ProtoPath+"SetKrom.mac" 0 0 0 0 0 ;
+    macro ProtoPath+"SetFix.mac" 0 0 0 0;
+    macro ProtoPath+"MakePan.mac" xn+hr,yn+dr,zn+hr,
+                                  dz-2*hr dx-2*hr 14 ;
+	objident last 1 pfas;
+    NULLOUT=setvarinst(1,"FrameFasadPlase",yn+dr+h_vst);   // Положение ручки на вставке
+  }
+  else
+  {
+	// macro ProtoPath+"SetEnam.mac" "Уплотнитель для фасада" ;
+	// macro Protopath+"us_pr.mac"	xn+hr,yn+dr,zn+hr,dx-2*hr,dz-2*hr,StMater,RmColor;
+	macro ProtoPath+"SetECod.mac" "3120";
+	
+	//nullout=setvarinst(1,"symProf",1);
+    macro Protopath+"ProfFrame.mac"	xn+hr,yn+dr+yt/2,zn+hr,dx-2*hr,dz-2*hr,StMater,0,0,"Уплотнитель","Уплотнитель для фасада";
+	//nullout=setvarinst(1,"symProf",0);
+    // attrobj attach "ElemName" done last 1 "Уплотнитель";
+	
+    macro ProtoPath+"SetMat.mac" DoorMatVS1 ;
+    macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+    macro ProtoPath+"SetECod.mac" "2205" ;
+    // macro ProtoPath+"SetKCod.mac" "ДВЕР" dz-2*(hr+zt) dx-2*(hr+zt) ;
+    macro ProtoPath+"SetEnam.mac" "Вставка в фасад" ;
+    macro ProtoPath+"SetKrom.mac" 0 0 0 0 0 ;
+		macro ProtoPath+"SetFix.mac" 0 0 0 0;
+    macro ProtoPath+"MakePan.mac" xn+hr+zt,	yn+dr+dt,	zn+hr+zt,
+                                  dz-2*(hr+zt) dx-2*(hr+zt) 14 ;
+	objident last 1 pfas;
+    NULLOUT=setvarinst(1,"FrameFasadPlase",yn+dr+dt+h_vst);   // Положение ручки на вставке
+  }
+  	kA=0;
+	kF=0;
+	if len(nmadeco)>1 {
+		nmadeco="A:"+nmadeco+")"
+		kA=1;
+	}
+	if len(nmfdeco)>1 {
+		nmfdeco="F:"+nmfdeco+")"
+		kF=1;
+	}
+	if kA||kF {
+		objgab3(pfas,xm);
+		text iif(kF,nmfdeco,"") iif(kA,nmadeco,"") done dx-wr-5 xm[5]+0.01 wr+5 normal 0 1 0 @-10 0 0
+		objident last 1 t1;
+		macro DrwzPath+"EdStrLong.mac" t1 dx-15 1;
+		objident last 1 t1;
+		attrobj attach "nohide" done t1 1 ;
+	}  
+}
+
+g_FurnType="500201";
+exit;
+
+//=============================================================================
+
+

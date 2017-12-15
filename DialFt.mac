@@ -1,0 +1,52 @@
+//------------------ Макрос, вызывающий диалоговую  карточку и макрос выбора объекта по его FurnType, FurnKind---------------------------------
+global g_SFurnType,   //-- Названия типа мебельного объекта
+       g_FurTyp,
+       g_IFurnType;   //-- Массив идентификаторов FurnType
+global ProtoPath;
+      
+#ok_flag
+setvar
+"Фильтр для выбора объекта"
+""
+left
+"Задайте фильтр для выбора объекта"
+done
+str auto listonly
+    let i=0
+    loop:
+      if (i==0)  
+      {
+        current
+        "Без фильтра"
+      }
+      else
+      {
+        let ifind=findinarray(g_IFurnType,g_FurTyp[i])
+        if (ifind>0) 
+        {
+          g_SFurnType[findinarray(g_IFurnType,g_FurTyp[i])]
+        }
+      }
+     let i=i+1
+     if (g_FurTyp[i]!="000000") { goto loop; }
+done
+"Полный тип объекта:" par1        //-- Названия типа мебельного объекта
+
+string   default ""  "Пользовательский тип мебельного объекта:"    par2  //-- FurnKind
+done;
+
+if (ok_flag==0)
+{
+  cancel;
+}
+
+if (par1=="Без фильтра")
+{
+  a="";
+}
+else
+{
+  a=g_IFurnType[FindInArray(g_SFurnType,par1)];  
+}
+macro Protopath+"SelByFt.mac" a par2;
+exit;

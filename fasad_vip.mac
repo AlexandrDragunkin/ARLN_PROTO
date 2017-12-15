@@ -1,0 +1,89 @@
+//-- Создание фасада выпуклого
+//-- Входные параметры:
+//-- xn,yn,zn - координаты правого нижнего дальнего угла фасада
+//-- w d h - Размер по ширине глубине и высоте
+//-- DY - прогиб
+//-- R1 - резерв
+//-- L1 - резерв
+//-- Глобальные переменные:
+//-- DoorMater - материал фасада
+//-- DoorBCol - цвет кромки фасада
+//-- DoorBand - тип кромки фасада
+//-- DoorMatVS1 - материал первой вставки фасада
+//-- DoorMatVS2 - материал второй вставки фасада
+global ProtoPath;
+global DoorMater;
+global DoorBand;
+global g_FurnType;    //-- Тип мебельного объекта
+global DoorMatVS1, DoorMatVS2;
+global FasVaria;      //-- Открывание двери (слева, справа, сверху, снизу, нет - 0)
+global g_FasPlas;
+
+getpar
+xn,yn,zn		//-- Правый нижний дальний угол	фасада
+w d h 	    //-- Размер по ширине глубине и высоте
+DY          //-- Прогиб
+R1          //-- Резерв
+L1          //-- Резерв
+;
+
+if (DY<0)
+{
+	hdsp=priceinfo(DoorMater,"Thickness",16);
+	Hc=abs(DY+hdsp);								//-- высота хорды
+	R=(0.25*(W*W)/Hc+Hc)/2;					//-- радиус двери
+	T1=R-Hc;
+	TanA=T1/(W/2);
+	Alf=(atan(TanA));
+	Gip=hdsp;
+	KatX=Gip*cos(Alf);
+
+	W1=W-2*KatX;
+	Hc=abs(DY);								//-- высота хорды
+	R=(0.25*(W1*W1)/Hc+Hc)/2;			//-- радиус двери
+	T1=R-Hc;
+	TanA=T1/(W1/2);
+	Alf=(atan(TanA));
+	Gip=hdsp;
+	KatY=Gip*sin(Alf);
+	KatX=Gip*cos(Alf);
+	xn=xn+KatX;
+	yn=yn+KatY;
+	w=W-2*KatX;
+}
+defarr error[10];
+NULLOUT=initarray(error,"");
+
+if (FasVaria==1||FasVaria==0)
+{
+  q=-90;
+}
+if (FasVaria==2)
+{
+  q=90;
+}
+if (FasVaria==3||FasVaria==4)
+{
+  error[1]="Данный фасад с выбранным типом открывания не поддерживается.";
+  error[2]="Дугообразные фасады не открываются сверху или снизу.";
+	error[3]="Возможные типы открывания только справа и слева.";
+  error[4]=" "
+  error[5]="Проверьте тип фасада и выбранный тип открывания."
+  macro Protopath+"ShowSmartError.mac" "Несоответствие параметров."
+  5 error;
+  cancel;
+}
+
+//------------------------------------------------------------------------------
+macro ProtoPath+"SetMat.mac" DoorMater ;
+macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+macro ProtoPath+"SetFix.mac" 0 0 0 0;
+macro ProtoPath+"SetECod.mac" "2100" ;
+macro ProtoPath+"SetEnam.mac" "Полотно фасада" ;
+macro ProtoPath+"SetKCod.mac" "Полотно фасада"	h	w;
+macro ProtoPath+"SetBand.mac" DoorBand DoorBand DoorBand DoorBand;
+macro ProtoPath+"SetCuts.mac" -g_FasPlas[3] -g_FasPlas[4] -g_FasPlas[1] -g_FasPlas[2];
+macro ProtoPath+"MakeBendPan.mac" xn yn zn w DY h 2 q;
+macro ProtoPath+"SetCuts.mac" 0 0 0 0;
+g_FurnType="500102";
+exit;

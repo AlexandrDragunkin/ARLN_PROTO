@@ -1,0 +1,156 @@
+//-- Переназначить номера объектов
+
+// global ProtoPath;
+// NULLOUT=getvarinst(2,"NumType",NumType,1);
+// NULLOUT=getvarinst(2,"NumCriteria1",NumCriteria1,0);
+// NULLOUT=getvarinst(2,"NumCriteria2",NumCriteria2,0);
+// NULLOUT=getvarinst(2,"NumCriteria3",NumCriteria3,0);
+// NULLOUT=renumerate();   //-- Присваиваем внутренние номера
+// if (NumType==1) //-- По уникальному номеру
+// {
+  // macro ProtoPath+"ReNumUnitPos.mac" 1;
+  // exit;
+// }
+// if (NumType==2) //-- С поиском похожих (сквозная нумерация)
+// {
+  // macro ProtoPath+"ReNumCommonPos.mac" 1 0 NumCriteria1 NumCriteria2 NumCriteria3;
+  // exit;
+// }
+// if (NumType==3) //-- С поиском похожих (по типам)
+// {
+  // macro ProtoPath+"ReNumCommonPos.mac" 1 1 NumCriteria1 NumCriteria2 NumCriteria3;
+  // exit;
+// }
+// if (NumType==4) //-- Внутри сборочной единицы
+// {
+  // macro ProtoPath+"ReNumDetailPos.mac";
+  // exit;
+// }
+// exit;
+
+global ProtoPath;
+
+onerror metend;
+defarr pan[26];
+fltrparamobj(1,61);
+select partly all;
+sel=SysVar(61);
+
+i=0;
+iii:
+i=i+1;
+if i<=sel
+{
+	//putmsg(i)
+	object=pan[1]=GetSelNum(i);
+	err=GetPan6Par(1,pan);
+	err=GetPan6Par(2,pan);
+	//putmsg(err)
+	if err==-1 { putmsg("!!!"); select stayblink partly object done; }
+	attrobj attach "PriceID" done partly object pan[1] ;
+	goto iii;
+}
+
+// Панели с нулевым PriceID или без атрибута PriceID
+selbyattr "PriceID==0" partly stayblink all;
+n0=sysvar(61);
+if n0>0
+{
+	alternative "Ошибка в нумерации"
+	msgbox text "У выделенного(-ых) элемента(-ов) отсутствует материал"
+	done "Выход" done;
+	fltrparamobj(0,61);
+	exit;
+}
+
+//// ---  Удаляем старые номера объектов
+///////////////////////////////////////////////////////////////////////
+
+//MBCarcase ungroupall; // Разгруппируем все каркасы
+//FltrType(12); // Фильтр по Text
+object_2=sysvar(60); 
+
+i=0;
+lab_0:
+i=i+1;
+If i<=object_2
+{
+	OBJ1=getobjnum(i);
+	if IsAttrdef("NumType") // определен атрибут NumType
+	{
+		if !GetObjVisual(OBJ1)  // и выключен
+		{
+			visible partly OBJ1;
+		}
+	}
+	goto lab_0;
+}
+
+selbyattr "NumType==1" partly all done;
+selobj=sysvar(61);
+//putmsg(selobj)
+if selobj>0 { delete partly previous done; }
+
+defarr BitArr[20];
+
+BitArr[1]=0; // * Габариты заготовки 1
+BitArr[2]=1; // * Толщина панели 2
+BitArr[3]=1; // * Материал панели 3
+BitArr[4]=0; // * Форма внешнего контура заготовки 4
+BitArr[5]=1; // * Основное расположение панели (полка, стойка, стенка) 5
+BitArr[6]=1; // * Форма внешнего контура заготовки 6
+BitArr[7]=1; // * Форма гнутья панели 7
+BitArr[8]=1; // * Пропилы 8
+BitArr[9]=1; // * Торцевые пазы 9
+BitArr[10]=0; // * Линии крепежа 10
+BitArr[11]=1; // * Отделки 11
+BitArr[12]=0; // * К3-файл с заготовкой панели 12
+BitArr[13]=1; // * Реальные вырезы 13
+BitArr[14]=1; // * Линии маркировки 14
+BitArr[15]=1; // * Кромки прямолинейные 15
+BitArr[16]=1; // * Кромки криволинейные 16
+BitArr[17]=1; // * Фрезеровки 17
+BitArr[18]=1; // * Отверстия торцев 18
+BitArr[19]=1; // * Отверстия пласти 19
+BitArr[20]=1; // * Отверстия под углом 20
+
+iValue=0;
+i=0;
+nexti:
+i=i+1;
+if i<=20
+{
+	if BitArr[i]==1
+	{
+		iValue=nbitset(iValue,i);
+	}
+	else
+	{
+		iValue=nbitclear(iValue,i);
+	}
+	goto nexti;
+}
+// putmsg(iValue)
+// NumCriteria1=1046518;
+NumCriteria1=iValue;
+
+NULLOUT=setvarinst(2,"NumCriteria1",NumCriteria1); // Зададим критерии для распиловки
+NULLOUT=udSetEntity("NumCriteria1",NumCriteria1);
+=udLoadSave(1);
+// NULL=attrdelete("Number","CommonPos"); // Удаляем атрибуты
+NULL=attrdelete("Number"); // Удаляем атрибуты
+NULL=renumerate(); // Присвоим UnitPos
+// renumerate("Number",-1,0,0,0,1)+1 -- нахождение максимального, мало ли
+// Очень мило сделать возможность нумерации, не затрагивая уже проставленные атрибуты, но нет учета изменений. Поэтому всегда с 1 !
+NULL=renumerate("Number",NumCriteria1,1,1);
+
+nn=sysvar(62)
+if nn>0
+{
+	macro protopath+"\\ProjectsUtilites\\NumParent2.py"
+}
+
+metend:
+fltrparamobj(0,61);
+offerror;
+exit;

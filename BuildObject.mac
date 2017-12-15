@@ -1,0 +1,50 @@
+//-- Макропрограмма собирает изделие и присваивает ему ProtoInfo из каркаса
+
+global ProtoPath;
+KarkasNumb=getcarcnumb();
+km=KarkasNumb;
+//macro ProtoPath+"GroupAllKarkas.mac" ;
+mbcarcase groupall;
+onerror final;
+selbyattr "IsAssign(\"FurnType\")&&IsAssign(\"ProtoInfo\")"
+  prompt "Укажите собираемые изделия:" wholly : ;
+offerror;
+object_2=sysvar(61);
+if (object_2==0)
+{
+  goto final;
+}
+#ok_flag
+alternative "Собрать изделия"
+msgbox picture 2 beep 2 text left
+"Внимание! Если после сборки изделие отредактировать, все изменения, "
+"сделанные, пока изделие было разобранным, утратятся!!"
+" "
+"Собрать изделия?"
+done
+" Да " "Нет"
+done;
+if (ok_flag==2)
+{
+  exit;
+}
+defarr objs[object_2];
+macro ProtoPath+"Arrobj.mac" object_2, objs;
+i=0;
+loop:
+i=i+1;
+macro ProtoPath+"BuildOnObj.mac" objs[i];
+if (i<object_2)
+{
+  goto loop;
+}
+exit;
+final:
+select wholly attribute "KarkasNumb=="+str(km);
+if (sysvar(61)==0)
+{
+  exit;
+}
+objj=getselnum(1);
+mbcarcase current objj;
+exit;

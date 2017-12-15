@@ -1,0 +1,555 @@
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+nullout=getvarinst(2,"Doors63",Doors63,"Doors63.zmc|");
+//Итак:
+//     мы имеем ссылку на записи геометрии профиля g_DRTop  g_DRDown   g_DRMid  g_DRDer  g_DRVer  g_TrTop g_TrDown
+//     Id конкретных профилей  в Tprice g_CLTop g_CLDown g_CLMid g_CLDer g_CLVer g_TCLTop g_TCLDown
+//
+// Получили все Основные профили для конструкции системы створок теперь надо найти все вспомогательные комплектующие
+// Определить их Конкретный Id в соответствии с цветом согласуемого профиля
+
+// Заполнить данные Геометрическими характеристиками и сгенерировать все необходимые системы (створки направляющие и пр.)
+global g_keyDS63,g_Doorscon;
+global g_drp,g_NDors,g_MoveType,g_Move,g_dSet,g_Ntrack;
+
+NULLOUT=getVarinst(2,"g_x1",g_x1,0);
+NULLOUT=getVarinst(2,"g_y1",g_y1,0);
+NULLOUT=getVarinst(2,"g_z1",g_z1,0);
+NULLOUT=getVarinst(2,"g_xb",g_xb,0);
+NULLOUT=getVarinst(2,"g_yb",g_yb,0);
+NULLOUT=getVarinst(2,"g_zb",g_zb,0);
+global g_CLTop g_CLDown g_CLMid g_CLDer g_CLVer g_TCLDown g_TCLTop;
+global g_SlipTop,g_SlipBottom,g_SlipLeft,g_SlipRight,g_SlipDoors;  //-- Зазоры
+global g_VstSt; // материал вставки по умолчанию
+global g_TypRis;
+global objLn NobjLn ProtoPath g_fasca g_SysEdit63;
+// global MacroSw;       //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global Fasca;
+// global g_mans;          // опция мансардных систем 0-выкл 1-вкл
+defarr Fasca[8] FascaS[8] sqlarr[10];                      //-- Массив фасок для дверной системы
+//================
+NrTack=0 ; // Номер ручья трека
+// Заполнение парметров фасок дверной системы для конструирования мансардного варианта
+  err=InitArray(Fasca,0);
+  if g_SysEdit63==0
+  {
+     macro ProtoPath++Doors63+"SetLinFasca.mac" ;
+
+     macro ProtoPath++Doors63+"FindFasca.mac" g_x1,g_y1,g_z1,g_xb,g_yb,g_zb,Fasca;
+  }
+  else
+  {
+	if isvardef("g_fasca")==0
+	{
+		defarr g_fasca[8];
+	}
+      err=CopyArray(Fasca,1,g_fasca,1);
+  }
+//====================================================
+//Ищем Каркас дверной системы 63
+ID_R63=getprotoid("Shkaf","Каркас дверной системы 63","ProtoMacro","DRRailP63");
+if ID_R63==0
+{
+	Putmsg("Отсутствует прототип Каркас дверной системы 63",0);
+	exit;
+}
+//Ищем створку дверной системы 63
+ID_S63=getprotoid("Shkaf","Створка  дверной системы 63","ProtoMacro","DRFlapP63");
+if ID_S63==0
+{
+	Putmsg("Отсутствует прототип Створка  дверной системы 63",0);
+	exit;
+}
+//Ищем створку-фасад дверной системы 63
+ID_SFas63=getprotoid("Shkaf","Створка-фасад дверной системы 64","ProtoMacro","DRFlapFasP63");
+if ID_SFas63==0
+{
+	Putmsg("Отсутствует прототип Створка-фасад дверной системы 64",0);
+	exit;
+}
+//------------------------------------------------------
+macro ProtoPath+"SetEnam.mac" "каркас системы дверей" ;
+nullout=getvarinst(1,"DoorSw",DoorSw,0);
+if DoorSw==1
+{
+	Macro ProtoPath+"DRRailP63.mac";
+	move last 1 done g_xb, g_yb, g_zb nocopy;
+}
+else
+{
+	protoobj create "Shkaf.ptl" ID_R63
+			 "Syst"       g_drp
+			 "RailU"      g_TCLTop
+			 "RailD"      g_TCLDown
+			 "x"          g_x1
+			 "y"          g_y1
+			 "z"          g_z1
+			 "FasPr1"     0
+			 "dx1"        Fasca[1]
+			 "dz1"        Fasca[2]
+			 "FasPr2"     0
+			 "dx2"        Fasca[3]
+			 "dz2"        Fasca[4]
+			 "dx3"        Fasca[5]
+			 "dz3"        Fasca[6]
+			 "dx4"        Fasca[7]
+			 "dz4"        Fasca[8]
+			 "AngL"       0
+			 "AngR"       0
+	done
+	g_xb, g_yb, g_zb;
+}
+
+objident last 1 track;
+Macro ProtoPath++Doors63+"SProfLayers.mac" track;
+
+SlipRodl=iif(isvardef("g_SlipRight")==0,0,g_SlipRight);
+SlipLold=iif(isvardef("g_SlipLeft")==0,0,g_SlipLeft);
+SlipRight=iif(isvardef("g_SlipRight")==0,0,g_SlipRight);
+SlipLeft=iif(isvardef("g_SlipLeft")==0,0,g_SlipLeft);
+SlipDoors=iif(isvardef("g_SlipDoors")==0,0,g_SlipDoors);
+
+nullout=getvarinst(1,"g_dwRailD",g_dwRailD,0);
+nullout=getvarinst(1,"g_top_zw",g_top_zw,0);
+// putmsg(g_dwRailD)
+// putmsg(g_top_zw)
+NULLOUT=getVarinst(1,"g_dwRailH",g_dwRailH,0);
+NULLOUT=getVarinst(1,"g_dwRailHp",g_dwRailHp,0);
+// putmsg(g_dwRailH)
+// putmsg(g_dwRailHp)
+
+i=1;
+gosub gabs;
+LDoors:
+
+// Ключ построения непрофильной створки
+nullout=getvarinst(1,"KeyFas",KeyFas,0);
+
+// Putmsg("NrTack="+str(NrTack),1); // в системе SOFT подбираем тип ролика
+// Тип створки 00 10 01 11 0-закрыта 1-открыта  + номер ручья
+
+//putmsg("stt="+str(stt),1);
+if len(stt)<4
+{
+	stt=stt+iif(NrTack==1,"-0","+0");
+}
+Rstt=Left(stt,2);
+Lstt=Right(stt,2);
+// putmsg("цвет "+str(g_CLVer)+" створка номер "+str(i)+" stt="+str(stt),1);
+// Анализируем и подбираем профили в Базе
+//====================================================
+g_keyDS63=iif(isvardef("g_keyDS63")==0,0,g_keyDS63);
+ggs=1
+if g_keyDS63!=1
+{
+	macro ProtoPath+Doors63+"CrtSysDoor63.mac" ;
+	ggs=0;
+}
+
+CLVerR=0;
+CLVerL=0;
+ClRam=0;
+sqlArr[1]="SELECT *  ";
+sqlArr[2]="FROM DSFlapProfile ";
+sqlArr[3]="WHERE (((DSFlapProfile.ID)="+str(g_CLVer)+"));";
+SysRs=adbOpen(g_Doorscon,sqlArr,3);
+ij=adbRecCount(SysRs);
+if (ij>0)
+{
+	NULLOUT=adbMoveFirst(SysRs);
+	ClRam=adbGetValue(SysRs,"Color");
+}
+SysRs=adbClose(SysRs);
+
+sqlArr[1]="SELECT * ";
+sqlArr[2]="FROM DSExtraParams INNER JOIN DSFlapProfile ON DSExtraParams.UnitPos = DSFlapProfile.PSYSTEM ";
+sqlArr[3]="WHERE DSExtraParams.Hold2="+str(g_drp)+" AND DSExtraParams.ParamName=\"IsRprof\" AND DSExtraParams.StrValue=\""+Rstt+"\" AND DSFlapProfile.Color="+str(ClRam)+";";
+SysRs=adbOpen(g_Doorscon,sqlArr,3);
+ij=adbRecCount(SysRs);
+
+if (ij>0)
+{
+	NULLOUT=adbMoveFirst(SysRs);
+	CLVerR=adbGetValue(SysRs,"ID");
+	nullout=setvarinst(1,"CLVerR",CLVerR);
+}
+SysRs=adbClose(SysRs);
+
+sqlArr[1]="SELECT * ";
+sqlArr[2]="FROM DSExtraParams INNER JOIN DSFlapProfile ON DSExtraParams.UnitPos = DSFlapProfile.PSYSTEM  ";
+sqlArr[3]="WHERE DSExtraParams.Hold2="+str(g_drp)+" AND DSExtraParams.ParamName=\"IsLprof\" AND DSExtraParams.StrValue=\""+Lstt+"\" AND DSFlapProfile.Color="+str(ClRam)+";" ;
+SysRs=adbOpen(g_Doorscon,sqlArr,3);
+ij=adbRecCount(SysRs);
+
+if (ij>0)
+{
+	NULLOUT=adbMoveFirst(SysRs);
+	CLVerL=adbGetValue(SysRs,"ID");
+	nullout=setvarinst(1,"CLVerL",CLVerL);
+}
+SysRs=adbClose(SysRs);
+
+if ggs==0
+{
+	macro ProtoPath+Doors63+"ClosSysDoor63.mac";
+}
+g_Ntrack=NrTack;
+
+//====================================================
+nullout=setvarinst(1,"iDoorSys",i);	//-- Номер створки в системе
+
+// if g_MoveType==3||(g_rplace==1&&g_rplace==2)
+// {
+	// if i==1
+	// {
+		// nullout=setvarinst(1,"iDoorSys",2);
+	// }
+	// if i==2
+	// {
+		// nullout=setvarinst(1,"iDoorSys",1);
+	// }	
+// }
+
+if DoorSw==1
+{
+	nullout=setvarinst(1,"x1",x1);
+	nullout=setvarinst(1,"y1",y1);
+	nullout=setvarinst(1,"z1n",z1n);
+	vstMater=0;
+	numVst=0;
+	VstH1=0;
+	VstH2=0;
+	if i==1
+	{
+		nullout=getvarinst(1,"vstMater11",vstMater1,0);
+		nullout=getvarinst(1,"vstMater12",vstMater2,0);
+		nullout=getvarinst(1,"vstMater13",vstMater3,0);
+		nullout=getvarinst(1,"numVst1",numVst,101);
+		nullout=getvarinst(1,"TypeRis1",TypeRis,0);
+		if TypeRis==0
+		{
+			nullout=getvarinst(1,"VstH11",VstH1,0);
+			nullout=getvarinst(1,"VstH12",VstH2,0);
+		}
+	}
+	if i==2
+	{
+		nullout=getvarinst(1,"vstMater21",vstMater1,0);
+		nullout=getvarinst(1,"vstMater22",vstMater2,0);
+		nullout=getvarinst(1,"vstMater23",vstMater3,0);
+		nullout=getvarinst(1,"numVst2",numVst,102);
+		nullout=getvarinst(1,"TypeRis2",TypeRis,0);
+		if TypeRis==0
+		{
+			nullout=getvarinst(1,"VstH21",VstH1,0);
+			nullout=getvarinst(1,"VstH22",VstH2,0);
+		}
+	}
+	if i==3
+	{
+		nullout=getvarinst(1,"vstMater31",vstMater1,0);
+		nullout=getvarinst(1,"vstMater32",vstMater2,0);
+		nullout=getvarinst(1,"vstMater33",vstMater3,0);
+		nullout=getvarinst(1,"numVst3",numVst,103);
+		nullout=getvarinst(1,"TypeRis3",TypeRis,0);
+		if TypeRis==0
+		{
+			nullout=getvarinst(1,"VstH31",VstH1,0);
+			nullout=getvarinst(1,"VstH32",VstH2,0);
+		}
+	}
+	g_TypRis=TypeRis;
+	g_VstSt=vstMater1;
+	nullout=setvarinst(1,"vstMater1",vstMater1);
+	nullout=setvarinst(1,"vstMater2",vstMater2);
+	nullout=setvarinst(1,"vstMater3",vstMater3);
+	nullout=setvarinst(1,"numVst",numVst);
+	nullout=setvarinst(1,"VstH1",VstH1);
+	nullout=setvarinst(1,"VstH2",VstH2);
+	
+	Macro ProtoPath+"DRFlapP63.mac";
+	move last 1 done x, y, z nocopy;
+}
+else
+{
+	if KeyFas
+	{
+		NULLOUT=getvarinst(1,"PanDir",PanDir,0);
+		NULLOUT=getvarinst(2,"Typ_Kro",Typ_Kro,0);          //-- Тип лицевой кромки
+		NULLOUT=getvarinst(2,"FasDMatPVC",FasDMatPVC,0);
+		NULLOUT=getvarinst(2,"Patina",Patina,0);
+		NULLOUT=getvarinst(2,"FasDMatSk",FasDMatSk,0);
+		NULLOUT=getvarinst(2,"FasDMatPnt",FasDMatPnt,0);
+		//NULLOUT=getvarinst(2,"PrMater",PrMater,0);          //-- Умолчание для материалов корпуса
+		NULLOUT=getvarinst(1,"FasDMat",FasDMat,0);          //-- Умолчание для материалов фасада двери
+		NULLOUT=getvarinst(1,"DoorVsMater1",DoorVsMater1,0);//-- Умолчание для материалов первой вставки фасада двери
+		NULLOUT=getvarinst(2,"DoorVsMater2",DoorVsMater2,0);//-- Умолчание для материалов второй вставки фасада двери
+		NULLOUT=getvarinst(1,"FasDTyp",FasDTyp,0);          //-- Умолчание на тип фасада двери
+		NULLOUT=getvarinst(2,"DfHandl",DfHandl,0);          //-- Умолчание на тип ручки
+		NULLOUT=getvarinst(2,"DrHandPlace",DrHandPlace,0);  //-- Расположение ручки
+		NULLOUT=getvarinst(2,"DrHandX",DrHandX,0);          //-- Сдвиг ручки
+		NULLOUT=getvarinst(2,"DrHandZ",DrHandZ,0);          //-- Высота установки ручки
+		NULLOUT=getvarinst(2,"DrHandAngle",DrHandAngle,0);  //-- Угол установки ручки
+		// NULLOUT=getvarinst(2,"DUColor",col,13);             //-- Цвет утопленной двери
+		// NULLOUT=getvarinst(2,"IsColorUse",icu,1);           //-- Использовать ли цвета
+
+		if i==1
+		{	closertype=12576;	}
+		else
+		{	closertype=12575;	}
+		if i==g_Ndors
+		{	closertype=12577;	}
+		
+		// Читаем расстояния отступов корректоров по бокам с фасада
+		// ShSideCor=PriceInfo(FasDTyp,"ShiftSideCor",150,2);
+		ShSideCor=150;
+
+		protoobj create "Shkaf.ptl" ID_SFas63
+		"Syst"   		g_drp
+		"S" 			x1			// Ширина створки
+		"Hd"			z1n			// Высота створки
+		"G"				y1			// Глубина установки
+		"Nshp"			PanDir		// Направление шпона
+		"Fasrtype"		FasDTyp		// Рисунок фасада
+		"PrMater"		FasDMat		// Материал
+		"BAND"			Typ_Kro		// Тип кромки
+		"HanType"		DfHandl		// Тип ручки
+		"Rpl_r"			DrHandPlace	// Расположение ручки
+		"rx"			DrHandX		// Сдвиг ручки
+		"rz"			DrHandZ		// Высота установки ручки
+		"ra"			DrHandAngle	// Угол установки ручки
+		"closertype"	closertype
+		"ShCorSideL"	ShSideCor
+		"ShCorSideR"	ShSideCor
+		// "PrMatVs1"		DoorVsMater1 //Материал верхней вставки
+		// "PrMatVs2"		DoorVsMater2 //Материал нижней вставки
+		// "FasDMatPVC"	FasDMatPVC //Пленки ПВХ
+		// "Patina"		Patina //Патина
+		// "FasDMatSk"		FasDMatSk //Кожа
+		// "FasDMatPnt"	FasDMatPnt //Покраска
+
+		done
+		x y z ;
+	}
+	else
+	{
+		protoobj create "Shkaf.ptl" ID_S63
+		"x"      x1       //Ширина створки
+		"y"      y1       //Глубина установки
+		"z"      z1n       //Высота створки
+		"dx1"    FascaS[1]       //Фаска по X первого угла
+		"dz1"    FascaS[2]       //Фаска по Z первого угла
+		"dx2"    FascaS[3]       //Фаска по X второго угла
+		"dz2"    FascaS[4]       //Фаска по Z второго угла
+		"dx3"    FascaS[5]       //Фаска по X третьего угла
+		"dz3"    FascaS[6]       //Фаска по Z третьего угла
+		"dx4"    FascaS[7]       //Фаска по X четвертого угла
+		"dz4"    FascaS[8]       //Фаска по Z  четвертого угла
+		"Syst"   g_drp     //id Основного профиля створки
+		"CLVerR" iif(CLVerR==0,g_CLVer,CLVerR)   //id Вертикального правого
+		"CLVerL" iif(CLVerL==0,g_CLVer,CLVerL)   //id Вертикального левого
+		"CLTop"  g_CLTop   //id верхнего
+		"CLDown" g_CLDown  //id Нижнего
+		"ClVst"  g_VstSt   //id материала вставки по умолчанию
+		done
+		x y z ;
+	}
+}
+  macro ProtoPath+"SetEnam.mac" "створка" ;
+  objident last 1 flap;
+  
+  //Macro ProtoPath+"SProfLayers.mac" flap;
+if (i<g_Ndors)
+{
+ i=i+1;
+ gosub gabs1;
+ goto LDoors;
+}
+nullout=setvarinst(1,"iDoorSys",0);
+exit
+
+
+
+
+
+//------------------------------------------------------------------------------
+//-- Подпрограмма расчета габаритов и точки установки створки системы дверей
+//-- Входные данные:
+//-- g_x1,g_y1,g_z1 - габариты ниши, в которую устанавливаются створки
+//-- g_xb,g_yb,g_zb - координаты правого дльнего нижнего угла ниши
+//-- NDoors - количество створок
+//-- NJoint - количество мест перекрытия
+//-- Syst - ID системы дверей из таблицы System базы данных DoorSys.mdb
+//-- g_SlipTop - зазор сверху
+//-- g_SlipBottom - зазор снизу
+//-- g_SlipDoors - нахлест дверей
+//-- g_SlipLeft - зазор слева
+//-- g_SlipRight - зазор справа
+//-- i - номер створки
+//-- Выходные параметры:
+//-- x1, y1, z1 - габарты створки
+//-- x, y, z - координаты точки установки створки
+gabs:
+// putmsg("gabs")
+if (g_Ndors==1)
+{
+	x=g_xb+SlipRight;
+	y=g_yb;
+	z=g_zb+g_SlipBottom+g_dwRailH;;
+	x1=int(g_x1-SlipRight-SlipLeft);
+	y1=int(g_y1-g_top_zw-g_dwRailD-g_move); //int(g_y1-0.25*g_move);
+	z1=g_z1-g_SlipBottom-g_SlipTop-g_dwRailH;
+	//================
+	// Заполнение парметров фасок дверной системы для конструирования мансардного варианта
+	err=InitArray(FascaS,0);
+	macro ProtoPath++Doors63+"FindFasca.mac" x1,y1,z1,x,y,z,FascaS;
+	if FascaS[1]==0&&FascaS[2]!=0
+	{
+		z1n=z1-FascaS[2]
+		FascaS[2]=0
+	}
+	else
+	{
+		if FascaS[3]==0&&FascaS[4]!=0
+		{
+			z1n=z1-FascaS[4]
+			FascaS[4]=0
+		}
+		else
+		{
+			z1n=z1
+		}
+	}
+	stt=iif(g_movetype==5||g_movetype==1,left(g_DSet,4),str(g_DSet))
+	return;
+}
+gosub expr;
+// putmsg(NJoint)
+
+Nshl=g_Ndors-NJoint-1;
+j=0;
+sh=0;
+// putmsg(Nshl)
+
+nah=0;
+SlipDoors=iif(g_movetype==5||g_movetype==1,SlipDoors,(-1)*abs(SlipDoors));
+// Обработаем частный случай одинарного трека и створок в стык
+SpecParam=0;
+
+if g_DSet=="hhhhhh"  //"+0+0"
+{
+  NJoint=NJoint+1;
+  SlipRight=int((g_x1-SlipRodl-SlipLold+2*SlipDoors*NJoint)/(g_Ndors+2));
+  SlipLeft=SlipRight;
+//putmsg("SlipRight="+str(SlipRight),1)
+}
+
+//expression g_DSet,NJoint,e;
+// putmsg(g_DSet)
+if (left(g_DSet,1)!="+"&&left(g_DSet,1)!="-")
+{
+  nhl=int(SlipDoors*NJoint/(g_Ndors-1));
+  y1=g_y1;
+}
+x1=int((g_x1-SlipRight-SlipLeft-(Nshl*5)+SlipDoors*NJoint)/(g_Ndors))
+// putmsg(x1)
+z1=g_z1-g_SlipBottom-g_SlipTop-g_dwRailH;
+y=g_yb;
+z=g_zb+g_SlipBottom+g_dwRailH;
+
+gabs1:
+
+g_SlipDoors=iif(g_movetype==5||g_movetype==1,g_SlipDoors,(-1)*abs(g_SlipDoors));
+=g_movetype
+=g_SlipDoors
+// putmsg(g_DSet)
+if (left(g_DSet,1)!="+"&&left(g_DSet,1)!="-")
+{
+  if (int(i/2)!=(i/2))                       //-- Створки нечетные
+  {
+    y1=int(g_y1-g_top_zw-g_dwRailD-g_move);
+    NrTack=1
+  }
+  else                                       //-- Створки четные
+  {
+    y1=int(g_y1-g_top_zw-g_dwRailD);
+    NrTack=2
+  }
+  x=(i-1)*(x1-nhl)+SlipRight+g_xb;
+}
+else
+{
+  far=left(g_DSet,1);
+  if (far=="+")
+  {
+    y1=int(g_y1-g_top_zw-g_dwRailD);
+    NrTack=2
+  }
+  else
+  {
+    y1=int(g_y1-g_top_zw-g_dwRailD-g_move);
+    NrTack=1
+  }
+  
+  if right(left(g_DSet,2),1)=="0"&&i!=1
+  {
+	sh=5;
+	j=j+1;
+  }
+  nah=nah+val(right(left(g_DSet,2),1))+SpecParam;
+  x=round((i-1)*x1-SlipDoors*nah+SlipRight+g_xb+sh*j);
+  
+  stt=left(g_DSet,4);
+  g_DSet=right(g_DSet,len(g_DSet)-2);
+}
+// putmsg(x)
+
+err=InitArray(FascaS,0);
+macro ProtoPath++Doors63+"FindFasca.mac" x1,y1,z1,x,y,z,FascaS;
+
+if FascaS[1]==0&&FascaS[2]!=0
+{
+  z1n=z1-FascaS[2]
+  FascaS[2]=0
+  =z1n
+
+}
+else
+{
+ if FascaS[3]==0&&FascaS[4]!=0
+ {
+  z1n=z1-FascaS[4]
+  FascaS[4]=0
+  =z1n
+ }
+ else
+ {
+   z1n=z1
+ }
+}
+return;
+//------------------------------------------------------------------------------
+expr:
+// putmsg("expr");
+NJoint=0;
+g_DSet=str(g_DSet);
+le=len(g_DSet);
+iii=0;
+loopiii:
+st=right(left(g_DSet,len(g_DSet)-iii),1);
+stt=left(g_DSet,4);
+// putmsg(stt);
+if (st!="+"&&st!="-"&&st!="")
+{
+  NJoint=NJoint+val(st);
+}
+iii=iii+1;
+if (iii>=le)
+{
+  return;
+}
+goto loopiii;

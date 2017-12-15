@@ -1,0 +1,169 @@
+//-- Программа установки опор и линий цоколя
+//-- Входные параметры:
+//-- LegID - идентификатор опоры из прайс-листа расходных материалов
+//-- n - количество опор
+//-- x[n] - координаты X углов корпуса изделия
+//-- y[n] - координаты Y углов корпуса изделия
+//-- rad[n-1] - типы линий цоколя:
+//--  =0 -  линия - отрезок
+//--  >0 - радиус между углами
+//--  <0 - линия цоколя не нужна
+//-- Порядок обхода - с левого дальнего угла против часовой стрелки
+//-- Shift - Сдвиг опор от края корпуса изделия
+global ProtoPath;		//-- Путь к папке с макропрограммами общей библиотеке прототипов
+global MacroSw;
+defarr temp[3];
+getpar LegID,n,x,y,rad,Shift;
+if (LegID==0)
+{
+	exit;
+}
+//-- Проверяем наличие точек, на которые не нужно ставить опоры 
+NULLOUT=getvarinst(1,"NeedLegArrCol",ArrCol,0);
+if (ArrCol>0)
+{
+	defarr NeedLegArr[ArrCol];
+	NULLOUT=getArrinst(1,"NeedLegArr",NeedLegArr);
+	ArrCol=getdimarray(NeedLegArr);
+}
+
+macro ProtoPath+"MakeLeg.mac" LegID 1 0 0 0 0 0 0;
+objident last 1 leg;
+clypse=getattr(leg,"Clypse",30);
+delete leg done;
+
+NULLOUT=getsnap();
+defarr arrun[6], edge1[n], edge2[n];
+i=0;
+graph1=begingraph();
+graph2=begingraph();
+graphshift=begingraph();
+graphclypse=begingraph();
+loopig:
+i=i+1;
+arrun[1]=x[i];
+arrun[2]=y[i];
+arrun[3]=x[i+1];
+arrun[4]=y[i+1];
+arrun[5]=0;
+arrun[6]=0;
+if (rad[i]>0||rad[i]<-1)
+{
+  arrun[5]=rad[i]*iif(rad[i]<0,-1,1);
+  arrun[6]=iif(rad[i]<0,0,1);
+  un=addunobj2d(2,1,arrun)
+  edge1[i]=addedgegraph(graph1,un,Shift);
+  edge2[i]=addedgegraph(graph2,un,Shift-clypse);
+  freeunobj2d(un);
+}
+if (rad[i]==0)
+{
+  edge1[i]=addedgegraph(graph1,1,arrun,Shift);
+  edge2[i]=addedgegraph(graph2,1,arrun,Shift-clypse);
+}
+if (rad[i]==-1)
+{
+  edge1[i]=addedgegraph(graph1,1,arrun,Shift);
+  edge2[i]=addedgegraph(graph2,1,arrun,0);
+}
+if (i<n-1)
+{
+  goto loopig;
+}
+arrun[1]=x[n];
+arrun[2]=y[n];
+arrun[3]=x[1];
+arrun[4]=y[1];
+edge1[n]=addedgegraph(graph1,1,arrun,Shift);
+
+mshift=50+2*Shift; //-- Минимальное расстояние между ножками
+NULLOUT=equidgraph(graph1,graphshift);
+NULLOUT=equidgraph(graph2,graphclypse);
+ngraph1=getnumverts(graphshift);
+ngraph2=getnumverts(graphclypse);
+macro ProtoPath+"SetECod.mac" "7101" ;
+// macro ProtoPath+"SetKCod.mac" "НОГА" 0 0;
+macro ProtoPath+"SetEnam.mac" "Ножка мебельная" ;
+i=0;
+xli=999;
+yli=999;
+NotLegDo=0;	//-- признак что предыдущая опора не должна была устанавливаться
+loopig1:
+i=i+1;
+if (i<=ngraph1)
+{
+	//-- Эквидистанта графа первой точкой возвращает вторую точку графа, а не первую, поэтому делаем следующее
+	if (i==1)
+	{
+		NULLOUT=getvertgraph(graphshift,ngraph1,xl,yl);
+	}
+	else
+	{
+	  NULLOUT=getvertgraph(graphshift,i-1,xl,yl);
+	}
+	NotLeg=-2;
+	if (ArrCol>0)
+	{
+		iu=0;
+		LOOPNL:
+		iu=iu+1;
+		if (i==NeedLegArr[iu])
+		{
+			NotLeg=NeedLegArr[iu];
+		}
+		if (iu<ArrCol)
+		{
+			goto LOOPNL;
+		}
+	}	
+	//-- Проверка на допустимость установки ножки
+	if (i!=NotLeg)
+	{
+		if (NotLegDo==1)
+		{
+			macro ProtoPath+"MakeLeg.mac" LegID 1 xl yl 0 0 0 0;
+		}  
+		else
+		{
+			sqr=sqrt((xli-xl)*(xli-xl)+(yli-yl)*(yli-yl));
+		  if (sqr>mshift)
+			{
+				macro ProtoPath+"MakeLeg.mac" LegID 1 xl yl 0 0 0 0;
+			}  
+		}
+		NotLegDo=0;
+	}
+	else
+	{
+	  NotLegDo=1;
+	}
+  xli=xl;
+  yli=yl;
+}
+if (i<ngraph2)
+{
+  numv=getedgegraph(graphclypse,i,arrun);
+  if (rad[i]!=-1)
+  {
+    if (numv==4)
+    {
+      #ll line arrun[1],arrun[2],0 arrun[3],arrun[4],0 done;
+    }
+    else
+    {
+      #ll arc arrun[1],arrun[2],0 arrun[3],arrun[4],0 arrun[5],arrun[6],0;
+    }
+    chprop color ll done 15;
+    attrobj attach "Contact" Done ll 16;
+  }
+}
+if (i<max(ngraph2,ngraph1))
+{
+  goto loopig1;
+}
+NULLOUT=freegraph(graph1);
+NULLOUT=freegraph(graph2);
+NULLOUT=freegraph(graphshift);
+NULLOUT=freegraph(graphclypse);
+NULLOUT=resnap();
+exit;

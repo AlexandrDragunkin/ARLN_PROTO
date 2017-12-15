@@ -1,0 +1,12 @@
+//-- Макропрограмма запрашивает у пользователя
+//-- Координаты полочки-выноски и текст для размещения.
+
+global ProtoPath;
+defstr="0";
+Arrowtype=4;  //-- Тип стрелки по-умолчанию
+loop:
+get "Положение стрелки" point missing  x1,y1,z1 :
+get "Положение полочки" point x1,y1,z1 x2,y2,z2 :
+#defstr getvar "Введите строку" default defstr :
+macro ProtoPath+"leader.mac" Arrowtype, x1,y1,z1 x2,y2,z2 defstr;
+goto loop;

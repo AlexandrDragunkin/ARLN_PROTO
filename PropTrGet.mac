@@ -1,0 +1,19 @@
+//-- Макропрограмма читает информацию о торцевой обработке у панели
+//-- Входные параметры:
+//-- w - массив для параметров
+//-- pnt - панель, у которой читаем торцевые обработки
+//-- Выходные параметры:
+//-- w - Массив с обработками
+
+global ProtoPath;
+getpar w, pnt;
+Propil=getattr(pnt,"FRZTRC","");
+if (len(Propil)>0)
+{
+  NULLOUT=splitbydelim(Propil,",",w);
+}
+else
+{
+  NULLOUT=initarray(w,0);
+}
+exit;

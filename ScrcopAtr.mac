@@ -1,0 +1,88 @@
+//--  опирование атрибутов ScrBox и FasadPar из записи в последний объект
+global	gs_BTypeX,			//-- “ипы €щиков
+		gs_IDsec,			//-- —четчик обработанных в объекте €щиков
+		gs_FasTyp			//-- “ипы фасадов
+		gs_Kbox;			//--  ол-во €щиков из скретча
+global	gs_Nfasad,			//-- —четчик фасадов в объекте
+		gs_Kfasad;			//--  оличество фасадов (будет расчет после редактировани€)
+global	gs_ZFt,				//-- ¬ысота фасадов €щиков из скрейча
+		g_TipOn,			//-- Blum TipON
+		gs_ZFtDn			//-- дельта зазора снизу между дном €щика и корпусом
+		gs_ZFtS,			//-- ѕодрез фасадов €щиков из скрейча
+		gs_ZmZ,				//-- —двиг  замка по высотеа фасаде €щика из скрейча
+		gs_ZmFt,  			//-- Ќаличие замка на фасаде €щика из скрейча
+		g_grDec, 			//-- массив групп отделок
+		g_Dec,				//-- массив материалов отделок		
+		gs_Hk	            //-- высота короба €щика
+		gs_HmFt  			//-- Ќаличие ручки на фасаде скрытого €щика из скрейча
+		gs_LBox				//-- √лубина короба €щика
+		gs_BFasMat			//-- ћатериал фасада €щика
+		;
+
+if (!isvardef("gs_IDsec")) {
+  goto FFas;
+}
+if (gs_IDsec==0)
+{
+  goto FFas;
+}
+scr=InitScratch();
+i=1;
+Kbox=gs_Kbox;
+err=AddScratch(scr,"ящик"," олво",Kbox); 	//--  оличество €щиков по факту
+LoopS:
+if (i<=Kbox)
+{
+  err=AddScratch(scr,"“ип","ящ"+str(i),gs_BTypeX[i]);		//-- “ип €щика
+  err=AddScratch(scr,"“ип‘ас","ящ"+str(i),gs_FasTyp[i]);	//-- “ип фасада
+  err=addscratch(scr,"√рпќтд","ящ"+str(i),g_grDec[i]);		//-- √руппа отделки
+  err=addscratch(scr,"ћатќтд","ящ"+str(i),g_Dec[i]);		//-- ћатериал отделки
+  err=AddScratch(scr,"¬ыс‘ас","ящ"+str(i),gs_ZFt[i]);		//-- ¬ысота фасада €щика
+  err=AddScratch(scr,"ѕод‘ас","ящ"+str(i),gs_ZFtS[i]);		//-- ¬ысота фасада €щика
+  err=AddScratch(scr,"«ам‘ас","ящ"+str(i),gs_ZmFt[i]);		//-- «амок фасада €щика
+  err=AddScratch(scr,"«ам‘асZ","ящ"+str(i),gs_ZmZ[i]);		//-- —двиг «амка фасада €щика
+  err=AddScratch(scr,"TipOn","ящ"+str(i),g_TipOn[i]);		//-- Blum TipON 
+  err=AddScratch(scr,"ZFtDn","ящ"+str(i),gs_ZFtDn[i]);		//-- ƒельта дна снизу
+  err=addscratch(scr,"Hk","ящ"+str(i),gs_Hk[i]);			//-- ¬ысота короба €щика
+  err=addscratch(scr,"HmFt","ящ"+str(i),gs_HmFt[i]);		//-- –учка на скрытом
+  err=addscratch(scr,"LBox","ящ"+str(i),gs_LBox[i]);		//-- √лубина короба €щика
+  err=addscratch(scr,"BFasMat","ящ"+str(i),gs_BFasMat[i]);	//-- ћатериал фасада €щика
+  i=i+1;
+  goto LoopS;
+}
+
+if (!IsAttrdef("ScrBox"))
+{
+  attribute create "ScrBox" "ѕараметры €щиков" text 30 80;
+}
+objident last 1 pnt;
+writescratch(scr,"ScrBox",0);
+TermScratch(scr);
+FFas:
+If (IsAssign("ScrBox",0))
+{
+  attrobj copy record "ScrBox" done Last 1 done;
+}
+if (!isvardef("gs_Nfasad"))
+{
+  goto EEx;
+}
+if (gs_Nfasad==0)
+{
+  goto EEx;
+}
+gs_Kfasad=gs_Nfasad;
+If (isassign("FasadPar",0))
+{
+  attrobj copy record "FasadPar" done last 1 done;
+}
+EEx:
+If (isassign("FasadPar",0))
+{
+  attrobj delete record "FasadPar" done;
+}
+If (isassign("ScrBox",0))
+{
+  attrobj delete record "ScrBox" done;
+}
+exit;

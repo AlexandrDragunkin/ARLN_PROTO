@@ -1,0 +1,65 @@
+//-- Программа изменения типа двери (утопленная/накладная)
+
+NULLOUT=getvarinst(2,"BNUp",DNUp,14);                 //-- Нахлест фасада накладной двери сверху
+NULLOUT=getvarinst(2,"BNDown",DNDown,14);             //-- Нахлест фасада накладной двери снизу
+NULLOUT=getvarinst(2,"BNLeft",DNLeft,14);             //-- Нахлест фасада накладной двери слева
+NULLOUT=getvarinst(2,"BNRight",DNRight,14);           //-- Нахлест фасада накладной двери справа
+NULLOUT=getvarinst(2,"BUUp",DUUp,2);                //-- Зазор фасада утопленной двери сверху
+NULLOUT=getvarinst(2,"BUDown",DUDown,2);            //-- Зазор фасада утопленной двери снизу
+NULLOUT=getvarinst(2,"BULeft",DULeft,2);            //-- Зазор фасада утопленной двери слева
+NULLOUT=getvarinst(2,"BURight",DURight,2);          //-- Зазор фасада утопленной двери справа
+//-------------------------------------------------------------
+hdsp=DbVar("HDSP",16);
+Fas=0;
+//-------------------------------------------------------------
+//-- Укажите дверь
+onerror final;
+switch autosingle on;
+selbyattr "(Left(FurnType,4)==\"2301\")" prompt "Укажите распашную дверь:" partly : ;
+switch autosingle off;
+offerror;
+if (sysvar(61)==0)
+{
+  goto final;
+}
+Door=getselnum(1);
+err=getprotoval(Door,"R_Fas",Fas);
+err=getprotoval(Door,"G",Glub);
+err=getprotoval(Door,"PrMater",Mat);
+Tolsh=PriceInfo(Mat,"Thickness",16);
+NULLOUT=getvarinst(2,"IsColorUse",icu,1);             //-- Использовать ли цвета
+if (Fas<0)       //-- Дверь - утопленная
+{
+  y1=Glub+Tolsh;
+  protoobj edit list Door nodc       //-- Делаем её накладной
+    "G" y1
+    "R_Fas" DNRight
+    "L_Fas" DNLeft
+    "U_Fas" DNUp
+    "D_Fas" DNDown
+  done;
+	if icu==1 
+  {
+		NULLOUT=getvarinst(2,"DNColor",col,5);              //-- Цвет накладной двери
+		chprop color last 1 done col;
+	}
+}
+if (Fas>0)                      //-- Дверь - накладная
+{
+   y1=Glub-Tolsh;
+   protoobj edit list Door nodc      //-- Делаем её утопленной
+    "G" y1
+    "R_Fas" -DURight
+    "L_Fas" -DULeft
+    "U_Fas" -DUUp
+    "D_Fas" -DUDown
+  done;
+	if icu==1 
+  {
+		NULLOUT=getvarinst(2,"DUColor",col,13);             //-- Цвет утопленной двери
+		chprop color Last 1 done col;
+	}
+}
+final:
+switch autosingle off;
+exit;

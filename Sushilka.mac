@@ -1,0 +1,74 @@
+//-- Макропрограмма устанавливает сотовую полку
+defarr basep[3];
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами
+NULLOUT=getvarinst(2,"g_SShelf",SShelf,0);          //-- Тип постовой полки
+NULLOUT=getvarinst(2,"NClypseSot",NClypseSot,0);    //-- Количество клипс для сотовой полки
+NULLOUT=getvarinst(2,"SotColor",col,157);           //-- Цвет сотовой полки
+NULLOUT=getvarinst(2,"IsColorUse",icu,1);           //-- Использовать ли цвета
+
+NULLOUT=getmplsubst(47,"Shelf_ID","Shelf_typs");
+if findinarray(Shelf_ID,SShelf)==0
+{
+	SShelf=Shelf_ID[1];
+	nullout=setvarinst(2,"g_SShelf",SShelf);
+	nullout=udSetEntity("g_SShelf",SShelf);
+}
+//SShelf=484 // Временно
+// SShelfMat=priceinfo(SShelf,"AccessID",50,2);
+
+NULLOUT=setvarinst(2,"MacroSw",1);                //-- Текущий способ построения
+
+Thick=priceinfo(SShelf,"Thickness",50,2);
+onerror final;
+NULLOUT=getsnap();
+NULLOUT=pushinst(1);
+
+defarr arrin[3], arrout[14];
+arrin[1]=60;  // Высота резиновой панели
+mbget "Укажите положение сотовой полки" shell arrin arrout :
+basep[1]=arrout[1];
+basep[2]=arrout[2];
+basep[3]=arrout[3];
+xgab=arrout[4];
+ygab=arrout[5];
+Numb=arrout[6];
+Shift=arrout[7];
+
+//dn=priceinfo(SShelf,"NAME","Cотовая полка",2);   // Запись в спр.изд.
+dn="Cотовая полка";   // В справочнике слишком конкретное имя
+macro ProtoPath+"SetEnam.mac" dn;
+macromode undo off;
+
+//object_1=sysvar(60);
+position=150;  //-- Номер прототипа сотовой полки
+  protoobj create "Shkaf.ptl" position
+  "x" xgab
+  "y" basep[2]
+  "z" basep[3]
+  "width"  SShelf
+  "N_clypse" NClypseSot
+  done
+  basep[1] 0 0;
+  objident last 1  polka ;
+move last 1 done 0 0 arrin[1] nocopy;
+if (Numb>1)
+{
+  move multicopy Numb-1 polka done 0 0 shift;
+}
+
+final:
+offerror:
+
+if (isvardef("polka")==16)
+{
+  macromode undo on "Suchilka.mac" polka ;
+}
+else
+{
+  macromode undo on;
+}
+NULLOUT=resnap();
+NULLOUT=popinst(1);
+exit;
+

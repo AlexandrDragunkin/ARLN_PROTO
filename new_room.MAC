@@ -1,0 +1,9 @@
+//-- Программа создания нового проекта комнаты
+//-- Пользователь может сюда добавить свои настройки старта
+global ProtoPath;
+mbnewproject 2
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами 
+macro ProtoPath+"UserAttrs.mac" ; //-- Здесь собраны пользовательские атрибуты
+macro ProtoPath+"SetInit.mac" ; //-- Временно. потом убрать
+macro ProtoPath+"GlobalTMP.mac" ; //-- Временно. потом убрать
+exit;

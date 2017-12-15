@@ -1,0 +1,75 @@
+//-- Создание объекта - стол открытый угловой
+global MacroSw;     //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global ProtoPath;		//-- Путь к папке с макропрограммами общей библиотеке прототипов
+global LocalPath;		//-- Путь к папке с макропрограммами локальной библиотеке прототипов
+
+ProtoPath=GetProtoMac("Shkaf.ptl");
+LocalPath=GetProtoMac("Kitchen.ptl");
+MacroSw=0
+
+defarr error[10];
+NULLOUT=initarray(error,"");
+
+PrMater=DbVar("PrMater",0);   //-- Материал корпуса
+w=DbVar("Шир",330);			      //-- Ширина
+d=DbVar("Глуб",320);          //-- Глубина
+ТипУгла=DbVar("ТипУгла",0);   //-- Тип угла
+h=DbVar("Выс",822);			      //-- Высота
+h_c=DbVar("ВысЦок",100);      //-- Высота цоколя
+РазмХ=DbVar("РазмХ",100);     //-- Размер по оси X
+РазмУ=DbVar("РазмУ",100);     //-- Размер по оси Y
+Правый=DbVar("Правый",1);     //-- Ориентация
+//--------------------------------------------------------------
+h_dsp=PriceInfo(PrMater,"Thickness",DbVar("HDSP",16))
+ТипКонт=1;   //-- Прямой
+Верхний=0;   //-- Нижний
+ObjTyp=0;    //-- Мебельный
+PlcTyp=0;    //-- Нижний
+BiblNum=137; //-- В библиотеке ID=137
+if (Правый==1)
+{
+  FurnType="100010";
+}
+else
+{
+  FurnType="100007";
+}
+//--------------------------------------------------------------
+if ((ТипУгла!=0&&(РазмХ>w-h_dsp||РазмУ>d-h_dsp)||((ТипУгла==2||ТипУгла==4)&&РазмХ>d-h_dsp))&&Правый==1)
+{
+  error[1]="При заданном типе угла его параметры некорректны.";
+  error[2]="Параметры угла несовместимы с его типом.";
+  error[3]=" ";
+  error[4]="Убедитесь, что размеры по осям X или Y не превышают габариты корпуса."
+  error[5]="Проверьте, то установлен желаемый тип угла."
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 5 error;
+  cancel;
+}
+if (h_c>int(h/3))
+{
+  error[1]="Слишком большая высота цоколя.";
+  error[2]="Значение высоты цоколя не должно превышать '"+str(int(h/3))+"' мм.";
+  error[3]=" ";
+  error[4]="Убедитесь, что значение высоты цоколя указано корректно."
+  error[5]="Проверьте, корректно ли задано значение высоты стола."
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 5 error;
+  cancel;
+}
+
+macro ProtoPath+"BegUnit.mac" "" ;
+macro ProtoPath+"ScrBoxGet.mac" 0; //-- Создание Scratch атрибута ящика
+macro LocalPath+"aboadOU.mac" ;
+
+//-- Ставим размеры
+macro ProtoPath+"aDimLine.mac" w  d h  ТипКонт Верхний;
+//-- Линии контакта
+macro ProtoPath+"aContLine.mac" w d d h 0 ТипКонт Верхний;
+#Boad group all done;
+macro ProtoPath+"SetEnam.mac" "Стол открытый угловой";
+macro ProtoPath+"EndUnit.mac" w d h ;
+//-- Присваиваем атрибуты
+macro ProtoPath+"FurnAttr.mac" ObjTyp PlcTyp BiblNum FurnType;
+macro ProtoPath+"aCutAtr.mac" !Правый ТипУгла РазмХ РазмУ;
+macro ProtoPath+"OldArtic.mac" ;
+macro ProtoPath+"Scrcopatr.mac" ; //-- Запись в объект Scratch атрибута
+exit;

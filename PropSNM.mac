@@ -1,0 +1,58 @@
+//-- Установить новый пропил
+
+global ProtoPath;
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+
+PropB="B";
+PropA="A";
+PropR=4;
+PropW=6;
+PropD=8;
+PropS=100;
+PropL=100;
+
+switch autosingle on;
+selbyattr "(Left(FurnType,2)==\"01\"&&FurnType!=\"010000\")||Posit==11||Posit==12||Posit==13||Posit==14"
+  prompt "Укажите панель:" : ;
+switch autosingle off;
+
+if (sysvar(61)==0)
+{
+  exit;
+}
+p1=getselnum(1);
+select stayblink p1 done;
+
+#ok_flag
+setvar
+"Пропил в пласти панели"
+PicturesPath+"Prop.wmf"
+center
+"Введите параметры пропила"
+done
+string auto	listonly
+	 if (PropA=="A") { current }          "A"
+	 if (PropA=="F") { current }          "F"
+	done	       "Сторона пропила (A или F):"      	PropA
+string auto	listonly
+	 if (PropB=="B") { current }         "B"
+	 if (PropB=="D") { current }         "D"
+done	       "Пропил вдоль стороны (B или D):"      	PropB
+real     default PropR	       "Отступ пропила:"     	PropR
+real     default PropW	       "Ширина пропила:"     	PropW
+real     default PropD	       "Глубина пропила:"      	PropD
+real     default PropS	       "Начало пропила:"      	PropS
+real     default PropL	       "Длина пропила:"      	PropL
+done;
+
+if (ok_flag==0)
+{
+  select p1 done;
+  goto end;
+}
+select p1 done;
+macro Protopath+"PropSN.mac" PropB PropA
+	PropR PropW PropD PropS PropL p1 ;
+//protoobj edit list p1 nodc ;
+end:
+exit;

@@ -1,0 +1,4 @@
+//-- Установить текущий тип выдвижной полки
+getpar cs;
+NULLOUT=setvarinst(1,"CompShelfType",cs);
+exit;

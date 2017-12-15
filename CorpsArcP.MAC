@@ -1,0 +1,54 @@
+//-- Прототип "Корпус прямой дугообразный"
+global ProtoPath;
+global g_FurnType;    //-- Тип мебельного объекта
+KarkasNumb=getcarcnumb();  //-- Порядковый номер каркаса в сцене
+global MacroSw;       //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+MacroSw=0;
+
+w=DbVar("w",600);
+d=DbVar("d",600);
+h=DbVar("h",600);
+h_c=DbVar("h_c",100);	          //-- Высота цоколя
+HasCok=DbVar("HasCok",0);       //-- Наличие цоколя
+macro ProtoPath+"CorpsArc.mac";
+
+group all done;
+//-- Присваиваем атрибуты
+position=249;
+Namescr="ProtoParams";
+
+attrobj attach "Posit" done last 1 position;
+attrobj attach "Objtype" "PlaceType" done last 1 0 0;
+
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done last 1 done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+}
+
+if (isassign("ElemName",0))
+{
+  attrobj copy record "ElemName" done last 1 done;
+}
+else
+{
+  attrobj attach "ElemName" done last 1 "Корпус прямой дугообразный";
+}
+if (isassign("HoldName",0))
+{
+  attrobj copy record "HoldName" done last 1 done;
+}
+if (isassign("UnitName",0))
+{
+  attrobj copy record "UnitName" done last 1 done;
+}
+attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 w d h-h_c*(!HasCok); //-- Размеры корпуса
+
+attrobj attach "Assembly" done last 1 1;   //-- Добавим атрибут сборочной единицы
+attrobj copy record Namescr done last 1 done;
+attrobj attach "FurnType" done last 1 g_FurnType;
+exit;

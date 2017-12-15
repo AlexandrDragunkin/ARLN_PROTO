@@ -1,0 +1,39 @@
+//Формируем таблицу по кромке
+//StTabl.mac
+global CBDpath ;
+
+global
+IdKrom
+Ukas
+ElUkas
+CurentNum //текущий номер обрабатываемой столешницы
+CurentMat
+;
+
+getpar Length WD_PLITA ;
+
+
+fnk=CBDpath+"StDb.dbf"
+if GetCount(fnk) {  DbOpen rcdCBD,fnk; } // ищем, есть ли такая база?
+DbFilter rcdCBD,"" ;
+err=DbRecCount(rcdcbd) ;//ОПРЕДЕЛИЛИ ЧИСЛО ЗАПИСЕЙ В ОТКРЫТОМ НАБОРЕ
+if err>0 {
+   DBMoveLast rcdCBD ;
+   counter=DbGetValue(rcdcbd,1,0)  ;  //счетчик
+   }
+else { counter=0 ; }
+   //Формируем запись в dbf файл
+   DbAddNew rcdcbd ;
+   DbSetValue rcdcbd,"NUM",CurentNum ;
+   DbSetValue rcdcbd,"PRICEID",CurentMat ;
+   DbSetValue rcdcbd,"LENGTHST",Length ;
+   DbSetValue rcdcbd,"PRIZ",0 ;
+   DbSetValue rcdcbd,"WDPLITA",WD_PLITA ;
+   DbUpdate rcdcbd ;
+DbClose rcdcbd;
+exit;
+
+
+
+
+

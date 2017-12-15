@@ -1,0 +1,39 @@
+global g_DRP IDSGeo g_IDKomp g_UserVar g_InstOpt g_UIDKomp g_Shift g_Coeff gDopKompl;
+
+//======================================================
+g_InstOpt=iif(isvardef("g_InstOpt")==0,0,g_InstOpt);
+Namescr="ScrKompl";
+ScrMod=0;
+err=isassign(Namescr,0);
+defarr NamesGr[200] namesub[200];
+nulout=initarray(namesub,"");
+if (isassign(Namescr,0))
+{
+  ScrMod=readscratch(Namescr,0);   //-- Читаем из записи
+  if ScrMod>0
+  {
+     err=AddScratch(ScrMod,"сист_"+str(g_DRP),"InOp_"+str(g_IDKomp),g_InstOpt);  // "InOp_"+str(номер компл)
+     err=AddScratch(ScrMod,"сист_"+str(g_DRP),"UsVar_"+str(g_IDKomp),g_UserVar);  // "InOp_"+str(номер компл)
+	 err=AddScratch(ScrMod,"сист_"+str(g_DRP),"IdKm_"+str(g_IDKomp),g_UIDKomp);  // "IdKm_"+str(номер компл)
+	 err=AddScratch(ScrMod,"сист_"+str(g_DRP),"Shif_"+str(g_IDKomp),g_Shift);  // "Shif_"+str(номер компл)
+	 err=AddScratch(ScrMod,"сист_"+str(g_DRP),"Coef_"+str(g_IDKomp),g_Coeff);  // "Coef_"+str(номер компл)
+	 //------------------------	 
+	 i=0;
+	 labs:
+	 if i<10
+	 {
+		 i=i+1;
+		 err=AddScratch(ScrMod,"сист_"+str(g_DRP),"Dop"+str(i)+"_"+str(g_IDKomp),gDopKompl[i]);  // "Coef_"+str(номер компл)
+		 goto labs;
+	 }
+     writescratch(ScrMod,Namescr,0);
+     NULLOUT=TermScratch(ScrMod);
+
+  }
+}
+exit;
+debug:
+	putmsg("InOp_"+str(g_IDKomp)+" / "+str(g_InstOpt),1);
+	putmsg("UsVar_"+str(g_IDKomp)+" / "+str(g_UserVar),1);
+	putmsg("IdKm_"+str(g_IDKomp)+" / "+str(g_UIDKomp),1);
+return;

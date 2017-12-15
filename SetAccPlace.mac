@@ -1,0 +1,8 @@
+//-- Установить параметр размещения комплектующего
+//-- Входные параметры:
+//-- AccPlace - Код типа размещения См. смойство AccPlace в номенклатуре
+global g_AccPlace;
+
+getpar AccPlace;
+g_AccPlace=AccPlace;
+exit;

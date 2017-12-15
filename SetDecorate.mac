@@ -1,0 +1,24 @@
+//-- Добавление новой отделки
+//-- Входные параметры
+//-- Map - номер секции раскрашивания
+//-- IDVariant - ID варианта отделки
+//-- IDMat- ID материала отделки  или 0, если нужно удалить все отделки
+//-- Visibility - Видимость отделки.
+
+getpar Map,IDVariant,IDMat,Visibility;
+
+NumP=0;
+if (IDMat==0)
+{
+  NULLOUT=setvarinst(1,"g_Decorates",NumP,1);
+  exit;
+}
+//-- Читаем число отделок
+NULLOUT=getvarinst(1,"g_Decorates",NumP,1,1);
+NumP=NumP+1;
+NULLOUT=setvarinst(1,"g_Decorates",NumP,1);
+NULLOUT=setvarinst(1,"g_Decorates",Map,(NumP-1)*4+1+1);
+NULLOUT=setvarinst(1,"g_Decorates",IDVariant,(NumP-1)*4+1+2);
+NULLOUT=setvarinst(1,"g_Decorates",IDMat,(NumP-1)*4+1+3);
+NULLOUT=setvarinst(1,"g_Decorates",Visibility,(NumP-1)*4+1+4);
+exit;

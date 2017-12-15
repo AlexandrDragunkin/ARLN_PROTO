@@ -1,0 +1,66 @@
+// Создание Задней стенки
+
+global ProtoPath;		//-- Путь к папке с макропрограммами общей библиотеке прототипов
+
+global g_Scratch;
+global gb_KorpMat; // материал корпуса
+
+getpar x1 y1 z1 w h
+;
+
+#res CalcVarScr  g_Scratch  "Корпус";
+
+h_dsp=PriceInfo(gb_KorpMat,"Thickness",16);
+h_dvp=PriceInfo(ЗСтМат,"Thickness",16);
+// Построение задней стенки
+
+macro ProtoPath+"SetMat.mac" ЗСтМат ;
+macro ProtoPath+"SetECod.mac" "1103" ;
+// macro ProtoPath+"SetKCod.mac" "ЗДНС" h w;
+macro ProtoPath+"SetEnam.mac" "Задняя стенка" ;
+macro ProtoPath+"SetKrom.mac" ЦвКром 0 0 0 0 ;
+
+if (ТипЗСтен==0) {    // Утопленная
+	macro ProtoPath+"SetFix.mac"  Крепеж Крепеж Крепеж Крепеж ;
+  Macro ProtoPath+"MakePan.mac" x1 y1 z1 h w 14 ; // стенка
+  Macro ProtoPath+"CorrectNish" h_dvp 0 ;
+  exit
+}
+if (ТипЗСтен==1) {    // Накладная
+  macro ProtoPath+"SetOfSet.mac"  h_dsp-2 h_dsp-2 h_dsp-2 h_dsp-2 ;
+  Macro ProtoPath+"MakePan.mac" x1 y1 z1 h w 13 ; //задняя стенка
+  macro ProtoPath+"SetOfSet.mac"  0 0 0 0;
+  exit
+}
+if (ТипЗСтен==3) {     // Врезная
+  macro ProtoPath+"SetFix.mac"  0 0 0 0 ;
+  Macro ProtoPath+"MakePan.mac" x1-ЗСтВрезка y1+УстЗСтен z1-ЗСтВрезка
+                                h+ЗСтВрезка*1 w+ЗСтВрезка*2 13 ;
+  Macro ProtoPath+"CorrectNish" УстЗСтен+h_dvp 0 ;
+  exit
+}
+if (ТипЗСтен==-1) {    // Накладная для мойки
+  macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 1 120 120 0 0 0 ;
+  Macro ProtoPath+"MakePan.mac" x1-14 y1-h_dvp z1-14 120 120 14 ; //задняя стенка
+
+  macro ProtoPath+"SetFilet.mac" 0 0 0 1 120 120 0 0 0 0 0 0 ;
+  Macro ProtoPath+"MakePan.mac" x1+w+14-120 y1-h_dvp z1-14 120 120 14 ; //задняя стенка
+
+  macro ProtoPath+"SetFilet.mac"  1 120 120 0 0 0 0 0 0 0 0 0;
+  Macro ProtoPath+"MakePan.mac" x1+w+14-120 y1-h_dvp z1+h+14-120 120 120 14 ; //задняя стенка
+
+  macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 1 120 120 ;
+  Macro ProtoPath+"MakePan.mac" x1-14 y1-h_dvp z1+h+14-120 120 120 14 ; //задняя стенка
+
+  macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+  macro ProtoPath+"SetECod.mac" "1109" ;
+  // macro ProtoPath+"SetKCod.mac" "ЗДНЦ" h w;
+  macro ProtoPath+"SetEnam.mac" "Задняя царга" ;
+  macro ProtoPath+"SetKrom.mac" ЦвКром ТипКром ТипКром 0 0 ;
+  macro ProtoPath+"SetMat.mac" gb_KorpMat ;            // Материал корпуса
+  macro ProtoPath+"SetFix.mac"  0 0 Крепеж Крепеж ;
+  Macro ProtoPath+"MakePan.mac" x1 0 z1+h-ШирСтяж+h_dsp  ШирСтяж w 14 ; // царга
+  Macro ProtoPath+"CorrectNish" h_dsp 0 ;
+  exit;
+}
+ exit;

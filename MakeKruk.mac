@@ -1,0 +1,54 @@
+//-- Добавление мебельного крючка
+global ProtoPath ;
+global HoldName ; //-- Имя хозяина
+global UnitCode ; //-- Код изделия (текст)
+KarkasNumb=getcarcnumb(); //-- Порядковый номер каркаса в сцене
+
+getpar
+IdAcces         //-- Тип комплектующих
+NAcces	        //-- Не используется
+xn yn zn	      //-- Положение начала локальной системы координат
+ax az ax1;	    //-- Углы поворота
+
+NULLOUT=getsnap();
+object_1=sysvar(60); //-- Кол-во объектов
+  accessory "040500" IdAcces  0 yes ;
+  objident last 1 Elem;
+  move nocopy Elem done xn yn zn ;
+  rotate Elem done 2points xn yn zn xn+1 yn zn ax nocopy ;
+  rotate Elem done 2points xn yn zn xn yn zn+1 az nocopy ;
+  rotate Elem done 2points xn yn zn xn+1 yn zn ax1 nocopy ;
+
+NULLOUT=resnap();
+object_2=sysvar(60)-object_1; //-- Кол-во объектов
+if (object_2==0) //-- Нет объектов
+{
+  exit;
+}
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done Elem done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done Elem KarkasNumb;
+}
+if (isattrdef("HoldName"))
+{
+  attrobj attach "HoldName" done Elem HoldName ;
+}
+if len(ElemCode)>0
+{
+	attrobj attach "UnitCode" done Elem ElemCode ;
+}
+//  attrobj attach "GroupID" done Elem getyadsubst(54) ; //-- 81 - Группа крючки
+attrobj attach "XUnit" "YUnit" "ZUnit" done Elem 0 0 0 ; //-- Размеры детали
+
+//FurnType="040500";
+//attrobj attach "FurnType" done Elem FurnType ;
+//-- Присваиваем атрибуты комплектующим
+macro ProtoPath+"CompAttr.mac" IdAcces 1 ;
+//macro ProtoPath+"AddAttrPI.mac" Elem IdAcces 135 ;
+NULLOUT=addattrpi(Elem,1,135,IdAcces);
+exit;

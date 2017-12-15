@@ -1,0 +1,158 @@
+//============================================
+//============================================
+//
+//Выравнивание сверловки в объекте по сетке
+//
+//============================================
+// (c) Драгункин Александр г.Дубна 2003 г.
+//============================================
+//Сверловка задана для панелей достаточно жестко
+//прописана в HLFIX.
+//Если вы изменяете подрез полок или габариты панелей
+//по глубине каркаса, то получаете на чертеже боковой стенки
+//смещеные отверстия, а не стройные ряды.
+//Обычно ряд сверловки начинается от передней
+//грани (Е) боковой стенки, первое отверстие ставится на размере 37 мм
+// далее 64 далее 256 и т.д
+//представим , что ряд выглядит
+//47 32 32 32 32 32 32 32 32 32 32 32 32 32 32 32
+
+d_start=37
+d_next=32
+defarr w1[3] w2[3] xm[6] GabY[200];
+NULLOUT=GetSnap();
+object_2=sysvar(60);
+i=0
+FKarkas=0
+lab_1:
+i=i+1
+If (i<=object_2) {
+  point=getobjnum(i);
+  name=getattr(point,"Posit",-1);
+  If (name==10) {
+    Karkas=point;
+    FKarkas=1
+  }
+  goto lab_1
+}
+if (FKarkas!=0) {
+  visible Karkas done;
+  setucs lcs Karkas ;
+  invisible Karkas done;
+}
+NohMal:
+
+
+
+
+//Выбирите боковую стенку по которой выравниваем сверловку
+objident : pnt ;
+name=getattr(pnt,"Posit",-1);
+If ((name!=11)&&(name!=14)) {
+               #ok_flag
+               alternative "E R R O R !!!"
+               msgbox text "Неправильный выбор панели. Нужна боковая стенка."
+	       done "Еще раз?" "Хватит"  done
+               if ok_flag==2 {
+               NULLOUT=ReSnap();
+               exit
+               }
+        goto NohMal ;
+}
+#ok_flag
+               alternative "Внимание !!!"
+               msgbox text "Сейчас все объекты типа сверловка текущей сцены будут выровнены по указанной панели."
+	       done "Ок" "Отменить"  done
+               if ok_flag==2 {
+               NULLOUT=ReSnap();
+               exit
+               }
+//Определяем Y-габарит панели
+setucs lcs pnt ;
+if name==14 { setucs rotate 2points 0 0 0 0 0 1 -90 ; }
+
+rr=objgab3(pnt,xm)
+
+GlY=xm[5]-xm[2]
+=GlY
+
+if GlY<37  { exit }
+// Создаем массив Y-Координат
+
+GabY[1]=GlY-d_start+xm[2]
+=gaby[1]
+
+i=1
+lab1:
+j=i
+i=i+1
+GabY[i]=GabY[j]-d_next
+if GabY[i]>32 { goto lab1 ;}
+
+//считываем все объекты сцены типа сверловка и двигаем в ближайший Y
+object_2=sysvar(60);
+i=0
+lab_2:
+i=i+1
+If (i<=object_2) {
+  point=getobjnum(i);
+  name=getattr(point,"HoleType",-1);
+
+  If (name!=-1) {
+  CHPROP COLOR POINT DONE 13 ;
+
+
+    gosub DvigajY ;
+    
+    }
+    goto lab_2 ; }
+NULLOUT=ReSnap();
+EXIT
+
+
+//===подпрограммы=====
+DvigajY:
+
+rr=objgab3(point,xm)
+xsmin=xm[1];
+ysmin=xm[2];
+zsmin=xm[3];
+xsmax=xm[4];
+ysmax=xm[5];
+zsmax=xm[6];
+//ptranscs(3,2,xsmin,ysmin,zsmin,w1[1],w1[2],w1[3]);
+//ptranscs(3,2,xsmax,ysmax,zsmax,w2[1],w2[2],w2[3]);
+ w1[1]=xsmin w1[2]=ysmin w1[3]=zsmin
+ w2[1]=xsmax w2[2]=ysmax w2[3]=zsmax
+Yhole=w2[2]-(w2[2]-w1[2])/2
+=yhole
+
+//chprop color point done 10 ;
+
+//chprop color point done 1 ;
+//Текущее положение сверловки  w1[2]
+//Ищем ближайшее   GabY[i]
+DYHoll=GabY[1]
+DYconst=0
+k=0
+mac1:
+k=k+1
+DyPrev=DYHoll
+DYHoll=W1[2]-GabY[k]
+if (DYHoll<0)&&(k<(j+2)) { DYconst=1
+
+                         goto mac1
+                         }
+if (DYconst==0) {
+//:
+//return
+ }
+Y_Copy=GabY[k]
+if  abs(DYHoll)>=DyPrev { Y_Copy=GabY[k-1] ; }
+//Двигаем
+  //if abs(Y_Copy-Yhole)<8 {
+  move point done 0 Y_Copy-Yhole 0 nocopy ;
+  //}
+=abs(Y_Copy-Yhole)
+
+return;

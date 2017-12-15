@@ -1,0 +1,144 @@
+//Простановка размеров по D
+//
+//Доработка DwPDimD.mac 23.10.2007   Александр Драгункин
+//
+//          Добавлен массив ортогональных кординат
+//
+//          Изменен тип размеров parallel на free
+//
+//          Проверка на 0-е значение размера
+//
+//                   D
+//          --------------------
+//          |                   |
+//          |                   |
+//        С |                   |В
+//          |                   |
+//          |                   |
+//          --------------------
+//                   E
+//
+
+global L_SUPPORT ;
+
+
+getpar
+iD
+w1
+w2
+AriD
+AriD2
+BaseFlgD
+SdDim
+BaseBC ;
+
+wxold=w1[2]
+
+if (BaseBC=="B") { goto BaseB; }
+
+i=iD+1; 	// счетчик размеров
+lab_DD1:
+i=i-1
+if (i>0) {
+  if abs(AriD[i]-w2[1])<0.1 { // Проверка на 0-е значение стартового размера
+     w1[2]=AriD2[i] ;
+     iD=iD-1          // Уменьшаем число точек
+     goto lab_DD1 ;   // Еще раз
+     }
+  if (i==iD) {
+  ldim 3ddim w2[1] w1[2] 0
+	     AriD[i] AriD2[i] 0
+    free  w2[1] wxold-SdDim 0   ;
+    xT=AriD[i]
+    objident last 1 dm ;
+    ;macro L_SUPPORT+"EditDim.mac" 1 dm ;
+    objident last 1 dm ;
+
+  }
+  else {
+    if (AriD[i]>w1[1])&&(xT-AriD[i]>0.1) {
+      if BaseFlgD==1 {
+        ldim base
+      }
+      else {
+        ldim continue
+      }
+	     AriD[i] AriD2[i] 0  ;
+             xT=AriD[i]
+             objident last 1 dm ;
+             objident last 1 dm ;
+             ;macro L_SUPPORT+"EditDim.mac" 1 dm ;
+             objident last 1 dm ;
+    }
+
+  }
+  goto lab_DD1
+}
+if (i!=1) {
+  if (abs(w1[1]-xT)>0.1) {
+      if BaseFlgD==1 {
+        ldim base
+      }
+      else {
+        ldim continue
+      }
+	     w1[1] w1[2] 0  ;
+  }
+}
+w1[2]=wxold
+exit;
+//--------------------------------------------------D
+BaseB:
+
+Ns=1
+i=0; 	// счетчик размеров
+lab_DD2:
+i=i+1
+If (i<=iD) {
+  if abs(AriD[i]-w1[1])<0.1 { // Проверка на 0-е значение стартового размера
+     w1[2]=AriD2[i] ;
+     Ns=Ns+1          // Уменьшаем число точек
+     goto lab_DD2 ;   // Еще раз
+     }
+  if (i==Ns) {
+  ldim 3ddim w1[1] w1[2] 0
+	     AriD[i] AriD2[i] 0
+    free  w1[1] wxold-SdDim 0   ;
+    xT=AriD[i]
+    objident last 1 dm ;
+    ;macro L_SUPPORT+"EditDim.mac" 1 dm ;
+    objident last 1 dm ;
+  }
+  else {
+    if (AriD[i]<w2[1])&&(AriD[i]-xT>0.1) {
+      if BaseFlgD==1 {
+        ldim base
+      }
+      else {
+        ldim continue
+      }
+	     AriD[i] AriD2[i] 0  ;
+             xT=AriD[i]
+             objident last 1 dm ;
+             ;macro L_SUPPORT+"EditDim.mac" 1 dm ;
+             objident last 1 dm ;
+    }
+
+  }
+  goto lab_DD2
+}
+if (i!=1) {
+  if IsVarDef("xT")!=5 { goto metend ; }
+  if (abs(w2[1]-xT)>0.1) {
+      if BaseFlgD==1 {
+        ldim base
+      }
+      else {
+        ldim continue
+      }
+  	     w2[1] w1[2] 0  ;
+  }
+}
+metend:
+w1[2]=wxold
+exit;

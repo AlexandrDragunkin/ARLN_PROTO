@@ -1,0 +1,302 @@
+//-- Создание основы шкафа
+global ProtoPath;
+global g_FurnType;
+
+defarr arr[2];
+
+PrMater=DbVar("PrMater",PrMater);
+Typ_Kro=DbVar("BAND",0);
+dvpMater=DbVar("dvpMater",0);
+vstMater1=DbVar("vstMater1",0);
+vstMater2=DbVar("vstMater2",0);
+RO=DbVar("RightOrient",0);
+vstMater11=DbVar("vstMater11",0);
+vstMater12=DbVar("vstMater12",0);
+vstMater13=DbVar("vstMater13",0);
+vstMater21=DbVar("vstMater21",0);
+vstMater22=DbVar("vstMater22",0);
+vstMater23=DbVar("vstMater23",0);
+nullout=setvarinst(1,"vstMater11",vstMater11);
+nullout=setvarinst(1,"vstMater12",vstMater12);
+nullout=setvarinst(1,"vstMater13",vstMater13);
+nullout=setvarinst(1,"vstMater21",vstMater21);
+nullout=setvarinst(1,"vstMater22",vstMater22);
+nullout=setvarinst(1,"vstMater23",vstMater23);
+TypeRis1=DbVar("TypeRis1",0);
+TypeRis2=DbVar("TypeRis2",0);
+nullout=setvarinst(1,"TypeRis1",TypeRis1);
+nullout=setvarinst(1,"TypeRis2",TypeRis2);
+VstH11=DbVar("VstH11",0);
+VstH12=DbVar("VstH12",0);
+nullout=setvarinst(1,"VstH11",VstH11);
+nullout=setvarinst(1,"VstH12",VstH12);
+VstH11=DbVar("VstH21",0);
+VstH12=DbVar("VstH22",0);
+nullout=setvarinst(1,"VstH21",VstH21);
+nullout=setvarinst(1,"VstH22",VstH22);
+
+
+// Установим двери-купе
+nullout=setvarinst(1,"DoorSw",1);
+nullout=getvarinst(2,"Doors63",Doors63,"Doors63.zmc|");
+
+g_x1=X-2*h_dsp;
+g_y1=Y;
+g_z1=Z-Hcok-2*h_dsp;
+g_xb=h_dsp;
+g_yb=0;
+g_zb=Hcok+h_dsp;
+
+NULLOUT=setVarinst(2,"g_x1",g_x1);
+NULLOUT=setVarinst(2,"g_y1",g_y1);
+NULLOUT=setVarinst(2,"g_z1",g_z1);
+NULLOUT=setVarinst(2,"g_xb",g_xb);
+NULLOUT=setVarinst(2,"g_yb",g_yb);
+NULLOUT=setVarinst(2,"g_zb",g_zb);
+
+defarr sqlARR[4] sqlVer[4] sqlTop[4] sqlDOWN[4] sqlMid[4] sqlDEr[4] sqlTopTrack[4] sqlDownTrack[4], sqlMsTrack[4], SqlObram[10];
+
+global g_k3fPath;
+mp="<K3Files>";
+g_k3fPath=MPathExpand(mp);
+nullout=setvarinst(1,"g_k3fPath",g_k3fPath);
+
+global g_mans;
+g_mans=0; 
+
+global g_keyDS63;
+g_keyDS63=iif(isvardef("g_keyDS63")==0,0,g_keyDS63);
+
+global g_NDors;
+NDors=2;
+g_NDors=iif(NDors<2,2,NDors);
+
+global g_DRS;
+g_DRS=18; // ID Дверной системы
+
+global g_drp;
+g_drp=109; // Classic LT 751
+
+global g_SysEdit63;
+g_SysEdit63=1;
+
+// g_VstSt;
+// g_VstSt=vstMater1; // материал створки для умолчания
+
+g_NBTrack=2;
+
+g_key_prev=1;
+l_keyP2:
+
+SqlArr[1]="SELECT DSSystemFlap.ID, DSSystemFlap.TypeFlap, DSSystemFlap.NameSys, DSSystemFlap.Drawing, DSSystemFlap.NAME, Types.ID as TID "
+SqlArr[2]="FROM  DSSystemFlap INNER JOIN Types ON DSSystemFlap.TypeFlap = Types.ID "
+SqlArr[3]="WHERE DSSystemFlap.ID="+str(g_drp)
+// SqlArr[4]="ORDER BY DSSystemFlap.TypeFlap, DSSystemFlap.NameSys, DSSystemFlap.Drawing;"
+
+macro protopath+Doors63+"GetDS63.mac" SqlArr 3;
+global g_nameSf, g_namePs;
+global g_DRDesN, g_DRTyFI;
+g_nameSf=g_DRDesN[1];
+g_namePs=g_DRDesN[1];
+
+global g_MoveType;
+g_MoveType=g_DRTyFI[1];   //-- Определение типа движения системы дверей
+
+global g_DSet;
+g_DSet="-0+1";
+
+// macro protopath+Doors63+"InitDesignProf63.mac" ByRef g_key_prev; //-- Инициализация дизайна профиля створки
+// macro protopath+"Doors63.zmc|InitMatVst63.mac" ByRef g_key_prev; //-- Инициализация дизайна профиля створки
+
+//==Запросы в базу
+SqlARR[1]="SELECT  DSGabProfile.NameGroup, DSFlapSostav.IDSyst, Function.ID, DSFlapSostav.IDProf, DSGabProfile.Drawing, DSGabProfile.NoUse"
+sqlArr[2]=" FROM Function INNER JOIN (DSFlapSostav INNER JOIN DSGabProfile ON DSFlapSostav.IDProf = DSGabProfile.ID) "
+sqlArr[3]=" ON Function.ID = DSGabProfile.TypProfile WHERE (((DSFlapSostav.IDSyst)="+str(g_DRP)+") AND ((DSGabProfile.NoUse)=False) AND ";
+SqlArr[4]="";
+err=copyarray(SqlTOP,1,SqlArr,1);
+err=copyarray(SqlDOWN,1,SqlArr,1);
+err=copyarray(SqlMID,1,SqlArr,1);
+err=copyarray(SqlDER,1,SqlArr,1);
+err=copyarray(SqlVer,1,SqlArr,1);
+SqlVer[4]="((Function.ID)=9)) ORDER BY DSGabProfile.NameGroup;"; // вертикальный
+SqlTop[4]="((Function.ID)=15)) ORDER BY DSGabProfile.NameGroup;";
+SqlDown[4]="((Function.ID)=16)) ORDER BY DSGabProfile.NameGroup;";
+SqlMid[4]="((Function.ID)=10)) ORDER BY DSGabProfile.NameGroup;";
+SqlDer[4]="((Function.ID)=12)) ORDER BY DSGabProfile.NameGroup;";
+
+//-- Заполняем массивы названиями дизайна профиля  указанного производителя в соответствии с выбранным дизайном створки
+macro protopath+Doors63+"GetDTop63.mac" sqlVer SqlTop SqlDown SqlMid SqlDer;
+macro protopath+Doors63+"InitDesignPrOz63.mac" ByRef g_key_prev; //-- Инициализация Дизайн формы нижнего, верхнего и других профилей  если он неоднозначен
+
+if g_key_prev==0
+{
+	goto l_keyP2;
+}
+
+global g_DRTop, g_DRDown, g_DRMid, g_DRDer, g_DRVer;
+
+// macro protopath+Doors63+"drwmfmenu63.mac" g_Ndors ByRef g_key_prev;
+
+l_keyP3:
+err=copyarray(sqlTopTrack,1,SqlArr,1);
+err=copyarray(sqlDownTrack,1,SqlArr,1);
+// err=copyarray(sqlMsTrack,1,SqlArr,1);
+
+sqlTopTrack[4]="((Function.ID)=6) AND ((DSGabProfile.Nbreak)="+str(g_NBTrack)+")) ORDER BY DSGabProfile.NameGroup;";
+// sqlDownTrack[4]="((Function.ID)=7)) ORDER BY DSGabProfile.NameGroup;"; // AND ((DSGabProfile.Nbreak)="+str(g_NBTrack)+"))
+sqlDownTrack[4]="Function.ID=7 AND DSGabProfile.Nbreak="+str(g_NBTrack)+") ORDER BY DSGabProfile.NameGroup;";
+// sqlMsTrack[4]="((Function.ID)=23)) ORDER BY DSGabProfile.NameGroup;";
+
+macro protopath+Doors63+"GetDTrack63.mac" sqlTopTrack sqlDownTrack;
+macro protopath+Doors63+"InitDesignTrack63.mac" ByRef g_key_prev; //-- Инициализация Дизайн формы нижнего, верхнего трека  если он неоднозначен
+
+global g_TrTop, g_TrDown;
+
+ProfColor=DbVar("ProfColor",0);
+if ProfColor==0 { Col=""; }
+else { Col=" AND DSColorProfile.COLOR="+str(ProfColor); }
+
+SqlARR[1]="SELECT NNomenclature.Name, DSGabProfile.ID, DSFlapProfile.ID FROM ((DSGabProfile INNER JOIN DSFlapProfile ON DSGabProfile.ID = DSFlapProfile.PSYSTEM)";
+SqlARR[2]=" INNER JOIN DSColorProfile ON DSFlapProfile.Color = DSColorProfile.ID) INNER JOIN NNomenclature ON DSColorProfile.COLOR = NNomenclature.ID";
+SqlARR[4]=" ORDER BY NNomenclature.Name";
+SqlARR[3]="";
+
+err=copyarray(SqlTOP,1,SqlArr,1);
+err=copyarray(SqlDOWN,1,SqlArr,1);
+err=copyarray(SqlMID,1,SqlArr,1);
+err=copyarray(SqlDER,1,SqlArr,1);
+err=copyarray(SqlVer,1,SqlArr,1);
+err=copyarray(sqlTopTrack,1,SqlArr,1);
+err=copyarray(sqlDownTrack,1,SqlArr,1);
+err=copyarray(sqlMsTrack,1,SqlArr,1);
+
+sqlVer[3]=" WHERE (((DSGabProfile.ID)="+str(g_DRVer)+"))"+str(Col);
+SqlTop[3]=" WHERE (((DSGabProfile.ID)="+str(g_DRTop)+"))"+str(Col);
+SqlDown[3]=" WHERE (((DSGabProfile.ID)="+str(g_DRDown)+"))"+str(Col);
+SqlMid[3]=" WHERE (((DSGabProfile.ID)="+str(g_DRMid)+"))"+str(Col);
+SqlDer[3]=" WHERE (((DSGabProfile.ID)="+str(g_DRDer)+"))"+str(Col);
+
+//if g_MoveType==1  // -- Раздвижные створки
+//{  // потому что распашным тоже нужен трек
+
+ sqlTopTrack[3]=" WHERE (((DSGabProfile.ID)="+str(g_TrTop)+"))"+str(Col);
+ sqlDownTrack[3]=" WHERE (((DSGabProfile.ID)="+str(g_TrDown)+"))"+str(Col);
+ // SqlMsTrack[3]=" WHERE (((DSGabProfile.ID)="+str(g_TrMs)+"))";
+//};
+// Список общих цветов обрамления
+SqlObram[1]="SELECT QTempColObramlenieV.MName AS Name"
+SqlObram[2]=" FROM (QTempColObramlenieV INNER JOIN QTempColObramlenieGT ON QTempColObramlenieV.MName = QTempColObramlenieGT.MName)"
+SqlObram[3]=" INNER JOIN QTempColObramlenieGD ON QTempColObramlenieGT.MName = QTempColObramlenieGD.MName"
+SqlObram[4]=" GROUP BY QTempColObramlenieV.MName, QTempColObramlenieV.DSGabProfile.ID,"
+SqlObram[5]=" QTempColObramlenieV.IDSyst, QTempColObramlenieGT.DSGabProfile.ID,"
+SqlObram[6]=" QTempColObramlenieGT.IDSyst, QTempColObramlenieGD.DSGabProfile.ID, QTempColObramlenieGD.IDSyst"
+SqlObram[7]=" HAVING (((QTempColObramlenieV.DSGabProfile.ID)="+str(g_DRVer)+") AND ((QTempColObramlenieV.IDSyst)="+str(g_DRP)+")"
+SqlObram[8]=" AND ((QTempColObramlenieGT.DSGabProfile.ID)="+str(g_DRTop)+") AND ((QTempColObramlenieGT.IDSyst)="+str(g_DRP)+")"
+SqlObram[9]=" AND ((QTempColObramlenieGD.DSGabProfile.ID)="+str(g_DRDown)+") AND ((QTempColObramlenieGD.IDSyst)="+str(g_DRP)+"))"
+if ProfColor==0 { SqlObram[10]=" ORDER BY QTempColObramlenieV.MName"; }
+else
+{
+	NameColor=priceinfo(ProfColor,"MATNAME","")
+	SqlObram[10]=" AND QTempColObramlenieV.MName=\""+str(NameColor)+"\"";
+}
+
+//==================================================
+macro protopath+Doors63+"GetDColor63.mac" sqlVer SqlTop SqlDown SqlMid SqlDer sqlTopTrack sqlDownTrack SqlObram;
+macro protopath+Doors63+"InitDesCl63.mac" ByRef g_key_prev;
+if g_key_prev==0
+{
+   goto l_keyP3;
+}
+
+macro protopath+Doors63+"DrSysP63.mac";
+macro protopath+Doors63+"ClosSysDoor63.mac";
+
+finish:
+
+macro ProtoPath+"SetDir.mac" 1;
+macro ProtoPath+"SetEnam.mac" "";
+macro ProtoPath+"SetECod.mac" "";
+macro ProtoPath+"SetKrom.mac" 0 0 0 0 0;
+macro ProtoPath+"SetFix.mac"  0 0 0 0;
+macro ProtoPath+"SetFixMask.mac" 0 0 0 0;
+
+// nullout=setvarinst(1,"numVst1",0);
+// nullout=setvarinst(1,"numVst2",0);
+// nullout=setvarinst(1,"numVst3",0);
+// nullout=setvarinst(1,"vstMater1",0);
+// nullout=setvarinst(1,"vstMater2",0);
+// nullout=setvarinst(1,"DoorSw",0);
+	
+FurnType=g_FurnType;
+Namescr="ProtoParams";
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"w",X);
+err=AddScratch(ScrMod,FurnType,"D",y);
+err=AddScratch(ScrMod,FurnType,"H",Z);
+err=AddScratch(ScrMod,FurnType,"PrMater",PrMater);
+err=AddScratch(ScrMod,FurnType,"Band",Typ_Kro);
+err=AddScratch(ScrMod,FurnType,"vstMater11",vstMater11);
+err=AddScratch(ScrMod,FurnType,"vstMater12",vstMater12);
+err=AddScratch(ScrMod,FurnType,"vstMater13",vstMater13);
+err=AddScratch(ScrMod,FurnType,"vstMater21",vstMater21);
+err=AddScratch(ScrMod,FurnType,"vstMater22",vstMater22);
+err=AddScratch(ScrMod,FurnType,"vstMater23",vstMater23);
+err=AddScratch(ScrMod,FurnType,"TypeRis1",TypeRis1);
+err=AddScratch(ScrMod,FurnType,"TypeRis2",TypeRis2);
+err=AddScratch(ScrMod,FurnType,"ProfColor",ProfColor);
+// err=AddScratch(ScrMod,FurnType,"dvpMaterial",dvpMaterial);
+err=AddScratch(ScrMod,FurnType,"RightOrient",RO);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+
+nullout=setvarinst(1,"vstMater11",0);
+nullout=setvarinst(1,"vstMater12",0);
+nullout=setvarinst(1,"vstMater13",0);
+nullout=setvarinst(1,"vstMater21",0);
+nullout=setvarinst(1,"vstMater22",0);
+nullout=setvarinst(1,"vstMater23",0);
+nullout=setvarinst(1,"TypeRis1",0);
+nullout=setvarinst(1,"TypeRis2",0);
+
+exit;
+
+
+AddAcce:
+
+	i=0;
+	nexta:
+	i=i+1;
+	if i<=NAcce
+	{
+		ElemName=priceinfo(IDAcce,"MATNAME",NameAcceDef);
+		macro ProtoPath+"SetAccPLace.mac" AccPlace;
+		macro ProtoPath+"SetEnam.mac" ElemName;
+		macro ProtoPath+"MakeAcce.mac" IDAcce furnty X/2 Y/2 Z/3 0 0 0;
+		objident last 1 hobj;
+		attrobj attach "AccPlace" done hobj AccPlace;
+		
+		goto nexta;
+	}
+	return;
+
+
+AddFixer:
+
+	i=0;
+	nextf:
+	i=i+1;
+	if i<=NFix
+	{
+		ElemName=priceinfo(IDFix,"MATNAME",NameFixDef);
+		macro ProtoPath+"SetEnam.mac" ElemName;
+		macro ProtoPath+"MakeFixer.mac" X/2, Y/2, Z/3, 0,0,1,1,0,0,IDFix;
+		
+		goto nextf;
+	}
+	return;
+
+setNum:
+	
+	attrobj attach "CommonPos" done pan num;
+	attrobj attach "Number" done pan num;
+	return;

@@ -1,0 +1,29 @@
+//-- Прототип "Полка выдвижная"
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами 
+//------------------------------------------------------------------------
+PrMater=DbVar("PrMater",0); 		//-- Материал панели
+x=DbVar("x",1000);    					//-- Длина
+y=DbVar("y",450);	      				//-- Ширина
+BxType=DbVar("BxType",0);       //-- Тип выдвижной полки
+
+D=priceinfo(PrMater,"Thickness",16); //-- Толщина материала выдвижной полки
+position=40;
+Namescr="ProtoParams";
+ElemName="Полка выдвижная";
+//----------------------------------------------------------------------
+NULLOUT=pushinst(1);
+macro ProtoPath+"SetEnam.mac" " ";
+sy=sysvar(60);
+macro ProtoPath+"Vpolsb.mac";
+sy=sy-sysvar(60);
+if (sy==0)
+{
+  exit;
+}
+#obj group all done;
+macro ProtoPath+"SetEnam.mac" ElemName;
+//-- Присваиваем атрибуты
+macro ProtoPath+"EndComp.mac" obj position x y D BxType Namescr;
+NULLOUT=popinst(1);
+exit;

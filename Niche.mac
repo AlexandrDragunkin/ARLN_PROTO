@@ -1,0 +1,30 @@
+//-- Программа по умному определяет размеры ниши и точку установки
+//-- Последовательно запрашивает нижнюю полку, верхнюю полку
+//-- правую стойку, левую стойку
+//-- Выходные параметры - g_x1,g_y1,g_z1 - габариты ниши
+//-- g_xb,g_yb,g_zb - точка установки
+//-- g_dir - преимущественное направление (0 - X, 1 - Y)
+
+global g_dir;                           //-- Преимущественное направление
+global g_OpenType;                      //-- Открывание двери
+
+defarr Nisha[18];
+
+mbget "Задайте нишу:" door  Nisha : ;
+
+g_x1=Nisha[15];
+g_xb=0;
+g_y1=Nisha[16];
+g_yb=0;
+g_z1=Nisha[17];
+g_zb=0;
+g_dir=0;
+g_OpenType=Nisha[2];
+
+NULLOUT=setVarinst(2,"g_x1",g_x1);
+NULLOUT=setVarinst(2,"g_y1",g_y1);
+NULLOUT=setVarinst(2,"g_z1",g_z1);
+NULLOUT=setVarinst(2,"g_xb",g_xb);
+NULLOUT=setVarinst(2,"g_yb",g_yb);
+NULLOUT=setVarinst(2,"g_zb",g_zb);
+exit;

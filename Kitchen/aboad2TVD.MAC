@@ -1,0 +1,39 @@
+// Формирование эскиза объекта шкаф односекционный нижний
+global MacroSw  ; // Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+MacroSw=1;
+WMFPath=DbVar("WMFPath","")
+global ProtoPath;		//-- Путь к папке с макропрограммами общей библиотеке прототипов
+global LocalPath;		//-- Путь к папке с макропрограммами локальной библиотеке прототипов
+ProtoPath=GetProtoMac("Shkaf.ptl")
+LocalPath=GetProtoMac("Kitchen.ptl");
+
+w=DbVar("Шир",330)			//ширина
+d=DbVar("Глуб",320)			//глубина
+h=DbVar("Выс",822)			//высота
+
+
+macro ProtoPath+"global_s.mac" ;
+macro ProtoPath+"SetInit.mac" ;
+F2000=DbVar("F2000",0)
+macro LocalPath+"aboad2Tv.mac" ;
+
+//размеры
+	LDim 3DDim 0 d 0
+		 w d 0
+	Horizontal 0 d -150
+
+	LDim 3DDim 0 0 h
+		 0 d h
+	Parallel -150 0 h
+
+	LDim 3DDim w 0 H
+		w 0 0
+	Vertical	 w+150 0 0
+
+View None Gcs .33 .87 .38;
+Zoom all
+Hide
+
+If F2000 { Exp2d Wmf Yes WMFPath+"1.WMF" [ overwrite ] }
+Else     { Exp2d Wmf No WMFPath+"1.WMF" [ overwrite ] }
+exit;

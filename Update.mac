@@ -1,0 +1,29 @@
+global ProtoPath;
+#ok_flag
+  setvar
+  "Обновление"
+  ""
+  center
+  "Изменения будут сохранены, а К3-Мебель"
+  "закрыта. Продолжить?"
+  done
+
+  done;
+if (ok_flag==0)
+{
+	exit;
+}
+
+macro protopath+"\\drawprof\\Utilites_K3.py" "isorder" byref isORD  ;
+//putmsg(isORD);
+if isORD {
+    saveOrder; //CloseOrder; //-- Записываем проект
+}
+else
+{
+	projname=sysvar(2);
+	tprjname=projname-3+".k3";
+    save all projname [ overwrite ];
+}
+execute "C:\\ARL7\\Kit\\Update\\sync.cmd"
+exit

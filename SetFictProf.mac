@@ -1,0 +1,14 @@
+//-- Установить профиль (имя файла) и цвет K3Look фиктивного профиля
+//-- Входные параметры:
+//-- Profile - имя профиля
+//-- IdLookCol - цвет K3Look
+//-- Выходные параметры:
+//-- g_PrProf - имя профиля
+//-- g_PrfColor - цвет K3Look
+
+global g_PrfColor  g_PrProf;
+
+getpar Profile IdLookCol;
+g_PrProf=Profile
+g_PrfColor=IdLookCol;
+exit;

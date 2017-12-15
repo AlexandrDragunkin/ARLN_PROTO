@@ -1,0 +1,18 @@
+start:
+objident prompt "Укажите Объект-Источник" : PntFrom
+If !(IsAssign("ScrFlat",PntFrom))
+{
+   PutMsg("Указанный объект-источник не содержит набор параметров ScrFlat ",0);
+   goto start;
+}
+If (IsAssign("ScrFlat",PntFrom))
+{
+  attrobj delete PntFrom "ScrFlat" done ;
+}
+else
+{
+ goto metend;
+}
+smart edit list PntFrom ;
+metend:
+exit;

@@ -1,0 +1,46 @@
+//-- Редактирование материала угловых покрытий
+
+defarr data[2];   //-- Массив с данными
+Capt="";          //-- Заголовок диалогового окна
+MultiPropID=102;  //-- Индекс свойства ListMat
+data[1]=0;
+data[2]=0;
+
+onerror final;
+switch autosingle on;
+selbyattr "(Left(FurnType,2)==\"03\"&&Right(FurnType,2)==\"10\"&&IsAssign(\"$ProtoInfo\"))" prompt "Укажите угловой длинномер:" wholly : ;
+switch autosingle off;
+offerror;
+if (sysvar(61)==0)
+{
+  exit;;
+}
+pnt=getselnum(1);
+ft=getattr(pnt,"FurnType","")
+if (len(ft)==0)
+{
+  exit;
+}
+if (ft=="030110") //-- Угловая столешница
+{
+  Capt="Угловая столешница";
+}
+else
+{
+  Capt="Угловой карниз";
+}
+ft=left(ft,4)+"00";
+err=getprotoval(pnt,"LongsType",data[1]);
+err=getprotoval(pnt,"LongsMat",data[2]);
+NULLOUT=getftmat(Capt,ft,MultiPropID,data); //-- Диалог для редактирования
+if (NULLOUT==0)
+{
+  exit;
+}
+protoobj edit list pnt nodc     //-- Редактируем прототип
+"LongsType" data[1]
+"LongsMat"  data[2]
+done;
+final:
+switch autosingle off;
+exit;

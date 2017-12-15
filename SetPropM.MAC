@@ -1,0 +1,65 @@
+//-- Установить параметры пропила для панелей
+global
+PropN,   //-- Количество пропилов
+PazAM,   //--     Пропил - сторона
+PazBM,   //--     Пропил - параллельно
+PazRM,   //--     Пропил - расстояние от стороны
+PazWM,   //--     Пропил - ширина паза
+PazDM,   //--     Пропил - глубина паза
+PazSM,   //--     Пропил - отступа паза
+PazLM;   //--     Пропил - длина паза
+defarr PazAM[6] PazBM[6] PazRM[6] PazWM[6] PazDM[6] PazSM[6] PazLM[6];
+
+getpar
+PzAF    //--     Пропил - сторона
+PzBD    //--     Пропил - параллельно
+PzR     //--     Пропил - расстояние от стороны
+PzW     //--     Пропил - ширина паза
+PzD     //--     Пропил - глубина паза
+PzL     //--     Пропил - длина паза
+PzS;    //--     Пропил - отступа паза
+
+if  (len(PzAF)==0)  { goto NILL; }
+if  (PzAF==" ")     { goto NILL; }
+if  (PzAF=="X")     { exit; }
+if  (PropN==6)      { goto NILL; }
+PropN=PropN+1;
+PazAM[PropN]=PzAF;
+PazBM[PropN]=PzBD;
+PazRM[PropN]=PzR;
+PazWM[PropN]=PzW;
+PazDM[PropN]=PzD;
+PazSM[PropN]=PzS;
+PazLM[PropN]=PzL;
+
+NULLOUT=setvarinst(1,"g_Slots",PropN,1);
+NULLOUT=setvarinst(1,"g_Slots",iif(PzAF=="A",1,0),(PropN-1)*9+2);
+NULLOUT=setvarinst(1,"g_Slots",iif(PzBD=="B",7,1),(PropN-1)*9+3);
+NULLOUT=setvarinst(1,"g_Slots",PzR,(PropN-1)*9+4);
+NULLOUT=setvarinst(1,"g_Slots",PzW,(PropN-1)*9+5);
+NULLOUT=setvarinst(1,"g_Slots",PzD,(PropN-1)*9+6);
+NULLOUT=setvarinst(1,"g_Slots",PzS,(PropN-1)*9+7);
+NULLOUT=setvarinst(1,"g_Slots",PzL,(PropN-1)*9+8);
+NULLOUT=setvarinst(1,"g_Slots",0,(PropN-1)*9+9);
+NULLOUT=setvarinst(1,"g_Slots",iif(PzAF=="A",5,6),(PropN-1)*9+10);
+exit;
+NiLL:
+PropN=0; //-- Нет пропилов
+NULLOUT=setvarinst(1,"g_Slots",PropN,1);
+NULLOUT=setvarinst(1,"g_Slots",iif(PzAF=="A",1,0),(PropN-1)*9+2);
+NULLOUT=setvarinst(1,"g_Slots",0,(PropN-1)*9+4);
+NULLOUT=setvarinst(1,"g_Slots",PzR,(PropN-1)*9+4);
+NULLOUT=setvarinst(1,"g_Slots",PzW,(PropN-1)*9+5);
+NULLOUT=setvarinst(1,"g_Slots",PzD,(PropN-1)*9+6);
+NULLOUT=setvarinst(1,"g_Slots",PzS,(PropN-1)*9+7);
+NULLOUT=setvarinst(1,"g_Slots",PzL,(PropN-1)*9+8);
+NULLOUT=setvarinst(1,"g_Slots",0,(PropN-1)*9+9);
+NULLOUT=setvarinst(1,"g_Slots",iif(PzAF=="A",5,6),(PropN-1)*9+10);
+a=FindArrInst(1,"g_Slots");
+if (a>0)
+{
+  defarr Slot[a];
+  NULLOUT=initarray(Slot,0);
+  NULLOUT=setvarinst(1,"g_Slots",Slot);
+}
+exit;

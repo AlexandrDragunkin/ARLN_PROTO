@@ -1,0 +1,58 @@
+//-- Макропрограмма установки объектов из Dynalog
+global ProtoPath;
+defarr basep[3];
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами
+onerror final;
+NULLOUT=getsnap();
+NULLOUT=pushinst(1);
+defarr arrin[3], arrout[14];
+defarr arr[10];
+defarr altxt[15], altfl[15];
+
+altfl[1]=PicturesPath+"BlumStol.jpg"
+altfl[2]=PicturesPath+"BlumSH.jpg"
+
+
+defarr Ptype[15];
+
+Ptype[1]="Стол прямой";
+Ptype[2]="Шкаф прямой";
+
+#altnum
+  alternative
+  "Добавление объекта Dynalog"
+  picbox
+  text
+  center
+  "Выберите тип объекта:"
+  done
+  default 1
+  Ptype[1]  altfl[1]
+  Ptype[2]  altfl[2]
+done;
+
+if altnum==0
+{
+  cancel;
+	goto final;
+}
+
+NULLOUT=GetSnap();
+macro protopath+"addFolderToSysPath.py" ; // Расширяет список sys.path для поиска модулей Питон
+if (altnum==1)			//-- Стол
+{
+	position=getprotoid("Shkaf","Стол Dynaplan (Blum)","ProtoMacro","BlumTypeP");  //-- ID прототипа
+	Smart add proto "Shkaf" position done;
+	smart move last 1 :
+}
+if (altnum==2)			//-- Шкаф
+{
+ position=getprotoid("Shkaf","Шкаф Dunaplan (Blum)","ProtoMacro","BlumTypeSP");  //-- ID прототипа
+ Smart add proto "Shkaf" position done;
+ smart move last 1 :
+}
+final:
+NULLOUT=resnap();
+NULLOUT=popinst(1);
+exit;

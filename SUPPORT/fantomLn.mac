@@ -1,0 +1,125 @@
+//============================================
+//============================================
+//
+//Масс-инерционные характеристики профильных длинномеров
+//
+//============================================
+//============================================
+// (c) Драгункин Александр г.Дубна 2003-2014 гг.
+global L_SUPPORT ProtoPath;
+defarr xm[6] xm1[6]  MIH[20] obj[100];
+//LType=4;
+getpar LType ;
+
+macro L_support+"mselbyattrW.mac" "getattr(pt,\"LongsType\",0)=="+str(Ltype)  obj ByRef object_1 ;
+
+i=0
+j=0
+//==
+i=1;
+lab_1:
+If (i<=object_1) {
+	pnt=obj[i];
+	i=i+1;
+    name=getattr(pnt,"Longstype",-1);  // 20 февраля 2008
+    If (name!=-1) {
+    gosub MAH1;
+    }
+    else { 
+		if GetAttr(pnt,"ConnectT",-1)>0 {
+			if (!IsAttrdef("SYS_SB")) { Attribute Create "SYS_SB" "SYS_SB" Real 5 0  ; }
+			Attrobj Attach "SYS_SB" Done PNT  4  ;
+		}
+    }
+  goto lab_1
+}
+exit;
+
+//==============================================================
+
+MAH1:
+	nullout=objgab2(pnt,xm) ;
+	setucs lcs pnt ;
+	nObj=SysVar(60);
+	
+	move pnt done  0 0 0 copy 1 ; // создали копию
+	objident last 1 pnt1 ;
+	setucs gcs ;
+	PLACE PNT1 ;
+	nullout=objgab2(pnt1,xm) ;
+	move pnt1 done 2points (xm[4]-xm[1])/2+xm[1] xm[2]  (xm[6]-xm[3])/2+xm[3] 0 0 0  nocopy  ;
+	//invisible all  remove pnt1 done ;
+	//vimage off ;            //****200222008
+	SysSB=0;
+	if GetObjType(pnt1)==7 {
+		SysSB=1;
+		nChild=GetCntObjGA(pnt1);
+		if nChild>1 {
+			SysSB=2
+		}
+	}
+	mih[1]=0
+	nObj=SysVar(60)-nObj;
+
+	
+	if nObj>0 {
+		#MIH mix nodc  last nObj done ;
+		
+		delete partly last nObj done;
+	}
+	//visible all ;
+	if !mih[1] { //площадь поверхности
+		return ;
+	}
+	if GetAttr(pnt,"SelER",-1)==1 {attrobj delete PNT "SelER"  ; }
+	if (!IsAttrdef("MIH_X"))	{ Attribute Create "MIH_X" "MIH_X" Real 12 10  ; }
+	Attrobj Attach "MIH_X" Done PNT  mih[17]  ;
+	m=GetAttr(pnt,"MIH_X",-9999) ;    if m>0 { m1=-1*m m=abs(m1) }
+	Attrobj Attach "MIH_X" Done PNT  m  ;
+	if (!IsAttrdef("MIH_Y"))	{ Attribute Create "MIH_Y" "MIH_Y" Real 12 10  ; }
+	Attrobj Attach "MIH_Y" Done PNT  mih[18]  ;
+	m=GetAttr(pnt,"MIH_Y",-9999) ;    if m>0 { m1=-1*m m=abs(m1) }
+	Attrobj Attach "MIH_Y" Done PNT  m  ;
+	if (!IsAttrdef("MIH_Z"))	{ Attribute Create "MIH_Z" "MIH_Z" Real 12 10  ; }
+	Attrobj Attach "MIH_Z" Done PNT  mih[19]  ;
+	m=GetAttr(pnt,"MIH_Z",-9999) ;    if m>0 { m1=-1*m m=abs(m1) }
+	Attrobj Attach "MIH_Z" Done PNT  m ;
+	//Площадь поверхности
+	if (!IsAttrdef("MIH_S"))	{ Attribute Create "MIH_S" "MIH_S" Real 12 10  ; }
+	Attrobj Attach "MIH_S" Done PNT  mih[1]  ;
+	//Объем
+	if (!IsAttrdef("MIH_V"))	{ Attribute Create "MIH_V" "MIH_V" Real 12 10  ; }
+	Attrobj Attach "MIH_V" Done PNT  mih[2]  ;
+	//Масса
+	if (!IsAttrdef("MIH_M"))	{ Attribute Create "MIH_M" "MIH_M" Real 12 10  ; }
+	Attrobj Attach "MIH_M" Done PNT  mih[3]  ;
+	//Вес
+	if (!IsAttrdef("MIH_P"))	{ Attribute Create "MIH_P" "MIH_P" Real 12 10  ; }
+	Attrobj Attach "MIH_P" Done PNT  mih[4]  ;
+	//Статические моменты инерции
+	if (!IsAttrdef("MIH_Sxy"))	{ Attribute Create "MIH_Sxy" "MIH_Sxy" Real 12 10  ; }
+	Attrobj Attach "MIH_Sxy" Done PNT  mih[5]  ;
+	m=GetAttr(pnt,"MIH_Sxy",-9999) ;    if m>0 { m1=-1*m m=abs(m1) }
+	Attrobj Attach "MIH_Sxy" Done PNT  m  ;
+	if (!IsAttrdef("MIH_Syz"))	{ Attribute Create "MIH_Syz" "MIH_Syz" Real 12 10  ; }
+	Attrobj Attach "MIH_Syz" Done PNT  mih[6]  ;
+	m=GetAttr(pnt,"MIH_Syz",-9999) ;    if m>0 { m1=-1*m m=abs(m1) }
+	Attrobj Attach "MIH_Syz" Done PNT  m  ;
+	if (!IsAttrdef("MIH_Szx"))	{ Attribute Create "MIH_Szx" "MIH_Szx" Real 12 10  ; }
+	Attrobj Attach "MIH_Szx" Done PNT  mih[7]  ;
+	m=GetAttr(pnt,"MIH_Szx",-9999) ;    if m>0 { m1=-1*m m=abs(m1) }
+	Attrobj Attach "MIH_Szx" Done PNT  m  ;
+	if (!IsAttrdef("SYS_SB"))	{ Attribute Create "SYS_SB" "SYS_SB" Real 5 0  ; }
+	if (SysSB==1)&&(!IsAssign("Komplekt",PNT))&&(!IsAssign("Holetype",PNT)) { Attrobj Attach "SYS_SB" Done PNT  2  ;  }
+	if (SysSB==2)&&(!IsAssign("Komplekt",PNT))&&(!IsAssign("Holetype",PNT)) { Attrobj Attach "SYS_SB" Done PNT  1  ;  }
+	if (SysSB==1)&&(IsAssign("Komplekt",PNT))&&(!IsAssign("Holetype",PNT)) { Attrobj Attach "SYS_SB" Done PNT  3  ;  }
+	if (SysSB==2)&&(IsAssign("Komplekt",PNT))&&(!IsAssign("Holetype",PNT)) { Attrobj Attach "SYS_SB" Done PNT  3  ;  }
+	if (SysSB==0) { Attrobj Attach "SYS_SB" Done PNT  2  ;  }
+	
+	macro L_SUPPORT+"LnCode.mac" pnt ;
+	
+	//=========
+return;
+//===========================================================Mah1
+
+

@@ -1,0 +1,20 @@
+//-- Проверка возможности установки объекта
+KarkasNumb=getcarcnumb();
+global ProtoPath;
+
+defarr error[10];
+NULLOUT=initarray(error,"");
+selbyattr "Posit==10" wholly all done;
+k=sysvar(61);
+if (KarkasNumb<=0||k<=0)
+{
+  error[1]="Возможно, в сцене нет ни одного каркаса," ;
+  error[2]="или все каркасы собраны, или все каркасы разобраны.";
+  error[3]=" ";
+  error[4]="Проверьте наличие каркаса."
+  error[5]="Выберите текущий каркас.";
+  error[6]="Создайте новый каркас.";
+  macro Protopath+"ShowSmartError.mac" "Отсутствует текущий каркас."
+  6 error;
+  exit;
+}

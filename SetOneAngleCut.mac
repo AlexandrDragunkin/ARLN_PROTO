@@ -1,0 +1,23 @@
+//-- Задание параметров подрезки угла
+//-- Входные параметры:
+//-- Numan - номер угла (1 - 4)
+//-- Type - тип угла:
+//-- [0] Без подрезки
+//-- [1] Фаска:               1 - Смещение по X, 2 - Смещение по Y
+//-- [2] Вырез прямоугольный: 1 - Смещение по X, 2 - Смещение по Y, 3 - Радиус
+//-- [3] Дуга:                1 - Смещение по X, 2 - Смещение по Y, 3 - Радиус
+//-- [4] Скругление:          1 - Радиус
+//-- [5] Голубница:           1 - Радиус
+//-- [6] Вырез произвольный:  1 - Смещение по Х, 2 - Смещение по Y, 3 - Смещение по X вершины выреза, 4 - Смещение по Y вершины выреза
+//-- Param1 - Param5 - параметры подрезки
+//-- (Param5 - будущий радиус сопряжения)
+
+getpar Numan, Type, Param1, Param2, Param3, Param4, Param5;
+
+NULLOUT=setvarinst(1,"g_AngleCut",Type,Numan,1);
+NULLOUT=setvarinst(1,"g_AngleCut",Param1,Numan,2);
+NULLOUT=setvarinst(1,"g_AngleCut",Param2,Numan,3);
+NULLOUT=setvarinst(1,"g_AngleCut",Param3,Numan,4);
+NULLOUT=setvarinst(1,"g_AngleCut",Param4,Numan,5);
+NULLOUT=setvarinst(1,"g_AngleCut",Param5,Numan,6);
+exit;

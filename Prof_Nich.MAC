@@ -1,0 +1,62 @@
+//-- Программа установки профиля с крепежем в нишу
+global ProtoPath;
+defarr ArrFurn[3];
+NULLOUT=getvarinst(2,"WardProfMat",WrProf,0);  //-- ID текущего гардеробного профиля
+NULLOUT=getvarinst(2,"WardProfFixB",FixB,0);   //-- ID текущего начального крепежа профиля
+NULLOUT=getvarinst(2,"WardProfFixE",FixE,0);   //-- ID текущего конечного крепежа профиля
+if (WrProf==0||FixB==0||FixE==0)
+{
+ if (WrProf==0)
+ {
+  putmsg("Не установлено умолчание на тип гардеробного профиля",0);
+  putmsg("Установите его с помощью меню Заказ->Умолчания на материалы",0);
+ }
+ if (FixB==0||FixE==0)
+ {
+  putmsg("Не установлено умолчание на тип крепежа профиля",0);
+  putmsg("Установите его с помощью меню Заказ->Умолчания на материалы",0);
+ }
+ cancel;
+}
+defarr arr[10], arrin[10];
+onerror final;
+NULLOUT=GetSnap();
+NULLOUT=SetProf6Par(1,arr)
+arr[1]=WrProf
+NULLOUT=SetProf6Par(2,arr);
+NULLOUT=GetProf6Par(6,arr);
+ArrFurn[1]="350700";
+ArrFurn[2]="350800";
+ArrFurn[3]="100000";
+macro ProtoPath+"SetNicheElems.mac" 3 ArrFurn;	//-- Выбиваем какие объекты ограничат нишу
+//-- Запрашиваем у пользователя точки нп объекте
+arrin[1]=0  // Объект
+arrin[2]=0  // Флаг фасада
+arrin[3]=90  // Угол
+arrin[4]=0  // Габариты
+arrin[5]=arr[1]
+arrin[6]=arr[2]
+arrin[7]=0    // Сдвиг 0
+arrin[8]=arr[3];//-10
+arrin[9]=arr[4];//-22.5
+mbget "Укажите точку установки профиля:" line arrin arr :
+dx=((arr[5]-arr[2])*(arr[5]-arr[2]));
+dy=((arr[6]-arr[3])*(arr[6]-arr[3]));
+dz=((arr[7]-arr[4])*(arr[7]-arr[4]));
+d=sqrt(dx+dy+dz);
+NicheId=getprotoid("Shkaf","Профиль гардеробный","ProtoMacro","Prof_WardP");  //-- ID прототипа
+protoobj create "Shkaf.ptl" NicheId
+    "Шир" d
+    "PrProf"	WrProf
+    "КрепежНач"	FixB
+    "КрепежКон" FixE
+    done
+    0 0 0;
+rotate last 1 done 2points 0 0 0 d 0 0 -90 nocopy;
+NULLOUT=ReSnap();
+macro ProtoPath+"SetNicheElems.mac" 0 ArrFurn;	//-- Выбиваем какие объекты ограничат нишу
+exit;
+final:
+NULLOUT=ReSnap();
+macro ProtoPath+"SetNicheElems.mac" 0 ArrFurn;	//-- Выбиваем какие объекты ограничат нишу
+exit;

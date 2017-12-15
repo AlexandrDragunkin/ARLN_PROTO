@@ -1,0 +1,103 @@
+// ћинификс
+
+global NumFixMac;   // ƒл€ передачи количества из пользовательского макро
+NumFixMac=0;        // надо расчитать здесь
+
+getpar
+Lengh   // ƒлина стороны 
+IDHol   //  ID отверсти€
+XHol    //  положение вдоль длины от начала
+YHol    //  положение поперек длины
+ZHol    //  положение внутрь панели ? может и не надо
+;
+Tip1=1601; //  онфирмат
+Lengh=round(Lengh,0.1);
+
+Dx=32;
+if Lengh>364 { Dx=64; }
+
+if (Lengh<64)
+{
+	exit;
+}
+
+if Lengh<96
+{
+	i=1;
+	IDHol[i]=Tip1
+	XHol[i]=Lengh/2
+	YHol[i]=0
+	zHol[i]=0
+	
+	NumFixMac=i;
+	exit;
+}
+	
+i=1;
+IDHol[i]=Tip1
+XHol[i]=Lengh-Dx
+YHol[i]=0
+zHol[i]=0
+	
+i=i+1
+IDHol[i]=Tip1
+XHol[i]=Dx
+YHol[i]=0
+zHol[i]=0
+
+if Lengh>512&&Lengh<=1024
+{
+	i=i+1;
+	IDHol[i]=Tip1
+	XHol[i]=Lengh/2
+	YHol[i]=0
+	zHol[i]=0
+	
+	NumFixMac=i;
+	exit
+}
+
+if Lengh>1024&&Lengh<=1472
+{
+	i=i+1
+	IDHol[i]=Tip1
+	XHol[i]=Dx+(Lengh-Dx*2)/3
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1
+	IDHol[i]=Tip1
+	XHol[i]=Dx+2*(Lengh-Dx*2)/3
+	YHol[i]=0
+	zHol[i]=0
+	
+	NumFixMac=i;
+	exit
+}
+
+if Lengh>1472
+{
+	i=i+1
+	IDHol[i]=Tip1
+	XHol[i]=Dx+(Lengh-Dx*2)/4
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1
+	IDHol[i]=Tip1
+	XHol[i]=Dx+2*(Lengh-Dx*2)/4
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1
+	IDHol[i]=Tip1
+	XHol[i]=Dx+3*(Lengh-Dx*2)/4
+	YHol[i]=0
+	zHol[i]=0
+	
+	NumFixMac=i;
+	exit
+}
+
+NumFixMac=i;
+exit;

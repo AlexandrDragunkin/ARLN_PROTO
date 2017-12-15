@@ -1,0 +1,57 @@
+//-- Программа установки необходимого количества петель на дверь
+
+curcol=sysvar(40);
+// global g_colselect;
+global ProtoPath;
+
+again:
+onerror final;
+switch autosingle on;
+selbyattr "(Left(FurnType,2)==\"23\")" prompt "Укажите распашную дверь:" wholly : ;
+switch autosingle off;
+offerror;
+if (sysvar(61)==0)
+{
+  exit;;
+}
+Door=getselnum(1);
+select stayblink Door done;
+KHin=0;
+If (IsAttrdef("NHinges"))
+{
+  If (IsAssign("NHinges",Door))
+  {
+    KHin=getattr(Door,"NHinges",0);
+    if (KHin<=1)
+    {
+      KHin=0;
+    }
+  }
+}
+
+#ok_flag
+setvar
+"Количество петель"
+""
+left
+"Задайте количество петель"
+done
+logical	default	KHin<=0	"Вычислять автоматически"	LKhin
+real	default	KHin	"Количество петель:"		KHin
+// real 	default	ShDR	"Отступ петли от низа(право)"		ShDR
+// real 	default	ShLU	"Отступ петли от верха(лево)"		ShLU
+done;
+if (ok_flag==0)
+{
+  goto final;
+}
+if (LKHin==1)
+{
+  KHin=0;
+}
+// macro ProtoPath+"SetHingeShift.mac" ShDR ShLU;
+macro ProtoPath+"SetHinge.mac" KHin;
+macro ProtoPath+"HingeSN.mac" KHin, Door, 0;
+protoobj edit list Door nodc ;
+final:
+exit;

@@ -1,0 +1,599 @@
+//-- Программа рисует и заполняет формат и основную надпись
+//-- Входные параметры:
+//-- g_h, g_w - высота и ширина формата
+//-- g_autosc==1 - масштаб автоматически
+//-- g_doc - тип документа
+//-- g_autoosn==1 - заполнять основную надпись автоматически
+//-- g_name - название изделия
+//-- g_mater - материал изделия
+//-- g_outfr==1 - рисовать внешнюю рамку
+//-- g_scala - масштаб чертежа
+
+//-- Рамка нужного формата
+
+defarr gab[6], cap[18];
+defarr massn[35], mass[35];
+global g_h, g_w, g_autosc, g_autoosn, g_doc, g_name, g_mater, g_outfr;
+global ProtoPath;
+global g_caption, g_color ;
+global g_draw, g_table1, g_tablei1, g_table2, g_tablei2;
+KarkasNumb=getcarcnumb(), g_PorNumber;
+global g_scala;
+
+defarr temptime[8];
+NULLOUT=sysarr(81,temptime);
+strdate=str(temptime[1])+"."+iif((temptime[2]<10),"0","")+str(temptime[2])+"."; //-- Строка текущей даты
+
+h=g_h;
+w=g_w
+doc=g_doc;
+autosc=g_autosc;
+autoosn=g_autoosn;
+karkas=KarkasNumb;
+number=g_PorNumber;
+NULLOUT=initarray(cap,"");
+
+mass[1]="1:1000";  massn[1]=1/1000;
+mass[2]="1:800";   massn[2]=1/800;
+mass[3]="1:500";   massn[3]=1/500;
+mass[4]="1:400";   massn[4]=1/400;
+mass[5]="1:200";   massn[5]=1/200;
+mass[6]="1:100";   massn[6]=1/100;
+mass[7]="1:75";    massn[7]=1/75;
+mass[8]="1:50";    massn[8]=1/50;
+mass[9]="1:40";    massn[9]=1/40;
+mass[10]="1:25";   massn[10]=1/25;
+mass[11]="1:20";   massn[11]=1/20;
+mass[12]="1:15";   massn[12]=1/15;
+mass[13]="1:10";   massn[13]=1/10;
+mass[14]="1:5";    massn[14]=1/5;
+mass[15]="1:4";    massn[15]=1/4;
+mass[16]="1:2.5";  massn[16]=1/2.5;
+mass[17]="1:2";    massn[17]=0.5;
+mass[18]="1:1";    massn[18]=1;
+mass[19]="2:1";    massn[19]=2;
+mass[20]="2.5:1";  massn[20]=2.5;
+mass[21]="4:1";    massn[21]=4;
+mass[22]="5:1";    massn[22]=5;
+mass[23]="10:1";   massn[23]=10;
+mass[24]="15:1";   massn[24]=15;
+mass[25]="20:1";   massn[25]=20;
+mass[26]="25:1";   massn[26]=25;
+mass[27]="40:1";   massn[27]=40;
+mass[28]="50:1";   massn[28]=50;
+mass[29]="75:1";   massn[29]=75;
+mass[30]="100:1";  massn[30]=100;
+mass[31]="200:1";  massn[31]=200;
+mass[32]="400:1";  massn[32]=400;
+mass[33]="500:1";  massn[33]=500;
+mass[34]="800:1";  massn[34]=800;
+mass[35]="1000:1"; massn[35]=1000;
+
+grfcoeff=1;
+
+setucs vcs;
+
+if (isvardef("g_draw")==16&&(isvardef("g_table1")+isvardef("g_table2")>=16))
+{
+  extract g_draw if (isvardef("g_table1")==16) { g_table1 } if (isvardef("g_table2")==16) { g_table2 } done;
+}
+
+NULLOUT=objgab3(g_draw,gab);
+xmin=gab[1];
+xmax=gab[4];
+ymin=gab[2];
+ymax=gab[5];
+
+scal=min(((w-27)/(xmax-xmin)),((h-70)/(ymax-ymin)));
+
+xt1=0;
+yt1=0;
+xt2=0;
+yt2=0;
+if (g_tablei1!=0)
+{
+    NULLOUT=objgab3(g_table1,gab);
+    xt1=gab[4]-gab[1];
+    yt1=gab[5]-gab[2];
+}
+if (g_tablei2!=0)
+{
+    NULLOUT=objgab3(g_table2,gab);
+    xt2=gab[4]-gab[1];
+    yt2=gab[5]-gab[2];
+}
+gosub maxscale;
+gosub curdef;
+curr=cur;
+scal=max(scal1,max(scal2,max(scal3,scal4)));
+gosub curdef;
+if (cur!=curr&&(g_tablei1!=0||g_tablei2!=0))
+{
+    if (g_tablei1!=0)
+    {
+	scale g_table1 done 0,0,0 0.5 nocopy;
+        NULLOUT=objgab3(g_table1,gab);
+        xt1=gab[4]-gab[1];
+        yt1=gab[5]-gab[2];
+    }
+    if (g_tablei2!=0)
+    {
+	scale g_table2 done 0,0,0 0.5 nocopy;
+        NULLOUT=objgab3(g_table2,gab);
+        xt2=gab[4]-gab[1];
+        yt2=gab[5]-gab[2];
+    }
+    gosub maxscale;
+    scal=max(scal1,max(scal2,max(scal3,scal4)));
+    gosub curdef;
+}
+if (scal==scal1)
+{
+    if (g_tablei1!=0)
+    {
+        NULLOUT=objgab3(g_table1,gab);
+	move g_table1 done 2points gab[1],gab[2],gab[3] xmin, ymax+5/scal, gab[3] nocopy;
+    }
+    if (g_tablei2!=0)
+    {
+        NULLOUT=objgab3(g_table2,gab);
+	move g_table2 done 2points gab[1],gab[2],gab[3] xmin+5/scal+xt1, ymax+5/scal, gab[3] nocopy;
+    }
+}
+if (scal==scal2)
+{
+    if (g_tablei1!=0)
+    {
+        NULLOUT=objgab3(g_table1,gab);
+	move g_table1 done 2points gab[1],gab[2],gab[3] xmin-xt1-10/scal, ymin+5/scal, gab[3] nocopy;
+    }
+    if (g_tablei2!=0)
+    {
+        NULLOUT=objgab3(g_table2,gab);
+	move g_table2 done 2points gab[1],gab[2],gab[3] xmin-xt2-10/scal, ymin+15/scal+yt1, gab[3] nocopy;
+    }
+}
+if (scal==scal3)
+{
+    if (g_tablei1!=0)
+    {
+        NULLOUT=objgab3(g_table1,gab);
+	move g_table1 done 2points gab[1],gab[2],gab[3] xmin-xt1-10/scal, ymin+5/scal, gab[3] nocopy;
+    }
+    if (g_tablei2!=0)
+    {
+        NULLOUT=objgab3(g_table2,gab);
+	move g_table2 done 2points gab[1],gab[2],gab[3] xmin-xt2-15/scal-xt1, ymin+5/scal, gab[3] nocopy;
+    }
+}
+if (scal==scal4)
+{
+    if (g_tablei1!=0)
+    {
+        NULLOUT=objgab3(g_table1,gab);
+	move g_table1 done 2points gab[1],gab[2],gab[3] xmin, ymax+5/scal, gab[3] nocopy;
+    }
+    if (g_tablei2!=0)
+    {
+        NULLOUT=objgab3(g_table2,gab);
+	move g_table2 done 2points gab[1],gab[2],gab[3] xmin, ymax+15/scal+yt1, gab[3] nocopy;
+    }
+}
+explode g_draw done;
+if (g_tablei1!=0)
+{
+    explode g_table1 done;
+}
+if (g_tablei2!=0)
+{
+    explode g_table2 done;
+}
+group all done;
+objident last obj;
+NULLOUT=objgab3(obj,gab);
+xmin=gab[1];
+xmax=gab[4];
+ymin=gab[2];
+ymax=gab[5];
+rectangle 20,5,0 w-5,h-5,0;
+chprop lwidth last done 0.7;
+if (g_outfr==1)
+{
+  rectangle 0,0,0 w,h,0;
+  chprop lwidth last done 0.3;
+}
+//---------------------------------------------------------------------
+chen:
+if (autosc==1)
+{
+    scall=mass[cur];
+    own=0;
+    goto aut;
+}
+if (scal<1)
+{
+    ascal="1:"+str(1/scal);
+}
+else
+{
+    ascal=str(scal)+":1";
+}
+#ok_flag
+   setvar
+   "Масштаб"
+   ""
+   left
+   "Задайте масштаб"
+   "(коэффициент: "+ascal+")"
+   done
+   str 	listonly
+	let j=1
+	LoopJ1:
+	if (j==cur)
+	{
+	current
+	}
+	mass[j]
+	if (j<25) { Let j=j+1 goto LoopJ1 }
+	done
+	"Масштаб:" scall
+   logical default 0 "Свой масштаб" own
+done;
+if (ok_flag==0)
+{
+   cancel;
+}
+aut:
+if (own==1)
+{
+    #ok_flag
+       setvar
+       "Свой масштаб"
+       ""
+       left
+       "Задайте свой масштаб"
+       done
+       real default scal "Масштаб:" scal
+    done;
+    if (ok_flag==0)
+    {
+       cancel;
+    }
+}
+else
+{
+    n=len(scall);
+    if (left(scall,2)=="1:")   // Масштаб уменьшения
+    {
+       scal=1/val(right(scall,n-2));
+    }
+    else                     // Масштаб увеличения
+    {
+       scal=val(left(scall,n-2));
+    }
+}
+
+//******************************************************************************
+scaleview obj done (xmin+xmax)/2,(ymax+ymin)/2,0 scal scal;
+//******************************************************************************
+g_scala=scal;
+
+//chprop grfcoeff obj done scal ;
+//scalecoeff obj done 1/scal ;
+move obj done 2points (xmax+xmin)/2,(ymax+ymin)/2,0 (w-30)/2+25,(h-80)/2+65,0 nocopy;
+//-- Заполняем пустыми строками массив
+
+if (doc=="Чертеж")
+{
+    file=Protopath+"osn_A.txt";
+    gosub fill;
+    macro ProtoPath+"osnCap_A.mac" cap;
+}
+if (doc=="Текстовый документ (1 стр.)")
+{
+    file=Protopath+"osn_B1.txt";
+    gosub fill;
+    macro ProtoPath+"osnCap_B1.mac" cap;
+}
+if (doc=="Текстовый документ (2 и т.д. стр.)")
+{
+    file=Protopath+"osn_B2.txt";
+    gosub fill;
+    macro ProtoPath+"osnCap_B2.mac" cap;
+}
+
+move g_caption done 2points 0,0,0 w-190,5,0 nocopy;
+nnn=sysvar(60);
+explode obj done;
+if (g_color==0)
+{
+    chprop color last sysvar(60)-nnn+1 done 0;
+}
+
+exit;
+
+fill:
+i=1;
+empty:
+if (i<=18)
+{
+   cap[i]=getstr(file,i);
+   if (i==5&&doc=="Чертеж")
+   {
+       cap[i]=scall;
+   }
+   if (i==1&&(doc=="Чертеж"||doc=="Текстовый документ (1 стр.)"))
+   {
+       cap[i]=g_name;
+   }
+   if (i==3&&doc=="Чертеж")
+   {
+       cap[i]=g_mater;
+   }
+   if (i==2&&(doc=="Чертеж"||doc=="Текстовый документ (1 стр.)")||i==1&&doc=="Текстовый документ (2 и т.д. стр.)")
+   {
+     if (len(g_KonsCode)==0)
+     {
+       gosub nazvanie;
+     }
+     else
+     {
+       cap[i]=g_KonsCode;
+     }
+   }
+   if ((doc=="Чертеж"&&(i==10||i==12||i==14||i==16||i==18))||(doc=="Текстовый документ (1 стр.)"&&(i==7||i==9||i==11||i==13||i==15)))
+   {
+       cap[i]=strdate;
+   }
+
+   i=i+1;
+   goto empty;
+}
+return;
+//--------------------------------------------------
+curdef:
+if (scal<0.00125)
+{
+   cur=1;
+   return;
+}
+if (scal<0.002)
+{
+   cur=2;
+   return;
+}
+if (scal<0.0025)
+{
+   cur=3;
+   return;
+}
+if (scal<0.005)
+{
+   cur=4;
+   return;
+}
+if (scal<0.01)
+{
+   cur=5;
+   return;
+}
+if (scal<0.013)
+{
+   cur=6;
+   return;
+}
+if (scal<0.02)
+{
+   cur=7;
+   return;
+}
+if (scal<0.025)
+{
+   cur=8;
+   return;
+}
+if (scal<0.04)
+{
+   cur=9;
+   return;
+}
+if (scal<0.05)
+{
+   cur=10;
+   return;
+}
+if (scal<0.067)
+{
+   cur=11;
+   return;
+}
+if (scal<0.1)
+{
+   cur=12;
+   return;
+}
+if (scal<0.2)
+{
+   cur=13;
+   return;
+}
+if (scal<0.25)
+{
+   cur=14;
+   return;
+}
+if (scal<0.4)
+{
+   cur=15;
+   return;
+}
+if (scal<0.5)
+{
+   cur=16;
+   return;
+}
+if (scal<1)
+{
+   cur=17;
+   return;
+}
+if (scal<2)
+{
+   cur=18;
+   return;
+}
+if (scal<2.5)
+{
+   cur=19;
+   return;
+}
+if (scal<4)
+{
+   cur=20;
+   return;
+}
+if (scal<5)
+{
+   cur=21;
+   return;
+}
+if (scal<10)
+{
+   cur=22;
+   return;
+}
+if (scal<15)
+{
+   cur=23;
+   return;
+}
+if (scal<20)
+{
+   cur=24;
+   return;
+}
+if (scal<25)
+{
+   cur=25;
+   return;
+}
+if (scal<40)
+{
+   cur=26;
+   return;
+}
+if (scal<50)
+{
+   cur=27;
+   return;
+}
+if (scal<75)
+{
+   cur=28;
+   return;
+}
+if (scal<100)
+{
+   cur=29;
+   return;
+}
+if (scal<200)
+{
+   cur=30;
+   return;
+}
+if (scal<400)
+{
+   cur=31;
+   return;
+}
+if (scal<500)
+{
+   cur=32;
+   return;
+}
+if (scal<800)
+{
+   cur=33;
+   return;
+}
+if (scal<1000)
+{
+   cur=34;
+   return;
+}
+cur=35;
+return;
+//----------------------------------------------------------------------------
+maxscale:
+gabx1=max(xmax-xmin,xt1+xt2+5/scal);
+gaby1=ymax-ymin+max(yt1,yt2)+5/scal;
+scal1=min(((w-27)/gabx1),((h-70)/gaby1));
+
+gabx2=xmax-xmin+max(xt1,xt2)+5/scal;
+gaby2=max(ymax-ymin,yt1+yt2+5/scal);
+scal2=min(((w-27)/gabx2),((h-70)/gaby2));
+
+gabx3=xmax-xmin+xt1+xt2+5/scal;
+gaby3=max((ymax-ymin),max(yt1,yt2))+5/scal;
+scal3=min(((w-27)/gabx3),((h-70)/gaby3));
+
+gabx4=max((xmax-xmin),max(xt1,xt2))+5/scal;
+gaby4=ymax-ymin+yt1+yt2+5/scal;
+scal4=min(((w-27)/gabx4),((h-70)/gaby4));
+return;
+
+//==Формируем шифр чертежа
+nazvanie:
+j=0;
+cap[i]=Ltrim(cap[i]); //==Отрезаем пробелы слева, если они есть
+n=len(cap[i]); //==Число символов в строке
+naz1:
+j=j+1;
+if (j<=n)
+{
+    a=left(cap[i],j);
+    b=right(a,1);
+    if (b==" ")         //==Выбираем слово до первого пробела
+    {   nazv1=left(cap[i],j+1);
+    	nazv2=Right(nazv1,1);
+	s1=IsUpper(nazv2);
+	s2=IsLower(nazv2);
+	if (s1==0&&s2==0)     //==Проверяем: может быть название является словосочетанием
+	{
+            nazv=Left(cap[i],j-1);
+	     goto naz2;
+        }
+	   goto naz1;
+    }
+    goto naz1;
+}
+nazv=left(cap[i],n);
+
+
+naz2:  //==Формируем цифровые значения шифра
+if (karkas<10)
+{
+    nk="0"+str(karkas)
+}
+else
+{
+  nk=str(karkas)
+}
+if (len(str(number))<3)
+{
+    if (len(str(number))<2)
+    {
+       pn="00"+str(number)
+    }
+    else
+    {
+        pn="0"+str(number)
+    }
+}
+else
+{
+  pn=str(number)
+}
+cap[i]=nazv+" "+"00."+nk+"."+pn; //==Окончательно формируем шифр
+return;

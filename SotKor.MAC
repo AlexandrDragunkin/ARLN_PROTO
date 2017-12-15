@@ -1,0 +1,31 @@
+//-- Макропрограмма создания сотовых корзин
+global ProtoPath;
+KarkasNumb=getcarcnumb();                    //-- Порядковый номер каркаса в сцене
+
+complect=dbvar("complect",0);           //-- ID сотовой корзины в прайс-листе
+
+sss=sysvar(60);
+Macro ProtoPath+"MakeKorz.mac" complect 0 0 0 0 0 0 0;
+
+ssss=sysvar(60)-sss;
+if (ssss<1)
+{
+  exit;
+}
+  objident last 1 COMP ;
+
+//-- Номер в библиотеке прототипов
+position=151;
+attrobj attach "Posit" done COMP position;
+
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done COMP done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done COMP KarkasNumb;
+}
+FurnType="330000";
+attrobj attach "FurnType" done COMP FurnType ;
+exit;

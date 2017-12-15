@@ -1,0 +1,37 @@
+global ProtoPath ;
+//*********************************************
+// Формирование строки для атрибута Синема 
+// Добавим Поворот вокруг оси на угод
+//              МСВ
+//              ГеоС 2014 г.
+//*********************************************
+getpar
+scr		// скретч
+x1, y1, z1,	// Точка оси 1
+x2, y2, z2,	// Точка оси 2
+Angle		// Угол
+btime		// Начальное время
+etime		// Конечное время
+BossKey		// Ключ хозяина
+;
+
+//  cinestr[1]=cinestr[1]+str(BossKey)+", "+str(btime)+", "+str(etime)+", ";
+//  cinestr[1]=cinestr[1]+"1, "+str(x1)+", "+str(y1)+", "+str(z1)+", ";
+//  cinestr[1]=cinestr[1]+str(x2)+", "+str(y2)+", "+str(z2)+", "+str(angle)+", ";
+
+	defarr scarr[12];
+	scarr[1]=scr
+	scarr[2]=BossKey
+	scarr[3]=btime
+	scarr[4]=etime
+	scarr[5]=x1
+	scarr[6]=y1
+	scarr[7]=z1
+	scarr[8]=x2
+	scarr[9]=y2
+	scarr[10]=z2
+	scarr[11]=Angle
+	kol=CinemaScr(2,scarr);
+
+
+exit;

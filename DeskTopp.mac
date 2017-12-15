@@ -1,0 +1,38 @@
+//-- Прототип "Угловая столешница"
+global ProtoPath;
+
+x=DbVar("x",1000);          //-- Ширина
+Rt=DbVar("Rt",600);         //-- Ширина правой стороны
+Lt=DbVar("Lt",600);         //-- Ширина левой стороны
+z=DbVar("z",70);            //-- Высота ступеньки
+
+y=x+Lt-Rt;                  //-- Глубина
+
+macro ProtoPath+"DeskTop.mac" ;
+group all done;
+
+//-- Присваиваем атрибуты
+position=144;
+FurnType="030110";
+Namescr="ProtoParams";
+attrobj attach "Posit" done last 1 position;
+attrobj attach "Objtype" "PlaceType" done last 1 2 4;
+
+if (isassign("ElemName",0))
+{
+  attrobj copy record "ElemName" done last 1 done;
+}
+else
+{
+  dn="Угловая столешница"
+  attrobj attach "ElemName" done last 1 dn;
+}
+attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 x y z; //-- Размеры угловой столешницы
+if (isassign("HoldName",0))
+{
+  attrobj copy record "HoldName" done last 1 done;
+}
+attrobj attach "FurnType" done last 1 FurnType ;
+attrobj attach "Assembly" done last 1 1;      //-- Признак сборочной единицы
+attrobj copy record Namescr done last 1 done;
+exit;

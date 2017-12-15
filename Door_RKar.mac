@@ -1,0 +1,226 @@
+//-- Макропрограмма устанавливает карусельную угловую распашную дверь
+global MacroSw;       //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global
+DoorBCol,             //-- Цвет кромки двери
+DoorBand              //-- Тип кромки фасада
+;
+defarr NichePar[17];
+defarr arr[10];
+global MacroSw;       //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+MacroSw=1;
+NULLOUT=initarray(arr,0);
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами
+NULLOUT=getvarinst(2,"Typ_Kro",Typ_Kro,0);          //-- Тип лицевой кромки
+NULLOUT=getvarinst(2,"PrMater",PrMater,0);          //-- Умолчание для материалов корпуса
+NULLOUT=getvarinst(2,"FasDMat",FasDMat,0);          //-- Умолчание для материалов фасада двери
+NULLOUT=getvarinst(2,"DoorVsMater1",DoorVsMater1,0);//-- Умолчание для материалов первой вставки фасада двери
+NULLOUT=getvarinst(2,"DoorVsMater2",DoorVsMater2,0);//-- Умолчание для материалов второй вставки фасада двери
+NULLOUT=getvarinst(2,"FasDTyp",FasDTyp,0);          //-- Умолчание на тип фасада двери
+NULLOUT=getvarinst(2,"DfPetl",DfPetl,0);            //-- Умолчание на тип накладной петли
+NULLOUT=getvarinst(2,"DfHandl",DfHandl,0);          //-- Умолчание на тип ручки
+NULLOUT=getvarinst(2,"DNUp",DNUp,14);               //-- Нахлест накладной двери сверху
+NULLOUT=getvarinst(2,"DNDown",DNDown,14);           //-- Нахлест накладной двери снизу
+NULLOUT=getvarinst(2,"DNLeft",DNLeft,14);           //-- Нахлест накладной двери слева
+NULLOUT=getvarinst(2,"DNRight",DNRight,14);         //-- Нахлест накладной двери справа
+NULLOUT=getvarinst(2,"DULeft",DULeft,2);            //-- Зазор утопленной двери слева
+NULLOUT=getvarinst(2,"DURight",DURight,2);          //-- Зазор утопленной двери справа
+NULLOUT=getvarinst(2,"Door_Zw",Door_Zw,2);          //-- Зазор между двойными дверьми
+NULLOUT=getvarinst(2,"DrHandPlace",DrHandPlace,0);  //-- Расположение ручки
+NULLOUT=getvarinst(2,"DrHandDouble",DrHandDouble,0);//-- Две ручки
+NULLOUT=getvarinst(2,"DrHandX",DrHandX,0);          //-- Сдвиг ручки
+NULLOUT=getvarinst(2,"DrHandZ",DrHandZ,0);          //-- Высота установки ручки
+NULLOUT=getvarinst(2,"DrHandAngle",DrHandAngle,0);  //-- Угол установки ручки
+NULLOUT=getvarinst(2,"DNColor",col,5);              //-- Цвет накладной двери
+NULLOUT=getvarinst(2,"IsColorUse",icu,1);           //-- Использовать ли цвета
+
+//NULLOUT=getvarinst(2,"N_DrHndPlace",N_DrHndPlace,1);    //-- Читаем типы расположения ручек
+//defarr S_DrHndPlace[N_DrHndPlace], I_DrHndPlace[N_DrHndPlace];
+//NULLOUT=getarrinst(2,"S_DrHndPlace",S_DrHndPlace);
+//NULLOUT=getarrinst(2,"I_DrHndPlace",I_DrHndPlace);
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+
+onerror final;
+NULLOUT=getsnap();
+NULLOUT=pushinst(1);
+if (icu==1)
+{
+  curcol=sysvar(40);
+  color col;
+}
+
+NichePar[1]=1;   // Выставим флаг - "не устанавливать ПСК в команде mbget"
+mbget "Укажите нишу карусельной двери" door NichePar :
+
+if (!((abs(NichePar[5]-NichePar[11])<0.01)&&(abs(NichePar[8]-NichePar[14])<0.01))) {
+// Не реализовано
+goto final;
+}
+x1=NichePar[3]
+x2=NichePar[9]
+y1=NichePar[4]
+y2=NichePar[10]
+alpha=0
+if (x1<x2) {
+  if (y1>y2) {
+    xn=x1;
+    yn=y1;
+    Width=abs(NichePar[3]-NichePar[9]);
+    Depth=abs(NichePar[4]-NichePar[10]);
+   // DNLeft=-DULeft
+  }
+  else {
+    xn=x1;
+    yn=y1;
+    Width=abs(NichePar[4]-NichePar[10]);
+    Depth=abs(NichePar[3]-NichePar[9]);
+    alpha=90
+    //DNRight=-DURight
+  }
+}
+else {
+  if (y1>y2) {
+    xn=x2;
+    yn=y1;
+    Width=abs(NichePar[3]-NichePar[9]);
+    Depth=abs(NichePar[4]-NichePar[10]);
+    //DNRight=-DURight
+//    alpha=90
+  }
+  else {
+    xn=x1;
+    yn=y2;
+    Width=abs(NichePar[4]-NichePar[10]);
+    Depth=abs(NichePar[3]-NichePar[9]);
+    alpha=-90
+   // DNLeft=-DULeft
+  }
+}
+zn=min(NichePar[5],NichePar[8]);
+Heght=abs(NichePar[5]-NichePar[8]);
+
+DimX=80
+DimY=80
+//putmsg(Depth)
+//putmsg(Width)
+//putmsg(alpha)
+//putmsg(xn)
+//putmsg(yn)
+DeptD=Depth
+WidtD=Width
+if (Depth<1) {
+  DeptD=300
+}
+if (WidtD<1) {
+  WidtD=300
+}
+DefHPlace=str(getyadsubst(35))+"#"+str(DrHandPlace) ;                    // Формируем строку умолчаний.
+DefTFas=str(getyadsubst(15))+"#"+str(FasDTyp) ;                    // Формируем строку умолчаний.
+DoubleDoor=0;        // Не двойная дверь
+DrHandDouble=0 // Одна ручка
+#ok_flag
+setvar
+"карусельная угловая дверь"
+PicturesPath+"Door_ras.wmf"
+left
+"Введите значения параметров"
+done
+string auto button 6 default DefTFas     "Тип фасада:" TFas
+real default DeptD "Размер по глубине" Depth
+real default WidtD "Размер по ширине" Width
+real default DNUp "Нахлест сверху" DNUp
+real default DNDown "Нахлест снизу" DNDown
+real default DNLeft "Нахлест слева" DNLeft
+real default DNRight "Нахлест справа" DNRight
+string auto button 6 default DefHPlace     "Расположение ручки:" NHPlace
+//logical default DrHandDouble "Две ручки" DrHandDouble
+real default DrHandX "Сдвиг ручки" DrHandX
+real default DrHandZ "Высота установки ручки" DrHandZ
+real default DrHandAngle "Угол установки ручки" DrHandAngle
+done;
+if (ok_flag==0)
+{
+  goto final;
+}
+splitbydelim(NHPlace,"#",Arr);
+DrHandPlace=Arr[2];
+splitbydelim(TFas,"#",Arr);
+FasType=Arr[2];
+//-- Проверяем, а на панель ли мы ставим дверь?
+ft=getattr(NichePar[1],"FurnType","")
+if (left(ft,2)!="01") //-- Это не панель
+{
+  hdsp=PriceInfo(PrMater,"Thickness",16);   //-- Толщина фасада
+}
+else //-- Читаем параметры панели для установки
+{
+  arr[1]=NichePar[1];
+  NULLOUT=getpan6par(1,arr);
+  hdsp=getpan6par(2,arr);  //-- Толщина панелей корпуса
+  nullout=getpan6par(999,arr);
+}
+
+macromode undo off;
+
+//macro Protopath+"MakeDoor.Mac"
+//  0 NichePar[16] 0		//-- Правый нижний дальний угол
+//  NichePar[15] NichePar[17]; 	  //-- Размер по ширине и высоте
+ OpenSide=NichePar[2]
+ OpenDoor=0
+ DoorAngle=0
+  macro ProtoPath+"SetECod.mac" "1102" ;
+  // macro ProtoPath+"SetKCod.mac" "ДВЕР" NichePar[15] NichePar[17] ;
+  macro ProtoPath+"SetEnam.mac" "Дверь";
+  macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+  macro ProtoPath+"SetFasdN.mac" FasDMat FasType DoorBCol DoorBand DoorVsMater1 DoorVsMater2 ;
+  macro ProtoPath+"SetHandl.mac" DfHandl DrHandX DrHandZ DrHandAngle ;
+  macro ProtoPath+"SetHand.mac" 0 DrHandPlace;
+//  macro ProtoPath+"SetDoorK.mac" DoorType ;
+  macro ProtoPath+"SetDoor.mac"  OpenSide DoubleDoor OpenDoor 0 DfPetl DoorAngle hdsp;
+
+  macro Protopath+"SetLift.Mac"  0 0 ;  // У угловых дверей лифт не ставим
+//  if (OpenSide==1) {  R_Fas=h_dsp-D_DxN;  L_Fas=-D_DxN }
+//  if (OpenSide==2) {  R_Fas=-D_DxN;  L_Fas=h_dsp-D_DxN }
+
+//  FurnT=priceinfo(DoorKonst,"furntype","230100",2);
+    macro ProtoPath+"MakeDoorKar.mac" xn yn zn iif(abs(alpha)>0,Depth,Width) iif(abs(alpha)>0,Width,Depth) Heght
+                                  DNRight         // Изменения фасада: справа
+                                  DNLeft         // Слева
+                                  DNUp            // Сверху
+                                  DNDown          //  Снизу
+                                  Door_Zw       // Зазор по ширине
+     ;
+
+objident last 1 Door;
+if (abs(alpha)>0) {
+  //rotate last 1 done  2points xn yn zn xn yn zn+1  alpha nocopy ;
+	move last 1 done -Depth,0,0 nocopy;
+}
+
+final:
+offerror;
+if (icu==1)
+{
+  color curcol;
+}
+if (isvardef("Door")==16)
+{
+  macromode undo on "Door_RKar.mac" Door ;
+}
+else
+{
+  macromode undo on;
+}
+//NULLOUT=setvarinst(2,"DNUp",DNUp);                //-- Нахлест накладной двери сверху
+//NULLOUT=setvarinst(2,"DNDown",DNDown);            //-- Нахлест накладной двери снизу
+//NULLOUT=setvarinst(2,"DNLeft",DNLeft);            //-- Нахлест накладной двери слева
+//NULLOUT=setvarinst(2,"DNRight",DNRight);          //-- Нахлест накладной двери справа
+//NULLOUT=setvarinst(2,"Door_Zw",Door_Zw);          //-- Зазор между двойными дверьми
+//NULLOUT=setvarinst(2,"DrHandPlace",DrHandPlace);  //-- Расположение ручки
+//NULLOUT=setvarinst(2,"DrHandDouble",DrHandDouble);//-- Две ручки
+//NULLOUT=setvarinst(2,"DrHandX",DrHandX);          //-- Сдвиг ручки
+//NULLOUT=setvarinst(2,"DrHandZ",DrHandZ);          //-- Высота установки ручки
+//NULLOUT=setvarinst(2,"DrHandAngle",DrHandAngle);  //-- Угол установки ручки
+NULLOUT=resnap();
+NULLOUT=popinst(1);
+exit;

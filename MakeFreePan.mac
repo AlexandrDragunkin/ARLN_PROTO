@@ -1,0 +1,7 @@
+//-- —оздание нестандартной панеди
+//-- ¬ходные параметры:
+//-- hPath - контур панели
+getpar hPath;
+mbmakepan free hPath;
+attrobj attach "NestPan" done last 1 1;
+exit;

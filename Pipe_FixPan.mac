@@ -1,0 +1,44 @@
+//--Макро создания конечных подпорок для полки трубчатой системы Komandor.
+global ProtoPath;
+getpar 
+GoodsID			//-- ID сборочной единицы
+MatID			//-- ID материала полки
+W			//-- Ширина
+D			//-- Глубина
+Ots			//-- Отступ сзади до крепежа
+Ras			//-- Расстояние между крепежами
+;
+//--Читаем свойства сборочной единицы
+KarkasNumb=getcarcnumb();				//-- Текущий номер каркаса
+IDKom1=PriceInfo(GoodsID,"GoodID1",1,2);		//-- ID сборочной единицы
+Macro1=PriceInfo(IDKom1,"MacroFile",1,2);		//-- Макро подпорки
+NameKom1=PriceInfo(IDKom1,"Name","",2);		//-- Название подпорки
+
+obj_do=sysvar(60); 
+//-- Добавляем первую подпорку 
+macro ProtoPath+macro1 IDKom1 MatID;
+attrobj attach "ElemName" Done last 1 NameKom1;
+attrobj attach "GoodsID" done last 1 IDKom1 ;
+attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 0 0 0 ; //-- Размеры
+attrobj attach "Assembly" done last 1 1;
+move last 1 done 0 Ots 0 nocopy;
+//-- Добавляем вторую подпорку
+if (Ras>30)	//-- если расстояние между подпорками больше 30
+{
+ macro ProtoPath+macro1 IDKom1 MatID;
+ attrobj attach "ElemName" Done last 1 NameKom1;
+ attrobj attach "GoodsID" done last 1 IDKom1 ;
+ attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+ attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 0 0 0 ; //-- Размеры
+ attrobj attach "Assembly" done last 1 1;
+ move last 1 done 0 Ots+Ras 0 nocopy;
+}
+obj_posle=sysvar(60);
+kol=obj_posle-obj_do;
+group last kol done;
+FurnType=PriceInfo(GoodsID,"FurnType","350000",2);
+NameEl=PriceInfo(GoodsID,"Name"," ",2);
+attrobj attach "FurnType" done last 1 FurnType;
+attrobj attach "ElemName" Done last 1 NameEl;
+exit;

@@ -1,0 +1,28 @@
+//-- ƒелаем пропил в панели
+global ProtoPath;
+defarr error[10];
+NULLOUT=initarray(error,"");
+defarr w[43];
+getpar PropB PropA PropR PropW PropD PropS PropL        // ѕараметры пропила
+pnt  // ”казатель на панель
+;
+defarr arr[20];
+
+setucs lcs   pnt;
+InitArray(arr,0);
+arr[1]=pnt;
+GetPan6Par(1,arr);
+th=GetPan6Par(2,arr);
+arr[1]=PropA;
+arr[2]=PropB;
+arr[3]=PropR;
+arr[4]=PropW;
+arr[5]=min(th,PropD);
+arr[6]=PropS;
+arr[7]=PropL;
+err=SetPan6Par(17,arr);
+MBPanel execute  pnt ; //Type_pan;
+
+err=SetPan6Par(999,arr);
+exit
+

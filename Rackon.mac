@@ -1,0 +1,62 @@
+//-- Программа установки "умной" продольной вешалки
+//-- У пользователя запрашиваются точки на объектах
+//-- В зависимости от расположения точек строится вешалка
+global ProtoPath;
+ProtoPath=GetProtoMac("Shkaf.ptl");
+
+defarr arr[10], arrin[10];
+
+NULLOUT=GetSnap();
+NULLOUT=getvarinst(2,"g_RackT",g_RackT,0);  //-- Умолчание на тип вешалки
+
+if (g_RackT==0) {
+  DefVesh=str(getyadsubst(19))+"#"+str(g_RackT) ;                    // Формируем строку умолчаний.
+  #ok_flag
+  setvar
+  "Установка вешалки"
+  ""
+  left
+  "Выберите вешалку"
+  done
+  string auto button 6 default DefVesh
+     "Тип вешалки:" NVesh
+  done;
+  if (ok_flag==0)
+  {
+	exit;
+  }
+  splitbydelim(NVesh,"#",Arr);
+  g_RackT=Arr[2];
+}
+//-- Запрашиваем у пользователя точки нп объекте
+arrin[1]=0  // Объект
+arrin[2]=0  // Флаг фасада
+arrin[3]=90  // Угол
+arrin[4]=30  // Габариты
+arrin[5]=20
+arrin[6]=45
+arrin[7]=0    // Сдвиг 0
+arrin[8]=-10
+arrin[9]=-22.5
+mbget "Укажите положение продольной вешалки:" line arrin arr :
+
+//setucs arr[2] arr[3] arr[4]
+//       arr[5] arr[6] arr[7]
+//       oz   arr[2] arr[3] arr[4]+1 ;
+//:
+dx=((arr[5]-arr[2])*(arr[5]-arr[2]));
+dy=((arr[6]-arr[3])*(arr[6]-arr[3]));
+dz=((arr[7]-arr[4])*(arr[7]-arr[4]));
+d=sqrt(dx+dy+dz);
+protoobj create "Shkaf.ptl" 149
+"x" d
+"y" 0
+"z" 0
+"colo" g_RackT
+done
+//-- Базовая точка установки
+0 0 0 ;
+
+NULLOUT=ReSnap();
+exit
+

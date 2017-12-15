@@ -1,0 +1,134 @@
+//-- Макропрограмма проставляет номера объектов
+global nomber;
+defarr xm[6], dObj[1000];
+
+getpar NameAtrPos ;
+
+NULLOUT=GetSnap();
+If (!IsAttrdef("NumType"))
+{
+	Attribute Create "NumType" "NumType" Real 5 0 ;
+}
+object_2=sysvar(60);
+i=0;
+w1=0;
+w2=0;
+w3=0;
+var=isvardef("nomber") ;
+if (var==0)
+{
+	nomber=1;
+}
+//--  Удаляем старые номера объектов
+j=0;
+lab_0:
+i=i+1
+If (i<=object_2)
+{
+  OBJ1=getobjnum(i);
+  n=getattr(OBJ1,"NumType",-1);
+  if (n==1)
+	{
+		j=j+1
+		dObj[j]=OBJ1;
+   }
+	goto lab_0;
+}
+i=0;
+Loop:
+i=i+1
+if (i<=j)
+{
+  if !GetObjVisual(dObj[i])
+  {
+     visible dObj[i];
+  }
+  delete dObj[i];
+	goto Loop;
+}
+
+//-- Проставляем новые номера объектов
+i=0;
+object_2=sysvar(60);
+
+lab_1:
+i=i+1;
+If (i<=object_2) {
+  OBJ1=getobjnum(i);
+
+  //Pos=getattr(OBJ1,"Posit",-1);
+  //if ((Pos==32)||(Pos==35)||(Pos==132)||(Pos==133)||(Pos==134)||(Pos==135)||(Pos==136)||(Pos==155))  { goto lab_1 }
+  Posit=getattr(OBJ1,"Posit",-1);
+  if Posit==11||Posit==12||Posit==13||Posit==14
+  {
+   If (IsAttrdef(NameAtrPos))
+   {
+    KarkasNumb=getattr(OBJ1,"KarkasNumb",-1);
+        name=getattr(OBJ1,NameAtrPos,-1);
+
+        Dopsim="";
+        Vector=getattr(OBJ1,"PanDir",0);
+        Psim=iif(Vector==2,"=","");
+        PriceID=getattr(OBJ1,"PriceID",0);
+        MATTYPE=PriceInfo(PriceID,"MATTYPE",-1);
+    if (name!=-1)//&&(MATTYPE!=99)
+    {
+        gosub sDNum;
+    }
+   }
+  }
+  goto lab_1;
+}
+//-----------------------------
+i1=0;
+        selbyattr "(ElemName==\"Полотно фасада\")&&(Posit=="+str(14)+")" partly all done;
+        dopsim="д"
+        object_3=sysvar(61);
+        //i2=object_2;
+        i=0;
+        //object_2=object_2+object_3;
+        lab_113:
+        i=i+1;
+
+	If (i<=object_3)
+        {
+           OBJ1=getselnum(i);
+           name=getattr(OBJ1,NameAtrPos,-1);  // 2010-02-17
+           PriceID=getattr(OBJ1,"PriceID",0);
+           Vector=getattr(OBJ1,"PanDir",0);
+           Dopsim="д";
+           Psim=iif(Vector==2,"=","");
+           MATTYPE=PriceInfo(PriceID,"MATTYPE",-1);
+           if (name!=-1)//&&(MATTYPE!=99)
+           {
+              i1=i1+1
+              //panels[i1]=getselnum(i);
+              gosub sDNum;
+           }
+	   goto lab_113;
+	}
+	//-----------------------------
+NULLOUT=ReSnap();
+exit;
+
+//========================
+
+sDNum:
+              		rr=objgab2(OBJ1,xm)
+			xsmin=xm[1];
+			ysmin=xm[2];
+			zsmin=xm[3];
+			xsmax=xm[4];
+			ysmax=xm[5];
+			zsmax=xm[6];
+			setucs gcs;
+			ptranscs(2,1,(xsmax+xsmin)/2,(ysmax+ysmin)/2,(zsmax+zsmin)/2,w1,w2,w3);
+			setucs vcs;
+			#tnum	text Psim+str(name)+Dopsim done w1+15,w2,w3+100,w1+17,w2,w3+100;
+			if (name>=nomber)
+			{
+				nomber=name+1;
+			}
+                        Attrobj Attach "KarkasNumb" Done tnum KarkasNumb;
+			Attrobj Attach "NumType" Done tnum 1;
+return;

@@ -1,0 +1,1266 @@
+//-- Создание углового корпуса
+global ProtoPath;
+global MacroSw;       //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global PanMater;      //-- Материал панелей
+KarkasNumb=getcarcnumb();  //-- Порядковый номер каркаса в сцене
+global g_FurnType;    //-- Тип мебельного объекта
+
+global HoldName;      //-- Имя хозяина
+
+getpar
+xpos, ypos,zpos,      //-- Координаты точки установки
+w,                    //-- Ширина
+d,                    //-- Глубина
+h,                    //-- Высота
+h_c,                  //-- Высота цоколя
+MinDepth,             //-- Размер меньшей стороны
+AngleType,            //-- Тип угла
+DimX,                 //-- Фаска Х/ Радиус
+DimY,                 //-- Фаска Y
+Orient,               //-- Правая ориентация
+PrMater,        	    //-- Материал корпуса
+MatBp,                //-- Материал задней стенки
+BandColor,            //-- Цвет кромки
+BandType,             //-- Тип кромки
+TypeBp,               //-- Тип задней стенки
+DepthBp,              //-- Глубина установки задней стенки
+InCutBp,              //-- Врезка\Нахлест задней стенки
+FixCorp,              //-- Тип крепежа корпуса
+FixBp,      	        //-- Тип крепежа задней стенки
+Dno,                  //-- Накладное дно
+Dum,                  //-- Размер "уголка" задней стенки под мойку
+Dst,                  //-- Ширина дополнительной планки
+HasCok                //-- Наличие цоколя
+ShiftCok              //-- Сдвиг цоколя
+LongPost,             //-- Опорные стойки
+FasCok,               //-- Размер фасок под цоколь
+ForOpen;              //-- Копус для открытого изделия
+//------------------------------------------------------------------------------
+FurnType="110105";
+Namescr="ProtoParams";
+position=189;   //-- Номер прототипа углового корпуса
+CutLeft=0;      //-- Подрезка дна и крышки слева
+CutRight=0;     //-- Подрезка дна и крышки справа
+CutBack=0;      //-- Подрезка дна и крышки сзади
+CutTop=0;       //-- Подрезка боковых стоек сверху
+CutBottom=0;    //-- Подрезка боковых стоек снизу
+ConfDuct=0;     //-- Конфигурация выреза под короб по умолчанию.
+defarr error[10];
+NULLOUT=initarray(error,"");
+h_dsp=priceinfo(PrMater,"Thickness",DbVar("HDSP",16)); //-- Толщина материала корпуса
+h_dvp=priceinfo(MatBp,"Thickness",DbVar("HDVP",4));   //-- Толщина материала задней стенки
+NULLOUT=pushinst(1);
+NULLOUT=getvarinst(1,"HasDuct",HasDuct,0);
+NULLOUT=getvarinst(1,"ShiftDuct",ShiftDuct,0);
+NULLOUT=getvarinst(1,"WidthDuct",WidthDuct,100);
+NULLOUT=getvarinst(1,"DepthDuct",DepthDuct,100);
+NULLOUT=getvarinst(1,"WallAngle",WallAngle,90);
+NULLOUT=getvarinst(1,"Widsth",Widsth,100);
+NULLOUT=getvarinst(1,"IsTop",IsTop,1);
+NULLOUT=getvarinst(1,"MinDepthX",MinDepthX,0);
+NULLOUT=getvarinst(1,"ChamfLeft",ChamfLeft,0);
+NULLOUT=getvarinst(1,"ChamfRight",ChamfRight,0);
+NULLOUT=getvarinst(1,"WallChamfer",WallChamfer,0);
+if (ChamfLeft!=0||ChamfRight!=0)
+{
+  ChamfAng=iif((d-MinDepth)!=0,90-grad(atan(w/(d-MinDepth))),0); //-- Угол скоса стоек
+  ChamfX=iif((d-MinDepth)!=0,h_dsp*tan(radian(ChamfAng)),0);  //-- Ширина скоса стоек
+}
+else
+{
+  ChamfAng=0; //-- Угол скоса стоек
+  ChamfX=0;  //-- Ширина скоса стоек
+}
+if (MinDepthX>0&&Dno==0)  //-- Если есть фасадная стенка, то учитываем ее в габаритах
+{
+  d=d-h_dsp;
+}
+Ang=radian(WallAngle-90);   //-- Пристенный угол
+ws=(w-d*sin(Ang))/cos(Ang); //-- Пристенная ширина
+ds=(d-w*sin(Ang))/cos(Ang)+h_dsp*sin(Ang)*iif(Ang>0,1,0); //-- Пристенная глубина
+WidsthB=iif(HasDuct==0,Widsth/cos(Ang),max(Widsth/cos(Ang),DepthDuct+2*h_dsp)); //-- Ширина пристенной стяжки
+ElemCName="Корпус угловой"+iif(HasDuct!=0," с вырезом","");
+if (TypeBp==1||TypeBp==-1||TypeBp==2)
+{
+  DepthBp=0;
+}
+if (LongPost==1&&Dno==1)
+{
+  error[1]="Невозможно построить корпус с опорными стойками и накладным дном.";
+  error[2]=" ";
+  error[3]="Проверьте правильность этих двух параметров. Хотя бы один из них должен быть выключен."
+  error[4]="Убедитесь, что выбран правильный тип корпуса"
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 4 error;
+  NULLOUT=popinst(1);
+  cancel;
+}
+if (FasCok>h_c)
+{
+  error[1]="Слишком большой размер фасок под плинтус.";
+  error[2]="Размер фасок под плинтус не должен превышать высоту цоколя, равную '"+str(h_c)+"' мм.";
+  error[3]=" ";
+  error[4]="Убедитесь, что значение высоты цоколя указано корректно."
+  error[5]="Проверьте, корректно ли заданы размеры фасок под плинтус."
+  error[6]="Убедитесь, что выбран правильный тип корпуса"
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 6 error;
+  NULLOUT=popinst(1);
+  cancel;
+}
+if (h_c>int(h/3))
+{
+  error[1]="Слишком большая высота цоколя.";
+  error[2]="Значение высоты цоколя не должно превышать '"+str(int(h/3))+"' мм.";
+  error[3]=" ";
+  error[4]="Убедитесь, что значение высоты цоколя указано корректно."
+  error[5]="Проверьте, корректно ли задано значение высоты стола или шкафа."
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 5 error;
+  NULLOUT=popinst(1);
+  cancel;
+}
+if (MinDepth<=0&&(TypeBp==-1||TypeBp==3))
+{
+  error[1]="Поскольку размер меньшей сторны корпуса равен '"+str(MinDepth)+"' мм,";
+  error[2]="данный тип задней стенки не может быть установлен.";
+  error[3]="Возможные типы задних стенок: 'Утомпенная', 'Накладная' или отсутствующая.";
+  error[4]=" ";
+  error[5]="Убедитесь, что значение глубины меньшей стороны указано корректно."
+  error[6]="Проверьте, правильно ли выбран тип задней стенки."
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 6 error;
+  NULLOUT=popinst(1);
+  cancel;
+}
+if (DepthBp>MinDepth)
+{
+  error[1]="Слишком большая глубина установки задней стенки.";
+  error[2]="Значение глубины задней стенки не должно превышать '"+str(int(MinDepth))+"' мм.";
+  error[3]=" ";
+  error[4]="Убедитесь, что значение глубины установки задней стенки указано корректно."
+  error[5]="Проверьте, корректно ли задано значение глубины стола или шкафа."
+  error[6]="Удостоверьтесь, что значение размера меньшей сторны задано корректно."
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 6 error;
+  NULLOUT=popinst(1);
+  cancel;
+}
+if (Shiftcok>int(MinDepth/3))
+{
+  error[1]="Слишком большая величина сдвига цоколя.";
+  error[2]="Значение ширины сдвига цоколя не должно превышать '"+str(int(MinDepth/3))+"' мм.";
+  error[3]=" ";
+  error[4]="Убедитесь, что значение сдвига цоколя указано корректно."
+  error[5]="Проверьте, корректно ли задано значение размера меньшей стороны стола или шкафа."
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 5 error;
+  NULLOUT=popinst(1);
+  cancel;
+}
+if (HasDuct!=0&&(WidthDuct<=2*h_dsp||DepthDuct<=2*h_dsp))
+{
+  error[1]="Слишком маленький размер короба.";
+  error[2]="Значение ширины и/или глубины короба не должно быть меньше '"+str(2*h_dsp)+"' мм.";
+  error[3]=" ";
+  error[4]="Убедитесь, что значение ширины и/или глубины короба указаны корректно."
+  error[5]="Убедитесь, в данном изделии вырез под короб необходим."
+  error[6]="Проверьте, корректно ли задано значение глубины стола или шкафа."
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 6 error;
+  NULLOUT=popinst(1);
+  cancel;
+}
+if (HasDuct!=0&&(WidthDuct+ShiftDuct)>ws)
+{
+  error[1]="Слишком большая ширина короба.";
+  error[2]="Значение ширины плюс сдвига короба не должно быть больше '"+str(ws)+"' мм.";
+  error[3]=" ";
+  error[4]="Убедитесь, что значение ширины короба указано корректно."
+  error[5]="Убедитесь, что сдвиг короба указан корректно."
+  error[6]="Убедитесь, в данном изделии вырез под короб необходим."
+  error[7]="Проверьте, корректно ли задано значение ширины стола или шкафа."
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 7 error;
+  NULLOUT=popinst(1);
+  cancel;
+}
+if (HasDuct!=0&&DepthDuct>ds-2*h_dsp)
+{
+  error[1]="Слишком большая глубина короба.";
+  error[2]="Значение глубины короба не должно быть больше '"+str(ds-2*h_dsp)+"' мм.";
+  error[3]=" ";
+  error[4]="Убедитесь, что значение глубины короба указано корректно."
+  error[5]="Убедитесь, в данном изделии вырез под короб необходим."
+  error[6]="Проверьте, корректно ли задано значение глубины стола или шкафа."
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 6 error;
+  NULLOUT=popinst(1);
+  cancel;
+}
+if (HasDuct!=0&&TypeBp==3&&DepthBp>DepthDuct-2*h_dsp)
+{
+  error[1]="Слишком большая глубина установки врезной задней стенки.";
+  error[2]="Значение глубины взезной задней стенки не должно быть больше '"+str(DepthDuct-2*h_dsp)+"' мм.";
+  error[3]=" ";
+  error[4]="Убедитесь, что значение глубины врезной задней стенки указано корректно."
+  error[5]="Убедитесь, что значение глубины выреза под короб указано корректно."
+  error[6]="Убедитесь, в данном изделии вырез под короб необходим."
+  error[7]="Убедитесь, в данном изделии необходима именно врезная задняя стенка."
+  error[8]="Проверьте, корректно ли задано значение глубины стола или шкафа."
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 8 error;
+  NULLOUT=popinst(1);
+  cancel;
+}
+if (WallChamfer>0&&(TypeBp!=1&&TypeBp!=3))
+{
+  error[1]="Пристенная фаска ставится только на накладную или врезную заднюю стенку.";
+  error[2]=" ";
+  error[3]="Измените тип задней стенки на накладную или врезную."
+  error[4]="Убедитесь, что пристенная фаска здесь необходима."
+  error[5]="Если нужна не накладная и не врезная задняя стенка, установите вместо пристенной фаски вырез под короб."
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 5 error;
+  NULLOUT=popinst(1);
+  cancel;
+}
+if (WallChamfer>0&&HasDuct!=0&&ShiftDuct<=WallChamfer)
+{
+  error[1]="Невозможно установить вырез под короб и пристенную фаску в данное место.";
+  error[2]=" ";
+  error[3]="Убедитесь, что пристенная фаска здесь необходима"
+  error[4]="Убедитесь, что правильно задано положение выреза под короб и величина пристенной фаски."
+  error[5]="Возможно ли заменить пристенную фаску вырезом под короб большего размера"
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 5 error;
+  NULLOUT=popinst(1);
+  cancel;
+}
+if (WallChamfer>0&&IsTop==0)
+{
+  error[1]="Пристенная фаска устанавливается только в случае, если есть крышка";
+  error[2]=" ";
+  error[3]="Убедитесь, что пристенная фаска здесь необходима"
+  error[4]="Убедитесь, что выставлен параметр 'Наличие крыщки'"
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 4 error;
+  NULLOUT=popinst(1);
+  cancel;
+}
+if (WallChamfer>0&&WallAngle!=90)
+{
+  error[1]="Пристенная фаска устанавливается только в случае прямого пристенного угла";
+  error[2]="Вариант пристенной фаски и непрямого пристенного угла пока не реализован";
+  error[3]=" ";
+  error[4]="Убедитесь, что пристенная фаска здесь необходима"
+  error[5]="Используйте вместо пристенной фаски вырез под короб"
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 4 error;
+  NULLOUT=popinst(1);
+  cancel;
+}
+//--------------------------------------------------------------------------
+if (Dno==0) //-- Не опорное дно
+{
+  CutLeft=h_dsp;
+  CutRight=h_dsp;
+  if (ForOpen==1&&Orient==1)
+  {
+    CutRight=0;
+  }
+  if (ForOpen==1&&Orient==0)
+  {
+    CutLeft=0;
+  }
+}
+else  //-- Опорное дно
+{
+  CutTop=h_dsp;
+  CutBottom=h_dsp;
+}
+if (WallChamfer>0&&TypeBp==1)
+{
+  if (Orient==0)
+  {
+    CutRight=h_dvp;
+  }
+  else
+  {
+    CutLeft=h_dvp;
+  }
+}
+if (IsTop==0) //-- Если нет крышки
+{
+  CutTop=0;
+}
+if (LongPost==1)  //-- Опорные стойки
+{
+  CutBottom=-h_c;
+}
+else              //-- Если стойки не опорные, размер фасок равен нулю
+{
+  FasCok=0;
+}
+//-- Определяем конфигурацию выреза под короб
+if (HasDuct!=0)
+{
+  if (ShiftDuct<=h_dsp&&WidthDuct>=(ws-2*h_dsp))
+  {
+    ConfDuct=1;  //-- Вырез на всю ширину корпуса
+  }
+  if (ShiftDuct<=h_dsp&&WidthDuct<(ws-2*h_dsp))
+  {
+    ConfDuct=2;  //-- Вырез примыкает справа
+  }
+  if (ShiftDuct>h_dsp&&(WidthDuct+ShiftDuct)>=(ws-2*h_dsp))
+  {
+    ConfDuct=3;  //-- Вырез примыкает слева
+  }
+  if (ShiftDuct>h_dsp&&(WidthDuct+ShiftDuct)<=(ws-2*h_dsp))
+  {
+    ConfDuct=4;  //-- Вырез внутри корпуса
+  }
+}
+if (ConfDuct==1)  //-- Если короб на всю ширину, то просто уменьшаем глубину корпуса
+{
+  ds=ds-DepthDuct;
+  HasDuct=0;
+}
+//-- Вычисляем ширину и глубину для случаев непрямого угла
+if (WallAngle>90) //-- Усли пристенный угол тупой
+{
+  CutBack=-(ws-iif(Dno==0,h_dsp,0))*sin(Ang);
+  CutRight=ws-(ws-CutRight)*cos(Ang)-d*sin(Ang);
+}
+if (WallAngle<90) //-- Усли пристенный угол острый
+{
+  CutRight=ws-(ws-CutRight)*cos(Ang);
+}
+
+CorpsId=getprotoid("Shkaf","Корпус угловой","ProtoMacro","CorpsCorP");  //-- ID прототипа корпуса
+//------------------------------------------------------------------------------
+NULLOUT=getsnap();
+if MacroSw==0
+{
+  gosub SimpleCorps;
+}
+else
+{
+  protoobj create "Shkaf.ptl" CorpsID //-- 189-й прототип "Корпус угловой"
+   "w"          w                    //-- Ширина
+   "d"          d                    //-- Глубина
+   "h"          h                    //-- Высота
+   "h_c"        h_c                  //-- Высота цоколя
+   "MinDepth"   MinDepth             //-- Размер меньшей стороны
+   "AngleType"  AngleType            //-- Тип угла
+   "DimX"       DimX                 //-- Фаска Х/ Радиус
+   "DimY"       DimY                 //-- Фаска Y
+   "Orient"     Orient               //-- Правая ориентация
+   "PrMater"    PrMater        	     //-- Материал корпуса
+   "MatBp"      MatBp                //-- Материал задней стенки
+   "BandColor"  BandColor            //-- Цвет кромки
+   "BandType"   BandType             //-- Тип кромки
+   "TypeBp"     TypeBp               //-- Тип задней стенки
+   "DepthBp"    DepthBp              //-- Глубина установки задней стенки
+   "InCutBp"    InCutBp              //-- Врезка\Нахлест задней стенки
+   "FixCorp"    FixCorp              //-- Тип крепежа корпуса
+   "FixBp"      FixBp      	         //-- Тип крепежа задней стенки
+   "Dno"        Dno                  //-- Накладное дно
+   "Dum"        Dum                  //-- Размер "уголка" задней стенки под мойку
+   "Dst"        Dst                  //-- Ширина дополнительной планки
+   "HasCok"     HasCok               //-- Наличие цоколя
+   "ShiftCok"   ShiftCok             //-- Сдвиг цоколя
+   "LongPost"   LongPost             //-- Опорные стойки
+   "FasCok"     FasCok               //-- Размер фасок под цоколь
+   "ForOpen"    ForOpen              //-- Для открытого изделия
+   "HasDuct"    HasDuct              //-- Наличие короба
+   "ShiftDuct"  ShiftDuct            //-- Сдвиг короба
+   "WidthDuct"  WidthDuct            //-- Ширина короба
+   "DepthDuct"  DepthDuct            //-- Глубина короба
+   "WallAngle"  WallAngle            //-- Пристенный угол
+   "Widsth"     Widsth               //-- Ширина стяжки
+   "IsTop"      IsTop                //-- Наличие крышки
+   "MinDepthX"  MinDepthX            //-- Размер меньшей стороны по оси X
+   "ChamfLeft"  ChamfLeft            //-- Наличие скоса слева
+   "ChamfRight" ChamfRight           //-- Наличие скоса справа
+   "WallChamfer" WallChamfer         //-- Размер пристенной фаски
+  done
+  xpos ypos zpos;
+  MacroSw=1;
+}
+NULLOUT=resnap();
+NULLOUT=popinst(1);
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done last 1 done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+}
+if (isassign("HoldName",0))
+{
+  attrobj copy record "HoldName" done last 1 done;
+}
+else
+{
+  attrobj attach "HoldName" done last 1 HoldName ;
+}
+attrobj attach "Posit" done last 1 position;
+attrobj attach "ElemName" done last 1 ElemCName;
+attrobj attach "FurnType" done last 1 FurnType;
+attrobj attach "Assembly" done last 1 1;        //-- Признак сборочной единицы
+macro ProtoPath+"aCutAtr.mac" !Orient AngleType DimX DimY;
+attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 w d h-h_c*(!HasCok);
+exit;
+//-----------------------------------------------------------------------------
+SimpleCorps:
+object_0=sysvar(60);
+macro ProtoPath+"SetConstrInit.mac" ;
+macro ProtoPath+"SetMat.mac" PrMater ;
+//-- Рисуем контур выреза
+if (HasDuct!=0)
+{
+  obj1=sysvar(60);
+  #Pat rectangle 3points ShiftDuct,-10,0 ShiftDuct,DepthDuct,0 ShiftDuct+WidthDuct,DepthDuct,0;
+  //-- Рисуем обрамление выреза
+  macro ProtoPath+"PutDuct.mac" ConfDuct, ShiftDuct, h_c+h_dsp, WidthDuct, DepthDuct, h-h_c-2*h_dsp, PrMater, FixCorp, TypeBp, FixBp, DepthBp, InCutBp, MatBp;
+  if (Orient==1)
+  {
+    rotate last sysvar(60)-obj1 done 2points ws,0,0 ws,0,10 WallAngle-90 nocopy;
+  }
+  else
+  {
+    rotate last sysvar(60)-obj1 done 2points 0,0,0 0,0,10 90-WallAngle nocopy;
+  }
+}
+macro ProtoPath+"SetConstrInit.mac" ;
+//-- Построение боковых стоек
+macro ProtoPath+"SetMat.mac" PrMater ;
+macro ProtoPath+"SetECod.mac" "1101" ;
+// macro ProtoPath+"SetKCod.mac" "СТЕН" h-h_c iif(Orient==0,ds,MinDepth);
+macro ProtoPath+"SetEnam.mac" "Стенка боковая правая" ;
+macro ProtoPath+"SetFilet.mac" 1 FasCok FasCok 0 0 0 0 0 0 0 0 0 ;
+macro ProtoPath+"SetCuts.mac" CutBottom CutTop iif(HasDuct!=0&&(ConfDuct==2),DepthDuct,iif(Orient==0,WallChamfer,0)) iif(Orient==1,ChamfX,0);
+macro ProtoPath+"SetKrom.mac" BandColor iif(Dno==0&&LongPost==0,BandType,0)
+                              BandType BandType BandType ;
+macro ProtoPath+"SetFix.mac"  iif(Dno==0,0,FixCorp) iif(Dno==0,0,FixCorp)
+                              iif((TypeBp==1||TypeBp==-1)&&ConfDuct!=2,FixBp,0) 0 ;
+if (ChamfRight!=0)
+{
+  macro ProtoPath+"SetButts.mac" 4, 2, 1, iif(Orient==1,0,1), 0, iif(Orient==1,ChamfAng,-ChamfAng), 0, 0, 0;
+}
+//-- Если задняя стенка врезная - добавляем пропилы
+if (TypeBp==3)
+{
+  //-- Пропил в правой стойке
+  macro ProtoPath+"SetProp.mac" "F" "D" DepthBp-h_dvp  h_dvp InCutBp ;
+}
+if (WallChamfer>0&&Orient==0)
+{
+  macro ProtoPath+"SetMat.mac" MatBp ;
+  macro ProtoPath+"SetCuts.mac" InCutBp InCutBp iif(HasDuct!=0&&(ConfDuct==2),DepthDuct,iif(Orient==0,WallChamfer-(DepthBp-h_dsp)*sqrt(2)+iif(TypeBp==3,-InCutBp,0),0)) iif(Orient==1,ChamfX,0)-iif(WallChamfer>0,iif(Dno==0,InCutBp,-h_dsp+InCutBp),0);
+}
+if (iif(Orient==0,ds,MinDepth)>0)
+{
+  macro ProtoPath+"MakePan.mac" iif(WallChamfer>0&&Orient==0&&TypeBp==3,DepthBp-h_dvp,0) 0 h_c h-h_c iif(Orient==0,ds,MinDepth) 11;
+  objident last 1 Pan1;
+  if (Orient==1)
+  {
+    rotate Pan1 done 2points ws,0,0 ws,0,10 WallAngle-90 nocopy;
+  }
+	objident last 1 Stenka2;
+}
+macro ProtoPath+"SetPropNull.mac";
+macro ProtoPath+"SetButtsNull.mac" ;
+macro ProtoPath+"SetMat.mac" PrMater ;
+macro ProtoPath+"SetECod.mac" "1102";
+// macro ProtoPath+"SetKCod.mac" "СТЕН" h-h_c iif(Orient==1,ds,MinDepth);
+macro ProtoPath+"SetEnam.mac" "Стенка боковая левая" ;
+macro ProtoPath+"SetFix.mac"  iif(Dno==0,0,FixCorp) iif(Dno==0,0,FixCorp)
+                              iif((TypeBp==1||TypeBp==-1)&&ConfDuct!=3,FixBp,0) 0 ;
+macro ProtoPath+"SetCuts.mac" CutBottom CutTop iif(HasDuct!=0&&(ConfDuct==3),DepthDuct,iif(Orient==1,WallChamfer,0)) iif(Orient==0,ChamfX,0);
+if (WallChamfer>0&&Orient==1)
+{
+  macro ProtoPath+"SetMat.mac" MatBp ;
+  macro ProtoPath+"SetCuts.mac" InCutBp InCutBp iif(HasDuct!=0&&(ConfDuct==3),DepthDuct,iif(Orient==1,WallChamfer-(DepthBp-h_dsp)*sqrt(2)+iif(TypeBp==3,-InCutBp,-h_dsp),0)) iif(Orient==0,ChamfX,0)-iif(WallChamfer>0,iif(Dno==0,InCutBp,-h_dsp+InCutBp),0);
+
+}
+if (TypeBp==3)
+{
+  //-- Пропил в левой стойке
+  macro ProtoPath+"SetProp.mac" "A" "D" DepthBp-h_dvp  h_dvp InCutBp ;
+}
+if (ChamfLeft!=0)
+{
+  macro ProtoPath+"SetButts.mac" 4, 2, 1, iif(Orient==1,0,1), 0, iif(Orient==1,ChamfAng,-ChamfAng), 0, 0, 0;
+}
+if (iif(Orient==1,ds,MinDepth)>0)
+{
+  macro ProtoPath+"MakePan.mac" ws-iif(WallChamfer>0&&Orient==1,iif(TypeBp==3,DepthBp,h_dvp),h_dsp) 0 h_c h-h_c iif(Orient==1,ds,MinDepth) 11;
+  objident last 1 Pan1;
+  if (Orient==0)
+  {
+    rotate Pan1 done 2points 0,0,0 0,0,10 90-WallAngle nocopy;
+  }
+}
+macro ProtoPath+"SetPropNull.mac";
+macro ProtoPath+"SetButtsNull.mac" ;
+macro ProtoPath+"SetFilet.mac"  0 0 0 0 0 0 0 0 0 0 0 0 ;
+//-- Построение дна
+macro ProtoPath+"SetMat.mac" PrMater ;
+macro ProtoPath+"SetECod.mac" "1103" ;
+// macro ProtoPath+"SetKCod.mac" "ДНО" ws-2*h_dsp ds;
+macro ProtoPath+"SetEnam.mac" "Дно" ;
+macro ProtoPath+"SetCuts.mac" CutRight CutLeft CutBack iif(Dno==0,ChamfX,0);
+if (Dno==0)
+{
+  macro ProtoPath+"SetFix.mac"    iif(MinDepth<=0&&Orient==1,0,FixCorp)
+                                  iif(MinDepth<=0&&Orient==0,0,FixCorp)
+                                  iif(TypeBp==1||TypeBp==-1,FixBp,0)
+                                  iif(MinDepthX<=0,0,FixCorp) ;
+}
+else
+{
+  macro ProtoPath+"SetFix.mac"    0 0 iif(TypeBp==1||TypeBp==-1,FixBp,0) FixCorp ;
+}
+if (WallChamfer>0)
+{
+  macro ProtoPath+"SetCuts.mac" iif(Orient==0&&CutRight>0,iif(TypeBp!=3,h_dvp,0),CutRight) iif(Orient==1&&CutLeft>0,iif(TypeBp!=3,h_dvp,0),CutLeft) CutBack 0; //-ChamfX;
+  macro ProtoPath+"SetOneFilet.mac" iif(Orient==0,1,2) 1 WallChamfer+h_dvp+iif(Dno==0,h_dsp*sqrt(2)-h_dvp,0) WallChamfer+h_dvp+iif(Dno==0,h_dsp*sqrt(2)-h_dvp,0);
+  macro ProtoPath+"SetOneFix.mac" iif(Orient==0,5,6) FixCorp;
+}
+
+//-- Устанавливаем подрезку у одного угла
+if (AngleType==4)
+{
+  macro ProtoPath+"SetOneFilet.mac" iif(Orient==0,3,4) AngleType DimX-h_dsp DimY-h_dsp ;
+}
+else
+{
+  macro ProtoPath+"SetOneFilet.mac" iif(Orient==0,3,4) AngleType
+                                    DimX-iif(Dno==0,h_dsp*iif(ChamfX==0,1,2),0) DimY-iif(Dno==0,h_dsp,iif(ChamfX==0,0,-h_dsp)) ;
+}
+macro ProtoPath+"SetKrom.mac"     BandColor
+                                  iif(Dno==1||Orient==1,BandType,0)
+                                  iif(Dno==1||Orient==0,BandType,0)
+                                  BandType BandType ;
+macro ProtoPath+"SetOneBand.mac" iif(Orient==0,6,8) BandType;
+if (TypeBp==3)
+{
+  //-- Пропил в дне
+  macro ProtoPath+"SetProp.mac" "A" "D" DepthBp-h_dvp  h_dvp InCutBp;
+  if (WallChamfer>0)
+  {
+    if (Orient==0)
+    {
+      macro ProtoPath+"SetProp.mac" "A" "B" DepthBp-h_dvp h_dvp InCutBp;
+    }
+    else
+    {
+      macro ProtoPath+"SetProp.mac" "A" "B" ws-DepthBp h_dvp InCutBp;
+    }
+  }
+}
+macro ProtoPath+"SetFixover.mac" 1;
+if (WallAngle<90)
+{
+  if (Orient==1)
+  {
+    macro ProtoPath+"MakePan4.mac"  CutRight,CutBack-(ws-h_dsp*iif(Dno==0,1,0))*sin(Ang),h_c
+                                    ws-CutLeft,CutBack,h_c
+                                    ws-iif(Dno==0,h_dsp,0),ds,h_c
+                                    CutRight-d*sin(Ang)+(h_dsp/cos(Ang)-h_dsp*cos(Ang))*iif(Dno==0,1,0),ds,h_c;
+  }
+  else
+  {
+    macro ProtoPath+"MakePan4.mac"  iif(Dno==0,h_dsp,0),CutBack,h_c
+                                    ws*cos(Ang)-CutLeft,CutBack-(ws-h_dsp*iif(Dno==0,1,0))*sin(Ang),h_c
+                                    ws*cos(Ang)-CutLeft+d*sin(Ang),ds,h_c
+                                    iif(Dno==0,h_dsp,0),ds,h_c;
+  }
+}
+if (WallAngle>90)
+{
+  if (Orient==1)
+  {
+    macro ProtoPath+"MakePan4.mac"  CutRight+d*sin(Ang),CutBack,h_c
+                                    ws-CutLeft,CutBack+(ws-iif(Dno==0,1,0)*h_dsp*(1+1/cos(Ang)))*sin(Ang),h_c
+                                    ws-iif(Dno==0,h_dsp,0),ds,h_c
+                                    CutRight-iif(Dno==0,0,h_dsp/cos(Ang)-h_dsp*cos(Ang)),ds,h_c;
+  }
+  else
+  {
+    macro ProtoPath+"MakePan4.mac"  iif(Dno==0,h_dsp,0),CutBack+(ws-iif(Dno==0,1,0)*h_dsp*(1+1/cos(Ang)))*sin(Ang),h_c
+                                    ws*cos(Ang)-CutLeft,CutBack,h_c
+                                    ws*cos(Ang)+d*sin(Ang)-CutLeft+iif(Dno==0,0,h_dsp/cos(Ang)-h_dsp*cos(Ang)),ds,h_c
+                                    iif(Dno==0,h_dsp,0),ds,h_c;
+  }
+}
+
+if (WallAngle==90)
+{
+  macro ProtoPath+"MakePan.mac" 0 0 h_c ws ds 12 ;
+}
+
+if (HasDuct!=0) //-- Если нужен вырез, добавляем его
+{
+  objident last 1 Pan;
+  macro ProtoPath+"PutCutr.mac" Pan, Pat, 1, 0, 5;
+}
+macro ProtoPath+"SetPropNull.mac";
+macro ProtoPath+"SetFixover.mac" 0;
+//-- Построение крышки
+if (IsTop)
+{
+  macro ProtoPath+"SetECod.mac" "1104" ;
+  // macro ProtoPath+"SetKCod.mac" "КРЫШ" ws-2*h_dsp ds;
+  macro ProtoPath+"SetEnam.mac" "Крышка" ;
+  if (WallChamfer>0)
+  {
+    macro ProtoPath+"SetCuts.mac" iif(Orient==0&&CutRight>0,iif(TypeBp!=3,h_dvp,0),CutRight) iif(Orient==1&&CutLeft>0,iif(TypeBp!=3,h_dvp,0),CutLeft) CutBack ChamfX;
+    macro ProtoPath+"SetOneFilet.mac" iif(Orient==0,1,2) 1 WallChamfer+h_dvp+iif(Dno==0,h_dsp*sqrt(2)-h_dvp,0) WallChamfer+h_dvp+iif(Dno==0,h_dsp*sqrt(2)-h_dvp,0);
+    macro ProtoPath+"SetOneFix.mac" iif(Orient==0,5,6) FixCorp;
+  }
+  if (TypeBp==3)
+  {
+    //-- Пропил в крышке
+    macro ProtoPath+"SetProp.mac" "F" "D" DepthBp-h_dvp  h_dvp InCutBp;
+    if (WallChamfer>0)
+    {
+      if (Orient==0)
+      {
+        macro ProtoPath+"SetProp.mac" "F" "B" DepthBp-h_dvp h_dvp InCutBp;
+      }
+      else
+      {
+        macro ProtoPath+"SetProp.mac" "F" "B" ws-DepthBp h_dvp InCutBp;
+      }
+    }
+  }
+  if (WallAngle<90)
+  {
+    if (Orient==1)
+    {
+      macro ProtoPath+"MakePan4.mac"  CutRight,CutBack-(ws-h_dsp*iif(Dno==0,1,0))*sin(Ang),h-h_dsp
+                                      ws-CutLeft,CutBack,h-h_dsp
+                                      ws-iif(Dno==0,h_dsp,0),ds,h-h_dsp
+                                      CutRight-d*sin(Ang)+(h_dsp/cos(Ang)-h_dsp*cos(Ang))*iif(Dno==0,1,0),ds,h-h_dsp
+                                      ;
+     }
+     else
+     {
+      macro ProtoPath+"MakePan4.mac"  iif(Dno==0,h_dsp,0),CutBack,h-h_dsp
+                                      ws*cos(Ang)-CutLeft,CutBack-(ws-h_dsp*iif(Dno==0,1,0))*sin(Ang),h-h_dsp
+                                      ws*cos(Ang)-CutLeft+d*sin(Ang),ds,h-h_dsp
+                                      iif(Dno==0,h_dsp,0),ds,h-h_dsp
+                                      ;
+     }
+  }
+  if (WallAngle>90)
+  {
+    if (Orient==1)
+    {
+      macro ProtoPath+"MakePan4.mac"  CutRight+d*sin(Ang),CutBack,h-h_dsp
+                                      ws-CutLeft,CutBack+(ws-iif(Dno==0,1,0)*h_dsp*(1+1/cos(Ang)))*sin(Ang),h-h_dsp
+                                      ws-iif(Dno==0,h_dsp,0),ds,h-h_dsp
+                                      CutRight-iif(Dno==0,0,h_dsp/cos(Ang)-h_dsp*cos(Ang)),ds,h-h_dsp
+                                      ;
+    }
+    else
+    {
+      macro ProtoPath+"MakePan4.mac"  iif(Dno==0,h_dsp,0),CutBack+(ws-iif(Dno==0,1,0)*h_dsp*(1+1/cos(Ang)))*sin(Ang),h-h_dsp
+                                      ws*cos(Ang)-CutLeft,CutBack,h-h_dsp
+                                      ws*cos(Ang)+d*sin(Ang)-CutLeft+iif(Dno==0,0,h_dsp/cos(Ang)-h_dsp*cos(Ang)),ds,h-h_dsp
+                                      iif(Dno==0,h_dsp,0),ds,h-h_dsp
+                                      ;
+    }
+  }
+  if (WallAngle==90)
+  {
+    macro ProtoPath+"MakePan.mac" 0 0 h-h_dsp ws ds 12 ;
+  }
+  macro ProtoPath+"SetPropNull.mac";
+  if (HasDuct!=0) //-- Если нужен вырез, добавляем его
+  {
+    objident last 1 Pan;
+    macro ProtoPath+"PutCutr.mac" Pan, Pat, 1, 0, 5;
+  }
+}
+else
+{
+  if (Widsth>0)
+  {
+    CutLeft=h_dsp;
+    CutRight=h_dsp;
+    macro ProtoPath+"SetCuts.mac" CutRight CutLeft 0 0;
+    macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+    macro ProtoPath+"SetFix.mac"  FixCorp FixCorp iif(TypeBp==1||TypeBp==-1,FixBp,0) 0;
+    macro ProtoPath+"SetECod.mac" "1104" ;
+    // macro ProtoPath+"SetKCod.mac" "СТЯЖ" ws-2*h_dsp WidsthB;
+    macro ProtoPath+"SetEnam.mac" "Стяжка" ;
+    macro ProtoPath+"SetTextureAngle.mac" -WallAngle;
+    //-- Строим заднюю стяжку
+    if (TypeBp==3)
+    {
+      //-- Пропил в стяжке
+      macro ProtoPath+"SetProp.mac" "F" "D" DepthBp-h_dvp h_dvp InCutBp;
+    }
+    if (WallAngle<90)
+    {
+      if (Orient==1)
+      {
+        macro ProtoPath+"MakePan4.mac"  CutRight,CutBack-(ws-h_dsp*iif(Dno==0,1,0))*sin(Ang),h-h_dsp
+                                        ws-CutLeft,CutBack,h-h_dsp
+                                        ws-iif(Dno==0,h_dsp,0),WidsthB,h-h_dsp
+                                        CutRight-WidsthB*sin(Ang)+(h_dsp/cos(Ang)-h_dsp*cos(Ang))*iif(Dno==0,1,0),WidsthB-(ws+h_dsp*iif(Dno==0,1,0))*sin(Ang),h-h_dsp;
+       }
+       else
+       {
+        macro ProtoPath+"MakePan4.mac"  iif(Dno==0,h_dsp,0),CutBack,h-h_dsp
+                                        ws*cos(Ang)-CutLeft,CutBack-(ws-h_dsp*iif(Dno==0,1,0))*sin(Ang),h-h_dsp
+                                        ws*cos(Ang)-CutLeft+WidsthB*sin(Ang),WidsthB-(ws+h_dsp*iif(Dno==0,1,0))*sin(Ang),h-h_dsp
+                                        iif(Dno==0,h_dsp,0),WidsthB,h-h_dsp;
+       }
+    }
+    if (WallAngle>90)
+    {
+      if (Orient==1)
+      {
+        macro ProtoPath+"MakePan4.mac"  CutRight+d*sin(Ang),CutBack,h-h_dsp
+                                        ws-CutLeft,CutBack+(ws-iif(Dno==0,1,0)*h_dsp*(1+1/cos(Ang)))*sin(Ang),h-h_dsp
+                                        ws-iif(Dno==0,h_dsp,0),WidsthB,h-h_dsp
+                                        CutRight+(d-WidsthB)*sin(Ang)-iif(Dno==0,0,h_dsp/cos(Ang)-h_dsp*cos(Ang)),WidsthB-(ws-iif(Dno==0,1,0)*h_dsp*(1+1/cos(Ang)))*sin(Ang),h-h_dsp;
+      }
+      else
+      {
+        macro ProtoPath+"MakePan4.mac"  iif(Dno==0,h_dsp,0),CutBack+(ws-iif(Dno==0,1,0)*h_dsp*(1+1/cos(Ang)))*sin(Ang),h-h_dsp
+                                        ws*cos(Ang)-CutLeft,CutBack,h-h_dsp
+                                        ws*cos(Ang)-CutLeft+WidsthB*sin(Ang),WidsthB-(ws-iif(Dno==0,1,0)*h_dsp*(1+1/cos(Ang)))*sin(Ang),h-h_dsp
+                                        iif(Dno==0,h_dsp,0),WidsthB,h-h_dsp;
+      }
+    }
+    if (WallAngle==90)
+    {
+      macro ProtoPath+"MakePan.mac" 0 0 h-h_dsp ws WidsthB 12 ;
+    }
+    macro ProtoPath+"SetPropNull.mac";
+    if (HasDuct!=0) //-- Если нужен вырез, добавляем его
+    {
+      objident last 1 Pan;
+      macro ProtoPath+"PutCutr.mac" Pan, Pat, 1, 0, 5;
+    }
+    //-- Строим переднюю стяжку
+    if (MinDepth>Widsth+WidsthB)
+    {
+      if (AngleType==1&&MinDepthX>0&&WallAngle==90)  //-- Если тип угла  - фаска, рисуем чуть по-другому
+      {
+       if (Dno==0)
+       {
+        dss=ds+h_dsp;
+       }
+       else
+       {
+        dss=ds;
+       }
+        if (Orient==0)
+        {
+          Lest=sqrt((ws-h_dsp-MinDepthX)*(ws-h_dsp-MinDepthX)+(dss-h_dsp-MinDepth)*(dss-h_dsp-MinDepth));
+          Agl=atan((dss-h_dsp-MinDepth)/(ws-h_dsp-MinDepthX));
+	        macro ProtoPath+"SetTextureAngle.mac" 90;
+          macro ProtoPath+"SetCuts.mac" -WidsthB/tan(Agl) -WidsthB*tan(Agl) 0 0;
+          macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 1 WidsthB*tan(Agl) WidsthB 1 WidsthB/tan(Agl) WidsthB;
+          macro ProtoPath+"SetFix.mac" 0 0 0 0;
+          macro ProtoPath+"SetFixAngle.mac" 0 0 FixCorp FixCorp;
+          macro ProtoPath+"MakePan.mac" MinDepthX dss-WidsthB-h_dsp h-h_dsp Lest WidsthB 12;
+          macro ProtoPath+"SetCuts.mac" CutRight CutLeft CutBack 0;
+          macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0;
+          rotate last 1 done 2points MinDepthX,dss-h_dsp,0 MinDepthX,dss-h_dsp,10 -grad(Agl) nocopy;
+        }
+        else
+        {
+          Lest=sqrt((ws-h_dsp-MinDepthX)*(ws-h_dsp-MinDepthX)+(dss-MinDepth)*(dss-MinDepth));
+          Agl=atan((dss-MinDepth)/(ws-h_dsp-MinDepthX));
+          macro ProtoPath+"SetTextureAngle.mac" 90;
+          macro ProtoPath+"SetCuts.mac" -WidsthB*tan(Agl) -WidsthB/tan(Agl) 0 0;
+          macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 1 WidsthB/tan(Agl) WidsthB 1 WidsthB*tan(Agl) WidsthB;
+          macro ProtoPath+"SetFix.mac" 0 0 0 0;
+          macro ProtoPath+"SetFixAngle.mac" 0 0 FixCorp FixCorp;
+          macro ProtoPath+"MakePan.mac" ws-MinDepthX-Lest dss-WidsthB h-h_dsp Lest WidsthB 12;
+          macro ProtoPath+"SetCuts.mac" CutRight CutLeft CutBack 0;
+          macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0;
+          rotate last 1 done 2points ws-MinDepthX,dss,0 ws-MinDepthX,dss,10 grad(Agl) nocopy;
+        }
+      }
+      else
+      {
+        macro ProtoPath+"SetFix.mac" FixCorp FixCorp 0 0;
+        if (WallAngle<90)
+        {
+          if (Orient==1)
+          {
+            macro ProtoPath+"MakePan4.mac"  CutRight-(MinDepth-WidsthB)*sin(Ang),CutBack+MinDepth-WidsthB-(ws-h_dsp)*sin(Ang)-h_dsp,h-h_dsp
+                                            ws-CutLeft,CutBack+MinDepth-WidsthB-h_dsp,h-h_dsp
+                                            ws-h_dsp,MinDepth-h_dsp,h-h_dsp
+                                            CutRight-MinDepth*sin(Ang)+(h_dsp/cos(Ang)-h_dsp*cos(Ang)),MinDepth-(ws+h_dsp)*sin(Ang)-h_dsp,h-h_dsp;
+           }
+           else
+           {
+            macro ProtoPath+"MakePan4.mac"  iif(Dno==0,h_dsp,0),CutBack+MinDepth-WidsthB-h_dsp,h-h_dsp
+                                            ws*cos(Ang)-CutLeft+(MinDepth-WidsthB)*sin(Ang),CutBack+MinDepth-WidsthB-(ws-h_dsp)*sin(Ang)-h_dsp,h-h_dsp
+                                            ws*cos(Ang)-CutLeft+MinDepth*sin(Ang),MinDepth-(ws+h_dsp)*sin(Ang)-h_dsp,h-h_dsp
+                                            iif(Dno==0,h_dsp,0),MinDepth-h_dsp,h-h_dsp;
+           }
+        }
+        if (WallAngle>90)
+        {
+          if (Orient==1)
+          {
+            macro ProtoPath+"MakePan4.mac"  CutRight+(d-MinDepth+WidsthB)*sin(Ang)-h_dsp*cos(Ang)),CutBack+MinDepth-WidsthB-h_dsp,h-h_dsp
+                                            ws-CutLeft,CutBack+(ws-h_dsp*(1+1/cos(Ang)))*sin(Ang)+MinDepth-WidsthB-h_dsp,h-h_dsp
+                                            ws-h_dsp,MinDepth-h_dsp,h-h_dsp
+                                            CutRight+(d-MinDepth)*sin(Ang)-h_dsp*cos(Ang)),MinDepth-(ws-h_dsp*(1+1/cos(Ang)))*sin(Ang)-h_dsp,h-h_dsp;
+          }
+          else
+          {
+            macro ProtoPath+"MakePan4.mac"  h_dsp,CutBack+MinDepth-WidsthB+(ws-h_dsp*(1+1/cos(Ang)))*sin(Ang)-h_dsp,h-h_dsp
+                                            ws*cos(Ang)-CutLeft+(MinDepth-WidsthB)*sin(Ang),CutBack+MinDepth-WidsthB-h_dsp,h-h_dsp
+                                            ws*cos(Ang)-CutLeft+MinDepth*sin(Ang),MinDepth-(ws-h_dsp*(1+1/cos(Ang)))*sin(Ang)-h_dsp,h-h_dsp
+                                            h_dsp,MinDepth-h_dsp,h-h_dsp;
+          }
+        }
+        if (WallAngle==90)
+        {
+          macro ProtoPath+"MakePan.mac" 0 MinDepth-WidsthB-h_dsp h-h_dsp ws WidsthB 12 ;
+        }
+      }
+    }
+    macro ProtoPath+"SetTextureAngle.mac" 0;
+  }
+}
+//-- Построение передней стенки
+if (MinDepthX>0)
+{
+  macro ProtoPath+"SetTextureAngle.mac" 0;
+  macro ProtoPath+"SetECod.mac" "1103" ;
+  macro ProtoPath+"SetEnam.mac" "Фасадная стенка" ;
+  macro ProtoPath+"SetKrom.mac" BandColor iif(Dno==1,0,BandType)
+                                iif(Dno==1,0,BandType) iif(Dno==1,0,BandType)
+                                BandType ;
+  macro ProtoPath+"SetFilet.mac"  0 0 0 0 0 0 0 0 0 0 0 0 ;
+  macro ProtoPath+"SetFix.mac"  iif(Dno==1,FixCorp,0) iif(Dno==1,FixCorp,0) 0 0 ;
+  // macro ProtoPath+"SetKCod.mac" "ФДНС" h-h_c MinDepthX;
+  macro ProtoPath+"SetCuts.mac"   0 CutTop 0 0;
+  if (WallChamfer>0&&TypeBp==3)
+  {
+    if (Orient==0)
+    {
+      macro ProtoPath+"SetProp.mac" "F" "D" DepthBp-h_dvp h_dvp InCutBp;
+    }
+    else
+    {
+      macro ProtoPath+"SetProp.mac" "F" "D" MinDepthX-DepthBp h_dvp InCutBp;
+    }
+  }
+  if (Orient==0)
+  {
+    macro ProtoPath+"MakePan.mac" iif(WallChamfer==0,iif(Dno==1,h_dsp,0),iif(TypeBp==1,h_dvp,0)) ds-iif(Dno==1,h_dsp,0)
+                                  h_c+iif(Dno==1,h_dsp,0)
+                                  h-h_c-iif(Dno==1,h_dsp,0)
+                                  MinDepthX-iif(Dno==1,iif(WallChamfer==0,h_dsp,iif(TypeBp==1,h_dvp,0)),iif(WallChamfer>0,iif(TypeBp==1,h_dvp,0),0)) 14;
+  }
+  else
+  {
+    macro ProtoPath+"MakePan.mac" ws-MinDepthX ds-iif(Dno==1,h_dsp,0)
+                                  h_c+iif(Dno==1,h_dsp,0)
+                                  h-h_c-iif(Dno==1,h_dsp,0)
+                                  MinDepthX-iif(Dno==1,iif(WallChamfer==0,h_dsp,iif(TypeBp==1,h_dvp,0)),iif(WallChamfer>0,iif(TypeBp==1,h_dvp,0),0)) 14;
+  }
+  macro ProtoPath+"SetPropNull.mac" ;
+}
+//-- Построение задней стенки
+macro ProtoPath+"SetMat.mac" MatBp;
+macro ProtoPath+"SetECod.mac" "1105";
+if (h_dvp<h_dsp)
+{
+  macro ProtoPath+"SetECod.mac" "1205";
+}
+// macro ProtoPath+"SetKCod.mac"   "ЗДНС" h-2*h_dsp-h_c ws-2*h_dsp;
+macro ProtoPath+"SetEnam.mac"   "Задняя стенка" ;
+macro ProtoPath+"SetFilet.mac"  0 0 0 0 0 0 0 0 0 0 0 0 ;
+macro ProtoPath+"SetCuts.mac"   0 0 0 0;
+macro ProtoPath+"SetKrom.mac"   BandColor 0 0 iif(ForOpen==1||(Orient==1&&MinDepth==0),BandType,0) iif(ForOpen==1||(Orient==0&&MinDepth==0),BandType,0);
+obj1=sysvar(60);
+if (TypeBp==0)     //-- Утопленная задняя стенка
+{
+	macro ProtoPath+"SetFix.mac"  FixCorp FixCorp
+                                iif(MinDepth<=0&&Orient==1,0,FixCorp)
+                                iif(MinDepth<=0&&Orient==0,0,FixCorp) ;
+  if (HasDuct==0)
+  {
+    macro ProtoPath+"MakePan.mac" iif(ForOpen==1&&Orient==1,0,h_dsp)
+                                  0 h_c+h_dsp h-2*h_dsp-h_c
+                                  ws-iif(ForOpen==1,1,2)*h_dsp 14 ;
+  }
+  else
+  {
+    if (ConfDuct==2)
+    {
+
+      macro ProtoPath+"MakePan.mac" iif(ForOpen==1&&Orient==1,0,h_dsp)+WidthDuct
+                                    0 h_c+h_dsp h-2*h_dsp-h_c
+                                    ws-iif(ForOpen==1,1,2)*h_dsp-WidthDuct 14 ;
+    }
+    if (ConfDuct==3)
+    {
+      macro ProtoPath+"MakePan.mac" iif(ForOpen==1&&Orient==1,0,h_dsp)
+                                    0 h_c+h_dsp h-2*h_dsp-h_c
+                                    ws-iif(ForOpen==1,1,2)*h_dsp-WidthDuct 14 ;
+    }
+    if (ConfDuct==4)
+    {
+      macro ProtoPath+"MakePan.mac" iif(ForOpen==1&&Orient==1,0,h_dsp)
+                                    0 h_c+h_dsp h-2*h_dsp-h_c
+                                    ShiftDuct-iif(ForOpen==1,1,2)*h_dsp 14 ;
+      macro ProtoPath+"MakePan.mac" iif(ForOpen==1&&Orient==1,0,h_dsp)+WidthDuct+ShiftDuct
+                                    0 h_c+h_dsp h-2*h_dsp-h_c
+                                    ws-iif(ForOpen==1,1,2)*h_dsp-WidthDuct-ShiftDuct 14 ;
+    }
+  }
+}
+if (TypeBp==1)     //-- Накладная задняя стенка
+{
+  macro ProtoPath+"SetCuts.mac" -InCutBp -InCutBp -InCutBp+iif(WallChamfer>0&&Orient==0,WallChamfer,0) -InCutBp+iif(WallChamfer>0&&Orient==1,WallChamfer,0);
+	macro ProtoPath+"SetFix.mac"  0 0 0 0 ;
+  if (HasDuct==0)
+  {
+    macro ProtoPath+"MakePan.mac" h_dsp 0 h_c+h_dsp h-2*h_dsp-h_c ws-2*h_dsp 13 ;
+  }
+  else
+  {
+    if (ConfDuct==2)
+    {
+      macro ProtoPath+"MakePan.mac" h_dsp+WidthDuct 0 h_c+h_dsp h-2*h_dsp-h_c ws-2*h_dsp-WidthDuct 13 ;
+    }
+    if (ConfDuct==3)
+    {
+      macro ProtoPath+"MakePan.mac" h_dsp 0 h_c+h_dsp h-2*h_dsp-h_c ws-2*h_dsp-WidthDuct 13 ;
+    }
+    if (ConfDuct==4)
+    {
+      macro ProtoPath+"MakePan.mac" h_dsp 0 h_c+h_dsp  h-2*h_dsp-h_c ShiftDuct-2*h_dsp 13 ;
+      macro ProtoPath+"MakePan.mac" h_dsp+WidthDuct+ShiftDuct 0 h_c+h_dsp  h-2*h_dsp-h_c ws-2*h_dsp-WidthDuct-ShiftDuct 13 ;
+    }
+  }
+	//-- Устанавливаем навеску
+	objident last 1 Stenka;
+	NULLOUT=getvarinst(1,"Naves",Naves,0);
+	if (Naves>0)
+	{
+		macro ProtoPath+"MakeNaves.mac" 
+		Naves,								//-- Навеска
+		w,                    //-- Ширина
+		d,                    //-- Глубина
+		h,                    //-- Высота
+		DepthBp								//-- Глубина установки задней стенки
+		Stenka,								//-- Ссылка на стенку
+		Stenka2,							//-- Ссылка на вторую стенку (если корпус угловой)
+		h_dsp,								//-- Толщина материала корпуса
+		h_dvp,								//-- Толщина материала стенки
+		iif(WallChamfer>0,1,0);										//-- Тип корпуса (0-прямой, 1-угловой)
+	}
+  macro ProtoPath+"SetCuts.mac" 0 0 0 0;
+}
+if (TypeBp==-1)     //-- Стенка для мойки
+{
+  if (HasDuct==0)
+  {
+    macro ProtoPath+"SetFix.mac" 0 0 0 0;
+    macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 1 dum dum 0 0 0 ;
+    macro ProtoPath+"MakePan.mac" h_dsp-InCutBp 0 h_c+h_dsp-InCutBp
+                                  dum dum 13 ;
+
+    macro ProtoPath+"SetFilet.mac" 0 0 0 1 dum dum 0 0 0 0 0 0 ;
+    macro ProtoPath+"MakePan.mac" ws-h_dsp+InCutBp-dum 0 h_c+h_dsp-InCutBp
+                                  dum dum 13 ;
+
+    macro ProtoPath+"SetFilet.mac" 1 dum dum 0 0 0 0 0 0 0 0 0;
+    macro ProtoPath+"MakePan.mac" ws-h_dsp+InCutBp-dum 0 h-h_dsp+InCutBp-dum
+                                  dum dum 13;
+
+    macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 1 dum dum ;
+    macro ProtoPath+"MakePan.mac" h_dsp-InCutBp 0 h-h_dsp+InCutBp-dum
+                                  dum dum 13;
+
+    //-- Дополнительная планка
+    macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+    macro ProtoPath+"SetECod.mac" "1106" ;
+    // macro ProtoPath+"SetKCod.mac" "ЗДНЦ" h-2*h_dsp-h_c ws-2*h_dsp;
+    macro ProtoPath+"SetEnam.mac" "Задняя царга" ;
+    macro ProtoPath+"SetKrom.mac" BandColor BandType BandType 0 0 ;
+    macro ProtoPath+"SetMat.mac"  PrMater ;
+    macro ProtoPath+"SetFix.mac"  0 0 FixCorp FixCorp ;
+    macro ProtoPath+"MakePan.mac" h_dsp 0 h-dst-iif(IsTop==1,h_dsp,0) dst ws-2*h_dsp 14 ;
+  }
+    else
+  {
+    if (ConfDuct==2)
+    {
+      macro ProtoPath+"SetFix.mac" 0 0 0 0;
+      macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 1 dum dum 0 0 0 ;
+      macro ProtoPath+"MakePan.mac" h_dsp-InCutBp+WidthDuct 0 h_c+h_dsp-InCutBp
+                                    dum dum 13 ;
+
+      macro ProtoPath+"SetFilet.mac" 0 0 0 1 dum dum 0 0 0 0 0 0 ;
+      macro ProtoPath+"MakePan.mac" ws-h_dsp+InCutBp-dum 0 h_c+h_dsp-InCutBp
+                                    dum dum 13 ;
+
+      macro ProtoPath+"SetFilet.mac" 1 dum dum 0 0 0 0 0 0 0 0 0;
+      macro ProtoPath+"MakePan.mac" ws-h_dsp+InCutBp-dum 0 h-h_dsp+InCutBp-dum
+                                    dum dum 13;
+
+      macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 1 dum dum ;
+      macro ProtoPath+"MakePan.mac" h_dsp-InCutBp+WidthDuct 0 h-h_dsp+InCutBp-dum
+                                    dum dum 13;
+
+      //-- Дополнительная планка
+      macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+      macro ProtoPath+"SetECod.mac" "1106" ;
+      // macro ProtoPath+"SetKCod.mac" "ЗДНЦ" h-2*h_dsp-h_c ws-2*h_dsp;
+      macro ProtoPath+"SetEnam.mac" "Задняя царга" ;
+      macro ProtoPath+"SetKrom.mac" BandColor BandType BandType 0 0 ;
+      macro ProtoPath+"SetMat.mac"  PrMater ;
+      macro ProtoPath+"SetFix.mac"  0 0 FixCorp FixCorp ;
+      macro ProtoPath+"MakePan.mac" h_dsp+WidthDuct 0 h-dst-iif(IsTop==1,h_dsp,0) dst ws-2*h_dsp-WidthDuct 14 ;
+    }
+    if (ConfDuct==3)
+    {
+      macro ProtoPath+"SetFix.mac" 0 0 0 0;
+      macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 1 dum dum 0 0 0 ;
+      macro ProtoPath+"MakePan.mac" h_dsp-InCutBp 0 h_c+h_dsp-InCutBp
+                                    dum dum 13 ;
+
+      macro ProtoPath+"SetFilet.mac" 0 0 0 1 dum dum 0 0 0 0 0 0 ;
+      macro ProtoPath+"MakePan.mac" ws-h_dsp+InCutBp-dum-WidthDuct 0 h_c+h_dsp-InCutBp
+                                    dum dum 13 ;
+
+      macro ProtoPath+"SetFilet.mac" 1 dum dum 0 0 0 0 0 0 0 0 0;
+      macro ProtoPath+"MakePan.mac" ws-h_dsp+InCutBp-dum-WidthDuct 0 h-h_dsp+InCutBp-dum
+                                    dum dum 13;
+
+      macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 1 dum dum ;
+      macro ProtoPath+"MakePan.mac" h_dsp-InCutBp 0 h-h_dsp+InCutBp-dum
+                                    dum dum 13;
+
+      //-- Дополнительная планка
+      macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+      macro ProtoPath+"SetECod.mac" "1106" ;
+      // macro ProtoPath+"SetKCod.mac" "ЗДНЦ" h-2*h_dsp-h_c ws-2*h_dsp;
+      macro ProtoPath+"SetEnam.mac" "Задняя царга" ;
+      macro ProtoPath+"SetKrom.mac" BandColor BandType BandType 0 0 ;
+      macro ProtoPath+"SetMat.mac"  PrMater ;
+      macro ProtoPath+"SetFix.mac"  0 0 FixCorp FixCorp ;
+      macro ProtoPath+"MakePan.mac" h_dsp 0 h-dst-iif(IsTop==1,h_dsp,0) dst ws-2*h_dsp-WidthDuct 14 ;
+    }
+    if (ConfDuct==4)
+    {
+      macro ProtoPath+"SetFix.mac" 0 0 0 0;
+      macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 1 dum dum 0 0 0 ;
+      macro ProtoPath+"MakePan.mac" h_dsp-InCutBp 0 h_c+h_dsp-InCutBp
+                                    dum dum 13 ;
+      macro ProtoPath+"MakePan.mac" h_dsp-InCutBp+WidthDuct+ShiftDuct 0 h_c+h_dsp-InCutBp
+                                    dum dum 13 ;
+
+      macro ProtoPath+"SetFilet.mac" 0 0 0 1 dum dum 0 0 0 0 0 0 ;
+      macro ProtoPath+"MakePan.mac" ws-h_dsp+InCutBp-dum 0 h_c+h_dsp-InCutBp
+                                    dum dum 13 ;
+      macro ProtoPath+"MakePan.mac" ShiftDuct-h_dsp+InCutBp-dum 0 h_c+h_dsp-InCutBp
+                                    dum dum 13 ;
+
+      macro ProtoPath+"SetFilet.mac" 1 dum dum 0 0 0 0 0 0 0 0 0;
+      macro ProtoPath+"MakePan.mac" ws-h_dsp+InCutBp-dum 0 h-h_dsp+InCutBp-dum
+                                    dum dum 13;
+      macro ProtoPath+"MakePan.mac" ShiftDuct-h_dsp+InCutBp-dum 0 h-h_dsp+InCutBp-dum
+                                    dum dum 13;
+
+      macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 1 dum dum ;
+      macro ProtoPath+"MakePan.mac" h_dsp-InCutBp 0 h-h_dsp+InCutBp-dum
+                                    dum dum 13;
+      macro ProtoPath+"MakePan.mac" h_dsp-InCutBp+WidthDuct+ShiftDuct 0 h-h_dsp+InCutBp-dum
+                                    dum dum 13;
+
+      //-- Дополнительная планка
+      macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+      macro ProtoPath+"SetECod.mac" "1106" ;
+      // macro ProtoPath+"SetKCod.mac" "ЗДНЦ" h-2*h_dsp-h_c ws-2*h_dsp;
+      macro ProtoPath+"SetEnam.mac" "Задняя царга" ;
+      macro ProtoPath+"SetKrom.mac" BandColor BandType BandType 0 0 ;
+      macro ProtoPath+"SetMat.mac"  PrMater ;
+      macro ProtoPath+"SetFix.mac"  0 0 FixCorp FixCorp ;
+      macro ProtoPath+"MakePan.mac" h_dsp 0 h-dst-iif(IsTop==1,h_dsp,0) dst ShiftDuct-2*h_dsp 14 ;
+      macro ProtoPath+"MakePan.mac" h_dsp+WidthDuct+ShiftDuct 0 h-dst-iif(IsTop==1,h_dsp,0) dst ws-2*h_dsp-WidthDuct-ShiftDuct 14 ;
+    }
+  }
+}
+if (TypeBp==3)      //-- Врезная задняя стенка
+{
+  macro ProtoPath+"SetFix.mac"  0 0 0 0 ;
+  macro ProtoPath+"SetCuts.mac" 0 0 iif(WallChamfer>0&&Orient==0,WallChamfer-DepthBp,0) iif(WallChamfer>0&&Orient==1,WallChamfer-DepthBp,0);
+  if (HasDuct==0)
+  {
+    macro ProtoPath+"MakePan.mac" h_dsp-InCutBp  DepthBp  h_c+h_dsp-InCutBp
+                                  h-2*h_dsp-h_c+2*InCutBp
+                                  ws-iif(Dno==1&&MinDepth<=0,1,2)*(h_dsp-InCutBp) 13 ;
+  }
+  else
+  {
+    if (ConfDuct==2)
+    {
+       macro ProtoPath+"MakePan.mac" h_dsp-InCutBp+WidthDuct  DepthBp  h_c+h_dsp-InCutBp
+                                     h-2*h_dsp-h_c+2*InCutBp
+                                     ws-iif(Dno==1&&MinDepth<=0,1,2)*(h_dsp-InCutBp)-WidthDuct 13 ;
+    }
+    if (ConfDuct==3)
+    {
+      macro ProtoPath+"MakePan.mac" h_dsp-InCutBp  DepthBp  h_c+h_dsp-InCutBp
+                                    h-2*h_dsp-h_c+2*InCutBp
+                                    ws-iif(Dno==1&&MinDepth<=0,1,2)*(h_dsp-InCutBp)-WidthDuct 13 ;
+    }
+    if (ConfDuct==4)
+    {
+       macro ProtoPath+"MakePan.mac" h_dsp-InCutBp DepthBp  h_c+h_dsp-InCutBp
+                                     h-2*h_dsp-h_c+2*InCutBp
+                                     ShiftDuct-iif(Dno==1&&MinDepth<=0,1,2)*(h_dsp-InCutBp) 13 ;
+       macro ProtoPath+"MakePan.mac" h_dsp+WidthDuct+ShiftDuct-InCutBp  DepthBp  h_c+h_dsp-InCutBp
+                                     h-2*h_dsp-h_c+2*InCutBp
+                                     ws-iif(Dno==1&&MinDepth<=0,1,2)*(h_dsp-InCutBp)-WidthDuct-ShiftDuct 13 ;
+    }
+  }
+	//-- Устанавливаем навеску
+	objident last 1 Stenka;
+	NULLOUT=getvarinst(1,"Naves",Naves,0);
+	if (Naves>0)
+	{
+		macro ProtoPath+"MakeNaves.mac" 
+		Naves,								//-- Навеска
+		w,                    //-- Ширина
+		d,                    //-- Глубина
+		h,                    //-- Высота
+		DepthBp								//-- Глубина установки задней стенки
+		Stenka,								//-- Ссылка на стенку
+		Stenka2,							//-- Ссылка на вторую стенку (если корпус угловой)
+		h_dsp,								//-- Толщина материала корпуса
+		h_dvp,								//-- Толщина материала стенки
+		iif(WallChamfer>0,1,0);										//-- Тип корпуса (0-прямой, 1-угловой)
+	}
+}
+if (TypeBp==4)  //-- Жесткая планка
+{
+  macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+  macro ProtoPath+"SetECod.mac" "1109" ;
+  // macro ProtoPath+"SetKCod.mac" "ЗДНЦ" h-2*h_dsp-h_c w-2*h_dsp;
+  macro ProtoPath+"SetEnam.mac" "Задняя царга" ;
+  macro ProtoPath+"SetKrom.mac" BandColor BandType BandType 0 0 ;
+  macro ProtoPath+"SetMat.mac" PrMater ;
+  macro ProtoPath+"SetFix.mac"  0 0 FixCorp FixCorp ;
+  if (HasDuct==0)
+  {
+    macro ProtoPath+"MakePan.mac" h_dsp 0 (h-h_c-dst)/2+h_c dst ws-2*h_dsp 14 ;
+  }
+  else
+  {
+    if (ConfDuct==2)
+    {
+      macro ProtoPath+"MakePan.mac" h_dsp+WidthDuct 0 (h-h_c-dst)/2+h_c dst ws-2*h_dsp-WidthDuct 14 ;
+    }
+    if (ConfDuct==3)
+    {
+      macro ProtoPath+"MakePan.mac" h_dsp 0 (h-h_c-dst)/2+h_c dst ws-2*h_dsp-WidthDuct 14 ;
+    }
+    if (ConfDuct==4)
+    {
+      macro ProtoPath+"MakePan.mac" h_dsp 0 (h-h_c-dst)/2+h_c dst ShiftDuct-2*h_dsp 14 ;
+      macro ProtoPath+"MakePan.mac" h_dsp+WidthDuct+ShiftDuct 0 (h-h_c-dst)/2+h_c dst ws-2*h_dsp-WidthDuct-ShiftDuct 14 ;
+    }
+  }
+}
+
+if (Orient==1)
+{
+  rotate last sysvar(60)-obj1 done 2points ws,0,0 ws,0,10 WallAngle-90 nocopy;
+}
+else
+{
+  rotate last sysvar(60)-obj1 done 2points 0,0,0 0,0,10 90-WallAngle nocopy;
+}
+macro ProtoPath+"SetMat.mac" PrMater;
+//-- Ставим стенку под пристенную фаску
+if (WallChamfer>0)
+{
+  macro ProtoPath+"SetECod.mac" "1110" ;
+  // macro ProtoPath+"SetKCod.mac" "СТФС" h-h_c  WallChamfer*sqrt(2);
+  macro ProtoPath+"SetEnam.mac" "Пристанная фаска" ;
+  macro ProtoPath+"SetFix.mac" iif(Dno==1,FixCorp,0) iif(Dno==1,FixCorp,0) FixBp FixBp;
+  macro ProtoPath+"SetCuts.mac" iif(Dno==1,h_dsp,0), iif(Dno==1,h_dsp,0), DepthBp*sqrt(2)-h_dsp, DepthBp*sqrt(2)-h_dsp+iif(TypeBp==1,h_dvp*sqrt(2),0);
+  if (Orient==0)
+  {
+    macro ProtoPath+"SetButts.mac" 4, 2, 1, 0, 0, 45, 0, 0, 0;
+    macro ProtoPath+"SetButts.mac" 3, 2, 1, 0, 0, 45, 0, 0, 0;
+    macro ProtoPath+"MakePan.mac" WallChamfer 0 h_c h-h_c, WallChamfer*sqrt(2),11;
+    rotate last 1 done 2points WallChamfer 0 h_c WallChamfer 0 h_c+10 45 nocopy;
+  }
+  else
+  {
+    macro ProtoPath+"SetButts.mac" 4, 2, 1, 1, 0, -45, 0, 0, 0;
+    macro ProtoPath+"SetButts.mac" 3, 2, 1, 1, 0, -45, 0, 0, 0;
+    macro ProtoPath+"MakePan.mac" ws-WallChamfer-h_dsp 0 h_c h-h_c, WallChamfer*sqrt(2),11;
+    rotate last 1 done 2points   ws-WallChamfer 0 h_c  ws-WallChamfer 0 h_c+10 -45 nocopy;
+  }
+  macro ProtoPath+"SetButts.mac" 4, 0, 0, 0, 0, 0, 0, 0, 0;
+  macro ProtoPath+"SetButts.mac" 3, 0, 0, 0, 0, 0, 0, 0, 0;
+}
+//-- Наличие цоколя
+if (HasCok!=0)
+{
+  putmsg("Установка цоколя на угловой корпус пока не реализована",0);
+}
+macro ProtoPath+"SetCuts.mac" 0 0 0 0;
+if (HasDuct!=0) //-- Если есть вырез, удаляем контур выреза. Он нам больше не нужен
+{
+  delete Pat done;
+}
+//-------------------------------------------------------------------
+object_3=sysvar(60)-object_0;
+move last object_3 done xpos,ypos,zpos nocopy;
+#Corps group last object_3 done;
+g_FurnType=FurnType;
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"w",w);
+err=AddScratch(ScrMod,FurnType,"d",d);
+err=AddScratch(ScrMod,FurnType,"h",h);
+err=AddScratch(ScrMod,FurnType,"h_c",h_c);
+err=AddScratch(ScrMod,FurnType,"MinDepth",MinDepth);
+err=AddScratch(ScrMod,FurnType,"AngleType",AngleType);
+err=AddScratch(ScrMod,FurnType,"DimX",DimX);
+err=AddScratch(ScrMod,FurnType,"DimY",DimY);
+err=AddScratch(ScrMod,FurnType,"Orient",Orient);
+err=AddScratch(ScrMod,FurnType,"PrMater",PrMater);
+err=AddScratch(ScrMod,FurnType,"MatBp",MatBp);
+err=AddScratch(ScrMod,FurnType,"BandColor",BandColor);
+err=AddScratch(ScrMod,FurnType,"BandType",BandType);
+err=AddScratch(ScrMod,FurnType,"TypeBp",TypeBp);
+err=AddScratch(ScrMod,FurnType,"DepthBp",DepthBp);
+err=AddScratch(ScrMod,FurnType,"InCutBp",InCutBp);
+err=AddScratch(ScrMod,FurnType,"FixCorp",FixCorp);
+err=AddScratch(ScrMod,FurnType,"FixBp",FixBp);
+err=AddScratch(ScrMod,FurnType,"Dno",Dno);
+err=AddScratch(ScrMod,FurnType,"Dum",Dum);
+err=AddScratch(ScrMod,FurnType,"Dst",Dst);
+err=AddScratch(ScrMod,FurnType,"HasCok",HasCok);
+err=AddScratch(ScrMod,FurnType,"Shiftcok",Shiftcok);
+err=AddScratch(ScrMod,FurnType,"LongPost",LongPost);
+err=AddScratch(ScrMod,FurnType,"FasCok",FasCok);
+err=AddScratch(ScrMod,FurnType,"ForOpen",ForOpen);
+err=AddScratch(ScrMod,FurnType,"HasDuct",HasDuct);
+err=AddScratch(ScrMod,FurnType,"ShiftDuct",ShiftDuct);
+err=AddScratch(ScrMod,FurnType,"WidthDuct",WidthDuct);
+err=AddScratch(ScrMod,FurnType,"DepthDuct",DepthDuct);
+err=AddScratch(ScrMod,FurnType,"WallAngle",WallAngle);
+err=AddScratch(ScrMod,FurnType,"Widsth",Widsth);
+err=AddScratch(ScrMod,FurnType,"IsTop",IsTop);
+err=AddScratch(ScrMod,FurnType,"MinDepthX",MinDepthX);
+err=AddScratch(ScrMod,FurnType,"ChamfLeft",ChamfLeft);
+err=AddScratch(ScrMod,FurnType,"ChamfRight",ChamfRight);
+err=AddScratch(ScrMod,FurnType,"WallChamfer",WallChamfer);
+NULLOUT=writescratch(ScrMod,Namescr,Corps);
+NULLOUT=TermScratch(ScrMod);
+NULLOUT=addattrpi(Corps,1,CorpsID);
+return;

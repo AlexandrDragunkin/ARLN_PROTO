@@ -1,0 +1,82 @@
+//-- Добавление сотовой корзины
+global ProtoPath ;
+global MacroSw  ; //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global ElemName ; //-- Имена мебельных элементов
+global HoldName ; //-- Имя хозяина
+global UnitCode ; //-- Код изделия (текст)
+global ElemCode ; //-- Код мебельных элементов
+KarkasNumb=getcarcnumb();                    //-- Порядковый номер каркаса в сцене
+
+getpar
+IdAcces         //-- Тип комплектующих
+NAcces	        //-- Количество
+xn yn zn	      //-- Положение начала локальной системы координат
+ax az ax1;	    //-- Углы поворота
+
+objDo=sysvar(60);
+defarr setK[1];
+defarr xm[6];
+position=151;
+
+NULLOUT=getsnap();
+NULLOUT=pushinst(1);
+
+  gosub New_korz;
+
+NULLOUT=popinst(1);
+NULLOUT=resnap();
+if (object_2==0) //-- Нет объектов
+{
+  exit;
+}
+objPosle=sysvar(60);
+macro ProtoPath+"SetCinema.mac" objDo objPosle "0, 1, 1, 0, "+str(Length-150)+", 0 ";
+#Elem group all done;
+NULLOUT=objgab3(Elem,xm);
+//-- Присваиваем атрибуты
+macro ProtoPath+"EndSot.mac" Elem position xm[4]-xm[1] xm[5]-xm[2] xm[6]-xm[3] GoodsID "";
+exit;
+//============================================================
+New_korz:
+
+object_1=sysvar(60); //-- Кол-во объектов
+furn="'330000'"
+
+  accessory "041900" IdAcces  0 yes ;
+  objident last 1 Elem;
+
+Length=priceinfo(IdAcces,"Length",350);  // Длина корзины
+Width=Length;
+kol1=npgetbywhere(2,"furntype = "+furn,"setK");
+if (kol1>0) {
+      SU=setK[1];
+      // Новый запрос направляющих
+  GoodsID=SU     // ID корзины в справочнике изделий
+  GoodsProp="Guide"
+  MatProp="Length"
+  IDNapr=NPGetByProps(GoodsID,GoodsProp,MatProp,Length-40);    //за вычетом 40 мм
+  //-- Построение направляющих
+  macro ProtoPath+"SetEnam.mac" "Направляющие" ;
+  macro ProtoPath+"SetECod.mac" "" ;
+
+  macro ProtoPath+"MakeGuide.mac" IDNapr 2 1 -14 12 -6 0 0 0;
+  macro ProtoPath+"MakeGuide.mac" IDNapr 1 0 Width+3 12 -6 0 0 0;
+  Klips=priceinfo(SU,"ClipID",0,2);  // ID клипсы
+  Macro ProtoPath+"SetAccPLace.mac"   0;
+  macro ProtoPath+"MakeAcce.mac" Klips 0 -1 45 -6 0 0 0;
+  macro ProtoPath+"MakeAcce.mac" Klips 0 -1 Length-80 -6 0 0 0;
+  macro ProtoPath+"MakeAcce.mac" Klips 0 Width-67 45 -6 0 0 0;
+  macro ProtoPath+"MakeAcce.mac" Klips 0 Width-67 Length-80 -6 0 0 0;
+  Fixs=priceinfo(SU,"FixerID",0,2);  // ID самореза
+  macro ProtoPath+"MakeFixer.mac"  -1 45+10 -6+7 1 0 0 0 0 1 Fixs;
+  macro ProtoPath+"MakeFixer.mac"  -1 Length-80+10 -6+7 1 0 0 0 0 1 Fixs;
+  macro ProtoPath+"MakeFixer.mac"  Width-67 45+10 -6+7 1 0 0 0 0 1 Fixs;
+  macro ProtoPath+"MakeFixer.mac"  Width-67 Length-80+10 -6+7 1 0 0 0 0 1 Fixs;
+
+}
+object_2=sysvar(60)-object_1; //-- Кол-во объектов
+  move nocopy last object_2 done xn yn zn ;
+  rotate last object_2 done 2points xn yn zn xn+1 yn zn ax nocopy ;
+  rotate last object_2 done 2points xn yn zn xn yn zn+1 az nocopy ;
+  rotate last object_2 done 2points xn yn zn xn+1 yn zn ax1 nocopy ;
+return;

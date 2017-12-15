@@ -1,0 +1,39 @@
+// программа расчета столешницы-сектор 
+r=DbVar("Rad",600);	                // 
+PrMater=DbVar("PrMater",0);		//
+sh=PriceInfo(PrMater,"Thickness",16)	//	
+WMFPath=DbVar("WMFPath","");
+F2000=DbVar("F2000",0);
+d=sh;				//
+alfa=DbVar("Angle",90);
+
+macro GetProtoMac("Shkaf.ptl")+"SectorS.MAC"  r d alfa;
+
+alfa1=Radian(alfa);
+
+//#L1 line 0, 0, 0 
+//        r, 0, 0 done
+//
+//    rotate L1 done 2points 0,0,0 0,0,10 alfa copy 1
+//    arc r 0 0 r*cos(alfa1) r*sin(alfa1) 0 r*cos(alfa1/2) r*sin(alfa1/2) 0
+
+
+//#LL path select last 3 done L1 done;
+ 
+//Размеры
+
+rdim 2points 0 0 0
+             r*cos((alfa1)/2)  r*sin((alfa1)/2) 0 
+            ^r*cos((alfa1)/4)  r*sin((alfa1)/4) 0
+
+adim 3points 0, 0, 0 
+             r, 0, 0 
+             r*cos(alfa1), r*sin(alfa1), 0 
+            ^(4*r/5)*cos((alfa1)/2), (4*r/5)*sin((alfa1)/2), 0;
+
+View None Gcs 0. 0. 1.;
+Zoom all
+
+If F2000 { Exp2d Wmf Yes WMFPath+"1.WMF" [ overwrite ] }
+Else     { Exp2d Wmf No WMFPath+"1.WMF" [ overwrite ] }
+    

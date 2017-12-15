@@ -1,0 +1,81 @@
+//-- ћакропрограмма создани€ контура из двух ортогональных отрезков и дуги между ними
+//--                                                                    |
+//--                                                                  y |
+//--                                                                   R ----*
+//--                                                                       x
+//-- ¬ходные параметры:
+//-- xn, yn, zn - точка начала линии контура
+//-- x, y, R - размеры и радиус контура
+
+defarr pt1[3],pt2[3],pts[3],arcd[9];
+getpar xn,yn,zn,x,y,R;
+
+xR=x;
+yR=y;
+dx=0;
+dy=0;
+
+//------------------------------------------------------------------------------
+//-- ѕровер€ем, не больше ли радиус контура его размеров
+if (x<=R)
+{
+   xR=x+R;
+   dx=R;
+}
+if (y<=R)
+{
+   yR=y+R;
+   dy=R;
+}
+//------------------------------------------------------------------------------
+#L1 Line 0,0,0 xR,0,0;
+#L2 Line xR,0,0 xR,-yR,0;
+move L1 L2 done xn-dx,yn,zn nocopy;
+
+a=fillet(L1,L2,R,arcd);
+
+#O1 Line xn-dx,yn,zn arcd[1],arcd[2],arcd[3];
+#Du arc arcd[1],arcd[2],arcd[3] arcd[4],arcd[5],arcd[6] arcd[7],arcd[8],arcd[9];
+#O2 Line arcd[4] arcd[5] arcd[6] xn-dx+xR,yn-yR,zn ;
+#P1 path select Last 3 done O1;
+delete L1 L2 ;
+//-- ≈сли у контурсостоит только из дуги, выходим
+if ((dx==0)&&(dy==0))
+{
+  exit;
+}
+L=getpathpoint(P1,0,pt1);
+L=getpathpoint(P1,1.,pt2);
+
+if (dx>0)
+{
+  L=getpathpoint(P1,dx/L,pt1);
+  if (dy>0)
+  {
+    L=getpathpoint(P1,(L-dy)/L,pt2);
+    L=getpathpoint(P1,0.5,pts);
+    #Du arc pt1[1],pt1[2],pt1[3] pt2[1],pt2[2],pt2[3] pts[1],pts[2],pts[3];
+    delete P1;
+    exit;
+  }
+  else
+  {
+    delete P1;
+    #Du arc pt1[1],pt1[2],pt1[3] arcd[4],arcd[5],arcd[6] arcd[7],arcd[8],arcd[9];
+    #O2 Line arcd[4],arcd[5],arcd[6] pt2[1],pt2[2],pt2[3] ;
+    #P1 path select Last 3 done Du ;
+    exit;
+  }
+}
+if (dy>0)
+{
+  L=getpathpoint(P1,dx,pt1);
+  L=(L-dy)/L;
+  L=getpathpoint(P1,L,pt2);
+  delete P1;
+  #O1 Line pt1[1],pt1[2],pt1[3] arcd[1],arcd[2],arcd[3];
+  #Du arc arcd[1],arcd[2],arcd[3] pt2[1],pt2[2],pt2[3] arcd[7],arcd[8],arcd[9];
+  #P1 path selec Last 3 done O1 ;
+}
+exit;
+

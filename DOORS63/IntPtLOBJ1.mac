@@ -1,0 +1,631 @@
+CurStat=SysVar(70) ;
+if CurStat>2 {    ErrMsg=MsgLevel(1) ; }
+//  IntPtLOBJ1.mac
+//*********************************************
+// Найти точки пересечения проекций двух линейных объектов
+// в проекции на видовую плоскость
+//              Драгункин А.Р.
+//              ГеоС 2009 г.
+//*********************************************
+//
+
+//defarr xm1[9] xm2[9] ;
+defarr IntXA[2] IntYA[2] ;
+defarr Afin[4,4] PM[3] V[3] ; // Массивы для афинных преобразований
+
+Getpar
+TypObj1 // 1 Тип первого объекта  2-0трезок 4-дуга
+Xm1     // 2 массив точек 1-го объекта в ГСК
+TypObj2 // 3 Тип второго объекта  2-0трезок 4-дуга
+Xm2     // 4 массив точек 2-го объекта в ГСК
+AIntAll // 5 Массив точек пересечения
+AIntIn  // 6 Массив явных точек пересечения
+AIntOut // 7 Массив точек пересечения на продолжении объекта
+;
+
+
+
+goto begin;
+Get "Первая точка " point missing
+Xm1[1]
+Xm1[2]
+Xm1[3]
+ :
+
+
+get "Следующая точка " point Xm1[1] Xm1[2] Xm1[3]
+Xm1[4] Xm1[5] Xm1[6]  :
+
+get "Следующая точка " point Xm1[1] Xm1[2] Xm1[3]
+Xm1[7] Xm1[8] Xm1[9]  :
+
+
+Get "Первая точка " point missing
+Xm2[1] Xm2[2] Xm2[3]  :
+
+
+get "Следующая точка " point Xm2[1] Xm2[2] Xm2[3]
+Xm2[4] Xm2[5] Xm2[6]  :
+
+get "Следующая точка " point Xm2[1] Xm2[2] Xm2[3]
+Xm2[7] Xm2[8] Xm2[9]  :
+
+begin:
+;
+
+
+//gosub TestZero;
+
+if (TypObj1==2)&&(TypObj2==2)
+{
+  //                Случай две линии
+  prV1=0
+  prV2=0
+  // Находим коэффициенты характеристических уровнений
+  X1=Xm1[4]
+  Y1=Xm1[5]
+  X2=Xm1[1]
+  Y2=Xm1[2]
+  
+  If X1!=X2
+  {
+   Gosub KoefLin;
+   KfA1=KfA
+   KfB1=KfB
+  }
+  else
+  {
+   IntX1=X1
+   prV1=1
+   KfA1=tan(radian(90))
+  }
+
+  X1=Xm2[4]
+  Y1=Xm2[5]
+  X2=Xm2[1]
+  Y2=Xm2[2]
+  
+  If X1!=X2
+  {
+   Gosub KoefLin;
+   KfA2=KfA
+   KfB2=KfB
+  }
+  else
+  {
+   IntX1=X1
+   prV2=1
+   KfA2=tan(radian(90))
+   
+  }
+
+  If (KfA2==KfA1)||((prV1==1)&&(prV2==1))
+  {
+   Np=0
+  }
+  else
+  {
+  IntX1=iif((prV1==0)&&(prV2==0),(KfB2-KfB1)/(KfA1-KfA2),IntX1);
+  IntY1=iif(prV2==1,KfA1*IntX1+KfB1,KfA2*IntX1+KfB2);
+  Np=1
+  }
+
+
+}
+if ((TypObj1==4)||(TypObj2==4))&&(TypObj1!=TypObj2)
+{
+   // Пересечение дуги и линии
+   if TypObj1==2  // первый линия второй дуга
+   { // Координаты точек дуги
+   // Начальной
+     Xn=Xm2[1]
+     Yn=Xm2[2]
+     Zn=Xm2[3]
+     // Конечной
+     Xe=Xm2[4]
+     Ye=Xm2[5]
+     Ze=Xm2[6]
+     // Средней (на дуге)
+     Xm=Xm2[7]
+     Ym=Xm2[8]
+     Zm=Xm2[9]
+
+      gosub PCenArc;  // Ищем координаты центра дуги CaX CaY заданной по трем точкам
+
+     X1=Xm1[1]   // Координаты точек Линии
+     Y1=Xm1[2]
+     X2=Xm1[4]
+     Y2=Xm1[5]
+     
+     // Находим точки пересечения
+     Gosub KoefLin;   // Находим коэффициенты  линейного уравнения
+     Gosub IntAnalis; // Находим точки решая квадратное уравнение
+     
+     
+
+   }
+   else  // первый дуга второй линия
+   { // Координаты точек дуги
+   // Начальной
+     Xn=Xm1[1]
+     Yn=Xm1[2]
+     Zn=Xm1[3]
+     // Конечной
+     Xe=Xm1[4]
+     Ye=Xm1[5]
+     Ze=Xm1[6]
+     // Средней (на дуге)
+     Xm=Xm1[7]
+     Ym=Xm1[8]
+     Zm=Xm1[9]
+
+      gosub PCenArc;  // Ищем координаты центра дуги CaX CaY заданной по трем точкам
+
+     X1=Xm2[1]
+     Y1=Xm2[2]
+     X2=Xm2[4]
+     Y2=Xm2[5]
+
+     // Находим точки пересечения
+     Gosub KoefLin;   // Находим коэффициенты  линейного уравнения
+     Gosub IntAnalis; // Находим точки решая квадратное уравнение
+   }
+
+}
+if ((TypObj1==4)||(TypObj2==4))&&(TypObj1==TypObj2)
+{
+// Две дуги
+// Координаты точек первой дуги
+   // Начальной
+     Xn=Xm1[1]
+     Yn=Xm1[2]
+     Zn=Xm1[3]
+     // Конечной
+     Xe=Xm1[4]
+     Ye=Xm1[5]
+     Ze=Xm1[6]
+     // Средней (на дуге)
+     Xm=Xm1[7]
+     Ym=Xm1[8]
+     Zm=Xm1[9]
+
+      gosub PCenArc;  // Ищем координаты центра дуги CaX CaY заданной по трем точкам
+      CaX1=CaX
+      CaY1=CaY
+      Rad1=Rad
+     // Координаты точек второй дуги
+         // Начальной
+     Xn=Xm2[1]
+     Yn=Xm2[2]
+     Zn=Xm2[3]
+     // Конечной
+     Xe=Xm2[4]
+     Ye=Xm2[5]
+     Ze=Xm2[6]
+     // Средней (на дуге)
+     Xm=Xm2[7]
+     Ym=Xm2[8]
+     Zm=Xm2[9]
+
+      gosub PCenArc;  // Ищем координаты центра дуги CaX CaY заданной по трем точкам
+      CaX2=CaX
+      CaY2=CaY
+      Rad2=Rad
+      // Проверяем условие пересечения окружностей
+      d=sqrt((CaX1-CaX2)*(CaX1-CaX2)+(CaY1-CaY2)*(CaY1-CaY2));
+      if (d<(Rad1+Rad2)&&d>(Rad1-Rad2))
+      {
+         // Точки пересечения есть
+         // Далее по этой методе вариант 2 http://algolist.ru/maths/geom/intersect/circlecircle2d.php
+         a=(Rad1*Rad1-Rad2*Rad2+d*d)/(2*d)
+         h=sqrt(Rad1*Rad1-a*a)
+         x=CaX1+a*(CaX2-Cax1)/d;
+         y=CaY1+a*(CaY2-CaY1)/d;
+         IntX1=x+h*(CaY1-CaY2)/d;
+         IntX2=x-h*(CaY1-CaY2)/d;
+         IntY1=y+h*(CaX2-CaX1)/d;
+         IntY2=y-h*(CaX2-CaX1)/d;
+         Np=2
+      }
+      if d==(Rad1+Rad2)
+      {
+         a=Rad1
+         x=CaX1+a*(CaX2-Cax1)/d;
+         y=CaY1+a*(CaY2-CaY1)/d;
+         IntX1=x
+         IntY1=y
+         Np=1
+      }
+}
+//**************************
+If Np>0
+{
+AIntAll[1]=IntX1
+AIntAll[2]=IntY1
+}
+if Np>1
+{
+AIntAll[3]=IntX2
+AIntAll[4]=IntY2
+}
+//**************************
+// Проверяем принадлежности точек первому и второму (объекту интервалу)
+i=1
+j=1
+k=1
+met1:
+   if isvardef("PptInt")==16
+   {
+   delete PptInt done ;
+   }
+if i<Np*2   // Точек пересечения
+{
+   IntX=AIntAll[i]
+   IntY=AIntAll[i+1]
+
+
+//   #PptInt point IntX IntY 0 done;
+
+   if (TypObj1!=TypObj2) // Линия и дуга
+   {
+       Xnd=X1 ; Ynd=Y1
+       Xed=X2 ; Yed=Y2
+       gosub Plin; // Определяем принадлежность точки отрезку LogA=0 или 1
+
+       LogA1=LogA
+
+       gosub Parc;  // Определяем принадлежность точки отрезку LogA=0 или 1
+       LogA2=LogA
+       if (LogA1==1)&&(LogA2==1)
+       {
+
+          AIntIn[k]=IntX
+          AIntIn[k+1]=IntY
+          k=k+2
+       }
+       else
+       {
+
+          AIntOut[j]=IntX
+          AIntOut[j+1]=IntY
+          j=j+2
+       }
+
+   }
+   if (TypObj1==TypObj2)&&(TypObj1==2)  // Линия и линия
+   {
+       X1=Xm1[4]
+       Y1=Xm1[5]
+       X2=Xm1[1]
+       Y2=Xm1[2]
+
+       //IntX=IntX1
+       //IntY=IntY1
+       Xnd=X1 ; Ynd=Y1
+       Xed=X2 ; Yed=Y2
+       gosub Plin; // Определяем принадлежность точки отрезку LogA=0 или 1
+       LogA1=LogA
+       
+       X1=Xm2[4]
+       Y1=Xm2[5]
+       X2=Xm2[1]
+       Y2=Xm2[2]
+
+       //IntX=IntX1
+       //IntY=IntY1
+       Xnd=X1 ; Ynd=Y1
+       Xed=X2 ; Yed=Y2
+       gosub Plin; // Определяем принадлежность точки отрезку LogA=0 или 1
+       LogA2=LogA
+
+       if (LogA1==1)&&(LogA2==1)
+       {
+          AIntIn[k]=IntX
+          AIntIn[k+1]=IntY
+          k=k+2
+       }
+       else
+       {
+          AIntOut[j]=IntX
+          AIntOut[j+1]=IntY
+          j=j+2
+       }
+   }
+
+   if (TypObj1==TypObj2)&&(TypObj1==4)  // Дуга и Дуга
+   {
+       // Начальной
+       Xn=Xm1[1]
+       Yn=Xm1[2]
+       Zn=Xm1[3]
+       // Конечной
+       Xe=Xm1[4]
+       Ye=Xm1[5]
+       Ze=Xm1[6]
+       // Средней (на дуге)
+       Xm=Xm1[7]
+       Ym=Xm1[8]
+       Zm=Xm1[9]
+
+       gosub PCenArc;  // Ищем координаты центра дуги CaX CaY заданной по трем точкам
+
+       //IntX=IntX1
+       //IntY=IntY1
+
+       gosub Parc;  // Определяем принадлежность точки отрезку LogA=0 или 1
+       LogA1=LogA
+
+       // Начальной
+       Xn=Xm2[1]
+       Yn=Xm2[2]
+       Zn=Xm2[3]
+       // Конечной
+       Xe=Xm2[4]
+       Ye=Xm2[5]
+       Ze=Xm2[6]
+       // Средней (на дуге)
+       Xm=Xm2[7]
+       Ym=Xm2[8]
+       Zm=Xm2[9]
+
+       gosub PCenArc;  // Ищем координаты центра дуги CaX CaY заданной по трем точкам
+
+       //IntX=IntX1
+       //IntY=IntY1
+
+       gosub Parc;  // Определяем принадлежность точки отрезку LogA=0 или 1
+       LogA2=LogA
+       if (LogA1==1)&&(LogA2==1)
+       {
+          AIntIn[k]=IntX
+          AIntIn[k+1]=IntY
+          k=k+2
+       }
+       else
+       {
+          AIntOut[j]=IntX
+          AIntOut[j+1]=IntY
+          j=j+2
+       }
+
+   }
+i=i+2
+goto met1;
+}
+If Np==0
+{
+ // Точек пересечения нет
+}
+//putmsg("Np="+Str(Np),1);
+ErrMsg=MsgLevel(CurStat) ;
+exit;
+//======================
+
+KoefLin:    // Вычисление коэффициентов характеристических уравнений линии
+
+  KfA=iif(x1!=x2,(Y1-Y2)/(X1-X2),1);
+  KfB=Y2-KfA*X2
+  //PutMsg("KfA="+Str(Kfa),1);
+
+return;
+
+// ===========================
+PCenArc:  // Ищем центр дуги заданной по трем точкам
+     //Работаем с дугой находим радиус
+     //Вычисляем полупериметр
+     #ds1 Dist Xn Yn Zn Xe Ye Ze ;
+     #ds2 Dist Xn Yn Zn Xm Ym Zm ;
+     #ds3 Dist Xe Ye Ze Xm Ym Zm ;
+     polP=(ds1+ds2+ds3)/2
+     //Площадь  треугольника
+     S_tr=sqrt(polP*(polP-ds1)*(polP-ds2)*(polP-ds3))
+     //Радиус описанной дуги
+     Rad=(ds1*ds2*ds3)/(4*S_tr)
+     // Координаты центра дуги лежат на пересечении серединных перпендикуляров треугольника
+     // Ищем середины двух катетов  ds2 и ds3
+     MpX2=Min(Xn,Xm)+abs(Xm-Xn)/2
+     MpY2=Min(Yn,Ym)+abs(Ym-Yn)/2
+     MpX3=Min(Xe,Xm)+abs(Xm-Xe)/2
+     MpY3=Min(Ye,Ym)+abs(Ym-Ye)/2
+     // Ищем вторые точки серединных перпендикуляров при помощи афинных преобразований
+     V[1]=0
+     V[2]=0
+     V[3]=1
+     Pm[1]=MpX2
+     Pm[2]=MpY2
+     Pm[3]=Zm
+     Err=Ohcunit(Afin); // Предварительная инициализация единичного массива
+     Err=Otdrotxyz(Afin,PM,V,radian(90)); // вычисляем коэффициенты преобразований
+     EpX2=Afin[1,1]*Xm+Afin[1,2]*Ym+Afin[1,3]*Zm+Afin[1,4];
+     EpY2=Afin[2,1]*Xm+Afin[2,2]*Ym+Afin[2,3]*Zm+Afin[2,4];
+     Pm[1]=MpX3
+     Pm[2]=MpY3
+     Pm[3]=Zm
+     Err=Ohcunit(Afin);
+     Err=Otdrotxyz(Afin,PM,V,radian(90)); //
+     EpX3=Afin[1,1]*Xm+Afin[1,2]*Ym+Afin[1,3]*Zm+Afin[1,4];
+     EpY3=Afin[2,1]*Xm+Afin[2,2]*Ym+Afin[2,3]*Zm+Afin[2,4];
+     // Центр дуги в точке пересечения двух серединных перепендикуляров
+     X2=MpX2
+     Y2=MpY2
+     X1=EpX2
+     Y1=EpY2
+     Gosub KoefLin; // Находим коэффициенты
+     KmA2=KfA
+     KmB2=KfB
+
+     X2=MpX3
+     Y2=MpY3
+     X1=EpX3
+     Y1=EpY3
+     Gosub KoefLin;  // Находим коэффициенты
+     KmA3=KfA
+     KmB3=KfB
+     If KmA2==KmA3
+     {
+      PutMsg("Линии параллельны",0)
+                exit;
+     }
+
+     CaX=(KmB2-KmB3)/(KmA3-KmA2)   // координаты центра дуги
+     CaY=KmA3*CaX+KmB3
+return;
+// ===========================
+IntAnalis:   // Находим точки пересечения решая квадратное уравнение частный случай a*x*x+2*b*x+c=0
+if ((TypObj1==2)&&(Xm1[1]==Xm1[4]))||((TypObj2==2)&&(Xm2[1]==Xm2[4]))
+{
+   IntX=iif(TypObj1==2,Xm1[1],Xm2[1]);
+   KC=pow((IntX-CaX),2)+CaY*CaY-Rad*Rad // коэффициент C
+   KB=CaY
+   KA=1
+     Dscr=4*(KB*KB-KA*KC) // Дискриминант
+
+     =dscr
+
+     If Dscr>0
+     {
+        // Два корня
+        IntY1=-1*(((-1)*KB+sqrt(Dscr/4))/KA)
+        IntY2=-1*(((-1)*KB-sqrt(Dscr/4))/KA)
+        IntX1=IntX
+        IntX2=IntX
+        Np=2
+
+     }
+     if abs(Dscr)<0.001
+     {
+        // Один корень
+        IntY1=(-1)*KB/KA
+        IntX1=IntX
+        Np=1
+
+     }
+
+     if Dscr<0
+     {
+       // Нет корней
+       Np=0
+
+     }
+}
+else
+{
+     KfBt=KfB-CaY  // коэффициент В
+     KA=KfA*KfA+1  // коэффициент А
+     KB=KfA*KfB-KfA*CaY-CaX    //2* // коэффициент В
+     KC=CaY*CAY-2*KfB*CaY+CaX*CaX+KfB*KfB-Rad*Rad // коэффициент C
+     Dscr=4*(KB*KB-KA*KC) // Дискриминант
+
+     =dscr
+
+     If Dscr>0
+     {
+        // Два корня
+        IntX1=((-1)*KB+sqrt(Dscr/4))/KA
+        IntX2=((-1)*KB-sqrt(Dscr/4))/KA
+        IntY1=KfA*IntX1+KfB
+        IntY2=KfA*IntX2+KfB
+        Np=2
+
+     }
+     if abs(Dscr)<0.001
+     {
+        // Один корень
+        IntX1=(-1)*KB/KA
+        IntY1=KfA*IntX1+KfB
+        Np=1
+
+     }
+
+     if Dscr<0
+     {
+       // Нет корней
+       Np=0
+
+     }
+}
+return;
+//==================================
+Plin:    // Проверка принадлежности отрезку
+//PutMsg("IntX="+Str(IntX)+"Xnd="+Str(Xnd)+"Xed="+Str(Xed)+"IntY="+Str(IntY)+"Ynd="+Str(Ynd)+"Yed="+Str(Yed),1);
+
+
+        If ((IntX<=max(Xnd,Xed))&&(IntX>=min(Xnd,Xed)))&&((IntY<=max(Ynd,Yed))&&(IntY>=min(Ynd,Yed)))
+        {
+           LogA=1 // Точка принадлежит отрезку
+           //PutMsg("Точка принадлежит отрезку",1);
+        }
+        else
+        {
+           LogA=0 // Точка НЕ принадлежит отрезку
+           //PutMsg("Точка НЕ принадлежит отрезку",1);
+        }
+return;
+//==================================
+Parc:   // Проверка принадлежности дуге
+
+        // Определяем углы точек дуги
+        // Точки начала и конца дуги должны распологаться против часовой стрелки относительно центра дуги
+        // An<Am<Ae
+        // Если это условие не выполняется следует переориентировать точки начала и конца
+        // Угол раскрытия дуги Aarb равен cумме углов Anm и Aem
+        // Если угол проверяемой точки лежит в перделах An<Ak<Ae значит точка принадлежит дуге
+        mAngl:
+        #An angle    CaX CaY zm  CaX+1 CaY zm  Xn Yn Zm done ;
+        #Am angle    CaX CaY zm  CaX+1 CaY zm  Xm Ym Zm done ;
+        #Ae angle    CaX CaY zm  CaX+1 CaY zm  Xe Ye Zm done ;
+        #Ak angle    CaX CaY zm  CaX+1 CaY zm  IntX IntY Zm done ;
+        #Ane  angle   CaX CaY zm  Xn Yn Zm      Xe Ye Zm done ;
+        #Anm  angle   CaX CaY zm  Xn Yn Zm      Xm Ym Zm done ;
+        //PutMsg("Ane="+STR(Ane)+"Anm="+STR(Anm),1);
+        If Ane<Anm
+        {
+           ax=xn
+           ay=yn
+           xn=xe
+           yn=ye
+           xe=ax
+           ye=ay
+           goto mangl;
+
+        }
+        #Aarb angle  CaX CaY zm  Xn Yn Zm  Xe Ye Zm done ;
+        Ae=An+Aarb
+        #Ak angle    CaX CaY zm  Xn Yn Zm  IntX IntY Zm done ;
+        Ak=An+Ak
+        //PutMsg("IntX="+Str(IntX)+" IntY="+Str(IntY)+" An="+str(An)+" Ak="+str(Ak)+" Ae="+str(Ae)+" Aarb="+str(Aarb),1);
+
+
+        if (An<Ak)&&(Ak<Ae)
+        {
+           LogA=1 // Точка на дуге
+           //PutMsg("Точка на дуге",1);
+        }
+        else
+        {
+           LogA=0 // Точка вне дуги
+           //PutMsg("Точка вне дуги",1);
+        }
+
+return;
+//==================================
+NumKv: // Определение номера квадранта
+  if AAn<=0&&<90    { Kv=1 }
+  if AAn<=90&&<180  { Kv=2 }
+  if AAn<=180&&<270 { Kv=3 }
+  if AAn<=270&&<360 { Kv=3 }
+return;
+//==================================
+TestZero:
+// В случае если Линия вертикальная получается проблемка
+// Требуется исключить ситуацию деления на 0
+if SysVar(32)>(1.e-3) { err=SetEpsD(1.e-3) }
+if (TypObj1==2)&&(abs(Xm1[1]-Xm1[4])<0.001)
+{
+   Xm1[4]=Xm1[1]-0.001
+}
+if (TypObj2==2)&&(abs(Xm2[1]-Xm2[4])<0.001)
+{
+   Xm2[4]=Xm2[1]-0.001
+}
+return;

@@ -1,0 +1,301 @@
+//-- Макропрограмма создания чертежей длинномеров. macro protopath+"draw.mac" 4 "custom.wmf" done;
+
+global 
+	ProtoPath 
+	L_support 
+	g_dparln
+	g_aDraw; // массив имен файлов сохраненных видов
+global g_clear g_vimDraws; // Просмотр чертежей
+
+getpar LT wmf;
+
+// начиная с версии К3 7.1.850 от 8 июля 2013 в качестве второго параметра wmf
+// передается порядковый номер и общее число выводимых типов (галочек) в окне команды drawlongs
+// например так macro protopath+"draw.mac" 4 "1;4" done;
+keyBased=0
+defarr aSpl[2];
+defarr g_aDraw[100]; // массив имен файлов сохраненных видов заполняем в drawsaveL.mac элементы  строки
+nl=splitByDelim(wmf,";",aSpl);
+if aSpl[1]==1 {
+	NULLOUT=InitArray(g_aDraw,0); // стартовая инициализация заполняем числами (не строками) только для первого типа из выбранных
+}
+
+
+macro L_support+"SetPlProjectA.mac" LT;
+NulOut=GetSnap();
+vOptDt=SysVAr(21); // -- 21 Текущее задание координат
+// -- 0 – Абсолютные координаты (задаются координаты в
+// -- текущей системе координат)
+// -- 1 – Приращения (задаются величины сдвига от
+// -- последней введенной точки)
+// -- Устанавливается по команде «Установки»
+// -- «Привязки» (см. рисунок )
+vOptCd=SysVAr(22); // -- 22 Текущее задание координат
+// -- 0 – Декартовы координаты (X, Y, Z)
+// -- 1 – Цилиндрические координаты (R, A, Z)
+// -- Устанавливается по команде «Установки»
+// -- «Привязки» (см. рисунок )
+vOptOrt=SysVAr(22); // -- 23 Текущее режим ортогональности
+// -- 0 – Режим ортогональности выключен
+// -- 1 – Ражим ортогональности включен
+// -- Устанавливается по команде «Установки»
+// -- «Привязки» (см. рисунок )
+if vOptDt  // -- 1 – Приращения
+{
+   'absolute;
+}
+if vOptCd  // -- 1 – Цилиндрические координаты
+{
+   'cartesian;
+}
+if vOptOrt // -- 1 – Режим ортогональности включен
+{
+   'ortho off;
+}
+gosub sClAttr;
+defarr obj1[1]; //-- Для экcпорта
+//-- Направление вида в ВСК
+defarr vi[3] error[20];
+vi[1]=0;
+vi[2]=0;
+vi[3]=1;
+projname=sysvar(2);
+tprjname=projname-3+"t.k3";
+
+macro L_support+"DRAW_EE.MAC" LT wmf ;
+//------------------------------------------------------------------------------
+keyBased=1
+end:
+//**************************************
+//----------------------------------------------
+
+NulOut=ReSnap();
+if g_vimDraws {
+	if aSpl[1]==aSpl[2] {
+		if keyBased==1 {
+			iVid=findinarray(g_aDraw,0)
+			if iVid>1 {
+				iVid=iVid-1
+				gosub BAsedEnd;
+			}
+		}
+	}
+}
+;exit ;
+
+//==============================================================
+sExpVI:
+        fnam="" //numTxt
+        vtranscs(1,3,vi[1],vi[2],vi[3],vi[1],vi[2],vi[3]);
+		i=0;
+        lbexpDrawA:
+        if i<numpan {
+           i=i+1;
+		   obj1[1]=objdraw[i]
+		   //putmsg(obj1);
+			zoom byobject objdraw[i] done;
+			CurGrk=Sysvar(76) 
+
+			NULLOUT=exportvim(obj1,1,vi,str(i),0,iif(i==numpan,2,1),"Чертежи длинномеров"); //,4,1,1
+			zoom previous;
+			goto  lbexpDrawA ;
+        }
+		if g_clear {
+			i=0;
+			lbexpDraw:
+			if i<numpan
+			{
+			   i=i+1;
+			   delete objdraw[i] done;
+			   goto  lbexpDraw ;
+			}
+		}
+return;
+
+//--удаляет файл с именем fName
+sDelBackF:
+if FileExist(fName)
+{
+	Nullout=RemoveFile(fName)
+}
+return;
+
+BAsedEnd:
+	If (!IsAttrdef("DrawObject"))
+	{
+	  Attribute Create "DrawObject" "Чертежный объект" Real 5 0 ;
+	}
+	else
+	{
+		selbyattr "DrawObject>"+str(0) partly all done;
+		if sysvar(61)>0
+		{
+		   delete partly previous done;
+		}
+	}
+	numpan=iVid;
+	defarr xm[6] objdraw[numpan] sobjdraw[30000];;
+	NULLOUT=GetSnap();
+	#gr1 group all done;
+	nulout=objgab3(gr1,xm);
+	explode gr1 done;
+
+	PtransCS(0,1,xm[1],xm[2],xm[3],xm[1],xm[2],xm[3]);
+	PtransCS(0,1,xm[4],xm[5],xm[6],xm[4],xm[5],xm[6]);
+	px=xm[1]-2000
+	py=xm[5]
+	pz=xm[3]
+	setucs vcs ;
+	
+	i=0;
+	lbDraw:
+	if i<numpan
+	{
+	   i=i+1;
+	   objects=sysvar(60);
+	   fName=g_aDraw[i]-3+".~k3"; gosub sDelBackF;
+	   append g_aDraw[i]  0 0 0 ;
+	   objects=sysvar(60)-objects;
+	   #objdraw[i] group last objects done;
+	   //objident last 1 objdraw[i];
+	   attrobj attach "DrawObject" done objdraw[i] 1 ;
+	   nobj=GetCntObjGA(objdraw[i]);
+	   nulout=ScanG(objdraw[i],sobjdraw);
+	   i_nb=0
+	   lb_nb:
+	   if i_nb<nobj
+	   {
+			i_nb=i_nb+1
+			attrobj attach "DrawObject" done partly sobjdraw[i_nb] 1 ;
+			goto lb_nb;
+	   }  
+	   nulout=objgab3(objdraw[i],xm);
+	   rotate nocopy objdraw[i] done 2point (xm[4]-xm[1])/2+xm[1] (xm[5]-xm[2])/2+xm[2] xm[3] (xm[4]-xm[1])/2+xm[1] (xm[5]-xm[2])/2+xm[2] xm[3]+1 180
+	   move nocopy objdraw[i] done 2point xm[4] xm[2] xm[3] px py pz
+	   nulout=objgab3(objdraw[i],xm);
+	   px=xm[1]
+	   py=xm[2]
+	   pz=xm[3]
+	   //explode objdraw[i] done;
+	   goto lbDraw;
+	}
+	
+	NULLOUT=ReSnap();
+	fName=tprjname; 
+	gosub sDelBackF;
+	fName=tprjname-3+".~k3"; 
+	gosub sDelBackF;
+	
+	gosub sExpVI;
+	
+return;
+//-- создаем атрибуты если надо и чистим следы былой работы
+sClAttr:
+	if (!IsAttrdef("IDRWN")) { Attribute Create "IDRWN" "Номер листа " Real 5 0  ; }
+	if (!IsAttrdef("IDRWL")) { Attribute Create "IDRWL" "Номер легенды " Real 5 0  ; }
+	if (!IsAttrdef("maxGabsX"))
+	{
+		Attribute Create "maxGabsX" "maxGabsX" Real 12 5  ;
+	}
+	if (!IsAttrdef("maxGabsY"))
+	{
+		Attribute Create "maxGabsY" "maxGabsY" Real 12 5  ;
+	}
+	if (!IsAttrdef("maxGabsZ"))
+	{
+		Attribute Create "maxGabsZ" "maxGabsZ" Real 12 5  ;
+	}
+	if (!IsAttrdef("Legend"))
+	{
+		Attribute Create "Legend" "Legenda" Real 12 5  ;
+	}
+	if (!IsAttrdef("TempSel"))
+	{
+		Attribute Create "TempSel" "Признак избранности" Real 12 5  ;
+	}
+	else
+	{
+		selbyattr "TempSel>"+str(0) partly all done ;
+		if SysVar(61)>0
+		{
+			n=SysVar(61);
+			defarr atmp[n];
+			macro ProtoPath+"Arrobj.mac" n, atmp;
+			i=0;
+			labT2:
+			if i<n
+			{
+				i=i+1;
+				attrobj delete partly atmp[i] "TempSel" done;
+				goto labT2;
+			}	
+		}
+	}
+return;
+//==============================================================
+DumperPi:
+// pi_name=mpathexpand("<AppData>")+"\\t_Dimp.dat"
+// sfPi="keyBased;pf_name;numpan;g_vimDraws;iVid;"
+// sfPiArr="adraw;objdraw;obj1;vi";
+//PutMsg("Сохраняем переменные")
+<?python
+import k3
+from DrawingSupp import DumperPickle
+sfPi=k3.Var("sfPi")
+sfPiArr=k3.Var("sfPiArr")
+pi_name=k3.Var("pi_name")
+sfPi=sfPi.value
+sfPiArr=sfPiArr.value
+pi_name=pi_name.value
+l_sfPi = sfPi.split(';')
+l_sfPiArr = sfPiArr.split(';')
+print(l_sfPiArr)
+d_vars = {}
+d_arrs = {}
+
+for v in l_sfPi:
+    if len(v)>0:
+        tm = k3.Var(v)
+        if k3.isvardef(v)>0:
+           print( v )
+           d_vars[v] = tm.value
+
+for v in l_sfPiArr:
+    if len(v)>0:
+        tm = k3.VarArray(2, v)
+        tm = k3.VarArray(int(k3.getdimarray(tm)), v)
+        d_arrs[v] = [a.value for a in list(tm)]
+DumperPickle([d_vars, d_arrs], pi_name)
+?>
+//putmsg("---------------------------");
+return;
+
+//-----------------------------------------------------------------------
+LoaderPi:
+//PutMsg("Восстанавливаем переменные")
+<?python
+import k3
+from DrawingSupp import LoaderPickle
+pi_name=k3.Var("pi_name")
+pi_name=pi_name.value
+resFFile = int(k3.fileexist(pi_name)) # проверяем есть ли файл с результатом
+print('resFFile=',resFFile,'pi_name=',pi_name)
+if resFFile==1: # Значит файл найден
+    t = LoaderPickle(pi_name)
+l_sfPii = list(t[0].keys())
+l_sfPiArri = list(t[1].keys())
+for v in l_sfPii:
+    if t[0][v] is not None:
+        tm = k3.Var(v)
+        tm.value = t[0][v]
+tt = {}
+for v in l_sfPiArri:
+    if len(t[1][v]) > 0:
+        tt[v]  = k3.VarArray(len(t[1][v]), v)
+        for i in range(len(t[1][v])):
+            tt[v][i].value = t[1][v][i]
+?>
+
+//putmsg("---------------------------------------");
+return;
+//--------------------------------------------------

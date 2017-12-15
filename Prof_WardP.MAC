@@ -1,0 +1,21 @@
+//--Макро создания профиля гардеробного с крепежем
+global ProtoPath;
+KarkasNumb=0;
+W=DbVar("Шир",330);			//-- Ширина
+//--Создаем профиль с крепежем
+macro ProtoPath+"Prof_Ward.mac" ;
+objident last 1 obj;
+//-- Присваиваем атрибуты
+position=260;
+Namescr="ProtoParams";
+attrobj copy record Namescr done last 1 done;
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done last 1 done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done obj KarkasNumb;
+}
+attrobj attach "Posit" done Last 1 position;
+exit;

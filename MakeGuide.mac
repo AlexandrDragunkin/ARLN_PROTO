@@ -1,0 +1,76 @@
+//-- Добавление направляющих (для версии 7.1 и выше)
+global ProtoPath ;
+global HoldName ; //-- Имя хозяина
+global UnitCode ; //-- Код изделия (текст)
+global ElemCode ; //-- Код мебельных элементов
+KarkasNumb=getcarcnumb(); //-- Порядковый номер каркаса в сцене
+
+getpar
+IdAcces         //-- Тип направляющих
+NAcces	        //-- 1 - правая - 2 - левая   Тип ребенка
+IsNew           //-- Пара для направляющей (1 - новыя направляющая, 0 - пара для предыдущей)
+xn yn zn	      //-- Положение начала локальной системы координат
+ax az ax1;	    //-- Углы поворота
+
+if (IdAcces==0)
+{
+  exit;
+}
+
+NULLOUT=getsnap();
+NULLOUT=pushinst(1);
+object_1=sysvar(60); //-- Кол-во объектов
+if (IsNew==1)
+{
+  accessory "040300" IdAcces  NAcces yes ;
+}
+else
+{
+  accessory "040300" IdAcces  NAcces no ;
+}
+objident last 1 Elem;
+
+move nocopy Elem done xn yn zn ;
+rotate Elem done 2points xn yn zn xn+1 yn zn ax nocopy ;
+rotate Elem done 2points xn yn zn xn yn zn+1 az nocopy ;
+rotate Elem done 2points xn yn zn xn+1 yn zn ax1 nocopy ;
+
+NULLOUT=popinst(1);
+NULLOUT=resnap();
+object_2=sysvar(60)-object_1; //-- Кол-во объектов
+if (object_2==0) //-- Нет объектов
+{
+  exit;
+}
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done Elem done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done Elem KarkasNumb;
+}
+if (isattrdef("HoldName"))
+{
+  attrobj attach "HoldName" done Elem HoldName ;
+}
+if len(ElemCode)>0
+{
+	attrobj attach "UnitCode" done Elem ElemCode ;
+}
+//  attrobj attach "GroupID" done Elem 69 ; //-- 69 - Группа направляющих
+attrobj attach "XUnit" "YUnit" "ZUnit" done Elem 0 0 0 ; //-- Размеры детали
+
+//FurnType="040300";
+//attrobj attach "FurnType" done Elem FurnType ;
+//-- Присваиваем атрибуты комплектующим
+ChildID=IdAcces;
+//-- Ищем ребенка
+//if (npgetbywhere(1,"parentid = "+str(IdAcces)+" and [accessory] = "+str(NAcces),"qwe")==1)
+//{
+//   ChildID=qwe[1];
+//}
+macro ProtoPath+"CompAttr.mac" ChildID 1 ;
+NULLOUT=addattrpi(Elem,1,135,IdAcces);
+exit;

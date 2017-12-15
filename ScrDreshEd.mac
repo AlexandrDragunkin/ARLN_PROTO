@@ -1,0 +1,39 @@
+// Подпрограмма редактирования дверки с алюминиевым профилем
+global ProtoPath ;
+global g_Scratch;
+getpar pnt, FasCode;
+
+Namescr="FasadPar"
+ #res CalcVarScr  g_Scratch  FasCode;
+#ok_flag
+setvar
+"Редактировани параметров решетки"
+""
+left
+"Измените параметры и нажмите ОК"
+done
+  logical default  ris  "Наличие рисунка"  ris
+  logical default  skr  "Наличие скруглений"  skr
+  real default  d1  "Ширина рамы до узора"  d1
+  real default  d2  "Ширина рамы от узора  до проемов"  d2
+  real 	listonly
+        if (nz==1) { current }       1
+        if (nz==2) { current }       2
+        if (nz==3) { current }       3
+        if (nz==4) { current }       4
+        if (nz==5) { current }       5
+	done
+	            "Разбинение рамки" nz
+
+done
+if ok_flag==0 { TermScratch(g_Scratch); cancel }
+err=AddScratch(g_Scratch,FasCode,"ris",ris);   // Наличие рисунка
+err=AddScratch(g_Scratch,FasCode,"skr",skr);   // Наличие скругления
+err=AddScratch(g_Scratch,FasCode,"d1",d1);   // Ширина рамы до узора
+err=AddScratch(g_Scratch,FasCode,"d2",d2);   // Ширина рамы от узора  до проемов
+err=AddScratch(g_Scratch,FasCode,"nz",nz);
+
+WriteScratch(g_Scratch,Namescr,pnt);
+TermScratch(g_Scratch);
+
+exit;

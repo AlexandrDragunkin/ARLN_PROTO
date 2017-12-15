@@ -1,0 +1,77 @@
+// Сценарий установки столешницы
+
+NULLOUT=GetVarInst(2,"PrMater",PrMater,0);
+NULLOUT=GetVarInst(2,"Typ_Kro",Typ_Kro,0);
+
+defarr br[3] bl[3] anr[3] anl[3];//координаты в глобальной системе
+defarr gk[6];//габаритные координаты стойки
+defarr tm[3];//вспомогательный массив
+
+NULLOUT=GetSnap();
+
+//-----Запрос информации-------------------------------------------------------
+setucs gcs;
+objident : Stoyka; //Выбираем стойку
+objgab2(Stoyka,gk);//опеделяем габариты стойки
+//H_c=abs(gk[6]-gk[3]);//Высота конструкции
+H_c=gk[6];//Высота конструкции
+bpoint gk[4] gk[5] gk[6] ;
+get "Точка привязки к первой боковине" point missing  br[1] br[2] br[3] :
+get "Точка привязки ко второй боковине" point br[1] br[2] br[3]
+     bl[1] bl[2] bl[3] :
+if (br[1]>bl[1])
+{tm[1]=br[1]; tm[2]=br[2]; tm[3]=br[3];
+ br[1]=bl[1]; br[2]=bl[2]; br[3]=bl[3];
+ bl[1]=tm[1]; bl[2]=tm[2]; bl[3]=tm[3];
+}
+
+#Tmp_L line   br[1] br[2] H_c   bl[1] bl[2] H_c;
+
+get "Точка привязки правой стороны" point br[1] br[2] H_c
+     anr[1] anr[2] anr[3] :
+get "Точка привязки левой стороны" point bl[1] bl[2] H_c
+     anl[1] anl[2] anl[3] :
+setucs lcs Tmp_L;
+
+#Fl
+setvar
+"Свесы по сторонам"
+""
+left
+"Введите значения переменных и нажмите Ok"
+done
+real default 50 "Свес по x" svx
+real default 50 "Свес по y" svy
+done
+
+//-------Расчёт параметров------------------------------------------------------
+#leng distance br[1] br[2] H_c    bl[1] bl[2] H_c;//длина
+#bokr distance br[1] br[2] H_c    anr[1] anr[2] anr[3]; //правая сторона
+#bokl distance bl[1] bl[2] H_c    anl[1] anl[2] anl[3]; //левая сторона
+#angr angle br[1] br[2] H_c   bl[1] bl[2] H_c   anr[1] anr[2] anr[3];// правый угол
+#angl angle bl[1] bl[2] H_c   anl[1] anl[2] anl[3]  br[1] br[2] H_c;//левый угол
+
+leng=int(leng+2*svx);
+bokr=int(bokr+2*svy/Cos(0.5*pi()-Radian(angr)));
+bokl=int(bokl+2*svy/Cos(0.5*pi()-Radian(angl)));
+
+//-------Создание объекта по прототипу------------------------------------------
+protoobj create "Shkaf.ptl" 143
+"L" leng
+"Br" bokr
+"Bl" bokl
+"Ar" angr
+"Al" angl
+"PrMater" PrMater
+"Band_E" Typ_Kro
+"Band_D" Typ_Kro
+"Band_B" Typ_Kro
+"Band_C" Typ_Kro
+"Face_col" 0
+done
+-svx -svy 0;
+
+//setucs gcs;
+delete Tmp_L done;
+NULLOUT=ReSnap();
+exit;

@@ -1,0 +1,251 @@
+//SetPlProject.mac
+//*********************************************
+//       Определение основных значений полей
+//            в печатных формах
+//              Драгункин А.Р.
+//              ГеоС 2008-2014 г.
+//*********************************************
+
+Global
+FormList
+Pl_Obozn
+Pl_name
+Pl_name1
+Pl_MatrZag
+Pl_Razrab
+Pl_Prov
+Pl_Utv
+Bl_OverPlot
+Pl_Pref
+Bl_OverVis
+Bl_OverEdit
+g_DirDrawLn           //Все файлы чертежей длинномеров размещать в отдельной папке 0-нет 1-да
+g_DrawBlank           //Чертежи на бланках 0-нет 1-да
+g_DrawSpec            //Формировать спецификацию 0-нет 1-да
+g_DrawCod             //Способ обозначения чертежа 0-относительный по первому вхождению 1-абстрагированный код
+g_DrawStamp           //Ключ запроса информации для штампа бланка из файла stamp.dbf и из файла ZAKAZ.dbf =0 только stamp.dbf =1
+g_FormStamp           //Ключ запроса формы штампа 0-не запрашивать 1-регулярно
+g_PgFileDraw          //Каждый лист чертежа в отдельном файле 0-нет 1-да
+g_PgFileSpec          //Каждый лист спецификации в отдельном файле 0-нет 1-да
+g_GroupDoc            //Формировать групповой чертеж по всем документам 0-нет 1-да
+g_dataNaz                // дата назначенная
+g_currBl                // Номер текущего бланка
+N_ListPlot  // число копий при печати
+g_keyres
+g_osn
+gVertDraw // распологать чертеж на бланке 1-длинной стороной сверху вниз 0-слева направо
+;
+getpar l_dialog LT;
+global ProtoPath  L_support DRWZPATH;
+
+g_keyres=0;
+metDefault=0
+defarr arrinf[100];
+nullout=sysarr(81,arrinf);
+g_currBl=iif(isvardef("g_currBl")==0,3,g_currBl);                // Номер текущего бланка
+Pl_obozn=iif(isvardef("Pl_obozn")==0,"000",pl_obozn);
+g_dataNaz=iif(isvardef("g_dataNaz")==0,str(arrinf[1])+"."+str(arrinf[2])+"."+str(arrinf[3]),g_dataNaz);
+SB_Nam1="sss"
+Pl_Razrab="Кульман И.К."
+Pl_Prov="Ватман А.Л."
+Pl_Utv="Дизйнер Н.И."
+//Считываем данные по умолчанию для штампа
+gosub DefStamp ;
+if g_DrawStamp==0 { gosub GetZakaz ; }
+CurGrk=Sysvar(76) ;
+DefaultRem=1
+//Form_List=FormList
+if l_dialog
+{
+    #ok_flag   //Если после setvar будет 0 - Нажали кнопку "Отмена"
+    setvar
+    "Параметры проекта"           // Заголовок окна
+    ""                  // Имя файла иллюстрации
+    // Пояснительный текст
+    center         //с выравниванием слева
+    " Определите значения для заполнения полей" "спецификации и чертежей"
+    done          // конец пояснительного текста
+
+    str default Pl_obozn  "Номер проекта"     Pl_obozn
+    str default g_dataNaz "Дата отгрузки"    g_dataNaz
+    str default Pl_Razrab "Фамилия И.О. разработчика"     Pl_Razrab
+    str default Pl_Prov   "Фамилия И.О. проверяющего"     Pl_Prov
+    str default Pl_Utv    "Фамилия И.О. утверждающего"    Pl_Utv
+    //str default SB_Nam1  "Наименование чертежа сборки"    SB_Nam1
+    //logical  default Bl_OverPlot    "Чертежи Печатать ?"   Bl_OverPlot
+    //real  auto    listonly  1 2 3 4 5 6 7 8 9 10 done "Число копий"  N_ListPlot
+    //logical  default metDefault    " Сохранить умолчания? "  DefaultRem
+    str auto     listonly
+            // //if g_currBl==1     { current }
+            // //"BlankKD"
+            // //if g_currBl==2 { current }
+            // //"BlankDS"
+            // if g_currBl==3 { current }
+            // "gost_a3"
+            // if g_currBl==4 { current }
+            // "gost_a4"
+			// if g_currBl==55 { current }
+            // "UserBlank_1_a4"
+			// if g_currBl==99 { current }
+            // "Без_бланка_портрет"
+			if g_currBl==98 { current }
+            "Без_бланка_альбом"
+        done
+                    "Предпочтительный формат для чертежей:"    Form_List
+
+    done  // Конец команды
+    if ok_flag==0 
+    {
+        g_keyres=1;
+        exit;
+        
+    }
+	// g_currBl=98;
+	// Form_List="Без_бланка_альбом";
+}
+Bl_OverPlot=0
+N_ListPlot=0
+if Form_List=="UserBlank_1_a4" { g_currBl=55 ;gVertDraw=1 }
+if Form_List=="gost_a4" { g_currBl=4 ;gVertDraw=1 }
+if Form_List=="gost_a3" { g_currBl=3 ;gVertDraw=0  }
+if Form_List=="Без_бланка_портрет" { g_currBl=99; ; gVertDraw=1  }
+if Form_List=="Без_бланка_альбом" { g_currBl=98 ;gVertDraw=0  }
+if g_osn==0 { Form_List="Без_бланка_портрет";g_currBl=99; gVertDraw=1 }  // Если без основной надписи
+
+
+if defaultRem==1 { gosub NewStData ; }
+FormList=Form_List
+exit;
+//================
+DefStamp:
+	//Умолчания из Stamp.dbf
+	pathApp=MPathExpand("<appdata>")
+	F_stamp=pathApp+"\\Stamp.dbf"
+    macro L_support+"ChPathSetDrawFile.mac";
+	c_key=0
+	metdfst:
+	if c_key>4 {
+		cancel;
+	}
+
+	if GetCount(f_stamp)==0 {
+	
+		gosub sNewtable;
+		metDefault=1 ;
+		c_key=c_key+1
+		goto metdfst ;
+	}
+	DbOpen cst,f_stamp,""
+	nfld=dbFldCount(cst)
+	//putmsg(nfld);
+	dbClose cst ;
+	if nfld<10 {
+		//nullout=removefile(f_stamp);
+		gosub sNewtable;
+		metDefault=1 ;
+		c_key=c_key+1
+		goto metdfst ;
+	   }
+	else {
+		 DbOpen cst,f_stamp,"TID=="+str(LT)
+		 DbMoveFirst cst;
+		 Pl_Obozn=DbGetValue(cst,0,"")
+		 Pl_name=DbGetValue(cst,1,"")
+		 putmsg("SetPlProject="+str(Pl_name))
+		 Pl_name1=DbGetValue(cst,2,"")
+		 Pl_MatrZag=DbGetValue(cst,3,"")
+		 Pl_Razrab=DbGetValue(cst,4,"")
+		 Pl_Prov=DbGetValue(cst,5,"")
+		 Pl_Utv=DbGetValue(cst,6,"")
+		 Form_List=DbGetValue(cst,7,"")
+		 g_currBl=DbGetValue(cst,8,3);
+		 dbClose cst ;
+		 }
+return;
+//================
+NewStData:
+//сохраняем новые данные в stamp.dbf
+
+Form_List=Form_List;
+DbOpen cst,f_stamp,"TID=="+str(LT);
+
+DbMoveFirst cst;
+   DbSetValue cst,"PlObozn",Pl_Obozn;
+   DbSetValue cst,"Plname",Pl_name;
+   DbSetValue cst,"Plname1",Pl_name1;
+   DbSetValue cst,"PlMatrZag",Pl_MatrZag;
+   DbSetValue cst,"PlRazrab",Pl_Razrab;
+   DbSetValue cst,"PlProv",Pl_Prov;
+   DbSetValue cst,"PlUtv",Pl_Utv;
+   DbSetValue cst,"FormList",Form_List;  
+   DbSetValue cst,"CurrBl",g_currBl;
+   DbUpdate cst ;
+   DbClose cst ;
+
+return;
+
+GetZakaz:
+F_zakaz=SysVar(1)+"Zakaz.dbf"
+if GetCount(F_zakaz)==0 {
+   return ;
+}
+     DbOpen cst1,F_zakaz,""
+     DbMoveFirst cst1;
+   Pl_Obozn=DbGetValue(cst1,"CUSTNUM","xxx")
+   Pl_Razrab=DbGetValue(cst1,"OPERATOR","xxx")
+   dbClose cst1 ;
+return;
+
+sNewtable:
+putmsg("sNewtable");
+<?python
+# -*- coding: cp1251 -*-
+import k3
+class Field:
+    def __init__(self,Name,Type,Size,Prec,DefValue):
+        self.name=Name
+        self.type=Type
+        self.size=Size
+        self.prec=Prec
+        self.defvalue=DefValue
+listField = []
+def addListField(Name,Type,Size,Prec,Val):
+    field = Field(Name,Type,Size,Prec,Val)
+    listField.append(field) 
+
+Form_List=k3.Var("FormList")
+print( Form_List,Form_List.value)
+F_stamp = k3.Var('F_stamp')
+g_currBl = k3.Var('g_currBl')
+cst = k3.Var()
+print( '*********************************************************************************')
+
+addListField("PlObozn","C",150,0,"%elemname%,   дет.%commonpos%,  %oname%, %onumber%")
+addListField("Plname","C",150,0,"%elemname%")
+addListField("Plname1","C",150,0,"")
+addListField("PlMatrZag","C",150,0,"%{priceinfo(getattr(0,\"priceid\",0),\"MATNAME\",\"\")%")
+addListField("PlRazrab","C",150,0,"Иванов И.И.")
+addListField("PlProv","C",150,0,"Иванов И.И.")
+addListField("PlUtv","C",150,0,"Иванов И.И.")
+addListField("FormList","C",150,0,Form_List.value)
+addListField("CurrBl","N",5,0,g_currBl.value)
+addListField("TID","N",5,0,1)
+
+listComm = []
+for i in listField:
+    listComm.extend([i.name,i.type,i.size,i.prec])
+
+cst = k3.Var()
+k3.dbcreate(cst,F_stamp.value,listComm,k3.k_done)
+
+for p in range(8)+[10,100]:
+    k3.dbaddnew(cst.value)
+    for i in range(len(listField)):
+        if listField[i].name == "TID":
+            listField[i].defvalue = p
+        k3.dbsetvalue(cst.value,listField[i].name,listField[i].defvalue)
+    k3.dbupdate( cst.value)
+
+k3.dbclose( cst.value )
+?>
+return;   

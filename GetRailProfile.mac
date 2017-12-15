@@ -1,0 +1,256 @@
+//-- Программа возвращает профили направлющих по критерию
+//-- Входные параметры:
+//-- IDRail - ID направляющих из таблицы направляющих
+//-- SQLstr - дополнительные ограничения на выборку рельс
+//-- criteria - критерий выборки
+//--          = 0 - Берется умолчание.
+//--          = 1 - Если профиль один - берется он, если их несколько - запрашивается
+//--                у пользователя (профили и цвета в кучу)
+//--          = 2 - Сначала выбирается цвет, потом под него профили
+//-- Выходные параметры:
+
+//-- g_IDTProf - ID верхнего рельса из таблицы профилей
+//-- g_IDTParam - ID записи в таблице соответствия профилей для верхнего рельса
+//-- g_IDTColor - ID цвета верхнего рельса из таблицы цветов
+//-- g_TPriceP - ID верхнего рельса из прайс-листа расходных материалов
+
+//-- g_IDBProf - ID нижнего рельса из таблицы профилей
+//-- g_IDBParam - ID записи в таблице соответствия профилей для нижнего рельса
+//-- g_IDBColor - ID цвета нижнего рельса из таблицы цветов
+//-- g_BPriceP - ID нижнего рельса из прайс-листа расходных материалов
+
+global ProtoPath;
+global g_IDTProf,g_IDTParam,g_IDTColor,g_TPriceP;
+global g_IDBProf,g_IDBParam,g_IDBColor,g_BPriceP;
+MAXMENU=100; //-- Максимальное количество записей, попавших в меню
+defarr TMenu[MAXMENU],BMenu[MAXMENU];
+defarr ColorN[MAXMENU]; //-- Названия цветов
+
+getpar IDRail,SqlStr,criteria;
+
+g_IDTProf=0;
+g_IDTParam=0;
+g_IDTColor=0;
+g_TPriceP=0;
+
+g_IDBProf=0;
+g_IDBParam=0;
+g_IDBColor=0;
+g_BPriceP=0;
+
+SQLstrC="";
+Color=0;
+
+tab_place=ProtoPath+"DoorSys1.mdb"; //-- База данных систем дверей
+szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+tab_place;
+Doorscon=adbCon(szSrc);
+
+SQLstrF="SELECT [TPrice].[Mname] FROM [TPrice], [Rails] WHERE [TPrice].[PriceID]=[Rails].[IDPrice]";
+SQLstrF=SQLstrF+" AND [Rails].[ID]=(SELECT [ID] FROM [Rails] WHERE [ID]="+str(IDRail)+")";
+RailsRs=adbOpen(Doorscon,SQLstrF);
+ij1=adbRecCount(RailsRs);
+if (ij1<1)
+{
+  errcode="В прайс-листе нет направляющих с ID="+str(IDRail)
+  gosub err;
+  RailsRs=adbClose(RailsRs);
+  goto end;
+}
+NULLOUT=adbMoveFirst(RailsRS);
+RailsName=adbGetValue(RailsRS,0);
+RailsRs=adbClose(RailsRs);
+
+if (criteria==2)
+{
+  gosub GetColor; //-- Выбираем цвет
+}
+
+SQLstrO1="SELECT [TPrice].[Mname] FROM [TPrice]";
+SQLStrO2=" WHERE [TPrice].[PriceID] IN";
+SQLstrO3=" (SELECT  [RailsParam].[PriceID] FROM [RailsParam] WHERE [RailID]="+str(IDRail);
+SQLstrO4=" ORDER BY [RailsParam].[Default], [RailsParam].[Sort])";
+//------------------------------------------------------------------------------
+//-- Верхние рельсы
+FID="1";  //-- Верхний рельс (по таблице назначений)
+SQLstrT=" AND [RailsParam].[FunctionID]="+FID;
+rs=adbOpen(Doorscon,SQLstrO1+SQLstrO2+SQLstrO3+SQLstrT+SQLstrC+SQLstr+SQLstrO4);
+ntmenu=FieldToArray(rs,0,TMenu);
+rs=adbClose(rs);
+//ntmenu=RSetToArray(Doorscon,SQLstrO1+SQLstrO2+SQLstrO3+SQLstrT+SQLstrC+SQLstr+SQLstrO4,TMenu);
+if (ntmenu<1)
+{
+  ercode="Кол-во верхних рельс для направляющих с ID "+str(IDRail)+" равно "+str(ntmenu)
+  gosub err;
+  goto end;
+}
+//-- Нижние рельсы
+FID="2";  //-- Нижний рельс (по таблице назначений)
+SQLstrB=" AND [RailsParam].[FunctionID]="+FID;
+rs=adbOpen(Doorscon,SQLstrO1+SQLstrO2+SQLstrO3+SQLstrB+SQLstrC+SQLstr+SQLstrO4);
+nbmenu=FieldToArray(rs,0,BMenu);
+rs=adbClose(rs);
+//nbmenu=RSetToArray(Doorscon,SQLstrO1+SQLstrO2+SQLstrO3+SQLstrB+SQLstrC+SQLstr+SQLstrO4,BMenu);
+if (nbmenu<1)
+{
+  ercode="Кол-во нижних рельс для направляющих с ID "+str(IDRail)+" равно "+str(nbmenu)
+  gosub err;
+  goto end;
+}
+if (criteria==0)
+{
+  TopName=TMenu[1];
+  BottomName=BMenu[1];
+}
+else
+{
+//------------------------------------------------------------------------------
+  #ok_flag
+  setvar
+  "Выбор рельс"
+  ""
+  left
+  "Выберите рельсы"
+  "Направляющие: '"+RailsName+"' ID="+str(IDRail)
+  done
+  str 	listonly
+	let j=1
+	LoopJ1:
+	if (j=1)
+	{
+	  current
+	}
+	TMenu[j]
+	if (j<ntumenu) { Let j=j+1 goto LoopJ1 }
+	done
+	"Верхний рельс:" TopName
+  str 	listonly
+	let j=1
+	LoopJ2:
+	if (j=1)
+	{
+	  current
+	}
+	BMenu[j]
+	if (j<nbdmenu) { Let j=j+1 goto LoopJ2 }
+	done
+	"Нижний рельс:" BottomName
+  done;
+  if (ok_flag==0)
+  {
+   goto end;
+  }
+}
+
+//SQLstrG="SELECT [ID],[ColorID] FROM [RailsParam], [TPRice] WHERE [TPrice].[MName]='"+TopName+"'";
+SQLStrGO="SELECT [ProfileID], [ColorID], [ID], [RailsParam].[PriceID]";
+SQLStrGO=SQLStrGO+" FROM [RailsParam] WHERE [RailsParam].[PriceID] IN";
+SQLStrGO=SQLStrGO+" (SELECT [TPrice].[PriceID] FROM [TPrice]";
+SQLStrG1=" WHERE [TPrice].[MName]='"+TopName+"')";
+SQLstrG=SQLStrGO+SQLStrG1+SQLstrT;
+gosub GetProf;
+g_IDTProf=IDProf;
+g_IDTParam=IDParam;
+g_IDTColor=IDColor;
+g_TPriceP=PriceP;
+
+//SQLstrG="SELECT [ID],[ColorID] FROM [RailsParam], [TPRice] WHERE [TPrice].[MName]='"+BottomName+"'";
+SQLStrG1=" WHERE [TPrice].[MName]='"+BottomName+"')";
+SQLstrG=SQLStrGO+SQLStrG1+SQLstrB;
+gosub GetProf;
+g_IDBProf=IDProf;
+g_IDBParam=IDParam;
+g_IDBColor=IDColor;
+g_BPriceP=PriceP;
+//------------------------------------------------------------------------------
+end:
+Doorscon=adbDisCon(Doorscon); //-- Разрываем соединение
+exit;
+//==============================================================================
+//------------------------------------------------------------------------------
+//-- Вывод окна сообщения об ошибке
+//-- Входные параметры:
+//-- errcode - сод ошибки
+err:
+//-- ShowSmartError
+#ok_flag
+     alternative "Ошибка базы данных"
+     msgbox text "Некорректно заполнена база данных систем дверей"
+     " "
+     errcode
+     done
+     "  OK  "
+     done;
+return;
+//------------------------------------------------------------------------------
+//-- Подпрограмма выбора цвета направляющих
+//-- Входные параметры
+//-- IDRail - ID направляющих из таблицы направляющих
+//-- RailsName - название направляющих
+//-- Выходные параметры:
+//-- Color - ID цвета по таблице цветов
+//-- SQLstrC - SQL строка выбора цвета
+GetColor:
+SQLstrGCID="SELECT [RailsParam].[ColorID] FROM [RailsParam] WHERE [RailsParam].[RailID]="+str(IDRail);
+
+SQLstrGCN="SELECT DISTINCT [Colors].[Name] FROM [Colors], [RailsParam] WHERE [RailsParam].[RailsID]="+str(IDRail);
+SQLstrGCN=SQLstrGCN+" AND [Colors].[ID]=("+SQLstrGCID+")";
+rs=adbOpen(Doorscon,SQLstrGCN);
+ncmenu=FieldToArray(rs,0,ColorN);
+rs=adbClose(rs);
+//ncmenu=RSetToArray(Doorscon,SQLstrGCN,ColorN);
+if (ncmenu<1)
+{
+  errcode="Количество цветов для направляющих ID="+str(IDRail)+" равно "+str(ncmenu);
+  gosub err;
+  goto end;
+}
+
+#ok_flag
+setvar
+"Выбор цвета направляющих"
+""
+left
+"Выберите цвет"
+"Направляющие: '"+railsName+" ID="+str(IDRail)
+done
+str 	listonly
+	let j=1
+	LoopJC:
+	if (j=1)
+	{
+	  current
+	}
+	ColorN[j]
+	if (j<ncmenu) { Let j=j+1 goto LoopJC }
+	done
+	"Цвет направляющих:" ColorName
+done;
+if (ok_flag==0)
+{
+ return;
+}
+SQLstrG="SELECT [ID] FROM [Colors] WHERE [Name]='"+ColorName+"'";
+ColorsRs=adbOpen(Doorscon,SQLstrG);
+NULLOUT=adbMoveFirst(ColorsRs);
+Color=adbGetValue(ColorsRs,0);
+SQLStrC=" AND [Colors].[ColorID]="+str(Color);
+ColorsRs=adbClose(ColorsRs);
+return;
+//------------------------------------------------------------------------------
+//-- Подпрограмма возвращает параметры профиля по запросу
+//-- Входные параметры:
+//-- SQLstrG - SQL строка запроса
+//-- Выходные параметры:
+//-- IDProf - ID профиля из таблицы профилей
+//-- IDColor - ID цвета профиля из таблицы цветов
+//-- IDParam - ID записи в таблице соответствия профилей
+//-- PriceP - ID профиля из прайс-листа расходных материалов
+GetProf:
+ParametersRs=adbOpen(Doorscon,SQLstrG);
+NULLOUT=adbMoveFirst(ParametersRs);
+IDProf=adbGetValue(ParametersRs,0);
+IDColor=adbGetValue(ParametersRs,1);
+IDParam=adbGetValue(ParametersRs,2);
+PriceP=adbGetValue(ParametersRs,3);
+ParametersRs=adbClose(ParametersRs);
+return;

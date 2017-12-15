@@ -1,0 +1,211 @@
+//-- Макропрограмма создания нестандартной панели
+global ProtoPath;
+NULLOUT=GetVarInst(2,"PrMater",PrMater,0); // Умолчание для материалов каркаса
+NULLOUT=GetVarInst(2,"DfFixPol",DfFixPol,0);
+
+defarr xm[6], param[15] ;
+defarr Fixt[4], Band[4];
+defarr arr[16],karr[16], aObj[4];
+NULLOUT=InitArray(arr,0);
+defarr Ptype[3] ;
+
+getpar
+shell   // контур
+Ang_shp // Угол текстуры
+E_Col   //  "Материал элемента:"
+KrTypeE //  "Тип кромки:"
+KrCol   //  "Цвет кромки:"
+;
+
+Ptype[1]="Полка ";
+Ptype[2]="Стенка";
+Ptype[3]="Стойка";
+lenkr=0;
+lenpr=0;
+
+//PutMsg("E_Col="+str(E_Col),1);
+//NULLOUT=fltrtype("Path");
+//NULLOUT=fltrtype("PolyLine");
+//objident prompt "Укажите полилинию панели" : shell ;
+//NULLOUT=fltrtype("");
+
+newtest:
+TypO=getobjtypenm(shell);
+//putmsg(TypO)
+Nobj=GetCntObjG(shell)
+//putmsg(str(Nobj))
+if (TypO=="Path")  //-- Контур
+{
+  #shell1 pline path shell;
+  delete shell done;
+  objident shell1 shell;
+}
+rr=objgab3(shell,xm);
+Xgab=round(xm[4]-xm[1]);
+//PutMsg(Xgab,1);
+Ygab=round(xm[5]-xm[2]);
+//PutMsg(Ygab,1);
+Zgab=round(xm[6]-xm[3]);
+//PutMsg(Zgab,1);
+move copy shell done 0 0 0
+objident last 1 shell1
+path polyline shell1 ;
+objident last 1 shell1 ;
+Nkontobj=GetCntObjG(shell1);
+vCurvPath=1 // Панель нестандартная
+if Nkontobj==4  // у панели четыре грани
+{
+	nullout=GetArrObjG(shell1,aObj)
+	explode shell1 done;
+	#vang1 angle acuteangle 2segment aObj[1] aObj[2] done;
+	#vang2 angle acuteangle 2segment aObj[2] aObj[3] done;
+	#vang3 angle acuteangle 2segment aObj[3] aObj[4] done;
+	#vang4 angle acuteangle 2segment aObj[4] aObj[1] done;
+	delete last 4 done;
+	// Если три угла прямые то это стандартная панель
+	if (abs(vang1-90)<1)&&(abs(vang2-90)<1)&&(abs(vang3-90)<1)
+	{
+		vCurvPath=2
+	}
+}
+else
+{
+	delete shell1 done;
+}
+
+if ((Zgab<Ygab)&&(Zgab<Xgab)) { // Считаем что полка
+  ind=1;
+}
+if ((Ygab<Zgab)&&(Ygab<Xgab)) { // Считаем что стенка
+  ind=2;
+}
+if ((Xgab<Ygab)&&(Xgab<Zgab)) { // Считаем что стойка
+  ind=3;
+
+}
+
+SetPan6Par(1,arr);
+
+arr[1]=E_col;                 // ID материала
+SetPan6Par(2,arr);         // Задание материала панели
+
+// InitArray(arr,0);
+// arr[1]=vCurvPath                    // Тип свободный-3 или прямоугольная-1
+
+// if vCurvPath==1
+// {
+	// arr[2]=shell;                    // указатель на поли
+// }
+// else
+// {
+	// arr[2]=iif(ind==2,Zgab,iif(ind==3,Zgab,Xgab))
+	// arr[3]=iif(ind==2,Xgab,iif(ind==3,Ygab,Ygab))
+// }
+// err=SetPan6Par(11,arr);                // Заменим главный полилайн панели
+// TypePan=iif(ind==2,14,iif(ind==3,11,12))
+
+// if vCurvPath==2
+// {
+	// arr[1]=TypePan
+	// err=SetPan6Par(22,arr);                // Тип Панели
+// }
+// // Задание кромки для панели
+// karr[1]=1;               // Номер выреза
+// karr[2]=-1;               // Номер элемента
+// karr[3]=KrTypeE;             // Тип кромки
+// karr[4]=KrCol;             // Цвет кромки
+// err=SetPan6Par(10,karr);
+// err=SetPan6Par(19,Ang_shp);
+// задание направления текстуры
+// putmsg(Ang_shp[1])
+err=SetPan6Par(19,Ang_shp);
+
+NULLOUT=setvarinst(1,"PanMater",E_Col);
+NULLOUT=setvarinst(1,"PanDir",Ang_shp[1]);
+
+//-- Отделка
+NULLOUT=getvarinst(1,"g_Decorates",NumPI,0,1);
+// putmsg(NumPI)
+if (NumPI>0)
+{
+	NumP=0;
+	Ldec:
+	NumP=NumP+1;
+	NULLOUT=getvarinst(1,"g_Decorates",Map,0,(NumP-1)*4+1+1);
+	NULLOUT=getvarinst(1,"g_Decorates",IDVariant,0,(NumP-1)*4+1+2);
+	NULLOUT=getvarinst(1,"g_Decorates",IDMat,0,(NumP-1)*4+1+3);
+	NULLOUT=getvarinst(1,"g_Decorates",Visibility,0,(NumP-1)*4+1+4);
+	arr[1]=Map;
+	arr[2]=IDVariant;
+	arr[3]=IDMat;
+	arr[4]=Visibility;
+	SetPan6Par(28,arr);      // отделка
+	if (NumP<NumPI)
+	{
+		goto Ldec;
+	}
+}
+err=SetPan6Par(999,karr);
+
+
+#Pan Mbmakepan free shell ;//MBPanel create iif(vCurvPath==2,xm[1],0) iif(vCurvPath==2,xm[2],0) iif(vCurvPath==2,xm[3],0) iif(vCurvPath==1,12,TypePan);   // Построить панель
+
+;
+
+objident last 1 Panel;
+arr[1]=Panel;
+err=GetPan6Par(1,arr);
+
+InitArray(arr,0);
+arr[1]=vCurvPath                    // Тип свободный-3 или прямоугольная-1
+
+if vCurvPath==1
+{
+	arr[2]=shell;                    // указатель на поли
+}
+else
+{
+	arr[2]=iif(ind==2,Zgab,iif(ind==3,Zgab,Xgab))
+	arr[3]=iif(ind==2,Xgab,iif(ind==3,Ygab,Ygab))
+}
+
+err=SetPan6Par(11,arr);                // Заменим главный полилайн панели
+TypePan=iif(ind==2,14,iif(ind==3,11,12))
+
+if vCurvPath==2
+{
+	arr[1]=TypePan
+	err=SetPan6Par(22,arr);                // Тип Панели
+}
+
+MBPanel execute  Panel ;
+
+end:
+Attrobj Attach "Objtype" "PlaceType" Done last 1 -1 -1;
+Attrobj Attach "Posit" Done last 1 14;
+If (IsAttrdef("ElemName"))
+{
+	Attrobj Attach "ElemName" Done last 1 "Вставка";
+}
+If (IsAttrdef("UnitCode"))
+{
+    Attrobj Attach "UnitCode" Done last 1 "2200" ;
+}
+
+Attrobj Attach "GroupID" Done last 1 17 ;  //-- Группа материалов детали
+Attrobj Attach "PanDir" Done last 1 iif(Ang_shp[1]==90,2,1);  //-- Направление шпона
+
+  //----------------//----------------//----------------//----------------
+
+if (!IsAttrdef("NestPan")) { Attribute Create "NestPan" "Нестандартная панель" Real 5 0 ; }
+if vCurvPath==1 // Панель нестандартная
+{
+	Attrobj Attach "NestPan" Done Last 1 1;
+	Attrobj Attach  "CurvePath" Done Last 1 1;
+}
+If (!IsAttrdef("SNumb")) { Attribute Create "SNumb" "Номер" Real 5 0 ; }	// NumbVstav
+Attrobj Attach "SNumb" Done Last 1 1;
+
+//macro ProtoPAth+"StrChNshp.mac" 1 1;
+
+exit;

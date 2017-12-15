@@ -1,0 +1,98 @@
+
+setucs save "@TMP@ucs" ;
+//Objident : obj1 ;
+//Objident : obj2 ;
+getpar obj1 obj2 ;
+
+Setucs lcs obj1 ;
+defarr par1[4] par2[4] Par[3] xm[6] par3[4] par4[4] par5[4];
+defarr pare1[3] pare2[3] Pare[3]  pare3[4] pare4[4] pare5[4];
+
+x1=0
+y1=0
+z1=0
+ptranscs(0,3,0,0,0,x1,y1,z1);
+Setucs lcs obj2 ;
+ptranscs(3,0,x1,y1,z1,x1,y1,z1);
+if x1>0 { //obj1 левый
+   pnt1=obj2
+   pnt2=obj1
+}
+else { pnt2=obj2
+       pnt1=obj1 }
+setucs lcs Pnt1 ;
+#pst    group obj1 obj2 done ;
+gosub LengtLong ;
+explode pst done ;
+Setucs lcs pnt1 ;
+SetLongObj(pnt1) ;
+GetLongCut(Par1) ;
+//добавлено для столешниц 4.04.06
+GetLongEnd(par3,par4,pare3,pare4) ;
+//======
+SetLongObj(pnt2) ;
+GetLongCut(Par2) ;
+//добавлено для столешниц 4.04.06
+GetLongEnd(par5,par3,pare5,pare3) ;
+//======
+par[2]=par1[2]
+par[1]=par2[1]
+par[3]=par1[3]
+SetLongCut(Par);
+//добавлено для столешниц 4.04.06
+
+if (par5[1]==4) { par5[1]=0 }
+if (par4[1]==4) { par4[1]=0 }
+SetLongEnd(par5,par4,pare5,pare4) ;
+//======
+//prcreate LenObj 0 0 0 0 0 ;
+//==для 6-й версии 5/09/2007
+TypeLong=0;
+TypeLong=GetLongType() ;
+=typelong
+
+If TypeLong==5 { longcreate LenObj 0 0 0 0 0 ; }
+//===^5/09/2007^
+NameL="Dl_L"+Str(GetLongType()) ;
+DL_L=GetAttr(pnt2,NameL,-99);
+NameR="Dl_R"+Str(GetLongType()) ;
+DL_R=GetAttr(pnt1,NameR,-99);
+
+attrobj copy pnt1 "OpenDl_R"  NameR done last 1 ;
+attrobj copy pnt2 "OpenDl_L"  NameL done last 1 ;
+delete pnt1 pnt2 done ;
+setucs restore "@TMP@ucs" ;
+exit;
+//===============
+//================
+//определение длины по базовой линии
+LengtLong:
+setucs lcs pst ;
+=getobjtype(pst) ;
+=objgab3(pst,xm) ;
+Y=0
+=xm[5]
+=xm[2]
+if ((xm[5]<=0.1)&&(Xm[2]<=0))   {  Y=xm[5]-0.01 }
+if ((xm[5]>=0)&&(Xm[2]>=-0.01)) {  Y=xm[2]+0.01 }
+//:
+//#cut1 Cut pst done 3points 0 Y 0 1 Y 0 0 Y 1 ;
+obs1=sysvar(60);
+=getobjtype(pst) ;
+
+#cut1 Cut pst done 3points 0 Y 0 1 Y 0 0 Y 1 ;
+
+obs2=sysvar(60);
+=obs2
+
+if obs2>obs1 {
+   n=obs2-obs1
+   #cut1 group last n done ;
+   }
+=objgab3(cut1,xm) ;
+LenObj=xm[4]-xm[1] ;
+
+delete cut1 done ;
+
+setucs  previous ;
+return;

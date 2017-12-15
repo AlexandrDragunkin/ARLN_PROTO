@@ -1,0 +1,1354 @@
+//-- Программа собираент информацию о панели для черчения
+//-- Входные параметры:
+//-- pnt - собственно панель
+
+global ProtoPath, g_name, g_mater, KarkasNumb, g_draw, g_PorNumber, g_stoi, g_ov, g_stoi1, g_DrawType g_DrawPTyp TilDet Pl_MatrZag g_PanDir;
+global Pl_name g_pozdet g_ndets coef g_BazeZn g_drwosy;
+
+
+global g_h, g_w, g_base;
+global g_ip g_sigV g_colkrom g_mirrdrw g_lza g_lz g_osn;
+defarr xp[3000] yp[3000] Npp[3000] Dp[3000] Lp[3000] Fp[3000] arrGr[2000] temp[6] gr[2000] ArrSys[20] Info[8] gabs[6];
+defarr aCutPos[100];
+defarr alegend[20] amix[20];
+defarr aUnicB[1000] aUnicC[1000] aUnicD[1000] aUnicE[1000];
+
+NULLOUT=getVarinst(2,"g_xb",g_xb,0);
+NULLOUT=getVarinst(2,"g_yb",g_yb,0);
+
+global
+	IdKrom
+	IdCKrom
+	ZnakKrom
+	ZnakKromC
+	Ukas
+	UkasC
+	ElUkas
+	ElUkasC
+	TyZnak  //Номер значка кромки с 10 по 15
+	TyZnakC  //Номер значка цвета кромки с 10 по 15
+	g_dopInfKr
+;
+//=======================
+
+defarr IdCKrom[20] IdKrom[20] ZnakKromC[20] ZnakKrom[20] UkasC[20] Ukas[20] NameCKrom[20] NameKrom[20]  nNameKrom[20] ;
+
+defarr BandPan[4];          //-- Кромка по сторонам B C D E
+defarr ar[6],li[4],xm[6],aSQLSTR[10];
+defarr TypeWorks[300]  ID1Works[300]  ID2Works[300] WidthKr[300];
+defarr Vsys[7] KrArr[5];
+defarr adrilX[2000] str_arr[10] addr[100];
+
+g_DrawPTyp=iif(isvardef("g_DrawPTyp")==0,0,g_DrawPTyp);
+
+getpar pnt;
+
+putmsg("drawpanDR1")
+
+global DRWZPath;
+pathApp=MPathExpand("<appdata>")
+tab_place=pathApp+"\\AllDim.mdb";
+szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+tab_place;
+dimcon=adbCon(szSrc);
+sideOne=1;
+coef=iif(isvardef("coef")==0,1,coef)
+paramsrs=0;
+onerror subend;
+fINIname=pathApp+"Drawing.ini"; // Файл установок чертежей
+gosub sFindKrzn;
+gosub initStKrom;
+ilegend=0;
+workPriz=0;
+iwpar=0;
+gosub sKromGInit; // Заполняем массивы инициализируем кромки
+g_mirrdrw=1;
+KeyPath=1;
+flagNew=0;
+iatpr=0;  // Номер листа
+
+
+
+
+// Читаем все атрибуты объекта и помещаем в запись
+attrobj copy partly pnt all record done
+//добавляем в запись атрибуты заказа
+vName="Name;Number;Customer;Address;Phone;Date;ExpDate;Firm;Salon;Acceptor;Executor;AddInfo;ToWorking;NCurrency;Discount;Rate;ID"
+nelm=splitByDelim(vName,";",aDDr)
+i=0
+labvn:
+if i<nelm {
+	i=i+1
+    Name="O"+aDDr[i]
+	//putmsg(Name);
+    if !isattrdef(Name) {
+        attribute create  Name Name string 30 255 ;
+	}
+    vv=getorderinfo(aDDr[i]) ;
+	//putmsg(vv);
+    if len(vv)>0 {
+		attrobj  attach Name done record vv ;
+	}
+	goto labvn;
+}
+
+
+if (!IsAttrdef("IDRWN")) { Attribute Create "IDRWN" "Номер листа " Real 5 0  ; }
+if (!IsAttrdef("IDRWL")) { Attribute Create "IDRWL" "Номер легенды " Real 5 0  ; }
+
+Pl_name=getattr(pnt,"ElemName","Панель");
+// putmsg(Pl_name)
+
+g_pozdet=iif(IsAssign("GDetNumber",pnt),str(getattr(pnt,"GDetNumber",-1)),iif(IsAssign("UDetNumber",pnt),str(getattr(pnt,"UDetNumber",-1)),str(GetAttr(pnt,"CommonPos",0))));
+//PutMsg(g_pozdet,1);
+g_name=Pl_name+"  "+g_pozdet;
+if IsAssign("GDetNumber",pnt)
+{
+	// значит определен глобальный номер схожих деталей
+	// в этом случае G_name формируем по другому да и обозначение чертежа то же
+	selbyattr "GDetNumber=="+str(getattr(pnt,"GDetNumber",-1)) partly all done;
+	nDets=Sysvar(61);
+	//putmsg("ndets="+str(ndets),1)
+	g_ndets=nDets;
+	if nDets>0
+	{
+		defarr det[nDets];
+		i=0;
+		lDets:
+		if i<ndets
+		{
+			i=i+1;
+			det[i]=getselnum(i);
+			det[i]=iif(IsAssign("CommonPos",det[i]),getattr(det[i],"CommonPos","0"),getattr(det[i],"PorNumber","0"));
+			goto lDets;
+		}
+		nullout=sortarray(det,1); // сортируем массив по возрастанию
+		g_pozdet="";
+		ck=-999;
+		k=0;
+		i=0;
+		lDets1:
+		if i<ndets
+		{
+			i=i+1;
+			//putmsg("det[i]="+str(det[i]),1);
+			if (det[i]-ck)!=1
+			{
+				g_pozdet=g_pozdet+iif(k==2,str(ck),"")+iif(k!=0,",","")+str(det[i]);
+				k=1;
+				ck=det[i];
+				//putmsg("g_pozdet="+str(g_pozdet),1);
+				
+			}
+			else
+			{
+				//g_pozdet=g_pozdet+iif(k!=2,","+str(det[i]),iif(right(g_pozdet,1)!="-","-",""));
+				g_pozdet=g_pozdet+iif(right(g_pozdet,1)!="-","-","");
+				k=2;
+				ck=det[i];
+				//putmsg("g_pozdet="+str(g_pozdet),1);
+				
+			}
+			goto lDets1;
+		}
+		g_pozdet=g_pozdet+iif(k==2,str(det[i]),"");
+		//putmsg("g_pozdet="+str(g_pozdet),1);
+	}
+}
+idMat=getattr(pnt,"PriceID",0)
+g_mater=PriceInfo(idMat,"MATNAME","------");
+Pl_MatrZag=PriceInfo(idMat,"Alias",g_mater);
+
+KarkasNumb=getattr(pnt,"KarkasNumb",-1);
+g_PorNumber=getattr(pnt,"PorNumber",-1);
+g_PanDir=getattr(pnt,"PanDir",-1);
+UnitPos=getattr(pnt,"UnitPos",-1);
+Propil=GetAttr(pnt,"CNPropil","");
+HDSP=PriceInfo(idMat,"Thickness",16); //-- Толщина материала корпуса   GetAttr(pnt,"ZUnit",16);
+// BandPan[1]=GetAttr(pnt,"KBID",0);
+// BandPan[2]=GetAttr(pnt,"KCID",0);
+// BandPan[3]=GetAttr(pnt,"KDID",0);
+// BandPan[4]=GetAttr(pnt,"KEID",0);
+
+//--проверяем наличие сверловки на пластях
+//s_sqlAF="SELECT * FROM holespar WHERE UnitPos="+str(UnitPos)+" AND holside=\"A\" OR \"F\" AND holh1>="+str(HDSP);   // сквозные отверстия
+//s_sqlF="SELECT * FROM holespar WHERE UnitPos="+str(UnitPos)+" AND holside=\"F\"";   // все отверстия
+s_sqlAc="SELECT * FROM holespar WHERE UnitPos="+str(UnitPos)+" AND holside=\"A\" AND holh1<"+str(HDSP);  // только глухие
+s_sqlFc="SELECT * FROM holespar WHERE UnitPos="+str(UnitPos)+" AND holside=\"F\" AND holh1<"+str(HDSP);  // только глухие
+s_sqlAs="SELECT * FROM TSlots WHERE PanelPos="+str(UnitPos)+" AND plane="+str(-1);  // наличие паза по А
+s_sqlFs="SELECT * FROM TSlots WHERE PanelPos="+str(UnitPos)+" AND plane="+str(0); // наличие паза по F
+s_sqlABp="SELECT tpanels.UnitPos FROM TCuts INNER JOIN TPanels ON TCuts.UnitPos = TPanels.UnitPos WHERE (((TPanels.UnitPos)="+str(UnitPos)+") AND ((TCuts.PanLineType)=1) AND ((TCuts.Depth)<0))" // наличие Булевых вырезов на А
+s_sqlFBp="SELECT tpanels.UnitPos FROM TCuts INNER JOIN TPanels ON TCuts.UnitPos = TPanels.UnitPos WHERE (((TPanels.UnitPos)="+str(UnitPos)+") AND ((TCuts.PanLineType)=1) AND ((TCuts.Depth)>0))" // наличие Булевых вырезов на F
+
+//paramAF=adbOpen(dimcon,s_sqlAF);
+//paramF=adbOpen(dimcon,s_sqlF);
+paramAc=adbOpen(dimcon,s_sqlAc);
+paramFc=adbOpen(dimcon,s_sqlFc);
+paramAs=adbOpen(dimcon,s_sqlAs);
+paramFs=adbOpen(dimcon,s_sqlFs);
+paramABp=adbOpen(dimcon,s_sqlABp);
+paramFBp=adbOpen(dimcon,s_sqlFBp);
+//ijA=adbRecCount(paramAF);
+//ijF=adbRecCount(paramF);
+ijAc=adbRecCount(paramAc);
+ijFc=adbRecCount(paramFc);
+ijAs=adbRecCount(paramAs);
+ijFs=adbRecCount(paramFs);
+ijABp=adbRecCount(paramABp);
+ijFBp=adbRecCount(paramFBp);
+
+
+//logAF=0;
+//logF=0;
+logAc=0;
+logFc=0;
+if (ijAc>0)||(ijAs>0)||(ijABp>0)
+{
+	LogAc=1; // есть сверловка по А или паз по A или глухой вырез
+}
+
+if (ijFc>0)||(ijFs>0)||(ijFBp>0)
+{
+	LogFc=1; // есть сверловка по F
+}
+//paramA=adbClose(paramAF);
+//paramF=adbClose(paramF);
+paramAc=adbClose(paramAc);
+paramFc=adbClose(paramFc);
+paramAs=adbClose(paramAs);
+paramFs=adbClose(paramFs);
+paramABp=adbClose(paramABp);
+paramFBp=adbClose(paramFBp);
+sideOne=1;
+g_DrawType="A"
+g_mirrdrw=1;
+if (LogFc==1)&&(LogAc==0)
+{
+	g_DrawType="F"
+	g_mirrdrw=-1;
+}
+if (LogFc==1)&&(LogAc==1)
+{
+	g_DrawType="Обе"
+}
+putmsg("Вывод на чертеж стороны "+g_DrawType+" панели "+str(g_pozdet),1);
+
+//====================================
+DrawType=g_DrawType;
+//====================================
+//------------------------------------------------
+ToSide:
+
+g_ip=0;
+if (DrawType==g_DrawType)&&(DrawType=="Обе")
+{
+	g_DrawType="A"
+	g_mirrdrw=1;
+}
+else
+{
+	if (DrawType!=g_DrawType)&&(DrawType=="Обе")
+	{
+		g_DrawType="F";
+		g_mirrdrw=-1;
+		sideOne=0
+	}
+}
+
+objects=sysvar(60);
+//-- Я это не стер в надежде сделать чертеж торцов панели
+//NumOb=getcntobjg(pnt);
+//defarr npath1[NumOb];
+//NULLOUT=getarrobjg(pnt,npath1);
+//i=1;
+//looi11:
+//if (getattr(npath1[i],"FurnType","")=="010000") //-- Ищем плотно панели
+//{
+//  qqq=npath1[i];
+//  goto ex;
+//}
+//i=i+1;
+//if (i<=NumOb)
+//{
+//  goto looi11;
+//}
+//ex:
+
+//----------------------------------------------------------------------------
+setucs gcs;
+//---------------------------------------------------------------------------
+//-- Это все для панели 6.2
+//---------------------------------------------------------------------------
+//NumOb=getcntobjg(pnt);
+//defarr npath[NumOb];
+//NULLOUT=getarrobjg(pnt,npath);
+//i=1;
+//looi1:
+//if (getattr(npath[i],"FurnPath",0)==1)
+//{
+//  extract partly pnt npath[i] done;
+//  place npath[i];
+//  chprop lwidth npath[i] done TilDet;
+//  macro ProtoPath+"draw_path.mac" UnitPos, npath[i], HDSP, BandPan, Propil;
+//}
+//i=i+1;
+//if (i<=NumOb)
+//{
+//  goto looi1;
+//}
+//---------------------------------------------------------------------------
+//-- А это все для панели 6.4
+//---------------------------------------------------------------------------
+
+
+g_sigV=1;
+npath=0;  //-- В этом счетчике число контуров в панели
+loopnpath:
+//npath=npath+1;
+//SQLSTR1="SELECT DISTINCT TParams.Hold3 FROM TParams WHERE TParams.UnitPos="+str(UnitPos);
+//pathsrs=adbOpen(dimcon,SQLSTR1);
+//ijt=adbRecCount(pathsrs);
+//if (ijt<=0)
+//{
+//  goto end;
+//}
+//NULLOUT=adbMoveFirst(pathsrs);
+//Hold3=adbgetvalue(pathsrs,"Hold3");
+SQLSTR2="SELECT * FROM TParams,TPaths WHERE HoldTable='TPaths' AND TParams.UnitPos="+str(UnitPos);
+SQLSTR2=SQLSTR2+" AND TParams.Hold1=TPaths.PathID AND TPaths.PanelPos=TParams.UnitPos ";
+SQLSTR2=SQLSTR2+"AND IsTCuts=0 "; //-- Эта строка нужна, чтобы образующие вырезы и наросты не рисовались
+if g_DrawPTyp==1 
+{
+	SQLSTR2=SQLSTR2+"AND IsPlanePath=0 "; //-- Эта строка нужна, чтобы делался чертеж панели, а не полотная панели
+}
+else
+{
+	SQLSTR2=SQLSTR2+"AND IsPlanePath<>0 "; //-- Эта строка нужна, чтобы делался чертеж полотна панели, а не панели
+}
+SQLSTR2=SQLSTR2+"ORDER BY ParamID";
+TypSql=0; //-- запрос в строке
+g_ov=0; //-- Панель еще не вертели
+inp=0;    //-- Cчетчик контуров
+vir=0
+
+gosub sDrawPath; //-- Чертим контура
+//gosub sBoolCuts; //-- Чертим булевы контура
+//gosub sDrawBase; //-- рисуем знак базы
+gosub sPropils; //-- Чертим пропилы
+
+
+
+
+
+//delete all if (isvardef("g_draw")==16) { remove g_draw } done;
+selbyattr "kromZNAK>"+str(0) all done;
+
+if sysvar(61)>0
+{
+	//chprop grfcoef previous done coef ;
+	if (isvardef("g_draw")==16)
+	{
+		add g_draw  previous done; // добавляем
+	}
+	else
+	{
+		#g_draw  group attribute  "kromZNAK>"+str(0) done ;
+	}
+}
+line 0 0 0 1 0 0 ;
+delete all remove  	if (isvardef("g_draw")==16) {  g_draw } 
+					if (isvardef("gg_draw")==16) { gg_draw } 
+					if (isvardef("g_draw1")==16) { g_draw1 }  
+					if (isvardef("baseZn")==16) { baseZn }
+					done;
+objdims=sysvar(60);
+nulout=objgab3(gg_draw,xm);
+macro DRWZPath+"qDimD6.mac"
+	1
+	gg_draw
+	iif(g_base==2||g_base==3,xm[4]+10,xm[1]-10) // это указатели базы g_base=2
+	iif(g_base==4||g_base==3,xm[5]+10,xm[2]-10) // 
+	0        // z указателя базы всегда 0
+	g_ip
+	xp
+	yp
+	Npp
+	Dp
+	Lp
+	Fp
+	aUnicB //-- массив с точками исключениями
+	aUnicC
+	aUnicD
+	aUnicE
+;
+
+obj=sysvar(60);
+
+gosub DrillOsyX;
+
+obj=sysvar(60)-obj;
+if obj>0
+{
+	#DrillOsy  group last obj done;
+}
+if isvardef("gg_draw")==16&&isvardef("g_draw")==16
+{
+	add g_draw gg_draw  done;
+}
+if isvardef("bazezn")==16&&isvardef("g_draw")==16
+{
+	add g_draw bazezn  done;
+}
+objdims=sysvar(60)-objdims;
+if isvardef("g_draw")==16
+{
+	add g_draw last objdims+1  done;
+}
+else
+{
+	#g_draw group last objdims+1  done;
+}
+objects=sysvar(60)-objects;
+if g_DrawType=="F"
+{
+	if objdims>0
+	{
+		//#grpanel group last  objects done ;
+		nulout=objgab3(g_draw,xm);
+
+		mirror nocopy g_draw done 3points
+		//(xm[4]-xm[1])/2 xm[2] xm[3]
+		//(xm[4]-xm[1])/2 xm[2]+100 xm[3]
+		//(xm[4]-xm[1])/2 xm[2] xm[3]+100
+		xm[4] (xm[5]-xm[2])/2+xm[2] xm[3]
+		xm[4]+100 (xm[5]-xm[2])/2+xm[2] xm[3]
+		xm[4] (xm[5]-xm[2])/2+xm[2] xm[3]+100
+		objident last 1  g_draw;
+		g_mirrdrw=1;
+		if DrawType=="Обе"
+		{
+		 //move nocopy g_draw done 2point  xm[4] xm[2] xm[3] xm[1]-100 xm[2] xm[3]
+		   //move nocopy g_draw done 2point  xm[1] xm[5] xm[3] xm[1] xm[2]-100 xm[3]
+		}
+		// explode last 1 ;
+	}
+	DrawType="F" ;
+}
+if (DrawType=="Обе")
+{
+	//#grpanel group last  objects done ;
+	gosub srevGab;
+	nulout=objgab3(g_draw,xm);
+	if (isvardef("g_draw")==16)
+	{
+		nulout=objgab3(g_draw,xm);
+		if (g_stoi1==1&&isvardef("g_draw")==16)
+		{
+			#g_draw1 move copy g_draw done 2point   xm[1] xm[2] xm[3] xm[4]+100 xm[2] xm[3]
+		}
+		if (g_stoi1==0&&isvardef("g_draw")==16)
+		{
+			#g_draw1 move copy g_draw done 2point  xm[1] xm[5] xm[3] xm[1] xm[2]-100 xm[3]
+		}
+		delete g_draw done ;
+		//explode last 1 ;
+	}
+	KeyPath=1;
+	iatpr=iatpr+1;
+	attrobj attach "IDRWN" done g_draw1 iatpr  ;    // Присваиваем отличительный признак атрибут
+	goto  ToSide;
+}
+gosub srevGab;
+iatpr=iatpr+1;
+attrobj attach "IDRWN" done g_draw iatpr  ;    // Присваиваем отличительный признак атрибут
+if (isvardef("g_draw")==16)
+{
+	#g_draw group g_draw  done ;
+	if (isvardef("g_draw1")==16)
+	{
+		add g_draw g_draw1 done;
+	}
+}
+g_colkrom=" " ;
+g_mirrdrw=1;
+
+gosub sgTextKrom ; // Легенда по кромке
+
+dimcon=adbDisCon(dimcon);
+//putmsg(dimcon);
+exit;
+//--------------------------------------------------
+//--------------------------------------------------
+//--------------------------------------------------
+//--------------------------------------------------
+//--------------------------------------------------
+//--------------------------------------------------
+//--------------------------------------------------
+subend:
+	offerror;
+	paramsrs=iif(paramsrs>0,adbClose(paramsrs),0);
+	dimcon=adbDisCon(dimcon);
+	//cancel;
+return;
+
+//*********************
+Krznak:
+	//attrobj copy l1 all znak ;
+	if  workPriz!=0
+	{
+		#LenCve clength znak ;
+		chprop layer znak done "krom" ;
+		attrobj attach "krom" "PriceID" "Length" "ColKID" done znak el iif(KrArr[1]>0,KrArr[1],att) LenCve KrArr[2];
+		// на каждый элемент контура обозначающего кромку надо поставить соответствующий значок
+		//Ставим значки
+		PtransCS(0,3,xc,yc,zc,xcg,ycg,zcg) ;
+		//Putmsg("NumIdkrom="+str(NumIdkrom),1);
+		//iif(NumIdkrom>0,Putmsg("ZnakKrom[NumIdkrom]="+str(ZnakKrom[NumIdkrom]),1),0);
+		if findinarray(aLegend,NumIdkrom)==0
+		{
+			ilegend=ilegend+1;
+			aLegend[ilegend]=NumIdkrom;
+		}
+		
+		macro DRWZPath+"postZ1auto.mac" iif(NumIdkrom>0,ZnakKrom[NumIdkrom],0) znak Xcg Ycg Zcg ;
+		
+		attrobj attach "kromZNAK" done znak iif(NumIdkrom>0,ZnakKrom[NumIdkrom],0) ;
+		chprop lwidth last 1  done 0;
+	}
+return;
+//--------------------------------------
+// Инициализация переменных для обработок на элемент контура
+InitAworks:
+		workPriz=0;
+		iwpar=0;
+		NULLOUT=initarray(TypeWorks,0);
+		NULLOUT=initarray(ID1Works,0);
+		NULLOUT=initarray(ID2Works,0);
+		NULLOUT=initarray(WidthKr,0);
+
+return;
+//--------------------------------------
+// Инициализация переменных для значков кромок
+initStKrom:
+	err=SysArr(43,ArrSys) ; // массив свойств созаваемого объекта
+	TyZnak=aZnromB[1]
+	ElUkas=0;
+	TyZnakC=aZnromB[1]
+	ElUkasC=0;
+	If (!IsAttrdef("Kromznak"))
+	{
+		Attribute Create "Kromznak" "Значок Кромка на чертеже" Real 12 5  ;
+	}
+	If (!IsAttrdef("Krom"))
+	{
+		Attribute Create "Krom" "Кромка на чертеже" Real 12 5  ;
+	}
+	If (!IsAttrdef("ColKID"))
+	{
+		Attribute Create "ColKID" "Цвет Кромки на чертеже" Real 12 5  ;
+	}
+	layers New "Krom" ;
+	//Ищем центр габаритов куска
+	setucs lcs pnt ;
+	Err=ObjGab3(pnt,xm) ;
+	Err=SysArr(82,Vsys) ;
+	#amix mix nodc pnt done;
+	nulout=InitArray(KrArr,0) ;
+	nulout=InitArray(IdKrom,0) ;
+	nulout=InitArray(ZnakKrom,0) ;
+	nulout=InitArray(Ukas,0) ;
+	nulout=InitArray(IdCKrom,-99) ;
+	nulout=InitArray(aUnicB,-999999);
+	nulout=InitArray(aUnicC,-999999);
+	nulout=InitArray(aUnicD,-999999);
+	nulout=InitArray(aUnicE,-999999);
+	nulout=InitArray(NameCKrom," ");
+	nulout=InitArray(NameKrom," ");
+	// Xc=xm[1]+(xm[4]-xm[1])/2 ;
+	// Yc=xm[2]+(xm[5]-xm[2])/2 ;
+	// Zc=xm[3]+(xm[6]-xm[3])/2 ;
+	PtransCS(3,0,amix[17],amix[18],amix[19],Xc,Yc,Zc);
+        gosub sSetgrfcoef;
+	
+return;
+//-------------------------------------------
+//------------------------------------------------------------------------------
+
+//Рисуем осевые по всем отверстиям с одинаковыми координатами
+
+DrillOsyX:
+	Str_arr[1]="SELECT holespar.holx, holespar.UnitPos, holespar.holside "
+	Str_arr[2]="FROM holespar "
+	Str_arr[3]="GROUP BY holespar.holx, holespar.UnitPos, holespar.holside "
+	Str_arr[4]="HAVING (((holespar.UnitPos)="+str(UnitPos)+") AND ((holespar.holside)=\""+g_drawtype+"\")) "  //"HAVING (((holespar.UnitPos)="+str(UnitPos)+")) "
+	Str_arr[5]="ORDER BY holespar.holx "
+	
+	//putmsg(dimcon);
+	holeXq=adbOpen(dimcon,str_arr,5);
+	ij=adbRecCount(holeXq);
+	if (ij==0)       //-- Если записей нет - выходим
+	{
+		holeXq=adbClose(holeXq);
+		return;
+	}
+	NULLOUT=adbMoveFirst(holeXq);
+	i_drx=0;
+	lb_drx:
+	if i_drx<ij
+	{
+		i_drx=i_drx+1;
+		adrilX[i_drx]=adbgetvalue(holeXq,"holx");
+		NULLOUT=adbMoveNext(holeXq);
+		goto lb_drx;
+	}
+	holeXq=adbClose(holeXq);
+	Str_arr[1]="SELECT * "
+	Str_arr[2]="FROM holespar "
+	Str_arr[4]="ORDER BY holespar.holx, holespar.holy, holespar.holside  "
+	n_elm=ij;
+	i_drx=0;
+	lb_drx1:
+	if i_drx<n_elm
+	{
+		i_drx=i_drx+1;
+		Str_arr[3]="WHERE holespar.holx="+str(adrilX[i_drx])+" AND holespar.UnitPos="+str(UnitPos)+" AND holespar.holside=\""+g_drawtype+"\" "
+		holeXq=adbOpen(dimcon,str_arr,4);
+		ij=adbRecCount(holeXq);
+		if (ij<2)       //-- Если записей меньше 2 выходим
+		{
+		  goto lb_drx1;
+		}
+		NULLOUT=adbMoveFirst(holeXq);
+		y_s=adbgetvalue(holeXq,"holy");
+		NULLOUT=adbMoveLast(holeXq);
+		y_e=adbgetvalue(holeXq,"holy");
+		if (abs(y_s-y_e)>0.1)&&(g_drwosy)
+		{
+		line adrilX[i_drx] y_s 0 adrilX[i_drx] y_e 0 ;
+		chprop ltype last 1 done 7
+		}
+		goto lb_drx1;
+	}
+	holeXq=adbClose(holeXq);
+	Str_arr[1]="SELECT holespar.holy, holespar.UnitPos, holespar.holside "
+	Str_arr[2]="FROM holespar "
+	Str_arr[3]="GROUP BY holespar.holy, holespar.UnitPos, holespar.holside "
+	Str_arr[4]="HAVING (((holespar.UnitPos)="+str(UnitPos)+") AND ((holespar.holside)=\""+g_drawtype+"\")) "  //"HAVING (((holespar.UnitPos)="+str(UnitPos)+")) "
+	Str_arr[5]="ORDER BY holespar.holy "
+	holeXq=adbOpen(dimcon,str_arr,5);
+	ij=adbRecCount(holeXq);
+	if (ij==0)       //-- Если записей нет - выходим
+	{
+		holeXq=adbClose(holeXq);
+		return;
+	}
+	NULLOUT=adbMoveFirst(holeXq);
+	i_drx=0;
+	lb_drx2:
+	if i_drx<ij
+	{
+		i_drx=i_drx+1;
+		adrilX[i_drx]=adbgetvalue(holeXq,"holy");
+		NULLOUT=adbMoveNext(holeXq);
+		goto lb_drx2;
+	}
+	holeXq=adbClose(holeXq);
+	Str_arr[1]="SELECT * "
+	Str_arr[2]="FROM holespar "
+	Str_arr[4]="ORDER BY holespar.holy, holespar.holx, holespar.holside "
+	n_elm=ij;
+	i_drx=0;
+	lb_drx3:
+	if i_drx<n_elm
+	{
+		i_drx=i_drx+1;
+		Str_arr[3]="WHERE holespar.holy="+str(adrilX[i_drx])+" AND holespar.UnitPos="+str(UnitPos)+" AND holespar.holside=\""+g_drawtype+"\" "
+		holeXq=adbOpen(dimcon,str_arr,4);
+		ij=adbRecCount(holeXq);
+		if (ij<2)       //-- Если записей меньше 2 выходим
+		{
+			goto lb_drx3;
+		}
+		NULLOUT=adbMoveFirst(holeXq);
+		x_s=adbgetvalue(holeXq,"holx");
+		NULLOUT=adbMoveLast(holeXq);
+		x_e=adbgetvalue(holeXq,"holx");
+		if (abs(x_s-x_e)>0.1)&&(g_drwosy)
+		{
+			line x_s adrilX[i_drx] 0 x_e adrilX[i_drx] 0 ;
+			chprop ltype last 1 done 7
+		}
+		goto lb_drx3;
+	}
+	holeXq=adbClose(holeXq);
+return;
+//--------------------------------------------------------------
+//-- Чертим пропилы
+sPropils:
+	SQLSTR2="SELECT * FROM TSlots WHERE PanelPos="+str(UnitPos)+" AND plane="+iif(g_DrawType=="A",str(-1),str(0));
+	SQLSTR2=SQLSTR2+" ORDER BY SlotPos";
+	//putmsg(dimcon);
+	paramsrs=adbOpen(dimcon,SQLSTR2);
+	
+	ijp=adbRecCount(paramsrs);
+	if (ijp<=0)
+	{
+		goto end2;
+	}
+	
+	iPropil=0;
+	NULLOUT=adbMoveFirst(paramsrs);
+	loopparam2:
+	iPropil=iPropil+1;
+	begx=adbgetvalue(paramsrs,"BegX");
+	begy=adbgetvalue(paramsrs,"BegY");
+	endx=adbgetvalue(paramsrs,"EndX");
+	endY=adbgetvalue(paramsrs,"EndY");
+	plane=adbgetvalue(paramsrs,"Plane");
+	Width=adbgetvalue(paramsrs,"Width");
+	depth=adbgetvalue(paramsrs,"depth");
+	aCutPos[iPropil]=adbgetvalue(paramsrs,"CutPos");
+	//putmsg("aCutPos["+str(iPropil)+"]="+str(aCutPos[iPropil]),1)
+	NULLOUT=getsnap();
+	ucs;
+	#aq line begx,begy,0 endx,endy,0 done;
+	le=sqrt((endx-begx)*(endx-begx)+(endy-begy)*(endy-begy));
+	setucs lcs aq;
+	delete aq done;
+	line 0,-width/2,0 0,width/2,0 le,width/2,0 le,-width/2,0 close;
+	#np path select last 4 done last 4 create;
+	if (plane==0)
+	{
+		chprop lwidth np done TilDet;
+	}
+	else
+	{
+		chprop ltype np done 1;
+	}
+	dimtext 0 "Паз "+str(width)+"x"+str(depth) done
+	dimtplace right ;
+	ldim 3ddim begx+le/5,-width/2,0   begx+le/5,width/2,0 parallel @ 1 1 0 ;
+	dimtext 0 "<>" done
+	dimtplace Center ;
+	chprop lwidth last 1  done 0;
+	if isvardef("g_draw")==16
+	{
+		add g_draw last 1 done;
+	}
+	else
+	{
+		#G_draw group last 1 done
+	}
+	NULLOUT=resnap();
+	// пропил надо сделать правильным  возможно их будет несколько и проставить размеры
+	pline path np ; // превращаем его в полилинию
+	delete np done;
+	objident last 1 np ;
+	// нужно произвести операцию с полилиниями
+	// возможно в данный момент у нас есть группа gg_draw из одного или нескольких контуров
+	#templ1 line 0 0 0 1 0 0 ;
+	add gg_draw  templ1 done; // добавляем линию в группу дабы группа не исчезла
+	nobjgr=GetArrObjG(gg_draw,arrGr) ; //  сколько элементов в группе и сунули их в массив
+	igr=0
+	labgr:
+	if igr<nobjgr
+	{
+		igr=igr+1;
+		extract gg_draw arrgr[igr] ;      //  извлекаем из группы все контура
+		if GetObjType(arrgr[igr])==5
+		{
+			pline path arrgr[igr] ;     // превращаем его в полилинию
+			objident last 1 npg;
+		}
+		add gg_draw  arrgr[igr] done;       //  контура возвращаем назад в группу
+		//  выполняем булевы операции над контурами с пропилом
+		if igr==1
+		{
+			polybool inter npg np ;
+			objident last 1 np ;
+		}
+		goto labgr;
+	}
+	nmalnp:
+	objjt=sysvar(60);
+	explode np done ;
+	objjt=sysvar(60)-objjt+1;
+	objident last 1 np;
+	typNp=getobjtype(np)
+	if typNp<0
+	{
+		goto nmalnp;
+	}
+	#np path select last objjt done last 1 ;
+	// элементы пропила следует превратить в контура и вернуть в группу
+	//  необходимо запомнить параметры пропила и образмерить все его элементы
+	extract gg_draw templ1  ;
+	delete templ1 done;
+	add gg_draw  np done; // добавляем пропил в группу
+	NULLOUT=adbmovenext(paramsrs);
+	if (!adbiseof(paramsrs))
+	{
+		goto loopparam2;
+	}
+	end2:
+	paramsrs=adbClose(paramsrs);
+return;
+//--------------------------------------------------------------------------------
+srevGab:
+	if (isvardef("g_draw")==16)
+	{
+		NULLOUT=objgab3(g_draw,temp);
+		height=temp[5]-temp[2];
+		width=temp[4]-temp[1];
+	}
+	if (g_ov==1)
+	{
+		if (g_stoi==1&&((g_h/g_w)>1&&(height/width)<1||(g_h/g_w)<1&&(height/width)>1))
+		{
+			//-- Если необходимо (размеры по ширине и по высоте не коррелируют с габаритами
+			//-- чертежа), поворачиваем его
+			stoi=1;
+			g_stoi1=1;
+			// g_xb=xb;
+			// g_yb=yb;
+			//  rotate g_draw done 2points xb,yb,0 xb,yb,10 -90 nocopy;
+		}
+		else
+		{
+			stoi=0;
+			g_stoi1=0;
+		}
+	}
+
+	g_ov=1;
+	if (g_stoi1==1&&isvardef("g_draw")==16)
+	{
+	//-- Если необходимо (размеры по ширине и по высоте не коррелируют с габаритами
+	//-- чертежа), поворачиваем его
+		rotate g_draw  done 2points g_xb,g_yb,0 g_xb,g_yb,10 -90 nocopy;
+		if isvardef("gg_draw")==16 
+		{
+			select gg_draw remove g_draw done;
+			if sysvar(61)>0
+			{
+			rotate gg_draw remove g_draw done 2points g_xb,g_yb,0 g_xb,g_yb,10 -90 nocopy;
+			}
+		}
+	}
+	NULLOUT=objgab3(g_draw,temp);
+	parTx=max(height,width)*50/2000
+	//#tx1 text iif(g_osn,"",g_name+"  ") "%%uСторона  "+g_drawtype done temp[4] temp[2]-50 temp[3] temp[4]-100 temp[2]-50 temp[3]
+	#tx1 text iif(g_osn,"",g_name+"  ") iif(!g_osn,"%%uСторона  "+g_drawtype,".") done temp[4] temp[2]-50 temp[3] temp[4]-100 temp[2]-50 temp[3]
+	add g_draw tx1 done;
+return;
+//------------------------
+EdЕtextNM:
+	//Редактируем параметры текста  присваиваем параметры Nmebel
+	err=GetTextInfo(Tx,Info);
+	Info[1]="Nmebel.shx" //1 Имя шрифта
+	Info[2]=5            //2 Высота символа
+	Info[3]=100          //3 Отношение ширины к высоте (в процентах)
+	Info[4]=15           //4 Угол наклона шрифта (в градусах)
+	Info[5]=0            //5 Разрядка  между  символами  по  горизонтали(в процентах)
+	Info[6]=0            //6 Разрядка между символами по вертикали (в процентах)
+	err=PutTextInfo(Tx,Info);
+return;
+//------------------------
+
+sgTextKrom:
+	i=1;
+	lbTkrom:
+	ik=Alegend[i]
+	//PutMsg(ik,1);
+	
+	textkr=iif(ik>0,NameKrom[ik],0);
+	//PutMsg(textkr,1);
+	iD_ZNAK=iif(ik>0,ZnakKrom[ik],0);
+	//PutMsg(iD_ZNAK,1);
+	if isvardef("textkr")==6
+	{
+		if len(textkr)>1
+		{
+			macro DRWZPath+"leader1auto.mac" iD_ZNAK 0 0+10*i*SYSvAR(76)*coef*ArrSys[3] 0 0.01 10+10*i*SYSvAR(76)*coef*ArrSys[3] 0 ;
+			objident last 1 pnt ;
+			//Определили наименование материала
+			#tx text textkr done -10-10*SYSvAR(76) 0+10*i*SYSvAR(76) 0 @-10 0 0 ;
+			gosub EdЕtextNM ; //Редактируем параметры текста  присваиваем параметры Nmebel
+			Group last 2 done ;
+			objident last 1 gr[i] ;
+			flagNew=1
+		
+			i=i+1
+			goto lbTkrom;
+		}
+	}
+	if flagNew==1 
+	{
+		if (!IsAttrdef("LTitle"))
+		{
+			Attribute Create "LTitle" "Заголовок легенды" Real 12 5  ;
+		}
+		text "%%uКромка. Условные обозначения" done 0 0 0  @-10 0 0 ;
+		attrobj attach  "LTitle" done last 1  1  ;    // Присваиваем отличительный признак атрибут
+		group last i done ;
+		Objident last 1 pnt;
+		nulout=objgab3(g_draw,xm);
+		Xc=Xm[4]
+		Yc=xm[5]+10*sysvar(76);
+		err=objgab3(pnt,xm);
+		move nocopy pnt done  2point  Xm[4] Xm[2] 0 Xc Yc 0
+		attrobj attach "IDRWL"  done pnt 1   ;    // Присваиваем отличительный признак атрибут
+		add g_draw pnt done ;
+	}
+return;
+//-- Чертим Вырезы булевы
+sBoolCuts:
+	//aSQLSTR[1]="SELECT TCuts.CutPos,* FROM TParams, TPaths INNER JOIN TCuts ON TPaths.PathID = TCuts.PathPos  ON TParams.UnitPos = TCuts.UnitPos "
+	aSQLSTR[1]="SELECT * FROM TParams, TPaths INNER JOIN TCuts ON TPaths.PathID = TCuts.PathPos "
+    aSQLSTR[2]="WHERE (((TCuts.PanLineType)=1) AND ((TParams.HoldTable)='TPaths') AND ((TParams.UnitPos)="+str(UnitPos)+") AND ((TParams.Hold1)=[TPaths].[PathID]) "
+	aSQLSTR[3]="AND ((TCuts.flCut)<>99)"
+	aSQLSTR[4]="AND ((TPaths.PanelPos)=[TParams].[UnitPos]) AND ((TCuts.Depth)"+iif(g_DrawType=="A",">"+str(0),"<"+str(0))+")) ORDER BY TParams.ParamID;  "
+	TypSql=4;
+	vir=1;
+	gosub sDrawPath;
+	
+return;
+
+
+// Чертим кромки
+sWork:
+	if parname=="WorkID" // -- На данном элементе есть обработка
+	{
+		workPriz=parvalue;
+		iwpar=iwpar+1;  // счетчик обработок на элементе контура
+		// Находим данные по обработке
+		aSQLSTR[1]="SELECT * ";
+		aSQLSTR[2]="FROM TWorks, TParams ";
+		aSQLSTR[3]="WHERE (((TParams.Hold1)=[tworks].[workpos]) AND ((TParams.HoldTable)=\"TWORKS\") AND ((TWorks.WorkPos)="+str(workPriz)+"))";
+		parworks=adbOpen(dimcon,aSQLSTR,3);
+		ijw=adbRecCount(parworks);
+		//putmsg("ijw="+str(ijw),1);
+		if (ijw>0)
+		{
+			NULLOUT=adbMoveFirst(parworks);
+			TypeWorks[iwpar]=adbgetvalue(parworks,"Type");
+			lbwparam:
+			if (!adbiseof(parworks))
+			{
+				NamePW=adbgetvalue(parworks,"ParamName");
+				//putmsg("NamePW="+NamePW,1);
+				if  NamePW=="id1"
+				{
+					ID1Works[iwpar]=adbgetvalue(parworks,"NumValue");
+				}
+				if  NamePW=="id2"
+				{
+					ID2Works[iwpar]=adbgetvalue(parworks,"NumValue");
+				}
+				if  NamePW=="Param 2: Width"
+				{
+					WidthKr[iwpar]=adbgetvalue(parworks,"NumValue");
+				}
+				//putmsg("Контур:"+str(inp)+" Элемент:"+str(el)+" Обработка тип:"+str(TypeWorks[iwpar])+" ID1:"+str(ID1Works[iwpar])+" ID2:"+str(ID2Works[iwpar]),1)
+				NULLOUT=adbmovenext(parworks);
+				goto lbwparam;
+			}
+		}
+		parworks=adbClose(parworks);
+		//============================Подбираем значок кромке===========================<
+		att=ID1Works[iwpar]
+		attC=ID2Works[iwpar]
+		KrArr[1]=ID1Works[iwpar]
+		KrArr[2]=ID2Works[iwpar]
+		wd_krom=WidthKr[iwpar]
+		NumIdkrom=FindInArray(idKrom,att);
+		NumIdCkrom=FindInArray(idCKrom,attC);
+		
+		if (NumIdkrom==0&&att>0)
+		{
+			SizArr=GetDimArray(idKrom) ;
+			i_Krom=0
+			labKrom:
+			if i_Krom<SizArr
+			{
+				i_krom=i_Krom+1
+				if (idKrom[i_krom]==0)
+				{
+					ElUkas=ElUkas+1 //Индекс указателя  0 выше
+					TyZnak=aZnromB[ElUkas]
+					idKrom[i_krom]=att
+					Ukas[ElUkas]=att //Указатель
+					SizArr=i_Krom;
+					NumIdkrom=i_Krom;
+					ZnakKrom[NumIdkrom]=TyZnak
+				}
+				goto labKrom;
+			}
+			if NumIdkrom>0 
+			{
+				TextWD=iif(wd_krom!=0,"S%%003(мм)%%004="+str(wd_krom)+" ","")   //PriceInfo(KrArr[1],"Matname"," ")+" "+
+				//TextKr=TextWD+"Ls%%003(мм)%%004="+str()+"  ("+TextKr+")" ;
+				NameKrom[NumIdkrom]=TextWD+PriceInfo(KrArr[1],"MATNAME","**** ")+" "+PriceInfo(KrArr[2],"MATNAME"," ") ;
+				NameKrom[NumIdkrom]=TextWD+PriceInfo(KrArr[1],"Alias",NameKrom[NumIdkrom]);
+				//putmsg(NameKrom[NumIdkrom],1);
+			}
+		}
+		else
+		{
+			// Кромка уже идентифицирована
+			NameKr=PriceInfo(KrArr[1],"MATNAME","**** ")
+			TypeKr=PriceInfo(KrArr[1],"BandType",KrArr[1])
+			TypeKr=PriceInfo(TypeKr,"MATNAME",NameKr)
+			NameCol="" //PriceInfo(KrArr[2],"MATNAME"," ")
+			nNameKrom[NumIdkrom]=TypeKr
+			//=sideOne
+
+			//putmsg(NumIdkrom,1)
+			//putmsg(NameCol,1)
+			//putmsg(NameKrom,1)
+			NameKrom[NumIdkrom]=iif(sideOne,NameKrom[NumIdkrom]+iif((KrArr[2]>0)&&(instr(1,NameKrom[NumIdkrom],NameCol,1)==0),", "+NameCol,""),NameKrom[NumIdkrom]) ;
+		}
+		g_colkrom=" ";
+		if (NumIdCkrom==0&&attC>0)
+		{
+			SizArr=GetDimArray(idCKrom) ;
+			i_Krom=0
+			labCKrom:
+			if i_Krom<SizArr
+			{
+				i_krom=i_Krom+1
+				if (idCKrom[i_krom]==-99)
+				{
+					TyZnakC=TyZnakC+1
+					idCKrom[i_krom]=attC
+					ElUkasC=ElUkasC+1 //Индекс указателя  0 выше
+					UkasC[ElUkasC]=attC //Указатель
+					SizArr=i_Krom;
+					NumIdCkrom=i_Krom;
+					ZnakKromC[NumIdCkrom]=TyZnakC
+				}
+				goto labCKrom;
+			}
+			//if NumIdCkrom>0 { NameCKrom[NumIdCkrom]=PriceInfo(KrArr[2],"MATNAME"," ") ;
+			//putmsg(NameCKrom[NumIdCkrom],1);
+			//}
+		}
+		else
+		{
+		// Цвет Кромки уже идентифицирован
+		}
+		//g_colkrom=iif(NumIdCkrom>0,NameCKrom[NumIdCkrom]," ");
+		if g_dopInfKr=="Нет" { g_colkrom=" " }
+		if g_dopInfKr=="Толщина" { g_colkrom=str(wd_krom) }
+		if g_dopInfKr=="Тип" { g_colkrom=nNameKrom[NumIdkrom] }
+		
+		//==============================================================================>
+		
+	}
+return;
+//------------------
+sDrawPath:
+	nparam=0; //-- В этом счетчике параметры
+	nli=0;  //-- Счетчик линий
+	nar=0;  //-- Cчетчик дуг
+	workPriz=0; //--Признак наличия обработки на элементе
+	iwpar=0; //--Счетчик обработок на элементе контура
+	h1=0;
+	el=0;
+	//putmsg(SQLSTR2);
+	if TypSql==0
+	{
+		paramsrs=adbOpen(dimcon,SQLSTR2);
+		
+	}
+	if TypSql>0
+	{
+		paramsrs=adbOpen(dimcon,aSQLSTR,TypSql);
+	}
+	ijp=adbRecCount(paramsrs);
+	if (ijp<=0)
+	{
+		goto end;
+	}
+	NULLOUT=adbMoveFirst(paramsrs);
+	loopparam:
+	nparam=nparam+1;
+	if (!adbiseof(paramsrs))
+	{
+		Hold1=adbgetvalue(paramsrs,"Hold1");
+	}
+	if (h1!=Hold1&&h1>0||adbiseof(paramsrs))
+	{
+		nar=0;
+		nli=0;
+		if (parh2==3) //-- Если это окружность
+		{
+			inp=inp+1;
+		}
+		else
+		{
+			#np path select last el done last 1 done;
+			place np;
+			inp=inp+1;
+			g_sigV=-1
+			if vir==1
+			{
+				//-------------
+				// вырез надо сделать правильным  возможно их будет несколько и проставить размеры
+				pline path np ; // превращаем его в полилинию
+				delete np done;
+				objident last 1 np ;
+				// нужно произвести операцию с полилиниями
+				// возможно в данный момент у нас есть группа gg_draw из одного или нескольких контуров
+				#templ1 line 0 0 0 1 0 0 ;
+				add gg_draw  templ1 done; // добавляем линию в группу дабы группа не исчезла
+				nobjgr=GetArrObjG(gg_draw,arrGr) ; //  сколько элементов в группе и сунули их в массив
+				igr=0
+				labgr1:
+				if igr<nobjgr
+				{
+					igr=igr+1;
+					extract gg_draw arrgr[igr] ;      //  извлекаем из группы все контура
+					if GetObjType(arrgr[igr])==5
+					{
+						pline path arrgr[igr] ;     // превращаем его в полилинию
+						objident last 1 npg;
+					}
+					add gg_draw  arrgr[igr] done;       //  контура возвращаем назад в группу
+					//  выполняем булевы операции над контурами с вырезом
+					if igr==1
+					{
+						
+						polybool inter npg np ;
+						objident last 1 np ;
+					}
+					goto labgr1;
+				}
+				nmalnp1:
+				objjt=sysvar(60);
+				explode np done ;
+				objjt=sysvar(60)-objjt+1;
+				objident last 1 np;
+				typNp=getobjtype(np)
+				if typNp<0
+				{
+					goto nmalnp1;
+				}
+				#np path select last objjt done last 1 ;
+				// элементы выреза следует превратить в контура и вернуть в группу
+				//  необходимо запомнить параметры выреза и образмерить все его элементы
+				extract gg_draw templ1  ;
+				delete templ1 done;
+			}
+		}
+		chprop lwidth np done TilDet;
+		if KeyPath
+		{
+			macro DRWZPath+"draw_pathDR1.mac" UnitPos, np, HDSP, BandPan, Propil, xp, yp ;
+			
+		}
+		KeyPath=0;
+		if inp==1
+		{
+			#gg_draw group np done;
+			
+		}
+		else
+		{
+			chprop lwidth gg_draw np done TilDet;
+			add gg_draw  np done;
+		}
+		el=0;
+		if (adbiseof(paramsrs))
+		{
+			goto end;
+		}
+	}
+	h1=Hold1;
+	parname=adbgetvalue(paramsrs,"ParamName");
+	partype=adbgetvalue(paramsrs,"ParamType");
+	parh2=adbgetvalue(paramsrs,"Hold2");
+	if (partype!=0)
+	{
+		goto loopparam;
+	}
+	parvalue=adbgetvalue(paramsrs,"NumValue");
+	cutpos=iif(TypSql>0,adbgetvalue(paramsrs,"CutPos"),0);
+	//putmsg("cutpos="+str(cutpos),1);
+	if isvardef("aCutPos")==3
+	{
+		IposSlot=findInArray(aCutPos,CutPos);
+		//putmsg("IposSlot="+str(IposSlot),1);
+		if cutpos>0&&IposSlot>0
+		{
+			goto lbsDrawP;
+		}
+	}
+//macroMode Trace on;
+	gosub sWork;
+
+//macroMode Trace off;
+
+	if (parh2==1) //-- линия
+	{
+		nli=nli+1;
+		li[nli]=parvalue;
+		if (nli==4)
+		{
+			line li[1],li[2],0 li[3],li[4],0 done;
+			objident last 1 znak ;
+			gosub KrZnak ;
+			nli=0;
+			el=el+1;
+			gosub InitAworks;
+		}
+	}
+	if (parh2==2) //-- дуга
+	{
+		nar=nar+1;
+		ar[nar]=parvalue;
+		if (nar==6)
+		{
+			arc ar[1],ar[2],0 ar[3],ar[4],0 ar[5],ar[6],0;
+			objident last 1 znak ;
+			gosub KrZnak ;
+			nar=0;
+			el=el+1;
+			gosub InitAworks;
+		}
+	}
+	if (parh2==3) //-- окружность
+	{
+		nar=nar+1;
+		ar[nar]=parvalue;
+		if (nar==3)
+		{
+			circle ar[1],ar[2],0 normal 0,0,1 ar[3];
+			objident last 1 znak ;
+			objident last 1 np ;
+			gosub KrZnak ;
+			nar=0;
+			el=el+1;
+			gosub InitAworks;
+		}
+	}
+	lbsDrawP:
+	NULLOUT=adbmovenext(paramsrs);
+	goto loopparam;
+	end:
+	paramsrs=adbClose(paramsrs);
+return;
+//--------------------
+// Заполняет массивы значками кромок по всему заказу
+sKromGInit:
+//macromode trace on;
+	// определяем сколько в текущей базе зарегестрировано кромок 
+	SQlstr="SELECT TWorks.* FROM TWorks WHERE TWorks.Type="+str(2) ;
+	gworks=adbOpen(dimcon,SQLSTR);
+		igw=adbRecCount(gworks);
+		//putmsg("ijw="+str(ijw),1);
+		if (igw>0)
+		{
+			NULLOUT=adbMoveFirst(gworks);
+			lbgparam:
+			if (!adbiseof(gworks))
+			{
+				parname="WorkID"
+				parvalue=adbgetvalue(Gworks,"WorkPos");
+				NULLOUT=adbMoveNext(gworks);
+				gosub sWork;
+				goto lbgparam;
+			}
+		}
+	gworks=adbClose(gworks);
+	workPriz=0;
+	iwpar=0;
+	//macromode trace off;
+return;
+
+sDrawBase:
+	mp="<K3Files>"
+	ffPath=MPathExpand(mp)+"\\Штампы\\";
+		if FileExist(ffPath+"BaseZn.k3")&&g_BazeZn {
+		append ffPath+"BaseZn.k3" p1[1],p1[2],p1[3] ;
+		objident  last 1 BaseZn;
+	}
+	return;
+	
+sSetgrfcoef:
+    lz=g_lz;
+	nullout=objgab3(pnt,gabs);
+	sysarr(80,temp);
+	theight temp[1];
+	if (g_lza==1)
+	{
+	  lz=lz*max(max(gabs[4],gabs[5]),70)/70;
+	 
+	
+	
+
+		coef=lz/(2*temp[1]); // Это графический коэффициент тот самый который sysvar(76) был до 2012-04-07 
+		putmsg(coef);
+
+		//dimgcoeff coef; // был до 2012-04-07
+		grfcoeff coef; // теперь это локальный графический коеффициент с  2012-04-07
+	}
+return;
+
+//==============================================================================
+//поиск Номеров значков кромки
+sFindKrzn:
+	iZnkrom=7;
+	strZNK="14|15|13|12|10|11"
+	if !FileExist(fINIname)
+	{
+		putmsg("Файл "+fINIname+" отсутствует. Будет создан автоматически",0);
+		err=PutStr(fINIname,"[KromZnak]",0);
+		err=PutStr(fINIname,"; номера стрелок используемых в качестве обозначения кромки",0);
+		err=PutStr(fINIname,"14",0);
+		err=PutStr(fINIname,"15",0);
+		err=PutStr(fINIname,"13",0);
+		err=PutStr(fINIname,"12",0);
+		err=PutStr(fINIname,"10",0);
+		err=PutStr(fINIname,"11",0);
+		err=PutStr(fINIname,"[",0);
+	}
+	else
+	{
+		nStr=GetCount(fINIname);
+
+		if nStr>0
+		{
+			psection=FindString(fINIname,"[KromZnak]",1,0); // ищем нужную секцию и получаем номер строки с которой она начинается
+			// теперь проверяем является ли строка коментарием или концом секции коментарием является символ ; концом секции символ [
+			iZnkrom=0
+			if psection>0
+			{
+				pstr=psection+1
+				strZNK=""
+				labDI:
+				errComm=FindStr(fINIname,";",pstr,0);
+				if !errComm
+				{
+					// Это номер значка кромки
+					strZNK=strZNK+iif(len(strznk)>0,"|","")+GetStr(fINIname,pstr);
+					iZnkrom=iZnkrom+1
+				}
+				pstr=pstr+1
+				if !FindStr(fINIname,"[",pstr,0)&&pstr<nStr
+				{
+					goto labDI;
+				}
+			}
+		}
+	}
+	if iZnkrom>0
+	{
+		defarr aZnromB[iZnkrom];
+		err=SplitByDelim(strZNK,"|",aZnromB)
+	}	
+return;
+//==============================================================================
+
+
+
+
