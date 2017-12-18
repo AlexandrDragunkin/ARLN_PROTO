@@ -1,0 +1,99 @@
+//-- Макропрограмма устанавливает гардеробную стойку
+defarr basep[3];
+defarr ArrFurn[3];
+global ProtoPath;
+NULLOUT=getsnap();
+NULLOUT=pushinst(1);
+onerror ERROR;
+karkas_kol=GetMCarcNumb();
+karkas_num=GetCarcNumb();
+if (karkas_kol==0)
+{
+ putmsg("Сначала надо создать мебельный каркас",0);
+ cancel;
+}
+if (karkas_kol==1)
+{
+ #karkas MBCarcase set yes;
+}
+if (karkas_kol>1&&karkas_num==0)
+{
+ #karkas MBCarcase set no yes :
+}
+macro ProtoPath+"SetInit.mac" ;
+KarkNumb=GetCarcNumb();
+
+//-- Параметры
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));	//-- Путь к папке с макропрограммами
+NULLOUT=setvarinst(2,"MacroSw",1);					//-- Текущий способ построения
+NULLOUT=getvarinst(2,"WardStType",Type,0);	//-- Тип гардеробной стойки
+NULLOUT=getvarinst(2,"WardShiftStD",OTSD,0);	//-- Отступ сзади
+NULLOUT=getvarinst(2,"WardShiftStE",OTSE,0);	//-- Отступ спереди
+ProfID=priceinfo(Type,"nomID1",0,2);		//-- Тип профиля
+ProfY=priceinfo(ProfID,"ProfY",0.1,1);		//-- Глубина профиля
+ProfX=priceinfo(ProfID,"ProfX",0.1,1);		//-- Ширина профиля
+adapt=PriceInfo(Type,"WardPostType",0,2);	//-- Тип гардеробной стойки
+if (Type==0)
+{
+ putmsg("Не установлено умолчание на тип гардеробной стойки",0);
+ putmsg("Установите его с помощью меню Заказ->Умолчания на материалы",0);
+ cancel;
+}
+// //-- Общие параметры
+// if (OTSD<ProfY/2)					//-- Если отступ из умолчаний равен 0, то отступаем на половину толщины профиля
+// {
+ // OTSD=ProfY/2;
+// }
+// if (OTSE<ProfY/2)					//-- Если отступ из умолчаний равен 0, то отступаем на половину толщины профиля
+// {
+ // OTSE=ProfY/2;
+// }
+// if (adapt==3||adapt==4)				//-- Если стойки пристенные, отступ обнуляем
+// {
+ // OTSD=0;
+// }
+OTSD=0;
+OTSE=0;
+ArrFurn[1]="350700";
+ArrFurn[2]="350800";
+ArrFurn[3]="100000";
+macro ProtoPath+"SetNicheElems.mac" 3 ArrFurn;	//-- Выбиваем какие объекты ограничат нишу
+//----------------------------------------------------------------------------------------------------------
+defarr arrin[3], arrout[14];
+arrin[1]=ProfY;
+mbget "Укажите положение гардеробной стойки:" post arrin arrout :
+basep[1]=arrout[1];
+basep[2]=arrout[2];
+basep[3]=arrout[3];
+xgab=arrout[4];
+ygab=arrout[5];
+Numb=arrout[6];
+Shift=arrout[7];
+
+//-- Строим стойку
+NicheId=getprotoid("Shkaf","Стойка гардеробная","ProtoMacro","Stoy_WardP");  //-- ID прототипа
+protoobj create "Shkaf.ptl" NicheId
+    "type"	Type
+    "W"		xgab
+    "D"		ygab-OTSD-OTSE
+    done
+basep[1]+(arrin[1]/2) basep[2]+OTSD basep[3]
+;
+objident last 1 stoyka;
+attrobj attach "KarkasNumb" done stoyka KarkNumb;
+
+macro ProtoPath+"SetNichePars.mac" stoyka -ProfY/2 basep[2]-OTSD basep[3] ProfY/2 ygab-OTSD xgab;
+if (Numb>1)
+{
+  move multicopy Numb-1 stoyka done shift 0 0;
+}
+NULLOUT=resnap();
+NULLOUT=popinst(1);
+macro ProtoPath+"SetNicheElems.mac" 0 ArrFurn;	//-- Обнуляем ограничения на выбор ниши
+exit;
+ERROR:
+offerror;
+NULLOUT=resnap();
+NULLOUT=popinst(1);
+macro ProtoPath+"SetNicheElems.mac" 0 ArrFurn;	//-- Обнуляем ограничения на выбор ниши
+exit;

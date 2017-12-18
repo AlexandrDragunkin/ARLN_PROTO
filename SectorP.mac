@@ -1,0 +1,29 @@
+//-- Прототип столешницы-сектора
+
+defarr xm[6];
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами 
+//------------------------------------------------------------------------
+PrMater=DbVar("PrMater",0); 		//-- Материал панели
+
+D=priceinfo(PrMater,"Thickness",16);   //-- Толщина столешницы-сектора
+position=116;
+Namescr="ProtoParams";
+ElemName="Столешница-сектор";
+//----------------------------------------------------------------------
+NULLOUT=pushinst(1);
+macro ProtoPath+"SetEnam.mac" ElemName;
+sy=sysvar(60);
+macro ProtoPath+"Sector.mac" ;
+sy=sy-sysvar(60);
+if (sy==0)
+{
+  exit;
+}
+#obj group all done;
+macro ProtoPath+"SetEnam.mac" ElemName;
+NULLOUT=objgab3(obj,xm);
+//-- Присваиваем атрибуты
+macro ProtoPath+"EndPanel.mac" obj position xm[4]-xm[1] xm[5]-xm[2] D PrMater Namescr;
+NULLOUT=popinst(1);
+exit;

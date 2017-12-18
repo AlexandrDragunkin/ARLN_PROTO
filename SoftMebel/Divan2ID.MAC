@@ -1,0 +1,21 @@
+// Формирование эскиза диван типовой 2-х местный
+global MacroSw  ; // Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+MacroSw=1
+
+WMFPath=DbVar("WMFPath","")
+global ProtoPath;		//-- Путь к папке с макропрограммами общей библиотеке прототипов
+global LocalPath;		//-- Путь к папке с макропрограммами локальной библиотеке прототипов
+ProtoPath=GetProtoMac("Shkaf.ptl");
+LocalPath=GetProtoMac("Softmeb.ptl");
+
+
+macro ProtoPath+"global_s.mac" ;
+macro ProtoPath+"SetInit.mac" ;
+F2000=DbVar("F2000",0)
+
+macro LocalPath+"Divan2I.mac";
+
+
+If F2000 { Exp2d Wmf Yes WMFPath+"1.WMF" [ overwrite ] }
+Else     { Exp2d Wmf No WMFPath+"1.WMF" [ overwrite ] }
+exit;

@@ -1,0 +1,12 @@
+// Добавление ниш
+global gb_xpn gb_ypn gb_zpn gb_xpk gb_ypk gb_zpk gb_KolNish; 			// Габариты Ниш
+getpar Nish x1 y1 z1 x2 y2 z2;
+if Nish>gb_KolNish { exit }
+
+gb_xpn[Nish]=x1;
+gb_ypn[Nish]=y1;
+gb_zpn[Nish]=z1;
+gb_xpk[Nish]=x2;
+gb_ypk[Nish]=y2;
+gb_zpk[Nish]=z2;
+exit

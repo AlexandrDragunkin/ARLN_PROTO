@@ -1,0 +1,167 @@
+//-- Макропрограмма установки дополнительных элементов на профиль.
+//-- Входные данные:
+//-- IDProf - ID профиля из таблицы Profiles базы данных DoorSys.mdb
+//-- x1,y1,z1 - координаты начальной точки профиля
+//-- x2,y2,z2 - координаты конечной точки профиля
+//-- g_Syst - ID системы дверей из таблицы System базы данных DoorSys.mdb
+
+global ProtoPath,g_Syst;
+global g_shift_Y;
+defarr CodNam[25];
+CodNam[1]="6500";
+CodNam[2]="6600";
+CodNam[3]="6700";
+CodNam[4]="6200";
+CodNam[5]="6100";
+CodNam[6]="9100";
+CodNam[7]="9100";
+CodNam[8]="9100";
+CodNam[9]="9100";
+CodNam[10]="9100";
+CodNam[11]="9100";
+CodNam[12]="9100";
+CodNam[13]="6300";
+CodNam[14]="9100";
+CodNam[15]="9100";
+CodNam[16]="9100";
+CodNam[17]="9100";
+CodNam[18]="9100";
+
+
+getpar IDProf x1,y1,z1 x2,y2,z2;
+
+y1=y1+g_shift_Y;
+y2=y2+g_shift_Y;
+tab_place=ProtoPath+"DoorSys.mdb";
+szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+tab_place;
+Doorscon=adbCon(szSrc);
+//-- Читаем информацию о типе дверной системы
+str_tab="SELECT * FROM System WHERE ID="+str(g_Syst);
+SysRs=adbOpen(DoorsCon,str_tab);
+ij=adbRecCount(SysRs);
+NULLOUT=adbMoveFirst(SysRs);
+IDType=adbGetValue(SysRs,"IDType");
+SysRs=adbClose(SysRs);
+//-- Читаем информацию о профилях
+str_tab="SELECT * FROM Profiles WHERE ID="+str(IDProf) ;
+ProfRs=adbOpen(DoorsCon,str_tab);
+ij=adbRecCount(ProfRs);
+NULLOUT=getsnap();
+
+NULLOUT=adbMoveFirst(ProfRs);
+ID=adbGetValue(ProfRs,"ID1");
+gosub set;
+ID=adbGetValue(ProfRs,"ID2");
+gosub set;
+ID=adbGetValue(ProfRs,"ID3");
+gosub set;
+ID=adbGetValue(ProfRs,"ID4");
+gosub set;
+ID=adbGetValue(ProfRs,"ID5");
+gosub set;
+ID=adbGetValue(ProfRs,"ID6");
+gosub set;
+ID=adbGetValue(ProfRs,"ID7");
+gosub set;
+ID=adbGetValue(ProfRs,"ID8");
+gosub set;
+ID=adbGetValue(ProfRs,"ID9");
+gosub set;
+ID=adbGetValue(ProfRs,"ID10");
+gosub set;
+ID=adbGetValue(ProfRs,"ID11");
+gosub set;
+ID=adbGetValue(ProfRs,"ID12");
+gosub set;
+ID=adbGetValue(ProfRs,"ID13");
+gosub set;
+ID=adbGetValue(ProfRs,"ID14");
+gosub set;
+ID=adbGetValue(ProfRs,"ID15");
+gosub set;
+ID=adbGetValue(ProfRs,"ID16");
+gosub set;
+NULLOUT=resnap();
+ProfRs=adbClose(ProfRs);
+DoorsCon=adbDisCon(DoorsCon);
+
+exit;
+//------------------------------------------------------------------------------
+//-- процедура читает ID установки дополнительного элемента
+//-- и принимает решение об установке или неустановке того или иного элемента
+//-- Входные параметры:
+//-  ID - ID дополнительного элемента из таблицы Profiles базы DoorSys.mdb
+//-- IDType - ID типа системы дверей из таблицы System базы DoorSys.mdb
+
+set:
+str_tab="SELECT * FROM Komplect WHERE ID="+str(ID) ;
+KompRs=adbOpen(DoorsCon,str_tab);
+ij=adbRecCount(KompRs);
+if (ij<1)
+{
+  KompRs=adbClose(KompRs);
+  return;
+}
+NULLOUT=adbMoveFirst(KompRs);
+IDSet=adbGetValue(KompRs,"IDSet");
+IDPrice=adbGetValue(KompRs,"IDPrice");
+Shift=adbGetValue(KompRs,"Shift");
+Coeff=adbGetValue(KompRs,"Coeff");
+MacroSet=adbGetValue(KompRs,"MacroSet");
+MacroExtra=adbGetValue(KompRs,"MacroExtra","");
+
+str_tab="SELECT * FROM Type_Komp WHERE ID="+str(IDSet) ;
+T_KompRs=adbOpen(DoorsCon,str_tab);
+ij=adbRecCount(T_KompRs);
+if (ij<1)
+{
+  T_KompRs=adbClose(T_KompRs);
+  return;
+}
+NULLOUT=adbMoveFirst(T_KompRs);
+Code=adbGetValue(T_KompRs,"Code");
+Name=adbGetValue(T_KompRs,"Name");
+T_KompRs=adbClose(T_KompRs);
+
+KompRs=adbClose(KompRs);
+gosub binary;
+
+ss=left(right(sbin,IDType),1); //-- Извлекаем число в IDType-овой позиции
+if (ss=="0") //-- Не рисуем дополнительный элемент
+{
+  return;
+}
+if (len(MacroSet)>0)   //-- Устанавливает элемент
+{
+  //macro ProtoPath+"SetECod" "DR"+str(IDSet);
+  macro ProtoPath+"SetECod" CodNam[IDSet];
+  macro ProtoPath+MacroSet x1,y1,z1 x2,y2,z2 IDPrice,Name,Shift,Coeff,MacroExtra;
+  macro ProtoPath+"SetECod" " ";
+}
+
+return;
+//------------------------------------------------------------------------------
+//-- Подпрограмма формирует строку - двоичное представление числа
+//-- Входные параметры:
+//-- Code - число
+//-- Sbin - строка
+binary:
+Sbin="";
+loopb:
+NCode=Code-int(Code/2)*2;
+if (NCode==1)
+{
+  Sbin="1"+Sbin;
+}
+else
+{
+  Sbin="0"+Sbin;
+}
+Code=int(Code/2);
+if (Code==0)
+{
+  sbin="0"*10+sbin;
+  return;
+}
+goto loopb;
+

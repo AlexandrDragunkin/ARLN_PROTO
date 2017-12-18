@@ -1,0 +1,78 @@
+//-- Создание эллиптической столешницы
+
+defarr xm[6];
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами
+NULLOUT=GetVarInst(2,"MacroSw",MacroSw,0); //-- Способ построения
+
+getpar
+x y z		                //-- Правый нижний дальный угол столешницы
+Length, Width;          //-- Длина и ширина и радиус эллиптической столешницы
+
+//---------------------------------------------------------------
+position=158;  //-- Номер прототипа эллиптической столешницы
+Namescr="ProtoParams";
+FurnType="011000";
+NULLOUT=pushinst(1);
+NULLOUT=getsnap();
+NULLOUT=getvarinst(1,"ElemName",ElemName," ");  //-- Имя элемента
+NULLOUT=getvarinst(1,"PanMater",PanMater,0);    //-- Материал
+NULLOUT=getvarinst(1,"g_BandPan",BandPan,0,1);  //-- Тип кромки
+NULLOUT=getvarinst(1,"g_CBandPan",PanCKro,0,1); //-- Цвет кромки
+NULLOUT=getvarinst(1,"PanDir",PanDir,0);        //-- Направление текстуры
+PanDir=iif(PanDir==0,1,iif(PanDir==90,2,0));
+
+NULLOUT=setvarinst(1,"FurnType",FurnType);    //-- FurnType
+if (ElemName==""||ElemName==" ")
+{
+  ElemName="Эллиптическая столешница";
+}
+D=priceinfo(PanMater,"Thickness",16); //-- Толщина эллиптической столешницы
+//---------------------------------------------------------------------
+if (MacroSw==0)
+{
+  gosub SimpleStol;
+}
+else
+{
+  protoobj create "Shkaf.ptl" 158
+    "x"       Length
+    "y"       Width
+    "PrMater" PanMater
+    "Nshp"    PanDir
+    "Band"    BandPan
+    "Face_col" PanCKro
+    done
+    x y z ;
+  NULLOUT=setvarinst(2,"MacroSw",MacroSw);          //-- Текущий способ построения
+  objident last 1 Pan;
+}
+NULLOUT=resnap();
+NULLOUT=popinst(1);
+exit;
+//--------------------------------------------------------------
+SimpleStol:
+macro ProtoPath+"SetEnam.mac" "";
+object_1=sysvar(60);
+getpar x,y,r,PrMater,Nshp,Typ_Kro,0;
+
+macro ProtoPath+"StEllipseForm.mac" Length,Width,PanMater,PanDir,BandPan,PanCKro;
+object_2=sysvar(60)-object_1;
+move last object_2 done x y z nocopy;
+setucs move x y z;
+#stl group last object_2 done;
+NULLOUT=objgab3(stl,xm);
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"x",Length);
+err=AddScratch(ScrMod,FurnType,"y",Width);
+err=AddScratch(ScrMod,FurnType,"PrMater",PanMater);
+err=AddScratch(ScrMod,FurnType,"Nshp",PanDir);
+err=AddScratch(ScrMod,FurnType,"Face_col",PanCKro);
+err=AddScratch(ScrMod,FurnType,"Band",BandPan);
+NULLOUT=writescratch(ScrMod,Namescr,stl);
+NULLOUT=TermScratch(ScrMod);
+NULLOUT=addattrpi(stl,1,position);
+macro ProtoPath+"SetEnam.mac" ElemName;
+//-- Присваиваем атрибуты
+macro ProtoPath+"EndPanel.mac" stl position xm[4]-xm[1] xm[5]-xm[2] D PanMater "";
+return;

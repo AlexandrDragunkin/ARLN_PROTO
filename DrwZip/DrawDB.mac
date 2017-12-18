@@ -1,0 +1,114 @@
+//-- Макропрограмма создает базу данных для панелей.
+//-- Выходные параметры:
+//-- База выгрузки
+//-- таблица holespar с параметрами отверстий на панели
+
+global ProtoPath ;
+defarr error[10];
+NULLOUT=initarray(error,"");
+
+defarr strq[5];
+pathApp=MPathExpand("<appdata>")
+tab_place=pathApp+"\\AllDim.mdb";
+if (fileexist(tab_place))
+{
+  NULLOUT=removefile(tab_place);
+  if (NULLOUT==0)
+  {
+  	error[1]="Мебельная база заблокирована.";
+  	error[2]="Возможно, предыдущая попытка построения чертежей закончилась неудачно."
+  	error[3]="Возможно работу блокирует антивирусная программа";
+  	error[4]=" ";
+  	error[5]="Рекомендуется перезапустить К3 либо настроить антивирусную программу";
+  	macro Protopath+"ShowSmartError.mac" "Ошибка создания мебельной базы."
+  	5 error;
+  	cancel;
+  }
+}
+if (MebelBase(tab_place)==0)
+{
+	error[1]="Мебельная база не создана.";
+	error[2]="Возможно, предыдущая попытка построения чертежей закончилась неудачно."
+	error[3]="Возможно работу блокирует антивирусная программа";
+	error[4]=" ";
+	error[5]="Рекомендуется перезапустить К3 либо настроить антивирусную программу";
+	macro Protopath+"ShowSmartError.mac" "Ошибка создания мебельной базы."
+	5 error;
+	cancel;
+}
+szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+tab_place;
+dimcon=adbCon(szSrc);
+//------------------------------------------------------------------------------
+str_tab="CREATE TABLE holespar (";
+str_tab=str_tab+"UnitPos INTEGER, ";
+str_tab=str_tab+"holnum INTEGER, ";
+str_tab=str_tab+"hold1 REAL, ";
+str_tab=str_tab+"holh1 REAL, ";
+str_tab=str_tab+"holtypes INTEGER, ";
+str_tab=str_tab+"holxv REAL, ";
+str_tab=str_tab+"holyv REAL, ";
+str_tab=str_tab+"holzv REAL, ";
+str_tab=str_tab+"holx REAL, ";
+str_tab=str_tab+"holy REAL, ";
+str_tab=str_tab+"holz REAL, ";
+str_tab=str_tab+"holside VARCHAR)";
+
+holrs=adbModify(dimcon,str_tab);
+
+str_tab="CREATE TABLE radpar (";
+str_tab=str_tab+"radnum INTEGER, ";
+str_tab=str_tab+"radtxt VARCHAR(255), ";
+str_tab=str_tab+"radleng REAL, ";
+str_tab=str_tab+"radcrit REAL, ";
+str_tab=str_tab+"radx0 REAL, ";
+str_tab=str_tab+"rady0 REAL, ";
+str_tab=str_tab+"radz0 REAL, ";
+str_tab=str_tab+"radxn REAL, ";
+str_tab=str_tab+"radyn REAL, ";
+str_tab=str_tab+"radzn REAL, ";
+str_tab=str_tab+"radcross INTEGER)";
+
+radrs=adbModify(dimcon,str_tab);
+//------------------------------------------------------------------------------
+str_tab="CREATE TABLE dimpar (";
+str_tab=str_tab+"dimnum INTEGER, ";
+str_tab=str_tab+"dimvert INTEGER, ";
+str_tab=str_tab+"dimweight INTEGER, ";
+str_tab=str_tab+"dimtxt VARCHAR(255), ";
+str_tab=str_tab+"dimxl1 REAL, ";
+str_tab=str_tab+"dimyl1 REAL, ";
+str_tab=str_tab+"dimzl1 REAL, ";
+str_tab=str_tab+"dimxl2 REAL, ";
+str_tab=str_tab+"dimyl2 REAL, ";
+str_tab=str_tab+"dimzl2 REAL, ";
+str_tab=str_tab+"dimrl REAL)";
+
+dimrs=adbModify(dimcon,str_tab);
+//------------------------------------------------------------------------------
+str_tab="CREATE TABLE leadpar (";
+str_tab=str_tab+"leadnum INTEGER, ";
+str_tab=str_tab+"leadtxt VARCHAR(255), ";
+str_tab=str_tab+"leadxc REAL, ";
+str_tab=str_tab+"leadyc REAL, ";
+str_tab=str_tab+"leadzc REAL, ";
+str_tab=str_tab+"leadx0 REAL, ";
+str_tab=str_tab+"leady0 REAL, ";
+str_tab=str_tab+"leadz0 REAL, ";
+str_tab=str_tab+"leadcorr REAL, ";
+str_tab=str_tab+"leadxbeg REAL, ";
+str_tab=str_tab+"leadybeg REAL, ";
+str_tab=str_tab+"leadxend REAL, ";
+str_tab=str_tab+"leadyend REAL, ";
+str_tab=str_tab+"leadgroup INTEGER)";
+leadrs=adbModify(dimcon,str_tab);
+
+strq[1]="INSERT INTO holespar (UnitPos, holnum, hold1, holh1, holtypes, holxv, holyv, holzv, holx, holy, holz, holside)";
+strq[2]=" SELECT DISTINCT UnitPos, HolePos, Diameter, Depth, (SELECT PriceID FROM TElems WHERE UnitPos=HolderPos) AS HolderPos, Round(MatrA13,3), Round(MatrA23,3), Round(MatrA33,3), ";
+strq[3]=" Round(MatrA14,3), Round(MatrA24,3), Round(MatrA24,3), ";
+strq[4]=" iif(Round(MatrA13)=1,'B',(iif(Round(MatrA13)=-1,'C',(iif(Round(MatrA23)=1,'D',(iif(Round(MatrA23)=-1,'E',";
+strq[5]="(iif(Round(MatrA33)=1,'F',(iif(Round(MatrA33)=-1,'A','X'))))))))))) FROM THoles";
+
+holrs=adbModify(dimcon,strq);
+holrs=adbClose(holrs);
+dimcon=adbDisCon(dimcon);
+exit;

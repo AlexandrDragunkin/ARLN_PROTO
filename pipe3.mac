@@ -1,0 +1,29 @@
+// Создание объекта - труба
+Global ProtoPath;
+// global colour;
+// global popka;
+
+getpar xbase,ybase,zbase,xsec,D1,Hor_Gap,PocketID;
+ProfID=priceinfo(PocketID,"MatID",0);
+type=priceinfo(PocketID,"UnitID",0);
+macro ProtoPath+"SetEnam.mac" priceinfo(ProfID,"MATNAME","Трубка полки");
+Macro ProtoPath+"SetProfP.mac" ProfID 0 0 0 0 0 0 0 ;
+
+if (type==1) {  //обувница E
+Macro ProtoPath+"MakeProf.mac" xbase+Hor_Gap	        ybase+D1-18+188	zbase-55
+                               xbase+xsec-Hor_Gap	ybase+D1-18+188	zbase-55 ;
+
+Macro ProtoPath+"MakeProf.mac" xbase+Hor_Gap	        ybase+D1-18+78	zbase+20
+                               xbase+xsec-Hor_Gap	ybase+D1-18+78	zbase+20 ;
+
+	       }
+if (type==2) {  //обувница S
+Macro ProtoPath+"MakeProf.mac" xbase+Hor_Gap+9	        ybase+D1-18+185	zbase-66
+                               xbase+xsec-Hor_Gap-9	ybase+D1-18+185	zbase-66 ;
+
+Macro ProtoPath+"MakeProf.mac" xbase+Hor_Gap+9	        ybase+D1-18+75	zbase+12
+                               xbase+xsec-Hor_Gap-9	ybase+D1-18+75  zbase+12 ;
+
+	       }
+
+exit

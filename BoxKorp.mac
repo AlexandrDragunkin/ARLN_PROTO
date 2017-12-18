@@ -1,0 +1,28 @@
+//-- Подпрограмма создания корпуса ящика
+//-- Входные параметры:
+//-- W,D,H - размеры корпуса ящика по ширине, глубине и высоте
+//-- Xsd,Zsd - сдвиг корпуса ящика по оси X и по оси Z соответственно
+//-- BxType - Тип ящика
+//-- PrMater - Материал корпуса ящика
+//-- BcMater - Материал дна ящика
+//-- Col_Kro; - Цвет кромки ящика
+global ProtoPath;
+global BoxKType ;   // Тип корпуса ящика
+
+getpar W,D,H,Xsd,Zsd,BxType,PrMater,BcMater,Col_Kro;
+
+BoxKType=BxType;    // Тип корпуса ящика
+Box_mac=PriceInfo(BxType,"MacroFile","",2);  //-- Читаем макро построения ящика
+object_1=sysvar(60);
+if (Len(Box_mac)==0) //-- Если макро нет, берем умолчание
+{
+	macro Protopath+"Bxstol1.mac" w d h PrMater BcMater Col_Kro;
+}
+else 
+{ 
+	macro Protopath+Box_mac w d h PrMater BcMater Col_Kro;
+}
+object_2=sysvar(60)-object_1;
+move last object_2 done Xsd 0 Zsd nocopy ;
+macro Protopath+"SetMat.mac" PrMater;
+exit;

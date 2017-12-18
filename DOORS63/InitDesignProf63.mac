@@ -1,0 +1,93 @@
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+//Инициализация дизайна профиля створки
+global ProtoPath g_nameSf, g_namePs;
+global g_DRSysN,g_DRSysI,g_DRNumb,g_Ndors,g_DRS;
+global g_DRDesN,g_DRDesI,g_DRDesNumb,g_DRP,g_DRTyFI,g_DRFsN, g_DRTySt;
+global g_MoveType;
+global g_k3fPath;
+
+getpar g_key_prev;
+
+vardialog=2
+
+next:
+vDef=iif(isvardef("g_drp")==0,1,findinarray(g_DRDesI,g_drp,1,g_DRDesNumb));
+vDef=iif(vDef==0,1,vDef);
+
+
+if vardialog==1 { gosub Dialog1; }
+if vardialog==2
+{
+ gosub Dialog2;
+ if (ok_flag!=0)
+ {
+  DRS=g_DRDesN[ok_flag];
+ }
+}
+
+
+
+if ok_flag==0
+{
+
+  g_key_prev=0
+  exit;
+}
+g_namePs=drs;
+g_DRP=g_DRDesI[findinarray(g_DRDesN,DRS,1,g_DRDesNumb)];   //--Определение ID производителя
+//g_MoveType=g_DRTyFI[g_DRDesNumb];   //-- Определение типа движения системы дверей
+g_MoveType=g_DRTyFI[ok_flag];   //-- Определение типа движения системы дверей
+=g_MoveType
+=drs
+=g_drp
+=g_DRDesNumb
+=ok_flag
+//:
+g_key_prev=1;
+
+exit;
+
+Dialog1:
+#ok_flag
+setvar
+"Установка систем дверей в нишу"
+""
+left
+"Определите дизайна профиля створки "+g_nameSf
+done
+str 	listonly
+	let j=1
+	LoopJ3:
+	 //if (g_DRDesI[J]==DRS) {
+	 if J==1 {
+	  current
+	 }
+	 g_DRDesN[j]
+	 if (j<g_DRDesNumb) { Let j=j+1 goto LoopJ3 }
+	done
+	"Тип профиля дверной системы:"    DRS
+
+done;
+return;
+
+Dialog2:
+#ok_flag
+  alternative
+  "Установка систем дверей в нишу"
+  picbox
+  text
+  center
+  "Определите дизайн профиля створки "+g_nameSf
+  done
+  default vDef
+  let j=1
+  LoopJ:
+        g_DRDesN[j]  g_k3fPath+g_DRFsN[j]
+  if (j<g_DRDesNumb) { Let j=j+1 goto LoopJ }
+done;
+return;

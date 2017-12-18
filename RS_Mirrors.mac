@@ -1,0 +1,14 @@
+//---Макропрограмма зеркальности объекта.
+global ProtoPath;
+MBCarcase groupall;
+fixing hide all done;
+objident prompt "Укажите каркас" : KARKAS;
+macro ProtoPath+"RS_MirObj.mac" KARKAS;
+//---------------------------------------------------------------------------------
+karknumb=getmcarcnumb();
+MBCarcase groupall;
+fixing create all done;
+select attribute "(KarkasNumb=="+str(karknumb)+")&&left(FurnType,3)==\"100\"" done;
+OBJECT=getselnum(1);
+smart move OBJECT :;
+exit;

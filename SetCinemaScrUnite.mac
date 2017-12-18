@@ -1,0 +1,42 @@
+//-- Макро объединения двух скретч-атрибутов Cinema
+getpar
+ScrCin1				//-- первый набор параметров
+ScrCin2				//-- второй набор параметров
+ScrCinDone		//-- результирующий скретч-атрибут
+;			
+defarr MoveName[20];
+//-- Узнаем количество перемещений в первом и во втором наборах параметров.
+err=GetScratch(ScrCin1,"Main","MoveCount",MoveCount1,SubstName);
+err=GetScratch(ScrCin2,"Main","MoveCount",MoveCount2,SubstName);
+
+//-- Создаем новый набор параметров
+Namescr="$CinemaScr";
+NULLOUT=writescratch(ScrCin2,Namescr,0);
+ScrCinDone=ReadScratch(Namescr,0);
+if (MoveCount1==0)
+{
+	exit;
+}
+//-- Меняем количество перемещений в новом наборе
+NULLOUT=AddScratch(ScrCinDone,"Main","MoveCount",MoveCount1+MoveCount2);
+//-- Добавляем в новый набор перемещения из второго набор параметров.
+i=-1;
+LOOP:
+i=i+1;
+KolName1=cntvarscr(ScrCin1,"Move"+str(i));
+Err=NameVarScr(ScrCin1,"Move"+str(i),MoveName);
+ff=0;
+LOOPF:
+ff=ff+1;
+NULLOUT=GetScratch(ScrCin1,"Move"+str(i),MoveName[ff],ParVal,SubstName);
+NULLOUT=AddScratch(ScrCinDone,"Move"+str(i+MoveCount2),MoveName[ff],ParVal);
+if (ff<KolName1)
+{
+	goto LOOPF;
+}
+if (i<MoveCount1-1)
+{
+	goto LOOP;
+}
+exit;
+

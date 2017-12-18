@@ -1,0 +1,662 @@
+//stDrawAll1.mac
+//
+//============================================
+// (c) Драгункин Александр г.Дубна 2004-2014 г.
+//============================================
+//создание чертежей длинномеров
+//
+//    СТОЛЕШНИЦЫ+ВОДООТБОЙНИКИ+СТ.ПАНЕЛИ
+//    КОЗЫРЬКИ
+//
+//Что ищем
+//typ=0
+getpar Typ ; // 0-столешницы 1-козырек
+
+global
+	g_DirDrawLn           //Все файлы чертежей длинномеров размещать в отдельной папке 0-нет 1-да
+	g_DrawBlank           //Чертежи на бланках 0-нет 1-да
+	g_DrawSpec            //Формировать спецификацию 0-нет 1-да
+	g_DrawCod             //Способ обозначения чертежа 0-относительный по первому вхождению 1-абстрагированный код
+	g_DrawStamp           //Ключ запроса информации для штампа бланка из файла stamp.dbf и из файла ZAKAZ.dbf =0 только stamp.dbf =1
+	g_FormStamp           //Ключ запроса формы штампа 0-не запрашивать 1-регулярно
+	g_PgFileDraw          //Каждый лист чертежа в отдельном файле 0-нет 1-да
+	g_PgFileSpec          //Каждый лист спецификации в отдельном файле 0-нет 1-да
+	g_GroupDoc            //Формировать групповой чертеж по всем документам 0-нет 1-да
+	g_DrawTaile           //формировать деталировку 0-нет 1-да
+	g_keyTile
+	g_legenda				//Формировать легенду по кромке и материалам
+	Bl_Zoom               //
+	ProtoPath 
+	g_ip 
+	Idkrom
+	ZnakKrom
+	Ukas
+	ElUkas
+	CurentNum //текущий номер обрабатываемой столешницы
+	CurentMat
+	CBDPAth
+	StUkas //Указатель на штриховку столешницы
+	TyZnak  //Номер значка кромки с 10 по 15
+	L_SUPPORT
+	g_DrawBase
+	g_colkrom
+;
+
+defarr aUnicB[1000] aUnicC[1000] aUnicD[1000] aUnicE[1000];
+defarr xp[300] yp[300] Npp[300] Dp[300] Lp[300] Fp[300] obj1[10];
+defarr errinf[3];
+
+
+g_colkrom=iif(isvardef("g_colkrom")==0," ",g_colkrom);
+g_DrawBase=0;
+//=======================Текущая версия
+;defarr aa[7];
+err=sysarr(82,aa)
+NumCVer=aa[5]
+//=======================
+TyZnak=9
+g_ip=0;
+defarr IdKrom[20] ZnakKrom[20] Ukas[20] ;
+NULLOUT=GetSnap();
+setucs save "%%stdrawall%%" ;
+CurentCL=SysVar(40) ;
+//color 12 ;
+lwidth 0.5 ;
+defarr G[16] ;
+layers New "KonturySt" ;
+layers set "KonturySt" ;
+ElUkas=0 //счетчик указателей на кромку
+idPro="144;179" //		id прототипа угловой ....
+
+ObjecVB=0
+if typ==0 {
+   select attribute "LongsType==3" done ; //Засветили водоотбойники
+   ObjecVB=SysVar(61);
+}
+
+gosub LongAngl ; //ищем угловые столешницы
+select  attribute  "LongsType=="+str(Typ) done ; //Засветили столешницы
+Objects=Sysvar(61);
+if Objects==0 { 
+	exit ; 
+}
+
+defarr
+ObjSt[Objects]      //Указатели на длинномеры
+ChainTm[2*Objects]    //Номер объекта входящего в цепочку ;
+GabChain[Objects,6] //Номер цепочки Xmin Ymin Zmin Xmax Ymax Zmax
+ObjKon[Objects]     //Указатели на чертеж длинномера
+xm[6]
+StUkas[5]           //Указатель на штриховку столешницы
+arr1[3]  arr2[3]
+ArrSys[13]          //Значения текущих свойств
+ArrDim[20]          //Текущие свойства размера
+Info[48]
+aprInfo[10]         //массив свойств для запроса в aPrInf
+;
+//=============засвеченные в массив==================
+maxGabx=0;
+maxGaby=0;
+maxGabz=0;
+i=0
+met1:
+if i<Objects 
+{
+	i=i+1;
+	ObjSt[i]=GetSelNum(i) ;          //Все засвеченные объекты засунули в массив
+	// заодно ищем максимальный габарит
+	err=objgab3(ObjSt[i],xm) ;
+			maxGabx=max(xm[4]-xm[1],maxGabx);
+			maxGaby=max(xm[5]-xm[2],maxGaby);
+			maxGabz=max(xm[6]-xm[3],maxGabz);
+			
+	goto met1;
+}
+//====================================================
+//  Ищем куски непараллельные XOY поворачиваем их как надо и суем куда подальше
+i=0;
+d_sdv=0;
+met14:
+if i<Objects 
+{
+	i=i+1;
+	setucs save "temp14";
+	setucs lcs ObjSt[i] ;
+	PtransCS(0,3,0,0,0,pX,pY,pZ);
+	PtransCS(0,3,0,0,100,pX1,pY1,pZ1);
+	if (pZ1-pZ)<99.9
+	{
+		// Значит кусок криво стоит и надо его куда подальше закинуть и повернуть параллельно XOY
+		setucs gcs;
+		place ObjSt[i] ;
+		nullout=objgab3(ObjSt[i],xm);
+		d_sdv=d_sdv+(xm[6]-xm[3])+10;
+		move ObjSt[i] done 0 0 -5000+d_sdv;
+	}
+	setucs restore "temp14";
+	goto met14;
+}
+//====================================================
+FlagKr=0            //флаг присутствия кромки (исходное состояние)
+//
+StUkas[1]=16
+StUkas[2]=19
+StUkas[3]=22
+StUkas[4]=23
+StUkas[5]=47
+//
+
+//нумерация
+macro L_support+"Re_numLN.mac" typ ;
+
+
+CCloc:
+If (!IsAttrdef("ChainLoc")) { 
+	Attribute Create "ChainLoc" "Принадлежность цепочке" Real 5 0 ; 
+}
+else { 
+	attribute delete "ChainLoc" done ;  
+	goto CCloc ; 
+}
+
+CBDPath=MPathExpand("<appdata>")+"\\";
+;macro L_support+"FindVbDb.mac" ;    // cсоздаем dbf для записи информации по водоотбойнику
+
+//Создание плоской заготовки
+;macro L_support+"FindKromDb.mac" ; // cсоздаем dbf для записи информации по кромке
+;macro L_support+"FindStDb.mac"   ; // cсоздаем dbf для записи информации по куску
+vport zoomvp 3 ;
+stdisplay vi_approximation 0.2      //Установить точность аппрксимации дуг при отображении на экране.
+
+   //==========
+   //В ГСК
+   //1.Построение цепочек соприкасающихся объектов количество цепочек может быть равно числу объектов
+   //двумерный массив Число объектов; Ссылка на номер объекта входящего в цепочку ;
+
+   if g_DrawTaile!=1 {    //нет       //формировать деталировку 0-нет 1-да
+      GoSub InitChain ;
+   }
+   if g_DrawTaile!=0 {   //да        //формировать деталировку 0-нет 1-да    //Выполнять следует до сборки
+      GoSub InitChainT ;
+   }
+
+   setucs gcs ;
+   //
+   //==========
+stdisplay vi_approximation 0.02  //Установить точность аппрксимации дуг при отображении на экране.
+
+GoSub DwCh ;
+
+gosub ivisibleAll;
+setucs gcs ;
+   visible attribute "ChainLoc>0" ;
+   invisible attribute "LongsType=="+str(typ) ;
+   layers set "0" ;
+   color CurentCL ;
+   NULLOUT=ReSnap();
+   setucs restore "%%stdrawall%%" ;
+   //Очищаем масив ElUkas
+   //i=0
+   //metElU:
+   //if i<20 {
+   //   i=1+i
+   //   if ukas[i]!=0 {
+   //      Idkrom[ukas[i]]=0
+
+   //      }
+   //goto metElU ;
+   //}
+   InitArray(Idkrom,0);
+   InitArray(ZnakKrom,0);
+   InitArray(Ukas,0);
+   //Информация в чертеж
+   if GrKStart>0 {
+      'grfcoeff GrKStart ;
+   }
+   if (g_DrawTaile!=1)&&(g_legenda!=0) 
+   {  //Если не рисуем деталировку
+      macro L_support+"DrawStTabl2.mac" chk ;  // по кромке
+      if FlagKr==1 { macro L_support+"DrawKrTabl.mac" 1 ; }     //по кромке
+      if (ObjecVB>0)&&(Typ==0) { //  по водоотбойникам  и КФД
+         macro L_support+"VbTabl.mac" ObjSt objects ;
+         macro L_support+"DrawVbTabl.mac" ;
+      }
+   }
+
+   //macro L_support+"DrawSpTabl.mac" ;    //по стеновым панелям
+   //macro L_support+"DrawSSTabl.mac" ;    //по стяжкам столешниц
+   'grfcoeff CurGrK ; //Возвращаем  значение графического коэффициента
+   visible attribute "krom"  ;
+   visible attribute "kromznak"  ;
+   visible attribute "StrihSt"  ;
+   //===========================
+   //Цепочки в группы готовим для бланков
+   defarr grp[chk] ;
+   //putmsg(chk);
+   j=0
+   met4:
+   if j<chk {
+      j=j+1
+      group attribute "ChainLoc=="+str(j) done ;
+      objident last 1 grp[j] ;
+      GoSub SetPrAttrib ;
+   goto met4 ;
+   }
+   
+   macro L_SUPPORT+"Win_PltLnG.mac" typ ;
+   
+   //===========================
+   'zoom all
+   exit ;
+//*********************************************************************
+
+
+LongAngl:
+   	NS=sysvar(60)
+	i=0
+	Pro:
+	i=i+1
+	if (i<=NS) {
+		Ob=GetObjNum(i)
+		VatFT=(Left(GetAttr(Ob,"FurnType","000000"),4));
+		VatOT=GetAttr(Ob,"ObjType",-99);
+		 if  (VatFT=="030"+str(Typ+1))&&(VatOT==2) {
+			 explode ob done ;
+		 }
+							
+
+		//----Это старый вариант
+		// if (IsAssign("$ProtoInfo",Ob)) { 	//	выбран прототип
+			// f=GetAttrText(Ob,"$ProtoInfo",G)
+			// if (f>1)	{
+				// if (instr(1,idPro,str(G[2]),0)>0) {		//
+					// f1=0
+					// val=0
+					// f1=GetProtoVal(ob,"LongsMat",val) ;
+					// if (f1>0) {
+						// move ob done  0 0 0 copy 1
+						// explode last 1 done
+					// } 
+					// else {
+						
+						// errinf[1]="В прототипе углового покрытия для типа "+str(Typ)+" не задан материал!"
+						// errinf[2]="Для продолжения работы нажмите ENTER"  
+						// macro Protopath+"ShowSmartInfo.mac" "Ошибка в установках."  2 errinf;
+
+					// }
+				// }
+			// }
+        // }
+		// VatLT=GetAttr(Ob,"LongsType",-99);
+		// VatOT=GetAttr(Ob,"ObjType",-99);
+		// if  (VatLT==Typ)&&(VatOT==2) {
+			// explode ob done ;
+		// }
+		goto Pro;
+		}
+return;
+AddChain:
+   j=StObj
+   met12:
+   if j<AnObj {
+      j=j+1
+      if !CompareObj(pnt,ObjSt[j]) {
+         Ds=DistObjToObj(pnt,ObjSt[j],arr1,arr2) ;
+         eps_n=1.e-6
+         if Ds<=eps_n { //значит соприкасаются или пересекаются
+         if IsAssign("ChainLoc",ObjSt[j])==0 {
+            Attrobj Attach  "ChainLoc"  Done ObjSt[j] chk ;
+            err=objgab3(ObjSt[j],xm) ;
+            GabChain[chk,1]=min(GabChain[chk,1],xm[1])
+            GabChain[chk,2]=min(GabChain[chk,2],xm[2])
+            GabChain[chk,3]=min(GabChain[chk,3],xm[3])
+            GabChain[chk,4]=max(GabChain[chk,4],xm[4])
+            GabChain[chk,5]=max(GabChain[chk,5],xm[5])
+            GabChain[chk,6]=max(GabChain[chk,6],xm[6])
+         }
+         else { goto met12 ; }
+            //Заносим в цепочку
+            Chi=Chi+1 //номер в цепочке
+            ChainTm[Chi]=j
+            //macro GetProtoMac("Shkaf.ptl")+"SortArr.mac" j ChainTm Chi ;
+            FlagCh=1
+         }
+      }
+      goto met12 ;
+   }
+return ;
+
+DwCh:
+
+i=0
+met2:
+//color 12 ;
+lwidth 0.5 ;
+layers set "KonturySt" ;
+gosub ivisibleAll;
+if i<Objects 
+{
+	
+	visible attribute "LongsType=="+str(Typ) ;
+	i=i+1
+	//ObjSt[i]=GetSelNum(i) ;
+	CurentNum=i ; //текущий номер обрабатываемой столешницы
+
+	Result=SetLongObj(ObjSt[i]);
+	CurentMat1=getlongmat(err,CurentMat) ;
+
+	//putmsg("*****************CurentMat="+str(CurentMat),1);
+	post=0;
+	//==== наличие постформинга в поле P4 Pr_inf должно быть присвоено 1 или 2
+	//aPrInfo[1]=SysVar(1)+"Pr_Inf.dbf";aPrInfo[2]="LPRICEID=="+str(CurentMat);aPrInfo[3]="P4";aPrInfo[4]=10;
+	//macro L_support+"GetDbfInf.mac" aPrInfo;
+	//ndzp=aPrInfo[1];
+	//post=PriceInfo(CurentMat,"edgeSign",0) ; //iif(isvardef("ndzp")==5,aPrInfo[2],0);
+	//==== 
+	//aPrInfo[1]=SysVar(1)+"Pr_Inf.dbf";aPrInfo[2]="LPRICEID=="+str(CurentMat);aPrInfo[3]="PRICEID";aPrInfo[4]=10;
+	//macro L_support+"GetDbfInf.mac" aPrInfo;
+	//ndzp=aPrInfo[1];
+	CMat=CurentMat; //iif(isvardef("ndzp")==5,aPrInfo[2],0);
+	//putmsg(str(CMat),1);
+	//putmsg(str(post),1);
+
+	//====
+	Length=GetAttr(ObjSt[i],"Length",0);
+	name=GetLngMatN(CurentMat);  // после этой функции значение CurentMat изменится с LPRICEID на PRICEID
+	//putmsg(name+" "+str(CurentMat),1);
+	wd_plita=PriceInfo(CurentMat,"N1",0)
+	Chloc=GetAttr(ObjSt[i],"Chainloc",0);
+	evro=GetAttr(ObjSt[i],"Eurocut",0);
+	
+	
+	if Chloc==0 {
+		
+		//macro ProtoPath+"ShowSmartError.mac" "Ошибка расстановки" 1 "Длинномеры обозначенные цветом";
+		goto met2 ;
+	}
+	xm[1]=GabChain[Chloc,1]
+	xm[2]=GabChain[Chloc,2]
+	xm[4]=GabChain[Chloc,4]
+	xm[5]=GabChain[Chloc,5]
+
+	Gosub GrfCh ;    //изменяем графический коэффициент в соответствии с габаритами цепочки
+
+	if Chloc==1 
+	{ 
+		GrKstart=GrK 
+	}
+	macro L_support+"StTabl.mac"    Length wd_plita evro post;  //Куски в базу
+
+	GoSub SetTaileCR ;  //только для деталировки
+
+	bylo=sysvar(60) ;
+
+	if NumCVer<"6.2" 
+	{ 
+		macro L_support+"LongKr1.mac"   ObjSt[i] ; //Рисуем значки
+	} 
+	else             
+	{ 
+		stl=ObjSt[i];
+		fixing create ObjSt[i] done ;
+		if isvardef("stl")!=16
+		{
+			objident last 1 ObjSt[i];
+		}
+		macro L_support+"KontyKr62.mac" ObjSt[i] post; //Рисуем значки
+	} 
+	stalo=Sysvar(60)-bylo ;
+	if (stalo>0)&&(FlagKr==0) 
+	{ 
+		FlagKr=1; //В случае появления кромки изменяем значение флага для вывода информации в легенде
+	}
+
+	//запись в базу
+
+	if stalo>0 
+	{
+		If (IsAttrdef("ChainLoc"))   
+		{
+			attrobj attach "ChainLoc" done group last stalo done Chloc ;
+		}
+		macro L_support+"KromTabl.mac" ;     //пишем в базу
+	}
+
+	if NumCVer<"6.2" { macro L_support+"stDraw5.mac"  ObjSt[i] ; } //Контур куска столешницы
+	else             
+	{ 
+		macro L_support+"stDraw62.mac" ObjSt[i] ; //Контур куска столешницы
+	} 
+
+	visible ObjSt[i] ;
+
+	GoSub ReTaileCR ;    //только для деталирвки
+
+	setucs lcs  ObjSt[i] ;
+
+	invisible ObjSt[i] done ;
+
+	goto met2 ;
+}
+   chk=chk-1
+//
+i=0
+met5:
+if i<chk {
+   i=i+1
+   gosub ivisibleAll;
+   
+   visible attribute "DwChainLoc=="+str(i) ;
+   
+   nvis=sysvar(60)-sysvar(63)
+
+   
+   if sysvar(60)-sysvar(63)>1 {
+	   onerror mNext;
+   boolean union full attribute "DwChainLoc=="+str(i) done ;
+	   goto met7;
+	   mNext:
+	   offerror;
+	   goto met5;
+	   met7:
+	   offerror;
+   objident last 1 pnts ;
+   }
+   else {
+		if sysvar(60)-sysvar(63)==1 {
+			select all ;
+			
+			pnts=getselnum(1);
+			
+		}
+		else {
+				goto met5;
+		}
+   }
+      if g_DrawTaile!=0 { //Если рисуем деталировку
+         SetUcs GCS ;
+         Place pnts  ;
+      }
+
+   macro L_support+"cutxyA.mac" pnts ;     //получили контура столешниц
+   objident last 1 sec ;
+
+   //проверяем можно ли полученные контура покрыть дугами. если да, то кроем
+   macro L_support+"APsec.mac" sec ;
+   objident last 1 sec ;
+
+
+   delete attribute "DwChainLoc=="+str(i) done ;
+   setucs gcs ;
+   Nulout=objgab3(sec,xm) ;
+   Objects1=Sysvar(60)
+   
+   Gosub GrfCh ; //изменяем графический коэффициент в соответствии с габаритами контура
+   Gosub SParDimTX; // устанавливаем параметры текста размеров
+   //macro L_support+"qdim5m.mac" 1 sec xm[1] xm[2] xm[3] ;
+   	nulout=InitArray(aUnicB,-999999);
+	nulout=InitArray(aUnicC,-999999);
+	nulout=InitArray(aUnicD,-999999);
+	nulout=InitArray(aUnicE,-999999);
+   macro L_support+"qDimD6.mac"
+	1 sec xm[1] xm[2] xm[3]
+	g_ip
+	xp
+	yp
+	Npp
+	Dp
+	Lp
+	Fp
+	aUnicB //-- массив с точками исключениями
+	aUnicC
+	aUnicD
+	aUnicE
+;
+   Objects1=Sysvar(60)-Objects1
+   'grfcoeff CurGrK ; //Возвращаем  значение графического коэффициента
+   dimtprec OldDT ; //	Команда  устанавливает  точность  отображения  значений
+    attrobj attach "LongDim" "ChainLoc" done group last objects1 done 1 i ;
+   //If (IsAttrdef("ChainLoc"))   { attrobj attach  done last objects1  ;  }
+   delete sec done ;
+   visible   attribute "ChainLoc=="+str(i)    ;
+   invisible attribute "LongsType=="+str(typ) ;
+   if g_DrawTaile!=0 
+   { //Если рисуем деталировку
+      CurentNum=i
+	  if (g_legenda!=0) 
+	  {
+		macro L_support+"DrawKrTabl.mac" i ;
+	  }
+   }
+   goto met5 ;
+}
+return ;
+
+//==========================
+SetPrAttrib:
+   if IsVarDef("iatpr")==0 { iatpr=0 }
+   iatpr=iatpr+1
+   if (!IsAttrdef("IPRLN"+str(typ))) { Attribute Create "IPRLN"+str(typ) "Номер сборки проф типа "+str(typ) Real 5 0  ; }
+   attrobj attach "IPRLN"+str(typ) done grp[j] iatpr  ;
+return;
+
+//==========================
+GrfCh:   //изменяем графический коэффициент в соответствии с габаритами контура
+  CurMasGr=SysVar(76)   ; // текущее значение масштаб графических элементов
+  err=SysArr(43,ArrSys) ; // массив свойств созаваемого объекта
+  CurGrK=ArrSys[3]      ; // Определяем значение графическкого коэффициента
+  err=SysArr(80,ArrDim) ; // массив свойств размеров
+  HsLinDim=ArrDim[1]    ; // Определяем высоту символа линейного размера
+  XgabCn=Xm[4]-Xm[1]
+  YgabCn=Xm[5]-Xm[2]
+  KXgab=iif(Bl_Zoom,XgabCn,min(maxGabX,maxGabY))/210
+  KYgab=iif(Bl_Zoom,YgabCn,max(maxGabX,maxGabY))/296
+  Kgab=Max(KXgab,KYgab) ;
+  GrK=Kgab/CurMasGr
+  if GrK>0 
+	{ 
+		'grfcoeff GrK ; 
+	}
+return;
+
+//==========================
+InitChain:  //Формируем  цепочки по реальному положению объектов
+i=0
+Stobj=0
+Chk=1   //номер цепочки
+met11:
+if i<Objects {
+   i=i+1
+   Chi=1   //номер внутри цепочки
+   FlagCh=0
+   pnt=ObjSt[i]
+   ChainTm[Chi]=i
+   if !IsAssign("ChainLoc",pnt) {
+      Attrobj Attach  "ChainLoc"  Done pnt Chk ;
+      err=objgab3(pnt,xm) ;
+      GabChain[chk,1]=xm[1]
+      GabChain[chk,2]=xm[2]
+      GabChain[chk,3]=xm[3]
+      GabChain[chk,4]=xm[4]
+      GabChain[chk,5]=xm[5]
+      GabChain[chk,6]=xm[6]
+   }
+   else { goto met11 ; }
+
+   AnObj=Objects
+
+   GoSub AddChain ;
+
+   i1=0
+   met13:
+   if i1<Chi {  //Дописываем ветви цепочки
+      StObj=i1
+      i1=i1+1
+      pnt=ObjSt[ChainTm[i1]]
+      GoSub AddChain ;
+      goto met13 ;
+   }
+   Chk=Chk+1   // Число цепочек
+   goto met11
+   }
+return ;
+
+//==========================
+InitChainT:  //Формируем  мнимые цепочки для деталировочного чертежа
+i=0
+Stobj=0
+Chk=1   //номер цепочки
+//GrKstart=GrK
+met6:
+if i<Objects {
+   i=i+1
+   Attrobj Attach  "ChainLoc"  Done ObjSt[i] i ;
+   err=objgab3(ObjSt[i],xm) ;
+      GabChain[chk,1]=xm[1]
+      GabChain[chk,2]=xm[2]
+      GabChain[chk,3]=xm[3]
+      GabChain[chk,4]=xm[4]
+      GabChain[chk,5]=xm[5]
+      GabChain[chk,6]=xm[6]
+   goto met6 ;
+   }
+   AnObj=Objects
+   Chk=Objects+1   // Число цепочек
+return ;
+
+//==========================
+SetTaileCR:
+   if g_DrawTaile!=0 { //Если рисуем деталировку
+      ObjOld=ObjSt[i]
+      move ObjSt[i] done 0 0 0 copy 1 ;
+      Objident last 1 ObjST[i] ;
+      SetUcs GCS ;
+      Place ObjSt[i]  ;
+   }
+return;
+
+//==========================
+ReTaileCR:
+   if g_DrawTaile!=0 { //Если рисуем деталировку
+      visible ObjOld ;
+      delete ObjSt[i] done ;
+      ObjSt[i]=ObjOld
+   }
+return;
+
+//==========================
+SParDimTX: // устанавливаем параметры текста размеров
+// определяем значение точности
+#ld ldim 3ddim 0 0 0 100 0 0 parallel 50 50 0 ;
+err=getdiminfo(ld,info) ;
+delete ld ;
+oldDT=info[29] //точность
+dimtprec 1 ; //	Команда  устанавливает  точность  отображения  значений
+//	размеров.  Параметр   задаёт  величину  округления  истинного размерного значения.
+return;
+//----------------------
+ivisibleAll:
+   if sysvar(60)-sysvar(63)>0 {
+		invisible all ;
+   }
+return;

@@ -1,0 +1,358 @@
+Slot
+-------- end
+-------- start
+-------- panel_id
+-------- id
+-------- width
+-------- depth
+-------- is_plane
+-------- panel
+
+
+
+Matrix3d
+-------- overturn_x
+-------- overturn_y
+-------- inverse
+-------- rotate
+-------- at
+-------- translate
+
+
+
+OrderInfo
+-------- customer
+-------- phone_number
+-------- order_name
+-------- executor
+-------- salon
+-------- additional_info
+-------- firm
+-------- address
+-------- order_number
+-------- acceptor
+
+
+
+Vector2d
+-------- normalize
+-------- transform
+-------- perp_right
+-------- perp_left
+-------- normalized
+-------- length
+-------- y
+-------- x
+
+
+
+Machine
+-------- Slot
+-------- Milling
+-------- StartPanel
+-------- Drilling
+-------- Filletting
+-------- EndPanel
+-------- StartProcessing
+-------- EndProcessing
+
+
+
+warning
+Object has no attribute __dict__
+
+
+PanelId
+-------- handle
+
+
+
+Circle
+-------- Divide
+-------- orientation
+-------- Transform
+-------- radius
+-------- center
+
+
+
+Point3d
+-------- transform
+-------- x
+-------- y
+-------- z
+
+
+
+message
+Object has no attribute __dict__
+
+
+error
+Object has no attribute __dict__
+
+
+BoundingBox2d
+-------- min
+-------- max
+-------- size_x
+-------- size_y
+
+
+
+makedirs
+Object has no attribute __dict__
+
+
+__package__
+Object has no attribute __dict__
+
+
+NomenclatureId
+-------- handle
+
+
+
+Drilling
+-------- beta
+-------- diameter
+-------- alfa
+-------- panel_id
+-------- id
+-------- depth
+-------- position
+-------- panel
+
+
+
+Path
+-------- is_parametric
+-------- panel_id
+-------- bounding_box
+-------- id
+-------- is_tcuts
+-------- is_plane_path
+-------- segments
+-------- panel
+
+
+
+Line
+-------- Divide
+-------- Transform
+-------- start_pt
+-------- end_pt
+
+
+
+Point2d
+-------- transform
+-------- x
+-------- y
+
+
+
+__doc__
+Object has no attribute __dict__
+
+
+PropertyId
+-------- handle
+
+
+
+Panel
+-------- operations
+-------- Transform
+-------- bounding_box
+-------- id
+-------- size_with_fillet
+-------- cut_b
+-------- cut_c
+-------- cut_d
+-------- cut_e
+-------- size
+-------- major_place
+-------- paths
+-------- common_pos
+-------- curve_path
+-------- panel_length
+-------- texture_dir
+-------- thickness
+-------- width
+-------- Overturn
+-------- Rotate
+-------- is_incise
+-------- figure_piece
+-------- form_type
+-------- panel_width
+-------- name
+-------- Translate
+-------- nomenclature
+-------- length
+-------- attributes
+-------- hash_code
+
+
+
+Settings
+-------- cmdfile_path
+-------- machine_name
+-------- working_area
+-------- python_path
+-------- machine_module_name
+-------- database_name
+
+
+
+Vector3d
+-------- normalize
+-------- normalized
+-------- transform
+-------- y
+-------- length
+-------- x
+-------- z
+
+
+
+__file__
+Object has no attribute __dict__
+
+
+Work
+-------- params
+
+
+
+Curve
+-------- Transform
+-------- work_ids
+-------- perpendicular
+-------- poly_id
+-------- path_id
+-------- line_id
+-------- bounding_box
+-------- tangent
+-------- eval
+-------- params
+-------- path
+-------- works
+
+
+
+Nomenclature
+-------- group_id
+-------- values
+-------- name
+-------- kind_id
+-------- id
+-------- group_name
+-------- parent_id
+-------- units_name
+-------- price
+-------- material_type_id
+-------- properties
+-------- glevel
+-------- units_id
+-------- article
+-------- material_type_name
+-------- kind_name
+
+
+
+WorkId
+-------- handle
+
+
+
+DrillingId
+-------- handle
+
+
+
+Filletting
+-------- shift_thickness
+-------- nomenclature
+-------- id
+-------- shift_height
+
+
+
+PathId
+-------- handle
+
+
+
+__name__
+Object has no attribute __dict__
+
+
+Model
+-------- paths
+-------- works
+-------- Property
+-------- Work
+-------- Nomenclature
+-------- nomenclatures
+-------- order_info
+-------- properties
+-------- Path
+-------- panels
+-------- Panel
+
+
+
+Property
+-------- ident
+-------- name
+-------- type_id
+-------- type_name
+-------- id
+-------- mode
+-------- type_value_id
+-------- status_id
+
+
+
+Matrix2d
+-------- transform
+
+
+
+Allowance
+-------- id
+-------- allowance
+
+
+
+Bending
+-------- id
+
+
+
+Milling
+-------- shift_thickness
+-------- id
+-------- mill_id
+-------- mill
+-------- shift_height
+
+
+
+Attribute
+-------- name
+-------- value
+
+
+
+SlotId
+-------- handle
+
+
+
+Arc
+-------- end
+-------- Divide
+-------- middle_pt
+-------- orie

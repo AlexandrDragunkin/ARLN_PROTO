@@ -1,0 +1,17 @@
+//-- Штриховка элемента
+getpar p1 p2 p3 flagH;
+#pa rectangle 3points
+     p1[1] p1[2] p1[3]
+     p2[1] p2[2] p2[3]
+     p3[1] p3[2] p3[3] ;
+if (flagH==0) //-- <ез штриховки
+{
+  exit;
+}
+hatchtype 0 ;       //-- Тип штриховки
+hatchcoeff 5 ;      //-- Коэффициэнт штриховки
+hatchangle -45;     //-- Угол наклона штриховки
+#ha  hatch pa done;
+hatchangle 0;
+group last 2 done;
+exit;

@@ -1,0 +1,52 @@
+//-- Программа заполняет массив параметрами систем дверей в соответствии со строкой фильтра
+//-- Входные параметры:
+//-- SQLStr - SQL строка фильтра
+//-- Массив g_DRSysN - массив названий систем дверей
+//-- Массив g_DRSysI - массив ID систем дверей
+//-- g_DRNumb - количество записей в массиве
+//-- Данные берутся из таблицы System базы данных DoorSys.mdb
+
+global ProtoPath;
+global g_DRSysN,g_DRSysI,g_DRNumb;
+
+getpar SQLStr;
+
+tab_place=ProtoPath+"DoorSys.mdb";
+//-- Если база отсутствует - выходим
+if (fileexist(tab_place)==0)
+{
+  exit;
+}
+szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+tab_place;
+Doorscon=adbCon(szSrc);
+res=adbChkMdbTbl(tab_place,"System");
+if (res==0)
+{
+  Doorscon=adbDisCon(Doorscon); //-- Разрываем соединение
+  exit;
+}
+SysRs=adbOpen(Doorscon,SQLStr);
+ij=adbRecCount(SysRs);
+ts=iif(ij==0,1,ij);
+defarr g_DRSysN[ts],g_DRSysI[ts];
+if (ij<1)
+{
+  SysRs=adbClose(SysRs);
+  exit;
+}
+NULLOUT=adbMoveFirst(SysRs);
+
+i=1;
+LC:
+g_DRSysI[i]=adbGetValue(SysRs,"ID");
+g_DRSysN[i]=adbGetValue(SysRs,"Name");
+if (i<ij)
+{
+  i=i+1;
+  NULLOUT=adbMoveNext(SysRs);
+  goto LC;
+}
+g_DRNumb=ij;
+SysRs=adbClose(SysRs);
+Doorscon=adbDisCon(Doorscon);
+exit;

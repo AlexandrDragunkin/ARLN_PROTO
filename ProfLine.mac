@@ -1,0 +1,52 @@
+//-- Установка профиля на линию
+global ProtoPath;
+defarr Param[20];
+defarr w1[3] w2[3];
+
+onerror final;
+NULLOUT=fltrtype(0);
+NULLOUT=fltrtype(2);
+NULLOUT=fltrtype(4);
+objident prompt "Укажате отрезок или дугу, по которой нужно построить профиль" : point ;
+NULLOUT=fltrtype(0);
+offerror;
+typO=GetObjType(point);
+macro ProtoPath+"SetEnam.mac" "Профиль";
+if (typO==2)  //-- Отрезок
+{
+  nP=GetObjGeo(point,Param);
+  if (nP==6)
+  {
+    w1[1]=Param[1];
+    w1[2]=Param[2];
+    w1[3]=Param[3];
+    w2[1]=Param[4];
+    w2[2]=Param[5];
+    w2[3]=Param[6];
+    ptranscs(3,2,w1[1],w1[2],w1[3],w1[1],w1[2],w1[3]);
+    ptranscs(3,2,w2[1],w2[2],w2[3],w2[1],w2[2],w2[3]);
+    macro Protopath+"PutProf.mac" w1 w2 ;
+  }
+}
+if (typO==4)  //-- Дуга
+{
+  nP=GetObjGeo(point,Param);
+  w1[1]=Param[8];
+  w1[2]=Param[9];
+  w1[3]=Param[10];
+  w2[1]=Param[11];
+  w2[2]=Param[12];
+  w2[3]=Param[13];
+  An1=Param[14]*180/pi();
+  AnR=Param[15]*180/pi();
+  NULLOUT=GetSnap();
+  setucs lcs point ;
+  ptranscs(3,2,w1[1],w1[2],w1[3],w1[1],w1[2],w1[3]);
+  ptranscs(3,2,w2[1],w2[2],w2[3],w2[1],w2[2],w2[3]);
+  macro Protopath+"PutAPrf.mac" w1 w2 An1 AnR;
+  NULLOUT=ReSnap();
+}
+//------------------------------------------
+final:
+NULLOUT=fltrtype(0);
+exit;

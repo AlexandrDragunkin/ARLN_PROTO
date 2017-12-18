@@ -1,0 +1,13 @@
+//-- Задание параметров выреза под короб
+//-- Входные параметры:
+//-- HasDuct - наличие короба
+//-- ShiftDuct - сдвиг короба
+//-- WidthDuct - ширина короба
+//-- DepthDuct - глубина короба
+
+getpar HasDuct, ShiftDuct, WidthDuct, DepthDuct;
+NULLOUT=setvarinst(1,"HasDuct",HasDuct);
+NULLOUT=setvarinst(1,"ShiftDuct",ShiftDuct);
+NULLOUT=setvarinst(1,"WidthDuct",WidthDuct);
+NULLOUT=setvarinst(1,"DepthDuct",DepthDuct);
+exit;

@@ -1,0 +1,49 @@
+//-- Выбор типового проекта
+defarr altxt[11], altfl[11];
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+
+NULLOUT=getsnap();
+
+altxt[1]="Треугольная полка";
+altxt[2]="Полка со скосом";
+altxt[3]="Полка со скруглением";
+
+altfl[1]=PicturesPath+"AnglePanPick.jpg";
+altfl[2]=PicturesPath+"AnglePan2Pick.jpg";
+altfl[3]=PicturesPath+"RadPick.jpg";
+
+#altnum
+alternative
+"Угловые полки"
+picbox
+text
+center
+"Выберите тип угловой полки"
+done
+default 1
+altxt[1]  altfl[1]
+altxt[2]  altfl[2]
+altxt[3]  altfl[3]
+
+done;
+
+if (altnum==0)
+{
+  goto finish;
+}
+if (altnum==1)
+{
+  macro ProtoPath+"Tr_polka.mac"  ;
+}
+if (altnum==2)
+{
+  macro ProtoPath+"Ug_polka.mac" ;
+}
+if (altnum==3)
+{
+  macro ProtoPath+"kr_polka.mac"  ;
+}
+finish:
+NULLOUT=ReSnap();
+exit;

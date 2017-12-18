@@ -1,0 +1,10 @@
+global ProtoPath ;
+
+FileName="Doorresh.scr"
+scr=InitScratch();
+err=AddScratch(scr,"Doorresh","d1",45);
+err=AddScratch(scr,"Doorresh","d2",15);
+err=AddScratch(scr,"Doorresh","nz",3);
+err=ScrtchToFile(scr,ProtoPath+FileName);
+TermScratch(scr);
+exit;

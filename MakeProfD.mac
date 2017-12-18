@@ -1,0 +1,91 @@
+//-- Программа установки профиля
+//-- Входные данные
+//-- xp1, yp1, zp1 - координаты начальной точки установки профиля
+//-- xp2, yp2, zp2 - координаты конечной точки установки профиля
+//-- IDPrf - ID профиля из таблицы Profiles
+//-- PrfP_1 - Подрез начальной точки
+//-- PrfP_2 - Подрез конечной точки
+//-- PrfSd_X - Сдвиг по Х ЛСК
+//-- PrfSd_Y - Сдвиг по Y ЛСК
+//-- PrfAngle - Угол поворота вокруг оси (град)
+//-- PrfAng_1 - Угол подрезки 1 стороны
+//-- PrfAng_2 - Угол подрезки 2 стороны
+//-- ColorRail - Цвет профиля
+
+global ProtoPath;
+
+getpar
+xp1,yp1,zp1,
+xp2,yp2,zp2,
+IDProf,
+PrfP_1,
+PrfP_2,
+PrfSd_X,
+PrfSd_Y,
+PrfAngle,
+PrfAng_1,
+PrfAng_2,
+ColorRail;
+
+//-- Если профиль фиктивный (отсутствующий) - рисуем прямую линию
+if (IDProf==0)
+{
+  line xp1,yp1,zp1 xp2,yp2,zp2 done;
+  exit;
+}
+
+tab_place=ProtoPath+"DoorSys.mdb";
+szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+tab_place;
+Doorscon=adbCon(szSrc);
+//-- Читаем информацию о профилях
+str_tab="SELECT * FROM Profiles WHERE ID="+str(IDProf) ;
+ProfRs=adbOpen(DoorsCon,str_tab);
+ij=adbRecCount(ProfRs);
+if (ij!=1)
+{
+  errcode="Количество профилей с ID  "+str(IDProf)+" равно "+str(ij);
+  gosub err;
+  goto end;
+}
+NULLOUT=adbMoveFirst(ProfRs);
+ID=adbGetValue(ProfRs,"IDProf");
+//------------------------------Подбор профиля по цвету----------------------------------------------
+ColProfName=priceinfo(ColorRail,"MatName","Нет",1);		//--Читаем название цвета профиля
+TypeProf=priceinfo(ID,"ProfileType",0,1);			//--Читаем тип  профиля
+if (ColProfName!="Нет")
+{
+	ColorProf=npgetbywhere(1," [Name] LIKE '% "+str(ColProfName)+"' AND [ProfileType] = "+str(TypeProf),"ArrProf");
+	if (ColorProf!=0)
+	{
+	 ArrKol=getdimarray(ArrProf);
+	 if (ArrKol>0)
+	 {
+		ID=ArrProf[1];
+	 }
+	}
+}
+//---------------------------------------------------------------------------------------------------
+macro ProtoPath+"SetEnam.mac" "Профиль системы дверей" ;
+Macro ProtoPath+"SetProfC.mac" ID,PrfP_1,PrfP_2,PrfSd_X,PrfSd_Y,
+                               PrfAngle,PrfAng_1,PrfAng_2,ColorRail;
+Macro ProtoPath+"MakeProf.mac" xp1,yp1,zp1 xp2,yp2,zp2;
+
+end:
+ProfRs=adbClose(ProfRs);
+DoorsCon=adbDisCon(DoorsCon);
+exit;
+//==============================================================================
+//-- Вывод окна сообщения об ошибке
+//-- Входные параметры:
+//-- errcode - код ошибки
+err:
+//-- ShowSmartError
+#ok_flag
+     alternative "Ошибка базы данных"
+     msgbox text "Некорректно заполнена база данных систем дверей"
+     " "
+     errcode
+     done
+     "  OK  "
+     done;
+return;

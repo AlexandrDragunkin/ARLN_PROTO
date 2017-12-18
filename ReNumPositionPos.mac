@@ -1,0 +1,4 @@
+//-- Проставить изделиям в качестве номера номер позиции
+
+NULLOUT=attrcopy("Position","CommonPos");
+exit;

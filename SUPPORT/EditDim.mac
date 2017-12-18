@@ -1,0 +1,47 @@
+///////////////////////////////////// //
+//редактирование в размерах допусков  //
+//    по ГОСТ 6449.1-82               //
+//   (C) Драгункин А.Р.               //
+//        Дубна 2007 г.               //
+////////////////////////////////////  //
+NULLOUT=GetVarInst(2,"TolceVar",TolceVar,0);
+global ProtoPath, L_SUPPORT;
+
+debug=1 //отладка =1 работа =0
+getpar auto ;
+if auto!=1 { objident : pnt ; } // 0-указать размер курсором   1  указатель на размер
+else { getpar pnt ; }
+//;Dimedit pnt  :  :
+TypPnt=GetObjType(pnt) ;
+if TypPnt!=10 { goto metend ; } // проверяем. размер ли?
+defarr val[48] ;
+err=GetDimInfo(pnt,val) ;
+i=0
+met1:
+if i<48&&debug==1 {
+i=i+1;
+//PutMsg("val["+str(i)+"]= "+str(val[i]));
+goto met1 ;
+}
+dst=val[1]
+if val[2]==1 { goto metend ; }  //если размер угловой, то для него допуска не действуют.
+if val[2]==2 { goto metend ; }  //если размер радиус, то для него допуска не действуют.
+if tolcevar!=3 { ;macro L_Support+"ToleranS.mac"   dst ; }
+delete pnt done ;
+setucs save "_@EditDim" ;
+setucs gcs ;
+if val[2]==0 { ;ldim 3ddim  val[9] val[10] val[11] val[12] val[13] val[14] free val[3] val[4] val[5]  ; } // ^val[6] val[7] val[8]
+if val[2]==2 { ;Rdim 3point  val[9] val[10] val[11] val[12] val[13] val[14] val[3] val[4] val[5]  ;        }
+if val[2]==3 {
+   PCenX=val[9]+(Val[12]-val[9])/2
+   PCenY=val[10]+(Val[13]-val[10])/2
+   PCenZ=val[11]+(Val[14]-val[11])/2
+   ddim 2point  PcenX PcenY PcenZ    val[12] val[13] val[14]  val[6] val[7] val[8];
+   }
+setucs restore "_@EditDim" ;
+setucs delete "_@EditDim" ;
+dimtext 0 "<> " ;
+dimtext 2 "R<>"  ;
+dimtext 3 "%%c<>";
+metend:
+exit ;

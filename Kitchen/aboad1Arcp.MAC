@@ -1,0 +1,37 @@
+//-- Создание объекта - стол односекционный дугообразный
+global MacroSw; //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global ProtoPath;		//-- Путь к папке с макропрограммами общей библиотеке прототипов
+global LocalPath;		//-- Путь к папке с макропрограммами локальной библиотеке прототипов
+ProtoPath=GetProtoMac("Shkaf.ptl");
+LocalPath=GetProtoMac("Kitchen.ptl");
+MacroSw=0;
+
+w=DbVar("Шир",500);			  //-- Ширина
+d=DbVar("Глуб",600);			//-- Глубина
+h=DbVar("Выс",822);			  //-- Высота
+//-------------------------------------------------------
+ТипКонт=1;     //-- Прямой
+Верхний=0;     //-- Нижний
+ObjTyp=0;      //-- Мебельный
+PlcTyp=0;      //-- Нижний
+BiblNum=252;   //-- В библиотеке ID=252
+FurnType="100000";
+//-------------------------------------------------------
+
+macro ProtoPath+"BegUnit.mac" "" ;
+macro ProtoPath+"ScrBoxGet.mac" 0; //-- Создание Scratch атрибута ящика
+macro LocalPath+"aboad1Arc.mac" ;
+
+//-- Ставим размеры
+macro ProtoPath+"aDimLine.mac" w  d h  ТипКонт Верхний;
+//-- Линии контакта
+macro ProtoPath+"aContLine.mac" w d d h 0 ТипКонт Верхний;
+#Boad group all done;
+//-- Присваиваем атрибуты
+macro ProtoPath+"SetEnam.mac" "Стол односекционный дугообразный";
+macro ProtoPath+"EndUnit.mac" w d h ;
+//-- Присваиваем атрибуты
+macro ProtoPath+"FurnAttr.mac" ObjTyp PlcTyp BiblNum FurnType;
+macro ProtoPath+"OldArtic.mac" ;
+macro ProtoPath+"Scrcopatr.mac" ; //-- Запись в объект Scratch атрибута
+exit;

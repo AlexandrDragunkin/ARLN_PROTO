@@ -1,0 +1,5 @@
+//-- Установить ориентацию крепежа панели
+global OverFixType;
+getpar Over;
+OverFixType=Over
+exit;

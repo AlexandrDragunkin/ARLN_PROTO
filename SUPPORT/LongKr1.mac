@@ -1,0 +1,221 @@
+//Проверка длинномера (столешницы) на наличие кромки.
+//Расстановка значков кромки и значков постформинга.
+
+//objident : pnt ;
+global
+IdKrom
+ZnakKrom
+Ukas
+ElUkas
+CurentNum //текущий номер обрабатываемой столешницы
+TyZnak  //Номер значка кромки с 10 по 15
+L_SUPPORT
+;
+getpar pnt ;
+global ProtoPath;
+If (!IsAttrdef("Kromznak"))  { Attribute Create "Kromznak" "Значок Кромка на чертеже" Real 12 5  ; }
+If (!IsAttrdef("Krom"))  { Attribute Create "Krom" "Кромка на чертеже" Real 12 5  ; }
+layers New "Krom" ;
+
+err=getobjtype(pnt) ;
+=err
+if err!=7 { exit }
+//исследуем на предмет наличия кромок
+setucs gcs ;
+N=Getcntobjg(pnt);
+If N==1 { exit ; }
+defarr obj[N] xm[6] objz[1000] geo[15] til[3] kr1g[6] kr2g[6] xmobA[6] xmobB[6] ;
+err=GetArrObjg(pnt,obj);
+
+
+//Ищем центр габаритов куска
+Err=ObjGab3(pnt,xm) ;
+Xc=xm[1]+(xm[4]-xm[1])/2 ;
+Yc=xm[2]+(xm[5]-xm[2])/2 ;
+Zc=xm[3]+(xm[6]-xm[3])/2 ;
+
+//Считываем атрибуты у элементов
+
+i=0
+met1:
+if i<N {
+   i=i+1
+   att=GetAttr(obj[i],"PriceID",-999);
+   if att!=-999
+   {
+     if NumIdkrom==0&&att>0
+     {
+      SizArr=GetDimArray(idKrom) ;
+      i_Krom=0
+      labKrom:
+      if i_Krom<SizArr
+      {
+         i_krom=i_Krom+1
+         if idKrom[i_krom]==0
+         {
+         TyZnak=TyZnak+1
+            ZnakKrom[i_krom]=TyZnak
+            idKrom[i_krom]=att
+            ElUkas=ElUkas+1 //Индекс указателя  0 присвоен в StDrawAll2
+         Ukas[ElUkas]=att //Указатель
+            SizArr=i_Krom;
+            NumIdkrom=i_Krom;
+         }
+         goto labKrom;
+      }
+     }
+//      if idKrom[att]==0 {
+//         TyZnak=TyZnak+1
+//         idKrom[att]=TyZnak
+
+//         ElUkas=ElUkas+1 //Индекс указателя  0 присвоен в StDrawAll1
+//         Ukas[ElUkas]=att //Указатель
+    }
+      //извлекаем кромку
+      extract pnt obj[i] done ;
+      objident last 1 krom ;
+      //сечем обрабатываем сечение
+      //Cut krom done 3points xm[1] xm[2] zc @10 0 0 @0 10 0;
+      macro L_Support+"cutxyA.mac" krom ;
+      Objident last 1 znak ;
+      #l1 Line 0 0 0 1 0 0 ;
+      objident last 1 l1 ;
+      attrobj copy  krom all l1 ;
+
+             if (GetObjType(znak)==7)  {   //Это условие возникает если кромка одного типа и замкнута по периметру
+                //Надо оставить только внешний (максимальный) контур
+                Obj7=SysVar(60) ;
+                explode znak done ;
+                obj7=SysVar(60)-Obj7+1 ; //количество контуров из разваленной группы должно быть 2
+                if obj7!=2 { exit ; }
+                Select last 2 done ;
+                znak1=getselnum(1)  ;
+                znak2=getselnum(2)  ;
+                =objgab3(znak1,xmobA)  ; gbx1=xmobA[4]-xmobA[1]  ; gby1=xmobA[5]-xmobA[2] ; gbz1=xmobA[6]-xmobA[3]
+                =objgab3(znak2,xmobA)  ; gbx2=xmobA[4]-xmobA[1]  ; gby2=xmobA[5]-xmobA[2] ; gbz2=xmobA[6]-xmobA[3]
+                if (gbx1>gbx2)||(gby1>gby2)||(gbz1>gbz2) { znak=znak1 ; delete znak2 done ; }
+             else { znak=znak2 ; delete znak1 done ; }
+            Test1=TestArcsPath(znak,0.5);
+            if test1==1 {
+               arcs_path znak  ;
+               objident last 1 znak ;
+               }
+             //*******************************
+             gosub KrZnak ;
+             add pnt krom done ;   //Возвращаем кромку
+             goto met1 ;
+             }
+             if (GetObjType(znak)==5)  {
+                  Test1=TestArcsPath(znak,0.5);
+                   if test1==1 {
+                      arcs_path znak  ;
+                      objident last 1 znak ;
+                       }
+                //Убираем часть контура которая ближе к центру столешницы
+                          //ищем в контуре элементы, типа линия, короче 5 мм
+                          chprop color znak done 12 ;
+                           N1=Getcntobjg(znak);
+                           err=GetArrObjg(znak,objz);
+                           i1=0
+                           met2:
+                           if i1<N1 {
+                              i1=i1+1
+                              TypElem=getobjtype(objz[i1]) // 2-отрезок 4-дуга
+                              if typElem==2 {
+                                 =GetObjGeo(objz[i1],geo) ;
+                                 #dss dist  geo[1] geo[2] geo[3] geo[4] geo[5] geo[6] ;
+                                 //PTransCS(2,3,geo[1],geo[2],geo[3],geo[1],geo[2],geo[3]) ;
+                                 //PTransCS(2,3,geo[4],geo[5],geo[6],geo[4],geo[5],geo[6]) ;
+
+                                 if dss<5&&dss>0.001 {  //короче 5 мм
+                                    objects=sysvar(60);
+                                    oldeps=SysVar(32)
+                                    if SysVar(32)>(1.e-3) { err=SetEpsD(1.e-3) }
+                                    editpath znak break  geo[1] geo[2] geo[3]  geo[4] geo[5] geo[6] done ;
+                                    objects=sysvar(60)-objects+1;
+                                    err=SetEpsD(oldeps)
+
+                                    select last objects done;
+                                    i2=0
+                                    met3:
+                                    if i2<objects { //Вырезаем их проверяем сколько элементов получилось
+                                       i2=i2+1
+                                       =i2
+                                       ppn=getselnum(i2);
+                                       =i1 =N1 =i2 =objects
+                                       #lenppn  clength ppn  ;
+                                       if (Getcntobjg(ppn)==1)&&(lenppn<5)   {  // это линия
+                                          delete ppn done ;
+                                          objects=objects-1
+                                       }
+                                    goto met3 ;
+                                    }
+                                    //Исследуем объкты, измеряем расстояния и принимаем решение
+                                    if objects==2 {
+                                    select last 2 done;
+                                    objident getselnum(1) kr1 ;
+                                    objident getselnum(2) kr2 ;
+                                    err=objgab3(kr1,kr1g) ;
+                                    err=objgab3(kr2,kr2g) ;
+                                    Xc1=Kr1g[1]+(Kr1g[4]-Kr1g[1])/2 ;
+                                    Yc1=Kr1g[2]+(Kr1g[5]-Kr1g[2])/2 ;
+                                    Zc1=Kr1g[3]+(Kr1g[6]-Kr1g[3])/2 ;
+                                    Xc2=Kr2g[1]+(Kr2g[4]-Kr2g[1])/2 ;
+                                    Yc2=Kr2g[2]+(Kr2g[5]-Kr2g[2])/2 ;
+                                    Zc2=Kr2g[3]+(Kr2g[6]-Kr2g[3])/2 ;
+
+                                    #dss1 dist Xc Yc Zc Xc1 Yc1 Zc1 ;
+                                    #dss2 dist Xc Yc Zc Xc2 Yc2 Zc2 ;
+                                    if dss1>dss2 {
+                                       delete kr2 done;
+                                       znak=kr1 ;
+                                    }
+                                    else {
+                                       delete kr1 done;
+                                       znak=kr2 ;
+                                    }
+                                    //*******************************
+                                    gosub KrZnak ;
+                                    add pnt krom done ;   //Возвращаем кромку
+                                    goto met1 ; }
+                                    else { objident last 1 znak ; }
+                                 }
+                              }
+                              goto met2;
+                           }
+             }
+
+             else {
+                  Putmsg("Объект не контур") ;
+                  exit;
+                  }
+
+      add pnt krom done ;   //Возвращаем кромку
+
+      //err=ObjGab3(znak,xm) ;
+      Xcz=xm[1]+(xm[4]-xm[1])/2 ;
+      Ycz=xm[2]+(xm[5]-xm[2])/2 ;
+      Zcz=xm[3]+(xm[6]-xm[3])/2 ;
+      //move znak done
+   }
+   =att
+   goto met1 ;
+   }
+
+exit;
+
+ //*********************
+ Krznak:
+        attrobj copy l1 all znak ;
+        chprop layer znak done "krom" ;
+        attrobj attach "krom" done znak i ;
+        // на каждый элемент контура обозначающего кромку надо поставить соответствующий значок
+        //Ставим значки
+        macro L_support+"postZ1auto.mac" iif(NumIdkrom>0,ZnakKrom[NumIdkrom],0)  znak Xc Yc Zc ;  //idKrom[att] znak Xc Yc Zc ;
+        =idkrom[att]
+        =att
+        attrobj attach "kromZNAK" done znak iif(NumIdkrom>0,ZnakKrom[NumIdkrom],0) ;        //znak idKrom[att];
+        delete l1 ;
+ return;
+
+

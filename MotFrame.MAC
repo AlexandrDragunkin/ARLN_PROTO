@@ -1,0 +1,98 @@
+//-- Создание выдвижной рамки для навесных элементов
+global ProtoPath;
+defarr MatProp[2];
+defarr ValProp[2];
+w=DbVar("w",450);						//-- Ширина
+d=dbvar("d",450);						//-- глубина
+typeF=DbVar("typeF",0);			//-- Тип рамки
+BL=DbVar("BL",0);						//-- Кронштейн слева
+BR=DbVar("BR",0);						//-- Кронштейн справа
+x=0;
+y=0;
+z=0;
+ots_l=0;
+ots_r=0;
+
+//-- Дополнительные отступы для подбора рамы
+if (BL==1)
+{
+ ots_l=priceinfo(typeF,"ShiftX",0,2);					//-- отступ кронштейна левого
+}
+if (BR==1)
+{
+ ots_r=priceinfo(typeF,"ShiftX",0,2);					//-- отступ кронштейна правого
+}
+
+if (BL==2)
+{
+ ots_l=priceinfo(typeF,"LengthX",0,2);				//-- ширина расширителя левого
+}
+if (BR==2)
+{
+ ots_r=priceinfo(typeF,"LengthX",0,2);				//-- ширина расширителя правого
+}
+
+FurnType=priceinfo(typeF,"FurnType","000000",2);
+position=getprotoid("Shkaf","Рамка выдвижная для навесных элементов","ProtoMacro","MotFrameP");  //-- ID прототипа
+MacroFrame=PriceInfo(typeF,"MacroFile","",2);
+Namescr="ProtoParams";
+
+//-- Подбор рамки по ширине и глубине
+GoodsID=typeF;     //-- ID типа рамки
+GoodsProp="ListMat";
+MatProp[1]="Width";
+MatProp[2]="ToleranceY";
+ValProp[1]=w-ots_l-ots_r;		//--подбираем ширину с учетом размера креплений
+ValProp[2]=d;
+IDframe=NPGetByProps(GoodsID,GoodsProp,MatProp,ValProp);
+
+if (IDframe<=0)	//--Если рамка больше ширины ниши
+{
+ putmsg("Указанная размеры рамки меньше допустимых",0);
+ goto final;
+}
+
+H_Frame=priceinfo(IDframe,"Height",84);				//-- Высота рамки
+W_Frame=priceinfo(IDframe,"Width",0);					//-- Ширина рамки
+D_Frame=priceinfo(IDframe,"Dept",0);					//-- Глубина рамки
+T_Frame=priceinfo(IDframe,"ToleranceX",0);		//-- Максимальная ширина рамки
+if ((w-ots_l-ots_r>T_Frame)&&(BL!=1)&&(BR!=1))
+{
+ putmsg("Указанная размеры рамки больше допустимых",0);
+ putmsg("Максимальная ширина рамки "+str(T_Frame),0);
+ goto final;
+}
+//-- Если заданная ширина больше максимальной ширины рамы, то берем максимальную ширину рамы
+//--Если есть кронштейн справа
+if (w-ots_l-ots_r>T_Frame&&BR==1&&BL!=1)
+{
+  x=w-(T_Frame+ots_l+ots_r);
+  w=T_Frame+ots_l+ots_r;
+}
+//--Если есть кронштейн слева
+if (w-ots_l-ots_r>T_Frame&&BL==1&&BR!=1)
+{
+  w=T_Frame+ots_l+ots_r;
+}
+//--Если есть кронштейн и слева и справа
+if (w-ots_l-ots_r>T_Frame&&BL==1&&BR==1)
+{
+  x=(w-(T_Frame+ots_l+ots_r))/2;
+  w=T_Frame+ots_l+ots_r;
+}
+
+objDO=sysvar(60);
+macro Protopath+MacroFrame x y z w d IDframe BL BR;			//-- Вызываем макрос построения рамки.
+objPosle=sysvar(60)-objDo;
+group last objPosle done;
+objident last 1 pant;
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"w",w);
+err=AddScratch(ScrMod,FurnType,"d",w);
+err=AddScratch(ScrMod,FurnType,"typeF",typeF);
+err=AddScratch(ScrMod,FurnType,"BL",BL);
+err=AddScratch(ScrMod,FurnType,"BR",BR);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+final:
+exit;

@@ -1,0 +1,98 @@
+//-- Макропрограмма создания углового карниза (длинномер)
+
+defarr arr[5] arr1[5] arr2[5] arr3[5] arr4[5];
+defarr barr1[4] barr2[4]  barr3[4]  barr4[4];
+
+x=DbVar("x",1000);        //-- Ширина
+Rt=DbVar("Rt",600);       //-- Ширина правой стороны
+Lt=DbVar("Lt",600);       //-- Ширина левой стороны
+Mat=DbVar("LongsMat",25);  //-- Материал
+Type=DbVar("LongsType",0);  //-- Тип карниза
+//-----------------------------------------------
+FurnType="030210";
+Namescr="ProtoParams";
+
+Dept=600;                 //-- Умолчание для габаритов профиля
+H_Mat=28.7;                 //-- Умолчания на толщину материала
+y=x+Lt-Rt;                //-- Глубина
+
+NULLOUT=InitArray(arr,0);
+NULLOUT=InitArray(arr1,0);
+NULLOUT=InitArray(arr2,0);
+NULLOUT=InitArray(arr3,0);
+NULLOUT=InitArray(arr4,0);
+NULLOUT=InitArray(barr1,0);
+NULLOUT=InitArray(barr2,0);
+NULLOUT=InitArray(barr3,0);
+NULLOUT=InitArray(barr4,0);
+
+
+arr[1]=2;
+NULLOUT=SetPan6Par(30,arr);
+arr[1]=Type;
+arr[2]=Mat;
+NULLOUT=SetPan6Par(2,arr);
+
+
+LongPath=getLongFile(Dept,H_Mat) ;  //-- Запросим габариты профиля
+i=1;
+Loop1:
+barr1[i]=0;
+barr2[i]=0;
+barr3[i]=0;
+barr4[i]=0;
+i=i+1;
+if (i<5)
+{
+  goto Loop1;
+}
+//-- Вычисление параметров длинномера (подрезки и пр.)
+Ang=Atan(Lt/x);
+S1=Sqrt(x*x+Lt*Lt);
+Hh=S1*Cos(pi()/4-Ang);
+Dt=Hh-Dept;
+
+arr[1]=135/180*pi();
+arr[2]=135/180*pi();
+arr[3]=0.;
+arr[4]=0.;
+F3=Lt*sin(pi()/4);
+F4=Rt*sin(pi()/4);
+F2=Dept-F3;
+F1=Dept-F4;
+
+arr1[1]=1;
+arr1[2]=F3;
+arr1[3]=F3;
+arr2[1]=1;
+arr2[2]=F4;
+arr2[3]=F4;
+arr3[1]=1;
+arr3[2]=F1;
+arr3[3]=F1;
+arr4[1]=1;
+arr4[2]=F2;
+arr4[3]=F2;
+NULLOUT=SetLongEnd(arr1,arr2,arr3,arr4);
+NULLOUT=SetLongCut(arr);
+
+//--Создадим длинномер
+NULLOUT=SetLongBand(barr1,barr2,barr3,barr4); //-- Назначение кромки
+longcreate Dt+f2 Dt 0 -Dt-F1 Dt 0;
+rotate last 1 done 2points 0 0 0 0 0 1 -45 nocopy ;
+group all done;
+attrobj attach "FurnType" done last 1 FurnType ;
+attrobj attach "Assembly" done last 1 1;      //-- Признак сборочной единицы
+//-- Присвоим атрибуты тип объекта и тип длинномера
+Attrobj Attach "Objtype" "Placetype" Done Last 1 2 4;
+attrobj attach "ElemName" done last 1 "Угловой карниз" ;
+//-------------------------------------------------
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"x",x);
+err=AddScratch(ScrMod,FurnType,"Rt",Rt);
+err=AddScratch(ScrMod,FurnType,"Lt",Lt);
+err=AddScratch(ScrMod,FurnType,"LongsType",Type);
+err=AddScratch(ScrMod,FurnType,"LongsMat",Mat);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+exit;

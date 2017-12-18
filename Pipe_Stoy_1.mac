@@ -1,0 +1,19 @@
+//--Макро создания одинарной стойки для трубчатой системы Komandor.
+global ProtoPath;
+getpar
+X Y Z		//-- Координаты установки
+W		//-- Высота стойки
+D		//-- Глубина стойки
+Ots		//-- Отступ до внутренней стойки
+TypeStWard	//-- ID стойки
+;
+
+//--Читаем свойства сборочной единицы
+IDKom1=PriceInfo(TypeStWard,"GoodID1",1,2);		//-- Ножка регулировочная
+IDProf1=PriceInfo(TypeStWard,"NomID1",1,2);		//-- ID профиля
+
+//------------Строим вертикальный профиль-------------------------
+macro ProtoPath+"SetProfWFix.mac" IDKom1 0 0 IDKom1 0 0;
+macro ProtoPath+"SetProfWard.mac" IDProf1 0 0 0 0 0 0;
+macro ProtoPath+"MakeProfWard.mac" X Y Z X Y Z+W;
+exit;

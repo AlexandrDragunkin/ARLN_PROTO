@@ -1,0 +1,7 @@
+//-- Задание пристенной фаски
+//-- Входные параметры:
+//-- WallChamfer - Пристенная фаска
+
+getpar WallChamfer;
+NULLOUT=setvarinst(1,"WallChamfer",WallChamfer);
+exit;

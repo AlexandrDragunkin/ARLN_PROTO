@@ -1,0 +1,9 @@
+// Установить толщину   и цвет фиктивной панели
+global g_FickHdsp  g_IdLookCol;
+
+getpar h_dsp IdLookCol;
+g_FickHdsp=h_dsp
+  g_IdLookCol=IdLookCol;
+
+exit
+

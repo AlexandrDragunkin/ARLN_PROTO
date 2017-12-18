@@ -1,0 +1,455 @@
+//-- Макропрограмма создания выдвижного ящика "Столярный 1"
+//-- Входные параметры:
+//-- w d h - ширина, гдубина и высота ящика
+//-- PrMater - материал корпуса ящика
+//-- BcMater - материал дна ящика
+//-- Col_Kro - цвет кромки корпуса ящика
+//-- Выходные параметры:
+//-- Ящик столярный 1
+
+global ProtoPath DoorPict;
+global g_FurnType;  //-- Тип мебельного объекта
+defarr error[10];
+NULLOUT=initarray(error,"");
+defarr FixZ[30];
+global BoxKType;    //-- Тип корпуса ящика
+
+global
+g_BoxBottom		//-- Тип дна ящика
+g_BottomOts		//-- Величина отступа для врезного дна
+;
+global g_Zamok;
+
+NULLOUT=GetVarInst(2,"B_Dh",B_Dh,0); //-- Высота установки дна
+NULLOUT=GetVarInst(2,"B_Dvr",B_Dvr,0); //-- Врезка дна ящика в боковины
+NULLOUT=GetVarInst(2,"B_Zbox",B_Zbox,2); //-- Зазор между фасадами ящиков по вертикали
+NULLOUT=GetVarInst(2,"TypKroB",TypKroB,0); // тип кромки для ящиков
+NULLOUT=GetVarInst(2,"B_Zdown",B_Zdown,30);
+getpar w,d,h,PrMater,BcMater,Col_Kro;
+// putmsg("getpar_h="+str(h));
+//-----------------------------------------------------------------------------
+//-- Устанавливаем умолчания
+Delta=0;		//-- Зазор между направляющими и ящиком
+
+Konfirmat=PriceInfo(BoxKType,"FixID",113,2);		//-- Тип крепежа - конфирмат;
+FixType=PriceInfo(BoxKType,"FixAddID",203,2)		//-- ID крепежа самореза из справочника сверловки;
+FixShift=PriceInfo(BoxKType,"BegShift",60,2);		//-- Величина отступа крепежа самореза из справочника сверловки;
+B_ZBok=PriceInfo(BoxKType,"boxGapBack",PriceInfo(BoxKType,"B_ZBok",B_ZBok,2),2);
+B_Hmax=PriceInfo(BoxKType,"B_Hmax",B_Hmax,2);
+B_Bmin=PriceInfo(BoxKType,"B_Bmin",B_Bmin,2);
+// коррекция B_Bmin
+NULLOUT=GetVarInst(2,"R_Fas",R_Fas,0); //-- Увеличение фасада справа
+NULLOUT=GetVarInst(2,"L_Fas",L_Fas,0); //-- Увеличение фасада слева
+NULLOUT=GetVarInst(2,"U_Fas",U_Fas,0); //-- Увеличение фасада сверху
+NULLOUT=GetVarInst(2,"D_Fas",D_Fas,0); //-- Увеличение фасада снизу
+if R_Fas<0&&L_Fas<0 {
+	nullout=getvarinst(2,"h_fas",h_fas,16)
+	B_Bmin=B_Bmin+h_fas+2
+}
+
+Gvozd=PriceInfo(BoxKType,"boxFixBottomRp",203,2);
+isY_nst=PriceInfo(BoxKType,"boxKorNoGuide",0,2);	//-- Разрешить нестандартную глубину
+FixGuide=PriceInfo(BoxKType,"FixGuide",202,2);
+	
+zaz=0;				    //-- Величина отступа для накладного дна
+g_FurnType=PriceInfo(BoxKType,"FURNTYPE","310100",2);;  //-- Ящик столярный
+shiftNapr=2;			//-- Сдвиг направляющих от фасада ящика
+//-----------------------------------------------------------------------------
+FT=g_FurnType;  //-- Запомним тип мебельного объекта
+h_dsp=PriceInfo(PrMater,"Thickness",16);
+
+NULLOUT=getvarinst(1,"NoGuides",NoGuides,0);
+
+// // BcMater подбираем по условию
+// BcMater=6448; // 10-ДСП А
+// ValType=0
+// sVal=""
+// NULLOUT=udGetEntity("BDMater",ValType,BcMater,sVal)
+// res=NPGetByWhere(1,"[ARTICLE]=\""+PriceInfo(PrMater,"ARTICLE","А-УСЛОВНЫЙ")+"\" AND [Thickness]=10","abm",getyadsubst(2));
+// if res {
+		// BcMater=abm[1];
+// }
+// else {
+	// PutMSg("У материала "+PriceInfo(PrMater,"MATNAME","Нет")+" не определено свойство ARTICLE, совпадающее с 10-ДСП. Будет применен материал \"10-ДСП А\"",0)
+// }
+hdna=PriceInfo(BcMater,"Thickness",4);
+
+ClKompl=PriceInfo(PrMater,"ColorKompl",-99);
+
+Lbox=d-B_Bmin;
+if !dbVar("KorobVar",0) { //Расчет Размера Y короба  автоматически	Да/Нет
+	 Lbox=dbVar("Ykorob",Lbox); //Размер Y короба ящика ( по направляющим )
+}
+Ynst=Lbox; // нестандартная глубина
+// putmsg(Lbox)
+
+// Устанавливаем глубину корпуса по скрейтчу
+KeyLK=0;
+NULLOUT=GetVarInst(1,"BoxLk",BoxLk,0);
+if BoxLk>250 { Lbox=BoxLk; KeyLK=1; }
+// putmsg(BoxLk)
+// putmsg(Lbox)
+
+//-- Запрос направляющих
+GoodsID=BoxKType;     //-- ID столярного ящика в справочнике изделий
+GoodsProp="Guide";
+MatProp="Length";
+IDNapr=0;
+if ClKompl>-99 {
+	IDNapr=NPGetByProps(GoodsID,GoodsProp,MatProp,Lbox,"[ColorKompl]="+str(ClKompl));
+}
+else {
+	PutMSg("У материала "+PriceInfo(PrMater,"MATNAME","Нет")+" не определено свойство ColorKompl. Требуется для подбора направляющих ящика.",0)
+}
+
+if IDNapr==0 {
+	IDNapr=NPGetByProps(GoodsID,GoodsProp,MatProp,Lbox);
+}
+// putmsg(IDNapr)
+Dpolozb=PriceInfo(IDNapr,"Length",250);
+// putmsg(Dpolozb)
+Lbox=Dpolozb;
+
+
+//-- Если превышена максимальная высота коробки яшика
+if (h>B_Hmax)
+{
+	h=B_Hmax;
+}
+
+Lkorps=Lbox
+if isY_nst { //  Разрешить нестандартную глубину в справочнике сборочных
+    NULLOUT=getvarinst(1,"YkorToGuide",YkorToGuide,1) // Глубина зависит от направляющих
+    if !YkorToGuide&&!KeyLK {
+        Lkorps=Ynst
+    }
+}
+
+//-------------------------------------------------------------------------------
+//-- Для расчета стоимости группируем все, что должно попадать под "корпус ящика"
+s1=sysvar(60);
+
+//-- Расчитываем параметры дна
+macro ProtoPath+"SetKrom.mac" Col_Kro 0 0 0 0 ;
+Hkd=0; //
+  
+g_BoxBottom=1;
+// putmsg(B_Zdown)
+//-- Утопленное дно
+if (g_BoxBottom==0)
+{
+	vis=B_Dh;
+	otso=0;
+	dnox=h_dsp;
+	dnoy=d-Lkorps+h_dsp;
+	dnoz=B_Dh;
+	dnod=w-2*h_dsp;
+	dnow=Lkorps-2*h_dsp;
+}
+//-- Накладное дно
+if (g_BoxBottom==1)
+{
+	vis=hdna+B_Dh;
+	otso=0;
+	// Здесь была задумка считать высоту короба ящика от низа ниши(фасада?), но переменная B_Zdown,
+	// но переменная до сюда не доходит, а всегда имеет значение задаваемое в GlobalTMP
+	// h=h-B_Zdown;
+	
+	Hkd=hdna
+	h=h-Hkd;
+	dnox=zaz;
+	dnoy=d-Lkorps+zaz;
+	dnoz=B_Dh;
+	dnod=w-2*zaz;
+	dnow=Lkorps-2*zaz;
+	macro ProtoPath+"SetKrom.mac" Col_Kro TypKroB TypKroB  TypKroB TypKroB ;
+}
+//-- Врезное дно
+if (g_BoxBottom==3)
+{
+	otso=g_BottomOts+hdna;
+	vis=B_Dh;
+	dnox=h_dsp-B_Dvr;
+	dnoy=d-Lkorps+h_dsp-B_Dvr;
+	dnoz=g_BottomOts+B_Dh;
+	dnod=w-2*(h_dsp-B_Dvr);
+	dnow=Lkorps-2*(h_dsp-B_Dvr);
+}
+//-- Дно отсутствует
+if (g_BoxBottom==2)
+{
+	otso=0;
+	vis=B_Dh;
+}
+
+//-- Расчитываем высоту установки направляющих
+if (B_Dh<0)
+{
+	zNap=B_Dh;
+}
+else
+{
+	zNap=0;
+}
+//-------------------------------------------------------------------------------
+NULLOUT=getvarinst(1,"BoxHk",hk,dbVar("Hk",h)); //Размер Z короба ящика ( по высоте )
+NULLOUT=getvarinst(1,"BoxHmFt",HmFt,0) // Ручка
+
+if hk<h&&hk!=0 {
+	h=hk-Hkd;
+	// putmsg("hk<h&&hk!=0_"+str(h))
+}
+//-- Расчитываем высоту крепежа фасада к передней стенке
+hHole=int(h/2+0.5)+10;
+// putmsg(h)
+//-- Построение дна
+if (g_BoxBottom!=2)
+{
+	macro ProtoPath+"SetMat.mac" BcMater;
+
+	macro ProtoPath+"SetFix.mac"  0 0 0 0 ;
+	macro ProtoPath+"SetECod.mac" "3201" ;
+	macro ProtoPath+"SetEnam.mac" "Дно ящика" ;
+	// // macro ProtoPath+"SetKCod.mac" "DDYXX"	dnod	dnow;
+	macro ProtoPath+"MakePan.mac" dnox dnoy dnoz dnod dnow 12;
+}
+//-- Построение боковин
+macro ProtoPath+"SetPropNull.mac" ;
+macro ProtoPath+"SetMat.mac" PrMater ;
+macro ProtoPath+"SetKrom.mac" Col_Kro 0 TypKroB  TypKroB 0 ;
+macro ProtoPath+"SetFix.mac"  0 0 0 0 ;
+macro ProtoPath+"SetECod.mac" "3101" ;
+// // macro ProtoPath+"SetKCod.mac" "DBYXX" h Lkorps ;
+macro ProtoPath+"SetEnam.mac" "Боковина ящика" ;
+macro ProtoPath+"SetFix.mac"  0 0 0 0 ;
+
+needPrim=0;
+if (g_BoxBottom==1)
+{
+  macro ProtoPath+"SetFix.mac" Gvozd 0 0 0;
+}
+if (g_BoxBottom==3)
+{
+	macro ProtoPath+"SetProp.mac" "F" "B" g_BottomOts hdna B_Dvr;
+	needPrim=1;
+}
+macro ProtoPath+"MakePan.mac" 0 d-Lkorps vis h Lkorps 11 ;
+macro ProtoPath+"SetPropNull.mac" ;
+macro ProtoPath+"SetECod.mac" "";
+if needPrim
+{
+	attrobj attach "PrimM" done last 1 "ЯД New";
+}
+
+macro ProtoPath+"SetECod.mac" "3102" ;
+// // macro ProtoPath+"SetKCod.mac" "DBYXX" h Lkorps ;
+if (g_BoxBottom==3)
+{
+	macro ProtoPath+"SetProp.mac" "A" "B" g_BottomOts hdna B_Dvr;
+	needPrim=1;
+}
+macro ProtoPath+"MakePan.mac" w-h_dsp d-Lkorps vis h Lkorps 11 ;
+macro ProtoPath+"SetECod.mac" "";
+macro ProtoPath+"SetPropNull.mac" ;
+if needPrim
+{
+	attrobj attach "PrimM" done last 1 "ЯД New";
+}
+needPrim=0;
+//-- Построение задней и передней стенки
+macro ProtoPath+"SetKrom.mac" Col_Kro 0 TypKroB 0 0 ;
+macro ProtoPath+"SetFix.mac"  0 0 Konfirmat Konfirmat;
+If (g_BoxBottom==1)
+{
+	macro ProtoPath+"SetFix.mac"  Gvozd 0 Konfirmat Konfirmat;
+	macro ProtoPath+"SetFixOrder.mac"  44 0 iif(h<240,0,57)  iif(h<240,0,57) ;
+}
+macro ProtoPath+"SetECod.mac" "3103" ;
+// // macro ProtoPath+"SetKCod.mac" "DSYXX" h w-2*h_dsp ;
+macro ProtoPath+"SetEnam.mac" "Стенка ящика" ;
+if (g_BoxBottom==3)
+{
+	macro ProtoPath+"SetProp.mac" "A" "B" g_BottomOts hdna B_Dvr;
+}
+macro ProtoPath+"MakePan.mac" h_dsp d-Lkorps vis h w-2*h_dsp 14;
+macro ProtoPath+"SetPropNull.mac" ;
+
+macro ProtoPath+"SetECod.mac" "3104" ;
+// // macro ProtoPath+"SetKCod.mac" "DSYXX" h w-2*h_dsp ;
+if (g_BoxBottom==3)
+{
+	macro ProtoPath+"SetProp.mac" "F" "B" g_BottomOts hdna B_Dvr;
+}
+If (g_BoxBottom==1)
+{
+	macro ProtoPath+"SetFix.mac"  Gvozd 0 Konfirmat Konfirmat;
+	macro ProtoPath+"SetFixOrder.mac"  44 0 iif(h<240,0,57)  iif(h<240,0,57) ;
+}
+nullout=getvarinst(1,"fasСutHandMacro",hidehand,"")
+// putmsg(hidehand)
+// putmsg(HmFt)
+if len(hidehand)>0&&HmFt
+{
+	shRuch=50;
+	NULLOUT=getvarinst(1,"B_Zup",B_Zup,5);
+	macro ProtoPath+"SetCuts.mac" 0 shRuch-5 0 0;
+}
+
+if g_Zamok>0
+{
+	macro ProtoPath+"SetCuts.mac" 0 40 0 0;
+}
+
+macro ProtoPath+"MakePan.mac" h_dsp d-h_dsp vis h w-2*h_dsp 14;
+macro ProtoPath+"SetCuts.mac" 0 0 0 0;
+macro ProtoPath+"SetPropNull.mac" ;
+
+//-- Построение крепежа фасада к передней стенке
+//-- Расчет положения крепежа передней стенки к фасаду
+FixZ[1]=FixShift;
+FixZ[2]=D-h_dsp;
+FixZ[3]=hHole;
+FixZ[4]=w-FixShift;
+FixZ[5]=D-h_dsp;
+FixZ[6]=hHole;
+
+if FixType>0 {
+macro ProtoPath+"SetFixLine.mac"  FixZ[1]  FixZ[2] FixZ[3]
+                                  FixZ[1]  FixZ[2]+1 FixZ[3]
+                                  FixZ[4]  FixZ[5] FixZ[6]
+                                  FixType;
+}
+if (w>500)
+{
+  FixZ[7]=w/2;
+  FixZ[8]=D-h_dsp;
+  FixZ[9]=hHole;
+  macro ProtoPath+"MakeFixGroup.mac" FixZ 3;
+}
+else
+{
+  macro ProtoPath+"MakeFixGroup.mac" FixZ 2;
+}
+
+if NoGuides==0
+{
+	// середина +12,5 от ЛСК направляющей(совпадает с началом боков)
+
+	ShiftY=12.5;
+	ShiftG=37; // Отступ от начала направляющей для крепления первого самореза
+	If Lbox==650 { MiddleG=224; LastG=480; }
+	If Lbox==600 { MiddleG=224; LastG=480; }
+	If Lbox==550 { MiddleG=224; LastG=480; }
+	If Lbox==500 { MiddleG=224; LastG=448; }
+	If Lbox==450 { MiddleG=224; LastG=384; }
+	If Lbox==400 { MiddleG=224; LastG=352; }
+	If Lbox==350 { MiddleG=128; LastG=288; }
+	If Lbox==300 { MiddleG=128; LastG=256; }
+	If Lbox==250 { MiddleG=128; LastG=192; }
+	// Установка крепежа на направляющие
+	// Начало координат по X в месте крепления напр. с боком ящика, Y от задней стенки, Z начало дна ящика
+	// Ставим крепление к бокам ниши.
+	if (udgetentity("FullPorting",ValType,FullPorting,sVal)==0) //-- Тип присадки(полная или нет)
+	{
+		FullPorting=0;
+	}
+	// putmsg(FullPorting)
+
+	// inception=d-Lbox+Delta+ShiftG;
+
+	// Правая направляющая
+	FixZ[1]=-B_zbok  FixZ[2]=d-ShiftG-LastG 	FixZ[3]=zNap+ShiftY
+	FixZ[4]=-B_zbok  FixZ[5]=d-ShiftG 	FixZ[6]=zNap+ShiftY
+	macro ProtoPath+"SetFixLine.mac"  FixZ[1]  FixZ[2] FixZ[3]
+										FixZ[1]-1  FixZ[2] FixZ[3]
+										FixZ[4]  FixZ[5] FixZ[6]
+										FixGuide;
+
+	FixZ[7]=-B_zbok  FixZ[8]=d-ShiftG-MiddleG 	FixZ[9]=zNap+ShiftY
+
+	macro ProtoPath+"MakeFixGroup.mac" FixZ 3;
+
+	if FullPorting==0 {	fixing fix edit last 1 FixGuide yes; }
+
+	// Левая направляющая
+	FixZ[1]=w+B_zbok  FixZ[2]=d-ShiftG-LastG 	FixZ[3]=zNap+ShiftY
+	FixZ[4]=w+B_zbok  FixZ[5]=d-ShiftG 	FixZ[6]=zNap+ShiftY
+	macro ProtoPath+"SetFixLine.mac"  FixZ[1]  FixZ[2] FixZ[3]
+										FixZ[1]+1  FixZ[2] FixZ[3]
+										FixZ[4]  FixZ[5] FixZ[6]
+										FixGuide;
+
+	FixZ[7]=w+B_zbok  FixZ[8]=d-ShiftG-MiddleG 	FixZ[9]=zNap+ShiftY
+
+	macro ProtoPath+"MakeFixGroup.mac" FixZ 3;
+
+	if FullPorting==0 {	fixing fix edit last 1 FixGuide yes; }
+
+	// Саморезы для крепления боковин ящика к направляющим
+
+	// inception=d-Lbox+Delta+ShiftG;
+	// Правая направляющая
+	initarray(FixZ,0);
+	FixZ[1]=h_dsp/2  FixZ[2]=d-ShiftG-LastG 	FixZ[3]=zNap
+	FixZ[4]=h_dsp/2  FixZ[5]=d-ShiftG 	FixZ[6]=zNap
+	macro ProtoPath+"SetFixLine.mac"  	FixZ[1]  FixZ[2] FixZ[3]
+										FixZ[1]  FixZ[2] FixZ[3]+1
+										FixZ[4]  FixZ[5] FixZ[6]
+										FixGuide;
+
+	FixZ[7]=h_dsp/2  FixZ[8]=d-ShiftG-MiddleG 	FixZ[9]=zNap
+	macro ProtoPath+"MakeFixGroup.mac" FixZ 3;
+	fixing fix edit last 1 FixGuide yes;
+
+	// Левая направляющая
+	initarray(FixZ,0);
+	FixZ[1]=w-h_dsp/2  FixZ[2]=d-ShiftG-LastG 	FixZ[3]=zNap
+	FixZ[4]=w-h_dsp/2  FixZ[5]=d-ShiftG 	FixZ[6]=zNap
+	macro ProtoPath+"SetFixLine.mac"  	FixZ[1]  FixZ[2] FixZ[3]
+										FixZ[1]  FixZ[2] FixZ[3]+1
+										FixZ[4]  FixZ[5] FixZ[6]
+										FixGuide;
+
+	FixZ[7]=w-h_dsp/2  FixZ[8]=d-ShiftG-MiddleG 	FixZ[9]=zNap
+	macro ProtoPath+"MakeFixGroup.mac" FixZ 3;
+	fixing fix edit last 1 FixGuide yes;
+}
+
+s2=sysvar(60);
+group last s2-s1;
+attrobj attach "ElemName" done last 1 "Корпус ящика";
+attrobj attach "FurnType" done last 1 "310999";
+attrobj attach "Width" done last 1 w;
+// attrobj attach "Length" done last 1 Lbox;
+attrobj attach "ZUnit" done last 1 h;
+// if KeyInbox { Rel_boxs=0; } // Внутренний ящик считается отдельно
+// Rel_boxs=0;
+// attrobj attach "Posit" done last 1 Rel_boxs;
+attrobj attach "PriceID" done last 1 BoxKType;
+
+if NoGuides==0
+{
+	//-- Построение направляющих
+	macro ProtoPath+"SetEnam.mac" "Направляющие" ;
+	macro ProtoPath+"SetECod.mac" "" ;
+
+	// s1=sysvar(60);
+
+	Wnapr=13;
+	shNapr=Wnapr-B_zbok;
+	// macro ProtoPath+"MakeGuide.mac" IDNapr 2 1 -B_zbok d-Lbox+Delta-shiftNapr zNap 0 0 0;
+	macro ProtoPath+"MakeGuide.mac" IDNapr 2 1 shNapr d-Lbox+Delta-shiftNapr zNap 0 0 0;
+
+	macro ProtoPath+"MakeGuide.mac" IDNapr 1 0 w-shNapr d-Lbox+Delta-shiftNapr zNap 0 0 0;
+	attrobj attach "ExcSumCost" done last 1 1;
+	// s2=sysvar(60);
+	// group last s2-s1;
+	// attrobj attach "ElemName" done last 1 "Направляющие комплект";
+	// attrobj attach "PriceID" done last 1 IDNapr;
+	// attrobj attach "FurnType" done last 1 "040999";
+}
+macro ProtoPath+"SetEnam.mac" " " ;
+macro ProtoPath+"SetSlotNull.mac" ;
+
+g_FurnType=FT;  //-- Восстановим значение тип мебельного объекта
+exit;

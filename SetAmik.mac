@@ -1,0 +1,20 @@
+//-- Установить параметры столешницы Amik
+//-- Входные параметры:
+//-- Angl1 - угол скоса слева
+//-- Angl2 - угол скоса справа
+//-- rc1 - Первый радиус скругления
+//-- rc2 - Второй радиус скругления
+//-- rc3 - Третий радиус скругления
+//-- rc4 - Четвёртый радиус скругления
+
+defarr UsRU[4];
+getpar Angl1 Angl2 rc1 rc2 rc3 rc4;
+UsRU[1]=rc1;
+UsRU[2]=rc2;
+UsRU[3]=rc3;
+UsRU[4]=rc4;
+
+NULLOUT=setarrinst(1,"AmikRU",UsRU);
+NULLOUT=setvarinst(1,"AmikAngl1",Angl1);
+NULLOUT=setvarinst(1,"AmikAngl2",Angl2);
+exit;

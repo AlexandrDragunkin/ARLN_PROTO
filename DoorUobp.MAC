@@ -1,0 +1,57 @@
+//-- Прототип "Дверь дугообразная распашная"
+global ProtoPath;
+global g_FurnType;    //-- Тип мебельного объекта
+KarkasNumb=getcarcnumb();  //-- Порядковый номер каркаса в сцене
+global MacroSw;       //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+MacroSw=0;
+
+macro ProtoPath+"ScrFasInit.mac" ;               //-- Обнуление скретч параметров
+
+s=DbVar("S",200);
+g=DbVar("G",200);
+h=DbVar("Hd",200);
+Door=DbVar("Door",2212);
+macro ProtoPath+"DoorUob.mac";
+group all done;
+//-- Присваиваем атрибуты
+position=20;
+Namescr="ProtoParams";
+
+attrobj attach "Posit" done last 1 position;
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done last 1 done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+}
+
+if (isassign("ElemName",0))
+{
+  attrobj copy record "ElemName" done last 1 done;
+}
+else
+{
+  dn="Дверь распашная "+priceinfo(Door,"NAME","дугообразная",2);
+  attrobj attach "ElemName" done last 1 dn;
+}
+if (isassign("HoldName",0))
+{
+  attrobj copy record "HoldName" done last 1 done;
+}
+if (isassign("UnitName",0))
+{
+  attrobj copy record "UnitName" done last 1 done;
+}
+attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 s g h; //-- Размеры двери
+
+attrobj attach "Assembly" done last 1 1;   //-- Добавим атрибут сборочной единицы
+attrobj attach "FurnType" done last 1 g_FurnType;
+attrobj attach "GoodsID" done last 1 Door; //-- Тип двери
+If (isassign("NHinges",0))
+{
+  attrobj copy record "NHinges" done last 1 done; //-- Число петель
+}
+exit;

@@ -1,0 +1,70 @@
+//-- Прототип "Выдвижная корзина/полка"
+global ProtoPath;
+//------------------------------------------------------------------------
+typeF=DbVar("typeF",0);									//-- Тип корзины
+w=DbVar("w",600);												//-- Ширина
+Tray=DbVar("Tray",0);										//-- Наличие лотка
+typeKor=priceinfo(typeF,"NomID1",0,2);	//-- Тип корзины
+
+//-- Свойства корзины
+typeKor=priceinfo(typeF,"NomID1",0,2);	//-- Тип корзины
+Dep=priceinfo(typeKor,"Dept",0);		//-- Глубина
+h=priceinfo(typeKor,"Height",0);				//-- Высота
+//-- Свойства сборочной единицы
+ShiftY=priceinfo(typeF,"ShiftY",0,2);			//-- Отступ спереди
+d=Dep+ShiftY;
+if (Tray==1)
+{
+  Lot=priceinfo(typeF,"NomID3",0,2);				//-- Лоток
+  if (Lot>0)
+  {
+    SZL=priceinfo(Lot,"ShiftZ",0);						//-- Отступ по Z
+		h=h+SZL;
+  }
+}
+FurnType=priceinfo(typeF,"FurnType","000000",2);		
+position=getprotoid("Shkaf","Выдвижная корзина/полка","ProtoMacro","MotFlasP");  //-- ID прототипа
+Namescr="ProtoParams";
+ElemName=priceinfo(typeF,"Name","Выдвижная корзина/полка",2);
+HoldName=" ";
+KarkasNumb=getcarcnumb();    //-- Текущий номер каркаса
+//----------------------------------------------------------------------
+NULLOUT=pushinst(1);
+macro ProtoPath+"SetEnam.mac" " ";
+sy=sysvar(60);
+macro ProtoPath+"MotFlas.mac";	//-- Макрос создания
+sy=sysvar(60)-sy;
+if (sy==0)
+{
+  goto final;
+}
+objident last sy  obj;
+Namescr="ProtoParams";
+//-- Присваиваем атрибуты
+attrobj attach "Posit" done Last 1 position;
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done last 1 done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done Last 1 KarkasNumb;
+}
+if (isassign("HoldName",0))
+{
+  attrobj copy record "HoldName" done Last 1 done;
+}
+if (isassign("UnitName",0))
+{
+  attrobj copy record "UnitName" done Last 1 done;
+}
+attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 w d h; //-- Размеры 
+  
+attrobj attach "FurnType" done last 1 FurnType;
+attrobj attach "GoodsID" done last 1 typeF; 
+attrobj attach "Assembly" done last 1 1;
+attrobj attach "ElemName" done last 1 ElemName;
+attrobj copy record Namescr done last 1 done;
+final:
+NULLOUT=popinst(1);
+exit;

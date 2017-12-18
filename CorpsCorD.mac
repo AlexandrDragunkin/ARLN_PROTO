@@ -1,0 +1,31 @@
+//-- Формирование эскиза прототипа "Корпус угловой"
+global ProtoPath;
+global MacroSw;       //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+MacroSw=1;
+WMFPath=DbVar("WMFPath","");
+
+w=DbVar("w",600);
+d=DbVar("d",600);
+h=DbVar("h",600);
+MinDepth=DbVar("MinDepth",100);	//-- Размер меньшей стороны
+Orient=DbVar("Orient",0);	      //-- Правая ориентация
+F2000=DbVar("F2000",0);
+macro ProtoPath+"global_s.mac" ;
+macro ProtoPath+"CorpsCor.mac";
+//-- Hазмеры
+LDim 3DDim 0,d,0 w,d,0 Horizontal 0,d,-150;
+LDim 3DDim 0,0,h 0,d,h Parallel iif(Orient==0,-150,w+150),0,h;
+LDim 3DDim 0,0,h 0,MinDepth,h Parallel iif(Orient==1,-150,w+150),0,h;
+LDim 3DDim w,0,h w,0,0 Vertical	w+150,0,0;
+View None Gcs .33 .87 .38;
+zoom all;
+hide;
+if (F2000==1)
+{
+  exp2d wmf yes WMFPath+"1.WMF" [ overwrite ] ;
+}
+else
+{
+  exp2d wmf no WMFPath+"1.WMF" [ overwrite ];
+}
+exit;

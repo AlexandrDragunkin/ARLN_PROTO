@@ -1,0 +1,604 @@
+//-- Макропрограмма установки каркаса системы дверей   для задачи 6.2
+//-- Входные апаремты:
+//-- X - ширина ниши под дверную систему
+//-- Y - глубина установки дверной системы
+//-- Z - высота ниши под дверную систему
+//-- ColorRail - цвет профилей каркаса
+//-- Фаска по X угла 1                            // |2              1|
+//-- Фаска по X угла 2                            // |                |
+//-- Фаска по X угла 3                            // |                |
+//-- Фаска по X угла 4                            // |3______________4|
+
+nullout=getvarinst(2,"Doors63",Doors63,"Doors63.zmc|");
+nullout=getvarinst(2,"Doors64",Doors64,"Doors64.zmc|");
+
+nullout=getvarinst(1,"g_dwRailD",g_dwRailD,0);
+global ProtoPath , g_tab_place, g_keyDS63,g_Doorscon;
+global g_MoveType g_Move g_drp;   //-- Сдвиг створок дверей по глубине
+global g_TCLDown g_TCLTop;
+global g_DirAng_1  g_DirAng_2;
+global g_ExName g_ExVal g_ExInf; // массивы дополнительных параметров  системы
+global g_ProfColor; //-- Цвет профиля для передачи в PutOnProfile63
+g_ProfColor=0;
+
+defarr
+str_tab[5]
+xm1[6]
+xm2[6]
+AIntAll[8] // 5 Массив точек пересечения
+AIntIn[8]  // 6 Массив явных точек пересечения
+AIntOut[8] // 7 Массив точек пересечения на продолжении объекта;
+;
+defarr g_ExName[200] g_ExVal[200] g_ExInf[200];
+defarr	ZRailMS[6]	//Высота положения первой направляющей
+		YRailMS[6]	//Глубина положения первой направляющей
+		LRailMS[6]	//Длина первой направляющей
+		XRailMS[6]
+		;
+
+getpar  x,y,z,    // габариты
+        IDRailsU, // Id верхнего профиля
+        IDRailsD, // Id нижнего профиля
+		IDRailMS //ID направляющей мансарды
+        FasPr1	  //Профиль по фаске 1
+        dx1	  //Фаска по X первого угла
+        dz1	  //Фаска по Z первого угла
+        FasPr2	  //Профиль по фаске 1
+        dx2	  //Фаска по X второго угла
+        dz2	  //Фаска по Z второго угла
+        dx3	  //Фаска по X третьего угла
+        dz3	  //Фаска по Z третьего угла
+        dx4	  //Фаска по X четвертого угла
+        dz4	  //Фаска по Z четвертого угла
+        AngL	  //Левый угол в плоскости XY
+        AngR	  //Правый угол в плоскости XY
+        VisRailU  // Отображать верхний трек
+        DeltaTRACK  // Высота положения второго трека  для случая установки нижнего трекка из одноручьевых треков
+		NRailMS		 //Число направляющих для дверей со скосом
+		ZRailMS[1]	//Высота положения первой направляющей
+		YRailMS[1]	//Глубина положения первой направляющей
+		LRailMS[1]	//Длина первой направляющей
+		ZRailMS[2]	//Высота положения второй направляющей
+		YRailMS[2]	//Глубина положения второй направляющей
+		LRailMS[2]	//Длина второй направляющей
+		ZRailMS[3]	//Высота положения третьей направляющей
+		YRailMS[3]	//Глубина положения третьей направляющей
+		LRailMS[3]	//Длина третьей направляющей
+		ZRailMS[4]	//Высота положения четвертой направляющей
+		YRailMS[4]	//Глубина положения четвертой направляющей
+		LRailMS[4]	//Длина четвертой направляющей
+		ZRailMS[5]	//Высота положения пятой направляющей
+		YRailMS[5]	//Глубина положения пятой направляющей
+		LRailMS[5]	//Длина  пятой направляющей
+		ZRailMS[6]	//Высота положения шестой направляющей
+		YRailMS[6]	//Глубина положения шестой направляющей
+		LRailMS[6]	//Длина шестой направляющей
+		XRailMS[1]
+		XRailMS[2]
+		XRailMS[3]
+		XRailMS[4]
+		XRailMS[5]
+		XRailMS[6]
+        ;
+if g_keyDS63!=1
+{
+   macro ProtoPath+Doors63+"CrtSysDoor63.mac" ;
+}
+//line dx1 0 z 0 0 z-dz1 done;
+//line x 0 z-dz2 x-dx2 0 z done;
+// Определяем тип створки в системе
+sqlstr="SELECT  * FROM DSSystemFlap WHERE DSSystemFlap.ID="+str(g_drp);
+MoveTypRs=adbOpen(g_Doorscon,sqlstr);
+nzp=adbRecCount(MoveTypRs);
+if nzp==0
+{
+   MoveTypRs=adbClose(MoveTypRs);
+   g_Doorscon=adbDisCon(g_Doorscon); //-- Разрываем соединение
+   g_keyDS63=0
+   cancel;
+}
+g_MoveType=adbGetValue(MoveTypRs,"TypeFlap");
+MoveTypRs=adbClose(MoveTypRs);
+//------------------------------------------------------------------------------
+//-- Верхний рельс
+IDTop=IDRailsU
+IDP=IDTop;
+I_break=0
+gosub GetRail;
+//============================================================================== Верхний
+//-- Расчитывает параметры установки верхнего профиля
+//-- координаты начальной точки установки профиля
+g_top_zw=zw  // переменная для сдвига нижнего трека
+nullout=setvarinst(1,"g_top_zw",g_top_zw);
+g_move=s;
+NbreakT=Nbreak;
+
+xm1[1]=x
+xm1[2]=z-h
+xm1[4]=0
+xm1[5]=z-h
+
+if VisRailU!=0 // если верхний трек отображается
+{
+    xp1=0 //-------------- если профиля по правой фаске нет
+    if (dx1!=0)&&(FasPr1==0)
+    {
+     xm2[1]=dx1
+     xm2[2]=z
+     xm2[4]=0
+     xm2[5]=z-dz1
+     macro ProtoPath+Doors63+"IntPtLOBJ1.mac" 2 xm1 2 xm2  AIntAll AIntIn AIntOut ;
+     xp1=AIntIn[1];
+    }
+    if (FasPr1!=0) { xp1=dx1 }
+	// putmsg(g_MoveType)
+	// putmsg(y)
+	// putmsg(g_top_zw)
+	// putmsg(g_dwRailD)
+	// putmsg(w)
+    yp1=iif(g_MoveType==2,y-g_top_zw-g_dwRailD+w/2,y);
+	// putmsg(yp1)
+    zp1=z;
+	// putmsg(zp1)
+
+
+    //-- координаты конечной точки установки профиля
+    xp2=x;
+    if dx2!=0&&(FasPr2==0)
+    {
+     xm2[1]=x;
+     xm2[2]=z-dz2;
+     xm2[4]=x-dx2;
+     xm2[5]=z;
+     macro ProtoPath+Doors63+"IntPtLOBJ1.mac" 2 xm1 2 xm2  AIntAll AIntIn AIntOut ;
+     xp2=AIntIn[1];
+    }
+    if (FasPr2!=0) { xp2=x-dx2 }
+    yp2=iif(g_MoveType==2,y-g_top_zw-g_dwRailD+w/2,y);
+    zp2=z;
+
+    PrfP_1=0; //-- Подрез начальной точки
+    PrfP_2=0; //-- Подрез конечной точки
+    PrfSd_X=-w; //-- Сдвиг по Х ЛСК
+    PrfSd_Y=0; //-- Сдвиг по Y ЛСК
+    PrfAngle=0; //-- Угол поворота вокруг оси (град)
+    PrfAng_1=0
+    PrfAng_2=0
+    if dx1!=0 { #PrfAng_1 angle 0 0 z-dz1 0 0 z dx1 0 z   ; ang1=PrfAng_1; PrfAng_11=PrfAng_1-90 ;  } //-- Угол подрезки 1 стороны
+    if dx2!=0 { #PrfAng_2 angle x 0 z-dz2 x-dx2 0 z x 0 z ; ang2=PrfAng_2; PrfAng_22=PrfAng_2-90 ;  } //-- Угол подрезки 2 стороны
+    if (dx1!=0)&&(FasPr1!=0) { PrfAng_1=(1)*(90-(90+PrfAng_1)/2); PrfAng_12=PrfAng_1 }
+    if (dx2!=0)&&(FasPr2!=0) { PrfAng_2=(1)*(90-(90+PrfAng_2)/2); PrfAng_21=PrfAng_2 }
+    PrfAng_1=iif((FasPr1!=0),PrfAng_1,-1*PrfAng_1);
+    PrfAng_2=iif((FasPr2!=0),PrfAng_2,-1*PrfAng_2);
+    // putmsg("PrfAng_1="+str(PrfAng_1)+"; PrfAng_2="+str(PrfAng_2),0);
+    //===========================Расчет точек для профилей на фасках================
+    //====для фаски 1 (справа)
+    if (FasPr1!=0)&&(dx1>0)&&(dz1>0)
+    {
+     xp12=xp1
+     zp12=zp1
+     c1=h/sin(radian(ang1))*cos(radian(ang1))
+     D_x1=c1*sin(radian(ang1))
+     D_z1=c1*cos(radian(ang1))
+     xp11=-D_x1
+     zp11=z-dz1-D_z1
+    }
+    //====для фаски 2 (слева)
+    if (FasPr2!=0)&&(dx2>0)&&(dz2>0)
+    {
+     xp21=xp2
+     zp21=zp2
+     c1=h/sin(radian(ang2))*cos(radian(ang2))
+     D_x1=c1*sin(radian(ang2))
+     D_z1=c1*cos(radian(ang2))
+     xp22=x+D_x1
+     zp22=z-dz2-D_z1
+    }
+    sDirAng_1=g_DirAng_1;
+    sDirAng_2=g_DirAng_2;
+    macro ProtoPath+Doors64+"SetProfD.mac" 1 1;        //  Направление угла подрезки  с 30-10-2009 в новый профиль
+    //=====Если линия установки трека неперпендикулярна стенам слева и справа то требуется уточнение положения точек начала и конца трека
+
+    if AngR<0
+    {
+      D_x1a=w*tan(radian(abs(AngR)))
+      xp1=xp1-d_x1a
+    }
+    if AngL<0
+    {
+      D_x1a=w*tan(radian(abs(AngL)))
+      xp2=xp2+d_x1a
+    }
+    //==============================================================================
+    if (len(MacroSet)!=0)
+    {
+		// putmsg(MacroSet)
+		// putmsg(PrfAngle)
+		
+      nobj=sysvar(60);
+		// putmsg(MacroSet)
+      macro ProtoPath+"SetECod.mac" "5701" ;
+      macro ProtoPath+Doors64+MacroSet
+      xp1,yp1,zp1,
+      xp2,yp2,zp2,
+      //IDP,
+      IDProff
+      PrfP_1,
+      PrfP_2,
+      PrfSd_X,
+      PrfSd_Y,
+      PrfAngle,
+      PrfAng_1,
+      PrfAng_2,
+      AngR,
+      AngL,
+      IDCollor,
+      //ColorRail
+      ;
+
+      nobj1=sysvar(60)-nobj;
+	  // putmsg(abs(w-zw))
+      if (abs(w-zw)<0.01)
+      {
+		putmsg("rotate+234")
+        rotate last nobj1 done 2points xp1,yp1-zw/2,zp1 xp2,yp2-zw/2,zp2 180 nocopy;
+      }
+      if (FasPr1!=0)&&(dx1>0)&&(dz1>0)
+      {
+       macro ProtoPath+Doors64+MacroSet
+       xp11 ,yp1,zp11,
+       xp12,yp2,zp12,
+       //IDP,
+       IDProff
+       PrfP_1,
+       PrfP_2,
+       PrfSd_X,
+       PrfSd_Y,
+       PrfAngle,
+       PrfAng_11,
+       PrfAng_12,
+       0,
+       0,
+       IDCollor,
+       //ColorRail
+       ;
+
+       nobj1=sysvar(60)-nobj;
+       if (abs(w-zw)<0.01)
+       {
+		putmsg("rotate_260")
+        rotate last nobj1 done 2points xp11,yp1-zw/2,zp11 xp12,yp2-zw/2,zp12 180 nocopy;
+        }
+      }
+      if (FasPr2!=0)&&(dx2>0)&&(dz2>0)
+      {
+
+       macro ProtoPath+Doors64+MacroSet
+       xp21 ,yp1,zp21,
+       xp22,yp2,zp22,
+       //IDP,
+       IDProff
+       PrfP_1,
+       PrfP_2,
+       PrfSd_X,
+       PrfSd_Y,
+       PrfAngle,
+       PrfAng_21,
+       PrfAng_22,
+       0
+       0
+       IDCollor,
+       //ColorRail
+       ;
+
+       nobj1=sysvar(60)-nobj;
+       if (abs(w-zw)<0.01)
+       {
+		putmsg("rotate_288")
+        rotate last nobj1 done 2points xp21,yp1-zw/2,zp21 xp22,yp2-zw/2,zp22 180 nocopy;
+        }
+      }
+    }
+
+    nobj=sysvar(60);
+    sss="UnitCode==\"5701\"";
+    if (len(MacroExtra)!=0)
+    {
+      macro ProtoPath+"SetECod.mac" "" ;
+      macro ProtoPath+Doors64+MacroExtra
+      IDP,
+      xp1,yp1,zp1,
+      xp2,yp2,zp2;
+      nobj1=sysvar(60)-nobj;
+      if (nobj1>0)
+      {
+       sss="UnitCode==\"5701\"";
+       macro ProtoPath+Doors64+"Select_remove.mac" nobj1, sss ;
+       nobj1=sysvar(61);
+        //move last nobj1 done 2points 0,0,0 0,-zw/2,-2 nocopy;
+        if (abs(w-zw)>0.01)
+        {
+         // move last nobj1 done 2points 0,0,0 0,-zw,0 copy 1;
+        }
+      }
+    }
+}
+//------------------------------------------------------------------------------ Нижний рельс
+//-- Нижний рельс
+
+//IDBottom=adbGetValue(RailsRs,"IDBottom");
+=IDRailsD
+
+IDBottom=IDRailsD
+IDP=IDBottom;
+=idp
+
+gosub GetRail;
+NbreakD=Nbreak;
+
+
+N_Dtr=NbreakT-NbreakD  // случай если нижних трек на один, а верхний на несколько ручьев
+lBreak:
+//==============================================================================
+//-- Расчитывает параметры установки нижнего профиля
+//-- координаты начальной точки установки профиля
+xp1=x-dx3;
+
+//yp1=y-g_dwRailD+zw-g_top_zw-g_move*I_break;
+// putmsg(w)
+// putmsg(g_dwRailD)
+// putmsg(zw)
+// putmsg(g_top_zw)
+// putmsg(g_move*I_break)
+// putmsg(iif(g_top_zw<0,0,1))
+yp1=y-w+(-g_dwRailD+zw-g_top_zw-g_move*I_break)*(iif(g_top_zw<0,0,1));
+
+// putmsg(yp1)
+
+g_dwRailH=zh;    // высота трека (дополнительно к g_SlipBottom)
+zp1=zh-h+DeltaTRACK*I_break; // Смещение высоты точки установки трека
+g_dwRailHp=zp1
+
+nullout=setvarinst(1,"g_dwRailH",g_dwRailH);
+nullout=setvarinst(1,"g_dwRailHp",g_dwRailHp);
+
+//-- координаты конечной точки установки профиля
+xp2=dx4;
+yp2=yp1;
+zp2=zp1;
+S_bot=s;
+
+PrfP_1=0; //-- Подрез начальной точки
+PrfP_2=0; //-- Подрез конечной точки
+PrfSd_X=0; //w-- Сдвиг по Х ЛСК  +zh
+PrfSd_Y=0; //-- Сдвиг по Y ЛСК
+PrfAngle=180; //-- Угол поворота вокруг оси (град)
+PrfAng_1=0; //-- Угол подрезки 1 стороны
+PrfAng_2=0; //-- Угол подрезки 2 стороны
+//=====Если линия установки трека неперпендикулярна стенам слева и справа то требуется уточнение положения точек начала и конца трека
+
+if AngR<0
+{
+  D_x1a=(w+g_top_zw+g_dwRailD-zw)*tan(radian(abs(AngR)))
+  xp2=xp2-d_x1a
+}
+if AngL<0
+{
+  D_x1a=(w+g_top_zw+g_dwRailD-zw)*tan(radian(abs(AngL)))
+  xp1=xp1+d_x1a
+}
+
+//==============================================================================
+
+  if (len(MacroSet)!=0)
+  {
+   macro ProtoPath+"SetECod.mac" "5802" ;
+   macro ProtoPath+Doors64+MacroSet
+   xp1,yp1,zp1,
+   xp2,yp2,zp2,
+   //IDP,
+   IDProff
+   PrfP_1,
+   PrfP_2,
+   PrfSd_X,
+   PrfSd_Y,
+   PrfAngle,
+   PrfAng_1,
+   PrfAng_2,
+   AngL
+   AngR
+   IDCollor,
+   //ColorRail
+   ;
+  }
+
+  nobj=sysvar(60);
+  if (len(MacroExtra)!=0)
+  {
+   macro ProtoPath+"SetECod.mac" "" ;
+   macro ProtoPath+Doors64+MacroExtra
+   IDP,
+   xp1,yp1,zp1,
+   xp2,yp2,zp2;
+   nobj1=sysvar(60)-nobj;
+   if (nobj1>0)
+  {
+   sss="UnitCode==\"5802\"";
+   macro ProtoPath+Doors64+"Select_remove.mac" nobj1, sss ;
+   nobj1=sysvar(61);
+   //move previous done 2points 0,0,0 0,-(zh+w/2),2 nocopy;
+  }
+ }
+ //PutMsg("I_break= "+str(I_break),1);
+ //PutMsg("N_Dtr= "+str(N_Dtr),1);
+ //PutMsg("g_move= "+str(g_move),1);
+
+if I_break<N_Dtr
+{
+   I_break=I_break+1
+   goto lBreak;
+}
+//------------------------------------------------------------------------------
+gosub Slanted;    
+g_DirAng_1=sDirAng_1;
+    g_DirAng_2=sDirAng_2;
+    macro ProtoPath+Doors64+"SetProfD.mac" sDirAng_1 sDirAng_2;        //  Направление угла подрезки  с 30-10-2009 в новый профиль
+
+mend:
+g_Doorscon=adbDisCon(g_Doorscon); //-- Разрываем соединение
+g_keyDS63=0
+//g_move=zh+s;  //-- Сдвиг створок дверей по глубине
+exit;
+//==============================================================================
+//-- Вывод окна сообщения об ошибке
+//-- Входные параметры:
+//-- errcode - сод ошибки
+err:
+#ok_flag
+     alternative "Ошибка базы данных"
+     msgbox text "Некорректно заполнена база данных систем дверей"
+     " "
+     errcode
+     done
+     "  OK  "
+     done;
+return;
+//------------------------------------------------------------------------------
+//-- Процедура считывания параметров профиля с заданным ID
+//-- Входные параметры:
+//-- IDP - ID профиля из таблицы Rails
+//-- Выходные параметры:
+//-- IDProf - ID профиля из прайс-листа
+//-- Параметры контура профиля:
+//-- w, h, zw, zh, s
+//-- MacroSet - макропрограмма установки профиля
+//-- MacroExtra - дополнительная макропрограмма
+
+GetRail:
+str_tab[1]="SELECT * ";
+str_tab[2]=" FROM ((DSFlapProfile INNER JOIN DSGabProfile ON DSFlapProfile.PSYSTEM = DSGabProfile.ID)"
+str_tab[3]=" INNER JOIN NNomenclature ON DSFlapProfile.IDProfile = NNomenclature.ID)"
+str_tab[4]=" INNER JOIN DSColorProfile ON DSFlapProfile.Color = DSColorProfile.ID";
+str_tab[5]=" WHERE (((DSFlapProfile.ID)="+str(IDP)+"));";
+
+ProfilesRs=adbOpen(g_Doorscon,str_tab,5);
+ij=adbRecCount(ProfilesRs);
+
+//-- Обнуляем информацию о параметрах профилей (на тот случай, если профиль фиктивный)
+MacroSet="MakeProfD63.mac";
+MacroExtra="";
+w=0;
+h=0;
+zw=0;
+zh=0;
+s=0;
+//PutMsg("ij="+str(ij),1);
+//PutMsg("idp="+str(idp),1);
+if (ij<1)
+{
+  errcode="Количество рельс с ID "+str(IDP)+" равно "+str(ij);
+  ProfilesRs=adbClose(ProfilesRs);
+  return;
+}
+=IDP
+
+NULLOUT=adbMoveFirst(ProfilesRs);
+MacroSet=adbGetValue(ProfilesRs,"MacroSet");
+if (len(MacroSet)==0)
+{
+  errcode="Отсутствует макро установки нижнего рельса";
+  ProfilesRs=adbClose(ProfilesRs);
+  gosub err;
+  return;
+}
+MacroExtra=adbGetValue(ProfilesRs,"MacroExtra");
+//-- Читаем параметры контура профиля
+w=adbGetValue(ProfilesRs,"w");
+h=adbGetValue(ProfilesRs,"h");
+zw=adbGetValue(ProfilesRs,"zw");
+zh=adbGetValue(ProfilesRs,"zh");
+s=adbGetValue(ProfilesRs,"s");
+IDProff=adbGetValue(ProfilesRs,"NNomenclature.ID");
+IDCollor=adbGetValue(ProfilesRs,"DSColorProfile.COLOR");
+Nbreak=adbGetValue(ProfilesRs,"Nbreak");
+
+ProfilesRs=adbClose(ProfilesRs);
+return;
+//------------------------------------------------------------------------------
+Slanted:
+	//------------------------------------------------------------------------------
+	//-- Дополнительный рельс для дверей соскосом
+	if (!IsAttrdef("iSlanted")) { Attribute Create "iSlanted" "Номер рельса со скосом" real 5 0 ; }
+	IDP=IDRailMS
+	if IDP==0 { goto sSlend; }
+	PrfSd_X=0;
+	PrfP_1=0;
+	PrfP_2=0;
+	PrfSd_X=0;
+	PrfSd_Y=0;
+	PrfAngle=0;
+	PrfAng_1=0;
+	PrfAng_2=0;
+	AngL=0;
+	AngR=0;
+	gosub GetRail;
+	//============================================================================== Дополнительный
+	i_s=0;
+	lSlanted:
+	if i_s<NRailMS
+	{
+		i_s=i_s+1;
+		nobj=sysvar(60);
+		
+		if (len(MacroSet)!=0)
+		{
+			xp1=XRailMS[i_s]
+			zp1=ZRailMS[i_s]	// Высота положения направляющей
+			yp1=YRailMS[i_s]	// Глубина положения направляющей
+			//putmsg(str(yp1),0);
+			xp2=xp1+LRailMS[i_s]	// Длина  направляющей
+			if LRailMS[i_s]<1   // Если длина близка 0
+			{
+				goto lSlanted;
+			}
+			macro Protopath+"SetProFS.mac" 0 1 ;
+			macro ProtoPath+"SetECod.mac" "5902" ;
+			macro ProtoPath+Doors64+MacroSet
+			xp1,yp1,zp1,
+			xp2,yp1,zp1,
+			//IDP,
+			IDProff
+			PrfP_1,
+			PrfP_2,
+			PrfSd_X,
+			PrfSd_Y,
+			PrfAngle,
+			PrfAng_1,
+			PrfAng_2,
+			AngL
+			AngR
+			IDCollor,
+			;
+			Attrobj Attach "iSlanted" Done  last 1 i_s;
+			//nobj1=sysvar(60)-nobj;
+		}
+		//nobj=sysvar(60);
+		sss="UnitCode==\"5902\"";
+		if (len(MacroExtra)!=0)
+		{
+			macro ProtoPath+"SetECod.mac" "" ;
+			macro ProtoPath+Doors64+MacroExtra
+			IDP,
+			xp1,yp1,zp1,
+			xp2,yp1,zp1;
+			nobj1=sysvar(60)-nobj;
+			if (nobj1>0)
+			{
+				move last nobj1 done 2points 0,0,0 0,w,-h+zh nocopy;
+			}
+		}
+		macro Protopath+"SetProFS.mac" 0 0 ;
+		goto lSlanted;
+	}
+	sSlend:
+return;

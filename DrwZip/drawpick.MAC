@@ -1,0 +1,97 @@
+//-- Программа выполняет чертеж панели
+global g_h, g_w g_ik G_setDrw;
+global g_KonsCode;
+global ProtoPath, g_osn, g_dorab, g_drawall, g_pict, g_scala, g_draw d_support l_support Pl_NumPan g_name;
+global g_vidUnic ; // 0-объединять на один бланк 1-разносить на несколько бланков (как печатать чертеж если видов несколько например сторона А и F)
+defarr aObjv[10] aObj[10] aLeg[10]; // массисв для ссылок на объекты чертежа и легеды
+defarr xm[6] aoLeg[100] adraw[100];
+
+global DRWZPath;
+//DRWZPath=GetProtoMac("Shkaf.ptl")+"DrwZip.zk3|";
+nullout=INITARRAY(adraw,0);
+
+g_vidUnic=iif(isvardef("g_vidUnic")==0,0,g_vidUnic);
+
+macro ProtoPath+"re_NumGroup.mac";
+g_drawall=0;
+g_pict=3; //-- wmf файл по третьему виду
+g_h=297;
+g_w=210;
+g_ik=0;
+g_KonsCode="";
+G_setDrw=0;
+valcoeff absolute 1;
+grfcoeff 1;
+if (!IsAttrdef("Legend"))
+{
+	Attribute Create "Legend" "Legenda" Real 12 5  ;
+}
+NULLOUT=GetSnap();
+
+save all : ;          //-- Записываем проект
+//fixing delauto all done; //-- Удаляем весь автокрепеж
+projname=sysvar(2);
+grfcoeff absolute 1;
+onerror final;
+switch autosingle on;
+selbyattr "(Left(FurnType,2)==\"01\"&&FurnType!=\"010000\")"
+  prompt "Укажите панель:" partly : ;
+switch autosingle off;
+offerror;
+if (sysvar(61)==0)
+{
+  exit;;
+}
+pnt=getselnum(1);
+vport 3;
+macro DRWZPath+"drawdial.mac" ;
+if (g_osn==1)
+{
+    macro DRWZPath+"osndial.mac";
+}
+
+nmal:
+//ft=getattr(pnt,"$ProtoINFO","");
+vAtr=GetAttr(pnt,"PorNumber",0);
+Pl_NumPan=vAtr;
+if (protoid(pnt)>0)
+{
+  //macro Protopath+"draw33.mac" pnt ;
+  macro ProtoPath+"OldPanToNewPan.mac" pnt;
+  objident last 1 pnt;
+  attrobj edit partly pnt "PorNumber" done vAtr
+  goto nmal;
+}
+else
+{
+  macro DRWZPath+"DrawDB.mac" ;
+ //macro Protopath+"drawpan.mac" pnt ;
+ macro DRWZPath+"drawpanDR1.mac" pnt ;
+}
+
+macro DRWZPath+"drawsave65.mac" projname adraw;
+new [ no ]
+open projname;
+//------------------------------------------------------------------------------
+NULLOUT=ReSnap();
+if (g_dorab==2)
+{
+	exit;
+}
+end:
+new [ no ]
+open projname;
+#ok_flag
+alternative "Чертежи сохранены"
+msgbox picture 4 beep 4 text left
+"Созданные чертежи сохранены в папке '"+getfilepath(projname)+"'"
+done
+"  OK  "
+done;
+final:
+
+exit;
+//----------------------------------------------------
+//----------------------------------------------------
+//----------------------------------------------------
+

@@ -1,0 +1,51 @@
+global protopath g_dparln g_osn g_keyres L_support DRWZPath;
+
+
+l_dialog=1
+metprev:
+macro DRWZPath+"drawdial.mac" l_dialog ;
+
+macro DRWZPath+"osndial.mac";
+Lt=0
+<?python
+# -*- coding: cp1251 -*-
+import k3
+dictName = {
+"Столешница":0,
+"Карниз":1,
+"Профиль карниза":2,
+"Водоотбойник":3,
+"Цоколь":4,
+"Стеновая панель":5,
+"Нижний профиль":6,
+"Балюстрада":7,
+"Мебельная панель":10,
+"Развертка стен":100,
+"Общий вид изделия":1000
+}
+lName = list(dictName.keys())
+lName.sort()
+sLt, Lt = k3.Var('sLt'),k3.Var('Lt')
+
+k3.setvar("Тип чертежа",           # Заголовок окна
+"",                  # Имя файла иллюстрации
+# Пояснительный текст
+k3.k_center,         #с выравниванием слева
+" Определите значения для заполнения полей", "спецификации и чертежей",
+k3.k_done,          # конец пояснительного текста
+k3.k_string, k3.k_auto, k3.k_listonly,lName,
+k3.k_done,
+"Тип чертежа:",    sLt,
+k3.k_done )
+Lt.value = dictName[sLt.value]
+?>
+
+
+macro L_Support+"SetPlProject.mac" g_osn Lt;
+if g_keyres==1
+{
+g_keyres==0
+goto metprev;
+}
+g_dparln=1;
+exit;

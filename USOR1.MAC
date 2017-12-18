@@ -1,0 +1,22 @@
+//-- Макропрограмма формирует узор для фасада сплошной скругленной
+//-- Входные параметры:
+//-- xn, yn, zn - координаты правого нижнего дальнего угла узора
+//-- dx, dy, dz - габариты узора по соотетствующей оси
+
+global ProtoPath;
+global FsMater;
+
+getpar xn, yn, zn, dx, dy, dz;
+
+macro ProtoPath+"SetMat.mac" FsMater ;
+macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+macro ProtoPath+"SetECod.mac" "2102" ;
+// macro ProtoPath+"SetKCod.mac" "ПЛДВ" dz dx ;
+macro ProtoPath+"SetFix.mac"  0 0 0 0 ;
+macro ProtoPath+"SetEnam.mac" "Полотно фасада" ;
+  macro ProtoPath+"SetButts.mac" 3, 3, 2, 0, 10, 0, 0, 0, 0 ;
+  macro ProtoPath+"SetButts.mac" 4, 3, 2, 0, 10, 0, 0, 0, 0 ;
+macro ProtoPath+"MakePan.mac" xn yn zn dz dx 14 ;
+  macro ProtoPath+"SetButts.mac" 3, 0, 0, 0, 0, 0, 0, 0, 0 ;
+  macro ProtoPath+"SetButts.mac" 4, 0, 0, 0, 0, 0, 0, 0, 0 ;
+exit;

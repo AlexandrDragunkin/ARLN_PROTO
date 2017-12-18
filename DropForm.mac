@@ -1,0 +1,37 @@
+//-- Создание панели столешницы-капли
+//-- Входные параметры:
+//-- Rad - Радиус капли
+//-- Horda - Длина среза капли
+//-- Big - Большая часть круга
+//-- Angle - Угол среза
+//-- PrMater - Материал панели
+//-- Typ_Kro - Материал кромки
+//-- ColDKro - Цвет кромки
+
+getpar Rad, Horda, Big, Angle, PrMater, Typ_Kro, ColDKro;
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами 
+NULLOUT=getvarinst(2,"FigDeskColor",col,4);         //-- Цвет фигурных столешниц 
+NULLOUT=getvarinst(2,"IsColorUse",icu,1);           //-- Использовать ли цвета 
+
+sy=sysvar(60);
+//-- Построение контура столешницы-капли
+macro ProtoPath+"DropS.mac" Rad, Horda, Big, Angle;
+sy=sysvar(60)-sy;
+if (sy!=1)
+{
+  exit;
+}
+objident last 1 pa;
+if (icu==1)
+{
+  curcol=sysvar(40);
+  color col;
+}
+macro ProtoPath+"NestandAuto.mac" pa PrMater ColDKro Typ_Kro 0;
+if (icu==1)
+{
+  color curcol;
+}
+delete pa done;
+exit;

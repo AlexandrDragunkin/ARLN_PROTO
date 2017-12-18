@@ -1,0 +1,113 @@
+//-- Макропрограмма меняет габаритный параметр прототипа на новое значение
+//-- Используется при групповой замене параметров
+//-- Входные данные:
+//-- pnt - ссылка на объект-прототип
+//-- nid - Величина
+//-- Param - имя параметра
+//-- typeC - что сделать с габаритом
+
+global ProtoPath;
+getpar nid Param pnt;
+kol=getdimarray(nid);
+NULLOUT=getvarinst(2,"TypeChangeSize",typeC,0);
+//-- Получаем путь до библиотеки прототипов
+q=protolib(pnt);
+id=protoid(pnt);
+if (len(q)==0||id==0)
+{
+  exit;
+}
+Pat=GetProtoMac(q);
+if (q=="Kitchen.ptl")		//--Если библиотека кухонная
+{
+  if (Param[1]=="Высота")
+  {
+    Param[1]="Выс";
+  }
+  if (Param[1]=="Глубина")
+  {
+    Param[1]="Глуб";
+  }
+}
+if (q=="Office.ptl")		//--Если библиотека офисная
+{
+  if (Param[1]=="Высота")
+  {
+    Param[1]="H";
+  }
+  if (Param[1]=="Глубина")
+  {
+    Param[1]="G";
+  }
+}
+if (q=="Kupe.ptl")		//--Если библиотека шкафов
+{
+  if (Param[1]=="Высота")
+  {
+    Param[1]="Height";
+  }
+  if (Param[1]=="Глубина")
+  {
+    Param[1]="Depth";
+  }
+}
+//-- Получаем путь до описание параметров прототипов
+q=q-4;
+//------------------------------------------------------------------------------
+//-- Устанавливаем соединение со справочником
+res=adbopen(adbcon(2),"SELECT * FROM TProtoPar WHERE ProtoID="+str(id)+" AND LibID=(SELECT LibID FROM TProtoLib WHERE ProtoLibName='"+q+"')");
+if (res==0)
+{
+  exit;
+}
+total_s=adbRecCount(res);
+defarr parname[total_s];
+defarr parvalue[total_s];
+adbmovefirst(res);
+p=1;
+d=0;
+LC:
+ll=1;
+ll:
+if (Param[ll]==aDbGetValue(res,2))
+{
+  d=d+1;
+  parname[d]=aDbGetValue(res,2);
+  if (typeC=="Добавить к текущей")
+  {
+    NULLOUT=getprotoval(pnt,Param[ll],t_raz);
+    parvalue[d]=nid[ll]+t_raz;
+  }
+  else
+  {
+    parvalue[d]=nid[ll];
+  }
+}
+if (ll<kol)
+{
+  ll=ll+1;
+  goto ll;
+}
+if (p<total_s)
+{
+  p=p+1;
+  adbmovenext(res);
+  goto LC;
+}
+res=adbclose(res);
+
+//------------------------------------------------------------------------------
+//-- Меняем значение параметра
+if (d==0) { exit; }				//--Не надо изменять прототип, если не меняли параметр
+protoobj create Pat+q ;
+p=1;
+//----------------------------------------------------------------------------------------------------
+LCC:
+if (p<=d)
+{
+  err=ChangePInfo(pnt,parname[p],parvalue[p]);
+  p=p+1;
+  goto LCC;
+}
+smart edit list pnt nodc ;
+exit;

@@ -1,0 +1,40 @@
+//-- Удалить авторазмер
+
+#ok_flag
+alternative "Удалить размеры" msgbox picture 2 beep 2 text "Подтвердите удаление размеров?" done "Все" "Только авто" "Нет" done
+if ok_flag==3
+{
+	exit;
+}
+object_2=sysvar(60);
+defarr dObj[object_2];
+i=0;
+j=0;
+
+lab_0:
+i=i+1;
+If (i<=object_2)
+{
+  OBJ1=getobjnum(i);
+  if (getobjtype(OBJ1)==10)||getobjtype(OBJ1)==8||(getobjtype(OBJ1)==-15)
+	{
+    n=getattr(OBJ1,"AutoPlace",-1);
+    if (n==1||ok_flag==1)
+		{
+			j=j+1;
+			dObj[j]=OBJ1;
+    }
+  }
+  goto lab_0;
+}
+
+i=0;
+Loop:
+i=i+1;
+if (i<=j)
+{
+  visible dObj[i];
+  delete dObj[i];
+	goto Loop;
+}
+exit;

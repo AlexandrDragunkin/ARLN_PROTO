@@ -1,0 +1,277 @@
+//-- Изменить отделку панели
+global ProtoPath;
+global pnt, iPNT, iPanME;
+defarr pnt[2000];
+selbyattr "Posit==10" child all done;
+karkas_kol=sysvar(61);
+karkas_num=GetCarcNumb();
+err=renumerate();		//-- проставляем номера, чтобы иметь UnitPos панелей
+if (karkas_kol==0)
+{
+ putmsg("Сначала надо создать мебельный каркас",0);
+ exit;
+}
+if (karkas_kol==1)
+{
+ #karkas MBCarcase set yes;
+}
+if (karkas_kol>1&&karkas_num==0)
+{
+ #karkas MBCarcase set no yes :
+} 
+karkas_num=GetCarcNumb();
+
+NULLOUT=getvarinst(2,"g_DecN",g_DecN,0);
+NULLOUT=getvarinst(2,"g_DecTN",g_DecTN,0);
+defarr g_DecTID[g_DecTN];
+NULLOUT=getarrinst(2,"g_DecTID",g_DecTID);
+
+defarr arr[20];
+iyf=getyadfixing();
+ThA=0;
+ThF=0;
+ThOldMat=0;
+ThNewMat=0;
+DefFk_zam=str(getyadsubst(3))+"#"+str(g_DecTID[1]) ;                    // Формируем строку умолчаний.
+//-- 3 - зашитая в коде подстановка для отделок
+
+#ok_flag
+setvar
+"Изменить отделку панели"
+""
+left
+"Определите параметры отделки панели"
+done
+str listonly
+  current "A"
+          "F"
+	done
+	"Сторона панели:"    Side
+
+string auto button 6 default DefFk_zam
+     "Тип отделки:" NFk_zam				
+done;
+if ok_flag==0
+{
+  exit;
+}
+splitbydelim(NFk_zam,"#",Arr);
+I_DecT=Arr[2];
+
+defarr arrin[1], ID[1,g_DecTN], sname[1,g_DecTN];
+arrin[1]=I_DecT;
+NULLOUT=getmplsubstr(arrin,"ID","sname","g_DecN");
+
+DefS_kro=str(I_DecT)+"#"+str(ID[1,1]) ;                    // Формируем строку умолчаний.
+#ok_flag
+setvar
+"Изменить отделку панели"
+""
+left
+"Определите материал отделки панели"
+//"Тип отделки: '"+Fk_zam+"'"
+done
+string auto button 6 default DefS_kro
+     "Материал отделки:" NS_kro				
+				
+str 	listonly
+	  current "По указанию"
+		"Все панели"
+		"Все полки"
+		"Все стойки"
+		"Все врезные стенки"
+		"Все накладные стенки"
+	done
+				"Выбор панелей:"    S_zam
+str 	listonly
+	  current "Заменить отделку"
+		"Добавить отделку"
+		"Удалить отделку"
+done
+				"Действие:"    Fk_zam
+done;
+if ok_flag==0
+{
+  exit;
+}
+macro Protopath+"ChgSel.mac" S_zam ;
+
+
+splitbydelim(NS_kro,"#",Arr);
+I_kro=Arr[2];
+
+/////-- Если способ замены "По указанию" --/////
+if (S_zam=="По указанию")
+{
+	Loop:
+	//-- на какую панель
+  a=fltrparamobj(1,61);  //-- Фильтр по мебельной панели
+  switch autosingle on;
+  onerror final;
+  select partly : ;
+  switch autosingle off;
+  offerror;
+  a=fltrparamobj(0);     //-- Выключили фильтр по мебельной панели
+  if (sysvar(61)==0)
+  {
+    goto final;
+  }
+  pnt1=getselnum(1);
+  offerror;
+  select stayblink pnt1 done;
+  err=1;
+		//-- Определяем толщину панели
+	PanMat=getattr(pnt1,"PriceID",0);
+	THMat=priceinfo(PanMat,"Thickness",16);
+	THDec=priceinfo(I_kro,"Thickness",0);
+	macro ProtoPath+"GetDecPanThin.mac" 
+																			pnt1							//-- ссылка на панель
+																			byref ThA					//-- толщина отделки по стороне A 
+																			byref ThF	;				//-- толщина отделки по стороне F
+	ThOldMat=THMat+ThA+ThF;
+	if (Fk_zam=="Заменить отделку")
+	{
+		ThNewMat=ThOldMat-iif(Side=="F",ThF,ThA)+THDec;
+	}
+	if (Fk_zam=="Удалить отделку")
+	{
+		ThNewMat=ThOldMat-iif(Side=="F",ThF,ThA);
+	}
+	if (Fk_zam=="Добавить отделку")
+	{
+		ThNewMat=ThOldMat+THDec;
+	}
+	macro	ProtoPath+"ChangePanMat.mac" pnt1 ThOldMat ThNewMat 0;
+  NULLOUT=InitArray(arr,0);
+  arr[1]=pnt1;
+  err=GetPan6Par(1,arr);
+  if (err==1)
+  {
+    gosub ChKre;
+    MBPanel execute pnt1 ;
+  }
+	if (iyf==1)  //-- Если крепеж выключали, включаем его.
+	{
+		fixing create all done;
+	}
+  goto Loop;
+}
+/////-- Если способ замены  не "По указанию" --/////
+else
+{
+ gosub SELTYPEPAN;
+}
+final:
+NULLOUT=InitArray(pnt,0);
+switch autosingle off;
+if (iyf==1)  //-- Если крепеж выключали, включаем его.
+{
+	fixing create all done;
+}
+a=fltrparamobj(0);     //-- Выключили фильтр по мебельной панели
+switch autosingle off;
+exit;
+//---------------------------------------------------------------
+
+/////-- Подпрограмма простановки отделки по стороне Side и определение старой и новой толщины панелей---//////
+ChKre:
+if (Fk_zam=="Заменить отделку")||(Fk_zam=="Удалить отделку")
+{
+  arr[1]=iif(Side=="F",6,5);
+  arr[2]=0;
+  arr[3]=0 ;
+  arr[4]=1 ; // видимость отделки
+  err=SetPan6Par(28,arr);
+}
+if (I_kro!=0&&I_DecT!=0)&&(Fk_zam!="Удалить отделку")
+{
+  arr[1]=iif(Side=="F",6,5);
+  arr[2]=I_DecT;
+  arr[3]=I_kro;
+  arr[4]=1 ; // видимость отделки
+  err=SetPan6Par(28,arr);
+}
+return;
+////------Подпрограмма замены отделки нескольких панелей-----////
+SELTYPEPAN:
+if (iyf==1)  //-- Если крепеж включен, выключаем его.
+{
+	NULLOUT=setyadfixing(0);
+	holes delall all done;
+	fixing delauto all done;
+	fixing hide all done;
+}
+if (S_zam!="По указанию")
+{
+	//-- Выбираем панели 
+	if (S_zam=="Все панели"||S_zam=="Только стандартные панели")
+	{
+		selbyattr "KarkasNumb=="+str(karkas_num)+"&&left(FurnType,3)==\"010\"" wholly all done; 
+	}
+	if (S_zam=="Все полки")
+	{
+		selbyattr "KarkasNumb=="+str(karkas_num)+"&&left(FurnType,4)==\"0101\"" wholly all done; 
+	}
+	if (S_zam=="Все стойки")
+	{
+		selbyattr "KarkasNumb=="+str(karkas_num)+"&&left(FurnType,4)==\"0102\"" wholly all done; 
+	}
+	if (S_zam=="Все врезные стенки")
+	{
+		selbyattr "KarkasNumb=="+str(karkas_num)+"&&left(FurnType,4)==\"0103\"" wholly all done; 
+	}
+	if (S_zam=="Все накладные стенки")
+	{
+		selbyattr "KarkasNumb=="+str(karkas_num)+"&&left(FurnType,4)==\"0104\"" wholly all done; 
+	}
+	if (S_zam=="Все, кроме накладной стенки")
+	{
+		selbyattr "KarkasNumb=="+str(karkas_num)+"&&left(FurnType,3)==\"010\"&&FurnType!=\"010400\"" wholly all done; 
+	}
+	iPNT=sysvar(61);
+	macro ProtoPath+"Arrobj.mac" iPNT pnt;
+	putmsg(iPNT)
+}
+else
+{
+	macro Protopath+"ChgSel.mac" S_zam; 
+}
+
+i=0;
+LoopAll:
+if (i<iPNT)
+{
+	i=i+1;
+	iPanME=i;
+	pnt1=pnt[i];
+	//-- Определяем толщину панели
+	PanMat=getattr(pnt1,"PriceID",0);
+	THMat=priceinfo(PanMat,"Thickness",16);
+	THDec=priceinfo(I_kro,"Thickness",0);
+	macro ProtoPath+"GetDecPanThin.mac" 
+																			pnt1							//-- ссылка на панель
+																			byref ThA					//-- толщина отделки по стороне A 
+																			byref ThF	;				//-- толщина отделки по стороне F
+	ThOldMat=THMat+ThA+ThF;
+	if (Fk_zam=="Заменить отделку")
+	{
+		ThNewMat=ThOldMat-iif(Side=="F",ThF,ThA)+THDec;
+	}
+	if (Fk_zam=="Удалить отделку")
+	{
+		ThNewMat=ThOldMat-iif(Side=="F",ThF,ThA);
+	}
+	if (Fk_zam=="Добавить отделку")
+	{
+		ThNewMat=ThOldMat+THDec;
+	}
+	macro	ProtoPath+"ChangePanMat.mac" pnt1 ThOldMat ThNewMat 0;
+	NULLOUT=InitArray(arr,0);
+	arr[1]=pnt1;
+	err=GetPan6Par(1,arr);
+	gosub ChKre;
+	#pnt1 MBPanel execute pnt1 ;
+	pnt[i]=pnt1;
+	goto LoopAll;
+}
+return;

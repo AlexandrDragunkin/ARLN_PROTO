@@ -1,0 +1,17 @@
+// Установить тек. Типы и Параметры ящика для библиотеки стандартных объектов
+global		// Для ящика
+BoxDMater;  // Материал дна ящика
+global		// Для ящика
+DoorType,  // Утопленная0/накладная1/Свободная2
+BoxKType ;   // Тип корпуса ящика
+getpar  P1 P2  P3 P4 ; // Остальные  - резерв
+ 
+BoxDMater=P1;
+B_Zbox=P2;
+DoorType=P3;
+BoxKType=P4;
+// NULLOUT=setVarInst(2,"BoxDMater",BoxDMater);
+NULLOUT=setVarInst(2,"B_Zbox",B_Zbox);
+// NULLOUT=setVarInst(2,"DoorType",DoorType);
+// NULLOUT=setVarInst(2,"BoxKType",BoxKType);
+exit

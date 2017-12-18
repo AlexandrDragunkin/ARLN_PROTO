@@ -1,0 +1,68 @@
+// Создание объекта - ящик для замены
+global MacroSw  ; // Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+MacroSw=0
+
+ProtoPath=GetProtoMac("Shkaf.ptl")
+macro ProtoPath+"global_s.mac" ;
+
+macro ProtoPath+"SetInit.mac" ;
+
+w=DbVar("wk",330)   //ширина корпуса ящика
+yf=DbVar("y",320)   //глубина фасада
+hbox=DbVar("Hk",822)   //высота корпуса ящика
+
+X_Fas=DbVar("X_Fas",0); // Ширина фасада
+Z_Fas=DbVar("Z_Fas",0); // Высота фасада
+X_Sk=DbVar("X_Sk",0); // Сдвиг  корпуса X
+Z_Sk=DbVar("Z_Sk",0); // Сдвиг  корпуса Z
+
+Col_Kro=DbVar("Face_col",1)   // цвет облиц.ленты
+DoorBand=DbVar("Band",0)   // Тип кромки
+TypKroB=DbVar("Band",DbVar("KromDef",0));
+Col_KFas=DbVar("Face_cof",1)   // цвет облиц.ленты фасада
+Band_F=DbVar("Band_F",0)   // Тип кромки фасада
+BxType=DbVar("BxType",0);   // Тип корпуса ящика
+
+PrMater=DbVar("PrMater",0);
+h_dsp=PriceInfo(PrMater,"Thickness",DbVar("HDSP",16))
+
+BcMater=DbVar("PrMatDv",0);
+
+FacadMt=DbVar("FsMater",0);
+h_fas=PriceInfo(FacadMt,"Thickness",DbVar("HDSP",16),2)
+PrMatVs1=DbVar("PrMatVs1",0);  // Материал вставки 1
+PrMatVs2=DbVar("PrMatVs2",0);  // Материал вставки 2
+
+ARMX=DbVar("rx",0)
+ARMZ=DbVar("rz",0) //высота ручки
+ARMA=DbVar("ra",0) //угол ручки
+Doub_r=DbVar("Doub_r",0)
+Rpl_r=DbVar("Rpl_r",0)
+
+Handle=DbVar("HanType",0);
+Khandl=DbVar("Khandl",0);
+Fpic=DbVar("Fstype",0)  // рисунок фасада
+
+//-------------------------------------------------------------------------->>>>
+
+macro ProtoPath+"SetMat.mac" PrMater ;
+macro ProtoPath+"SetBox.mac" BcMater 0 Fpic BxType;
+macro ProtoPath+"SetBoxKr.mac" Col_Kro DoorBand;
+
+macro ProtoPath+"SetHand.mac" Doub_r Rpl_r ;
+macro ProtoPath+"SetHandl.mac" Handle ARMX ARMZ ARMA;
+
+macro ProtoPath+"SetFasdN.mac" FacadMt Fpic Col_KFas Band_F PrMatVs1 PrMatVs2  ;
+xt=0 yt=0 zt=0
+// w	// Размеры ящика
+// yf
+// hbox
+// X_Sk=0   // Сдвиг ящика
+// Z_Sk=0
+// Khandl // Кол-во ручек
+
+macro ProtoPath+"MakeBox1.mac" xt yt zt X_Fas Z_Fas w yf hbox x_Sk z_Sk Khandl;
+
+//macro ProtoPath+"boxsb.mac" ;
+
+

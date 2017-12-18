@@ -1,0 +1,57 @@
+// EdStrTyp.mac
+//        Изменяет значение строки по аттрибуту
+//              Драгункин А.Р.
+//              ГеоС 2013-14 гг.
+//*********************************************
+getpar pl_pnt;
+
+//0 – переменная не определена;
+//3 – переменная является массивом
+//5 – переменная числового типа
+//6 – переменная строкового типа
+//16 – переменная является ссылкой на объект
+// Если pl_pnt вляется строкой и содержит знаки % то значит значение надо брать из имени атрибута или последовательности атрибутов между %
+// например "%KONSCOD%" или "%COMMONPOs%x%ELEMNAME% Если такого атрибута нет то пишется просто слово
+// Если первый символ после % фигурная скобка { Значит требуется выполнить выражение и вернуть его значение
+// например %{PriceInfo(getattr(0,"priceid",0),"MATNAME",".")% вернет наименование материала по атрибуту PriceID в текущей записи
+
+defarr aNAtr[100];
+if IsVarDef("pl_pnt")==6    
+{
+	if inStr(1,pl_pnt,"%",1)>0 {
+		
+		nElStr=splitByDelim(pl_pnt,"%",aNAtr)
+
+
+
+<?python
+# -*- coding: cp1251 -*-
+import k3 # Подключаем модуль k3
+pl_pnt = k3.Var('pl_pnt')
+ 
+nElStr = k3.Var('nElStr') # Передаем переменную К3 внутрь Python
+aNAtr = k3.VarArray(100,'aNAtr')
+S_val = ''
+
+for i in range(int(nElStr.value)):
+    elem = aNAtr[i]
+    vv = k3.getattr(0,elem.value,elem.value)
+    if type(vv)==float:
+        if abs(vv-int(vv))<0.0001:
+            vv = int(vv)
+    else:         
+        pos = k3.instr(1,vv,"{",1)
+        if pos>0:
+            l_vv=len(vv)
+            cod = k3.right(vv,l_vv-pos)            
+            v_result,v_error = k3.Var(), k3.Var()
+            k3.expression(cod,v_result,v_error) 
+            if len(v_error.value)>1:
+                print (v_error.value)
+            vv = v_result.value    
+    S_val = S_val + str(vv)
+if len(S_val)>0:
+    pl_pnt.value = S_val
+?>		
+	}
+}

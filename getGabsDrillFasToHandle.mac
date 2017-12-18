@@ -1,0 +1,24 @@
+// определяет толщину в точке xyz прокола тела или группы цилиндром диаметром d
+// Возвращает минимальную и максимальную координату по оси Y
+// Драгункин Александр
+// 08.09.2015
+global ProtoPath;
+defarr xm[6];
+getpar obj1 x y z  d resmin resmax;
+
+chprop tool obj1 ;
+#cyd cylinder x y z @0 10000 0 d
+object_1=sysvar(60); //-- Кол-во объектов
+boolean inter obj1 cyd;
+object_2=sysvar(60)-object_1; //-- Кол-во объектов
+// putmsg(object_2)
+chprop not_tool obj1 ;
+if object_2>0
+{
+	objident last 1 rB ;
+	NULLOUT=ObjGab3(rB,xm);
+	delete rB done;
+}
+resmin=xm[2];
+resmax=xm[5];
+exit;

@@ -1,0 +1,98 @@
+// создание нематериального прямого профиля
+// Имя файла профиля, цвет К3Look и параметры  описаны в глобальных переменных
+global ProtoPath ;
+
+global g_PrfColor  g_PrProf;
+
+global 
+PrfMater // Материал профиля
+PrfP_1   // Подрез начальной точки
+PrfP_2   // Подрез конечной точки
+PrfSd_X  // Сдвиг по Х ЛСК
+PrfSd_Y  // Сдвиг по У ЛСК
+PrfAngle // Угол поворота вокруг оси (град)
+PrfAng_1 // Угол подрезки 1 стороны
+PrfAng_2 // Угол подрезки 2 стороны
+PrfColor // Цвет профиля из прайса
+;
+defarr xm[6];
+
+getpar 
+xp1 yp1 zp1		// 1 точка	
+xp2 yp2 zp2		// 2 точка	
+;
+NULLOUT=GetSnap();
+setucs xp1 yp1 zp1 oz xp2 yp2 zp2 done ;
+Dlina=sqrt((xp2-xp1)*(xp2-xp1)+(yp2-yp1)*(yp2-yp1)+(zp2-zp1)*(zp2-zp1));
+gosub Profile ;
+NULLOUT=ReSnap();
+
+exit;
+
+Profile:
+
+Angle=PrfAngle
+Sd_X=PrfSd_X
+Sd_Y=PrfSd_Y
+
+Col_Prof=g_PrfColor;
+FileName=g_PrProf;
+
+if (len(FileName)==0)
+{
+  line 
+       -10 -10 0
+       -10 10 0
+       10 10 0
+       10 -10 0
+
+       close ;
+  #Kont path last 1 done ;
+}
+else
+{
+  macro ProtoPath+"AppendK3.mac" "Профили\\" FileName 0 0 0;
+  objident last 1 Kont ;
+}
+#Prof extrusion last 1 done -(Dlina-PrfP_1-PrfP_2) ;
+	Attrobj Attach "$Material" "$TSmooth" "$TMix" Done Prof Col_Prof 1 1;
+delete Kont done ;
+
+Ang1=PrfAng_1
+Ang2=PrfAng_2
+Dl=-(Dlina-PrfP_1-PrfP_2);
+rr=objgab3(Prof,xm);
+if (ang1!=0) {
+  #b1 box -1000 -1000 0 1000 1000 -1000 ;
+  if (ang1>0)
+  {  
+    rotate b1 done 2points xm[1]  0 0 xm[1] -1 0 ang1 nocopy ;
+  }
+  else
+  {
+    rotate b1 done 2points xm[4] 0 0 xm[4] -1 0 ang1 nocopy ;
+  }
+  chprop tool b1 done ; 
+  #prof  bool sub prof b1 done ; 
+  delete b1 done;
+}
+if (ang2!=0)
+{
+  #b1 box -1000 -1000 0 1000 1000 1000 ;
+  move b1 done 0 0 -Dl nocopy ;
+  if (ang2>0)
+  { 
+    rotate b1 done 2points xm[1] 0 -Dl xm[1] 1 -Dl ang2 nocopy ;
+  } 
+  else
+  {
+    rotate b1 done 2points xm[4] 0 -Dl xm[4] 1 -Dl ang2 nocopy ;
+  }
+  chprop tool b1 done ;
+  #prof  bool sub prof b1 done ; 
+  delete b1 ;
+}
+move last 1 done 0 0 PrfP_1 nocopy ;
+rotate last 1 done 2points 0 0 0 0 0 1 angle nocopy ;
+move last 1 done Sd_X Sd_Y 0 nocopy ;
+return;

@@ -1,0 +1,36 @@
+//-- Диван типового 3-х местный
+global ProtoPath;		//-- Путь к папке с макропрограммами общей библиотеке прототипов
+defarr col[2];
+mp="<K3Files>";
+north=mpathexpand(mp);
+
+//-- Читаем параметры
+mat1=DbVar("mat1",0);         //-- Основной материал
+mat2=DbVar("mat2",0);         //-- Дополнительный материал
+model=DbVar("model",2259);    //-- Модель
+
+//-- Читаем текстуру из свойства
+col[1]=PriceInfo(mat1,"Texture",1);
+col[2]=PriceInfo(mat2,"Texture",1);
+mod=PriceInfo(model,"K3File","divan1.k3");
+//-----------------------------------------------------------------------
+//-- Добавляем объект в сцену
+coldo=sysvar(60);
+append north+"\\"+mod 0 0 0;
+colpos=sysvar(60)-coldo;
+if (colpos==0)
+{
+  putmsg("К3 файл модели изделия отсутствует или пустой",0);
+  cancel;
+}
+if (colpos>1)
+{
+  group all done;
+}
+objident last 1 softmeb;
+//-- Раскрашиваем объект
+macro ProtoPath+"SoftMebColor.mac"
+col,					  //-- Массив с именами текстур
+2,					    //-- Размерность массива col
+softmeb;				//-- Объект для раскраски
+exit;

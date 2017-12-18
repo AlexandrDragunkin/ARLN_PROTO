@@ -1,0 +1,27 @@
+//-- Обнулить пропилы
+global
+PropN,   //-- Количество пропилов
+PazAM    //--     Пропил - сторона
+PazBM    //--     Пропил - параллельно
+PazRM    //--     Пропил - расстояние от стороны
+PazWM    //--     Пропил - ширина паза
+PazDM    //--     Пропил - глубина паза
+PazSM    //--     Пропил - отступа паза
+PazLM ;  //--     Пропил - длина паза
+
+PropN=0;
+NULLOUT=initarray(PazAM,0);
+NULLOUT=initarray(PazBM,0);
+NULLOUT=initarray(PazRM,0);
+NULLOUT=initarray(PazWM,0);
+NULLOUT=initarray(PazDM,0);
+NULLOUT=initarray(PazSM,0);
+NULLOUT=initarray(PazLM,0);
+a=FindArrInst(1,"g_Slots");
+if (a>0)
+{
+  defarr Slot[a];
+  NULLOUT=initarray(Slot,0);
+  NULLOUT=setarrinst(1,"g_Slots",Slot);
+}
+exit;

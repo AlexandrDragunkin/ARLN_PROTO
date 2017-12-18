@@ -1,0 +1,120 @@
+//--Макро создания профиля с крепежем
+global ProtoPath;
+KarkasNumb=getcarcnumb();	 //-- Порядковый номер каркаса в сцене
+nullout=getvarinst(2,"UnitCodeWard",UnitCodeWard,"8000");
+global MacroSw;		//-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global ElemName;	//-- Глобальное имя объекта
+
+getpar
+xp1 yp1 zp1		//-- Первая точка профиля
+xp2 yp2 zp2		//-- Вторая точка профиля
+;
+defarr gab[6];		//-- Габариты профиля
+NULLOUT=getvarinst(2,"FixB",FixB,0);        //-- Крепеж начала профиля
+NULLOUT=getvarinst(2,"DX_B",DX_B,0);		//-- Сдвиг крепежа начала профиля
+NULLOUT=getvarinst(2,"AngB",AngB,0);		//-- Угол поворота крепежа начала профиля
+NULLOUT=getvarinst(2,"FixE",FixE,0);        //-- Крепеж конца профиля
+NULLOUT=getvarinst(2,"DX_E",DX_E,0);		//-- Сдвиг крепежа конца профиля
+NULLOUT=getvarinst(2,"AngE",AngE,0);		//-- Угол поворота крепежа конца профиля
+NULLOUT=getvarinst(2,"PrfAngle",Angl,0);	//-- Угол поворота профиля
+NULLOUT=getvarinst(2,"PrfP_1",ShiftXB,0);	//-- Подрез начала профиля
+NULLOUT=getvarinst(2,"PrfP_2",ShiftXE,0);	//-- Подрез начала профиля
+//--Расчитываем параметры
+KarkasNumb=getcarcnumb();			//-- Текущий номер каркаса
+macFB=PriceInfo(FixB,"MacroFile","",2);
+macFE=PriceInfo(FixE,"MacroFile","",2);
+// putmsg(FixB);
+// putmsg(macFB);
+// putmsg(FixE);
+// putmsg(macFE);
+ShiftYB=PriceInfo(FixB,"ShiftY",0,2);
+ShiftYE=PriceInfo(FixE,"ShiftY",0,2);
+SHIFT=max(ShiftYB,ShiftYE);
+obj_do=sysvar(60); 
+//--Создаем профиль
+macro ProtoPath+"MakeProf.mac" xp1 yp1 zp1 xp2 yp2 zp2;
+objident last 1 profil;
+attrobj attach "UnitCode" Done profil UnitCodeWard;
+NULLOUT=pushinst(1);
+NULLOUT=getsnap();
+setucs lcs profil;						//-- Помещаем ПКС в ЛСК профиля
+err=objgab3(profil,gab);
+Zgab=gab[6]-gab[3];
+W=Zgab+ShiftXE+ShiftXB;
+//--Cоздаем крепления.
+if (macFB!="")
+{
+ macro ProtoPath+macFB FixB;					//--Крепеж начала
+ rotate last 1 done 2points 0 0 0 0 0 100 AngB-Angl nocopy;
+ move last 1 done 0 0 DX_B nocopy;
+ attrobj attach "GoodsID" done last 1 FixB ; 
+ attrobj attach "GroupID" done last 1 145 ; 
+ attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+ attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 0 0 0 ;	//-- Размеры
+ attrobj attach "Assembly" done last 1 1;
+ if (isassign("KarkasNumb",0))
+ {
+  attrobj copy record "KarkasNumb" done last 1 done;
+ }
+ else
+ {
+  attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+ }
+ if (isassign("HoldName",0))
+ {
+  attrobj copy record "HoldName" done last 1 done;
+ }
+}
+if (macFE!="")
+{
+ macro ProtoPath+macFE FixE;					//--Крепеж конца;
+ rotate last 1 done 2points 0 0 0 0 1 0 180 nocopy;
+ rotate last 1 done 2points 0 0 0 0 0 1 AngE-Angl nocopy;
+ move last 1 done  0 0 W-DX_E nocopy;
+ attrobj attach "GoodsID" done last 1 FixE ; 
+ attrobj attach "GroupID" done last 1 145 ;     
+ attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 0 0 0 ;	//-- Размеры
+ attrobj attach "Assembly" done last 1 1;
+ if (isassign("KarkasNumb",0))
+ {
+  attrobj copy record "KarkasNumb" done last 1 done;
+ }
+ else
+ {
+  attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+ }
+ if (isassign("HoldName",0))
+ {
+  attrobj copy record "HoldName" done last 1 done;
+ }
+}
+obj_posle=sysvar(60);
+kol=obj_posle-obj_do;
+move last kol done 0 -SHIFT 0 nocopy;
+NULLOUT=resnap();
+NULLOUT=popinst(1);
+group last kol done;
+
+//-- Присваиваем атрибуты готовому объекту
+attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 xp2 0 0;	//-- Размеры профиля
+attrobj attach "ElemName" done last 1 "Профиль гардеробный";
+if (isassign("KarkasNumb",0))
+{
+ attrobj copy record "KarkasNumb" done last 1 done;
+}
+else
+{
+ attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+}
+if (isassign("HoldName",0))
+{
+ attrobj copy record "HoldName" done last 1 done;
+}
+attrobj attach "Assembly" done last 1 1;   //-- Добавим атрибут сборочной единицы
+attrobj attach "FurnType" done last 1 "350600";
+macro ProtoPath+"SetProfC.mac" 0 0 0 0 0 0 0 0 0;
+exit;
+FINAL:
+NULLOUT=resnap;
+NULLOUT=popinst(1);
+exit;

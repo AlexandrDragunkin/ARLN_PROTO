@@ -1,0 +1,409 @@
+//-- Макропрограмма построения прямой ниши
+global ProtoPath;
+global FindMatID;
+global g_FurnType;  //-- Тип мебельного объекта
+global D_DxU D_DzU D_DxN D_DzN D_DxD;
+global g_FasPlas;			//-- Для фасада массив с нахлестами 1,2,3,4 - + по справа, слева, сверху и снизу соответственно.
+global HoldName;      //-- Имя хозяина
+global			// Для ящика
+BoxSLX,     // Увеличение фасада слева по X
+BoxSUZ,     // Увеличение фасада сверху по Z
+BoxSRX,	    // Увеличение фасада справа по X
+BoxSDZ;     // Увеличение фасада снизу по Z
+//-----------------------------------------------------------------
+w=DbVar("w",600);                     //-- Ширина
+d=DbVar("d",600);                     //-- Глубина
+h=DbVar("h",600);                     //-- Высота
+TypeFill=DbVar("TypeFill",0);	        //-- Тип заполнения
+NumFill=DbVar("NumFill",0);	          //-- Количество полок или ящиков
+FasType=DbVar("FasType",0);	          //-- Рисунок фасада
+ShelfCut=DbVar("ShelfCut",0);	        //-- Заглубление полок
+PrMater=DbVar("PrMater",0);	          //-- Материал заполнения
+FasMater=DbVar("FasMater",0);	        //-- Материал фасада
+BotMater=DbVar("BotMater",0);	        //-- Материал дна ящика
+BoxType=DbVar("BoxType",0);	          //-- Тип ящика
+FasInMater=DbVar("FasInMater",0);	    //-- Материал вставки в фасад
+OpenSide=DbVar("OpenSide",0);	        //-- Открывание двери
+HandleType=DbVar("HandleType",0);	    //-- Тип ручки
+HandleH=DbVar("HandleH",0);	          //-- Высота установки ручки
+HandleA=DbVar("HandleA",0);	          //-- Угол поворота ручки
+HandlePlace=DbVar("HandlePlace",0);	  //-- Положение ручки
+DoubleDoor=DbVar("DoubleDoor",0);	    //-- Двойная дверь
+OpenDoor=DbVar("OpenDoor",0);	        //-- Открытая дверь
+HandleMove=DbVar("HandleMove",0);	    //-- Сдвиг ручки
+HingeType=DbVar("HingeType",0);	      //-- Тип петли
+Nfasad=DbVar("Nfasad",0);	            //-- Фасад накладной
+BandColor=DbVar("BandColor",0);	      //-- Цвет кромки
+BandType=DbVar("BandType",0);	        //-- Тип кромки
+FixCorp=DbVar("FixCorp",0);	          //-- Тип крепежа
+DoorType=DbVar("DoorType",0);	        //-- Тип двери
+HasDuct=DbVar("HasDuct",0);           //-- Наличие короба
+ShiftDuct=DbVar("ShiftDuct",0);       //-- Сдвиг короба
+WidthDuct=DbVar("WidthDuct",0);       //-- Ширина короба
+DepthDuct=DbVar("DepthDuct",0);       //-- Глубина короба
+cutSh=DbVar("ShelfRemCut",0);						//-- Величина подреза съемной полки
+FixShelfRem=DbVar("FixShelfRem",0);	  //-- Тип крепежа съемной полки
+//----------------------------------------------------------------
+FurnType="111101";
+Namescr="ProtoParams";
+ElemName="Ниша прямая"+iif(HasDuct!=0," с вырезом","");
+h_dsp=priceinfo(PrMater,"Thickness",16);
+h_fas=priceinfo(FasType,"Thickness",priceinfo(FasMater,"Thickness",16),2);
+defarr error[10];
+NULLOUT=initarray(error,"");
+object_0=sysvar(60);
+//----------------------------------------------------------------
+macro ProtoPath+"SetConstrInit.mac";
+macro ProtoPath+"SetMat.mac" PrMater;
+if (TypeFill==0||TypeFill==3) //-- Если тип заполнения - полки
+{
+  if (NumFill>=1)
+  {
+    if (ShelfCut>d-h_dsp)
+    {
+      error[1]="Заглубление полок не может превышать глубину стола или шкафа.";
+      error[2]="Значение заглубления полок не должно превышать '"+str(d-h_dsp)+"' мм.";
+      error[3]=" ";
+      error[4]="Убедитесь, что значение заглубления полок указано корректно."
+      error[5]="Проверьте, корректно ли задано значение глубины стола или шкафа."
+      macro Protopath+"ShowSmartError.mac" "Ошибка параметров заполнения" 5 error;
+      cancel;
+    }
+    h1=int((h+h_dsp)/(NumFill+1));
+    if (h1<80)
+    {
+      error[1]="Слишком маленькое расстояние между полками.";
+      error[2]="Расстояние между полками должно быть не менее 80 мм.";
+      error[3]=" ";
+      error[4]="Убедитесь, что значение выстоты шкафа или стола указано корректно."
+      error[5]="Проверьте, верно ли указано количество полок."
+      macro Protopath+"ShowSmartError.mac" "Ошибка параметров заполнения" 5 error;
+      cancel;
+    }
+    if (Nfasad==0)
+    {
+      ShelfCut=ShelfCut+h_fas;
+    }
+    macro ProtoPath+"SetECod.mac" "1107" ;
+    // macro ProtoPath+"SetKCod.mac" "ПОЛК" w d-ShelfCut  ;
+    macro ProtoPath+"SetEnam.mac" "Полка" ;
+    macro ProtoPath+"SetFix.mac"  FixCorp FixCorp 0 0;
+    macro ProtoPath+"SetKrom.mac" BandColor 0 0 0 BandType ;
+		if (TypeFill==3)
+		{
+                  macro ProtoPath+"SetFix.mac"  FixShelfRem FixShelfRem 0 0;
+		  macro ProtoPath+"SetEnam.mac" "Полка съемная" ;
+                  macro ProtoPath+"SetCuts.mac" cutSh cutSh 0 0;
+			macro ProtoPath+"SetKrom.mac" BandColor BandType BandType BandType BandType ;
+		}
+    macro ProtoPath+"MakePan.mac" 0 0 h1-h_dsp w d-ShelfCut 12;
+    macro ProtoPath+"SetCuts.mac" 0 0 0 0;
+    if (HasDuct!=0) //-- Если нужен вырез, добавляем его
+    {
+      objident last 1 Pan;
+      #Pat rectangle 3points ShiftDuct,0,0 ShiftDuct+WidthDuct,0,0 ShiftDuct+WidthDuct,DepthDuct,0;
+      macro ProtoPath+"PutCutr.mac" Pan, Pat, 1, 0, 5;
+      delete Pat done;
+    }
+    move last 1 done 0 0 h1 copy (NumFill-1);
+  }
+  if (FasType!=0&&(TypeFill==0||TypeFill==3))
+  {
+    macro ProtoPath+"SetECod.mac" "1108" ;
+    // macro ProtoPath+"SetKCod.mac" "ДВЕР" w  h ;
+    macro ProtoPath+"SetEnam.mac" "Дверь" ;
+    macro ProtoPath+"SetParFas.mac" "РисФас" ;
+
+    macro ProtoPath+"SetFasdN.mac" FasMater FasType BandColor BandType FasInMater FasInMater ;
+    macro ProtoPath+"SetDoor.mac"  OpenSide DoubleDoor OpenDoor Nfasad HingeType 0 h_dsp;
+
+    macro ProtoPath+"SetHandl.mac" HandleType HandleMove HandleH HandleA ;
+    macro ProtoPath+"SetHand.mac" 0 HandlePlace ;
+    macro ProtoPath+"SetDoorK.mac" DoorType ;
+    LiftID=PriceInfo(DoorType,"LiftID",0,2);
+    macro Protopath+"SetLift.Mac"  LiftID LiftID;
+    if (Nfasad==1) //-- Если фасад накладной
+    {
+      macro ProtoPath+"SetFasPlas.mac" D_DxN D_DxN D_DzN D_DzN;
+      macro ProtoPath+"MakeDoor.mac" 0 d 0 w h;
+    }
+    else
+    {
+      macro ProtoPath+"SetFasPlas.mac" D_DxU D_DxU D_DzU D_DzU;;
+      macro ProtoPath+"MakeDoor.mac" 0 d-h_fas 0 w h;
+    }
+  }
+}
+if (TypeFill==1&&NumFill>=1) //-- Если тип заполнения - ящики вертикальные
+{
+  h1=int((h+h_dsp)/NumFill);
+	if (h1<80)
+  {
+    error[1]="Слишком маленькая высота ящика.";
+    error[2]="Высота ящика должна быть не меньше 80 мм.";
+    error[3]=" ";
+    error[4]="Убедитесь, что значение выстоты шкафа или стола указано корректно."
+    error[5]="Проверьте, верно ли указано количество ящиков."
+    macro Protopath+"ShowSmartError.mac" "Ошибка параметров заполнения" 5 error;
+    cancel;
+  }
+	if (NumFill>=1)
+	{
+    macro ProtoPath+"SetHand.mac" 0 HandlePlace;
+    macro ProtoPath+"SetEnam.mac" "Ящик" ;
+    macro ProtoPath+"SetFasdN.mac" FasMater FasType BandColor BandType FasInMater FasInMater ;
+    macro ProtoPath+"SetBox.mac" BotMater 3 Nfasad BoxType;
+    macro ProtoPath+"SetHandl.mac" HandleType HandleMove HandleH HandleA ;
+    macro ProtoPath+"SetBoxKr.mac" BandColor BandType ;
+ 	  macro ProtoPath+"SetOpenBox.mac" OpenDoor;
+    macro ProtoPath+"MakeBox.mac" 0 0 0 w iif(HasDuct==0,d,d-DepthDuct) h NumFill;
+    if (HasDuct!=0)
+    {
+      move last 1 done 0,DepthDuct,0 nocopy;
+    }
+	}
+}
+
+if (TypeFill==4&&NumFill>=1) //-- Если тип заполнения - ящики горизонтальные
+{
+	NULLOUT=getvarinst(1,"NeedPostBox",NeedPostBox,1);		//--Нужны ли стойки между ящиками
+  h1=(w-(NumFill-1)*h_dsp)/NumFill;
+	if (h1<80)
+  {
+    error[1]="Слишком маленькая высота ящика.";
+    error[2]="Высота ящика должна быть не меньше 80 мм.";
+    error[3]=" ";
+    error[4]="Убедитесь, что значение выстоты шкафа или стола указано корректно."
+    error[5]="Проверьте, верно ли указано количество ящиков."
+    macro Protopath+"ShowSmartError.mac" "Ошибка параметров заполнения" 5 error;
+    cancel;
+  }
+	if (NumFill>=1)
+	{
+    macro ProtoPath+"SetHand.mac" 0 HandlePlace;
+    macro ProtoPath+"SetEnam.mac" "Ящик" ;
+    macro ProtoPath+"SetFasdN.mac" FasMater FasType BandColor BandType FasInMater FasInMater ;
+    macro ProtoPath+"SetBox.mac" BotMater 3 Nfasad BoxType;
+    macro ProtoPath+"SetHandl.mac" HandleType HandleMove HandleH HandleA ;
+    macro ProtoPath+"SetBoxKr.mac" BandColor BandType ;
+ 	  macro ProtoPath+"SetOpenBox.mac" OpenDoor;
+		//--Запоминаем увеличения фасадов.
+		BSLX=BoxSLX,     // Увеличение фасада слева по X
+		BSUZ=BoxSUZ,     // Увеличение фасада справа по X
+		BSRX=BoxSRX,	   // Увеличение фасада сверху по Z
+		BSDZ=BoxSDZ;     // Увеличение фасада снизу по Z
+		//--Цикл построения ящиков
+		ib=0;
+		xcoor=0;
+		LB1:
+		ib=ib+1;
+		otsbx=0;
+		if (xcoor>=ShiftDuct&&xcoor<ShiftDuct+WidthDuct&&HasDuct==1)||(xcoor+((w-(NumFill-1)*h_dsp)/NumFill)>ShiftDuct&&xcoor+((w-(NumFill-1)*h_dsp)/NumFill)<ShiftDuct+WidthDuct&&HasDuct==1)
+		{
+		 otsbx=DepthDuct;
+		}
+		if (ib==1)
+		{
+			macro ProtoPath+"SetBoxF.mac" 
+			-(h_dsp-D_DxD)/2,     // Увеличение фасада слева по X
+			BSRX,								  // Увеличение фасада справа по X
+			BSUZ,									// Увеличение фасада сверху по Z
+			BSDZ;									// Увеличение фасада снизу по Z
+		}
+		if (ib==NumFill)
+		{
+			macro ProtoPath+"SetBoxF.mac" 
+			BSLX,									// Увеличение фасада слева по X
+			-(h_dsp-D_DxD)/2,	    // Увеличение фасада справа по X
+			BSUZ,									// Увеличение фасада сверху по Z 
+			BSDZ;									// Увеличение фасада снизу по Z
+		}
+		if (ib<NumFill&&ib>1)
+		{
+		  macro ProtoPath+"SetBoxF.mac" 
+			-(h_dsp-D_DxD)/2,     // Увеличение фасада слева по X
+			-(h_dsp-D_DxD)/2,			// Увеличение фасада справа по X
+			BSUZ,									// Увеличение фасада сверху по Z
+			BSDZ;									// Увеличение фасада снизу по Z
+		}
+		macro ProtoPath+"MakeBox.mac" xcoor otsbx 0 (w-(NumFill-1)*h_dsp)/NumFill d-otsbx h 1;
+		xcoor=((w-(NumFill-1)*h_dsp)/NumFill)*ib+h_dsp*ib;
+		if (ib<NumFill) { goto LB1; }
+
+		if (NeedPostBox==1&&NumFill>1)
+		{ 
+			macro ProtoPath+"SetECod.mac" "1107" ;
+			// macro ProtoPath+"SetKCod.mac" "Стойка" h d  ;
+			macro ProtoPath+"SetEnam.mac" "Стойка" ;
+			macro ProtoPath+"SetFix.mac"  FixCorp FixCorp 0 0;
+			macro ProtoPath+"SetKrom.mac" BandColor 0 0 0 BandType ;
+			//--Цикл построения стоек
+			ip=0;
+			LP1:
+			ip=ip+1;
+			otsSt=0;
+			xcoor=((w-(NumFill-1)*h_dsp)/NumFill)*ip+h_dsp*(ip-1);
+			if (xcoor>ShiftDuct&&xcoor<ShiftDuct+WidthDuct&&HasDuct==1)||(xcoor+h_dsp>ShiftDuct&&xcoor+h_dsp<ShiftDuct+WidthDuct&&HasDuct==1)
+			{
+			 otsSt=DepthDuct;
+			}
+			macro ProtoPath+"MakePan.mac" xcoor otsSt 0 h d-otsSt 11;
+			if (ip<NumFill-1) { goto LP1; }
+		}
+	}
+}
+
+if (TypeFill==2) //-- Если тип заполнения - ниша для встройки
+{
+  #b1 box 0 0 0 w iif(HasDuct==0,d,d-DepthDuct) h;
+  if (HasDuct!=0)
+  {
+    move b1 done 0,DepthDuct,0 nocopy;
+  }
+  attrobj attach "Contact" done b1 2048;
+}
+if (TypeFill==5) //-- Если тип заполнения - посудосушитель с полкой
+{
+	H_Dry=0;
+	hD=h;
+	//-- Ставим посудосушитель
+	NULLOUT=getvarinst(1,"Drying",Drying,0);
+	if (Drying>0)
+	{
+		macro ProtoPath+"MakeDrying.mac" 
+		Drying,								//-- Тип посудосушителя
+		w,                    //-- Ширина
+		d,                    //-- Глубина
+		h,                    //-- Высота
+		0,										//-- Тип корпуса (0-прямой, 1-угловой)
+		ShelfCut,
+		0;
+		NULLOUT=getvarinst(1,"H_Dry",H_Dry,0);
+	}
+	hD=h-H_Dry;
+  if (NumFill>=1&&Drying>0&&H_Dry>0&&(h-H_Dry)>100)
+  {
+    if (ShelfCut>d-h_dsp)
+    {
+      error[1]="Заглубление полок не может превышать глубину стола или шкафа.";
+      error[2]="Значение заглубления полок не должно превышать '"+str(d-h_dsp)+"' мм.";
+      error[3]=" ";
+      error[4]="Убедитесь, что значение заглубления полок указано корректно."
+      error[5]="Проверьте, корректно ли задано значение глубины стола или шкафа."
+      macro Protopath+"ShowSmartError.mac" "Ошибка параметров заполнения" 5 error;
+      cancel;
+    }
+    h1=int((hD+h_dsp)/(NumFill+1));
+    if (h1<80)
+    {
+      error[1]="Слишком маленькое расстояние между полками.";
+      error[2]="Расстояние между полками должно быть не менее 80 мм.";
+      error[3]=" ";
+      error[4]="Убедитесь, что значение выстоты шкафа или стола указано корректно."
+      error[5]="Проверьте, верно ли указано количество полок."
+      macro Protopath+"ShowSmartError.mac" "Ошибка параметров заполнения" 5 error;
+      cancel;
+    }
+    if (Nfasad==0)
+    {
+      ShelfCut=ShelfCut+h_fas;
+    }
+    macro ProtoPath+"SetECod.mac" "1107" ;
+    // macro ProtoPath+"SetKCod.mac" "ПОЛК" w d-ShelfCut  ;
+		macro ProtoPath+"SetFix.mac"  FixShelfRem FixShelfRem 0 0;
+		macro ProtoPath+"SetEnam.mac" "Полка съемная" ;
+		macro ProtoPath+"SetCuts.mac" cutSh cutSh 0 0;
+	  macro ProtoPath+"SetKrom.mac" BandColor BandType BandType BandType BandType ;
+    macro ProtoPath+"MakePan.mac" 0 0 H_Dry+h1-h_dsp w d-ShelfCut 12;
+    macro ProtoPath+"SetCuts.mac" 0 0 0 0;
+    if (HasDuct!=0) //-- Если нужен вырез, добавляем его
+    {
+      objident last 1 Pan;
+      #Pat rectangle 3points ShiftDuct,0,0 ShiftDuct+WidthDuct,0,0 ShiftDuct+WidthDuct,DepthDuct,0;
+      macro ProtoPath+"PutCutr.mac" Pan, Pat, 1, 0, 5;
+      delete Pat done;
+    }
+    move last 1 done 0 0 h1 copy (NumFill-1);
+  }
+  if (FasType!=0&&(TypeFill==0||TypeFill==3))
+  {
+    macro ProtoPath+"SetECod.mac" "1108" ;
+    // macro ProtoPath+"SetKCod.mac" "ДВЕР" w  h ;
+    macro ProtoPath+"SetEnam.mac" "Дверь" ;
+    macro ProtoPath+"SetParFas.mac" "РисФас" ;
+
+    macro ProtoPath+"SetFasdN.mac" FasMater FasType BandColor BandType FasInMater FasInMater ;
+    macro ProtoPath+"SetDoor.mac"  OpenSide DoubleDoor OpenDoor Nfasad HingeType 0 h_dsp;
+
+    macro ProtoPath+"SetHandl.mac" HandleType HandleMove HandleH HandleA ;
+    macro ProtoPath+"SetHand.mac" 0 HandlePlace ;
+    macro ProtoPath+"SetDoorK.mac" DoorType ;
+    //LiftID=PriceInfo(DoorType,"LiftID",0,2);
+    macro Protopath+"SetLift.Mac"  liftR liftL;
+    if (Nfasad==1) //-- Если фасад накладной
+    { 
+			//macro ProtoPath+"SetFasPlas.mac" D_DxU D_DxU D_DzU D_DzU;;
+      macro ProtoPath+"MakeDoor.mac" 0 d 0 w h;
+    }
+    else
+    {
+			//macro ProtoPath+"SetFasPlas.mac" D_DxU D_DxU D_DzU D_DzU;;
+      macro ProtoPath+"MakeDoor.mac" 0 d-h_fas 0 w h;
+    }
+  }
+}
+//-------------------------------------------------------------------
+object_3=sysvar(60)-object_0;
+if (object_3==0)
+{
+  NULLOUT=resnap();
+  exit;
+}
+//move last object_3 done xpos,ypos,zpos nocopy;
+//setucs move xpos,ypos,zpos;
+#Niche group last object_3 done;
+if (isassign("FasadPar",0))
+{
+  attrobj copy record "FasadPar" done Niche done;
+}
+if (isassign("ScrBox",0))
+{
+  attrobj copy record "ScrBox" done Niche done;
+}
+g_FurnType=FurnType;
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"w",w);
+err=AddScratch(ScrMod,FurnType,"d",d);
+err=AddScratch(ScrMod,FurnType,"h",h);
+err=AddScratch(ScrMod,FurnType,"TypeFill",TypeFill);
+err=AddScratch(ScrMod,FurnType,"NumFill",NumFill);
+err=AddScratch(ScrMod,FurnType,"FasType",FasType);
+err=AddScratch(ScrMod,FurnType,"ShelfCut",ShelfCut);
+err=AddScratch(ScrMod,FurnType,"PrMater",PrMater);
+err=AddScratch(ScrMod,FurnType,"FasMater",FasMater);
+err=AddScratch(ScrMod,FurnType,"BotMater",BotMater);
+err=AddScratch(ScrMod,FurnType,"BoxType",BoxType);
+err=AddScratch(ScrMod,FurnType,"FasInMater",FasInMater);
+err=AddScratch(ScrMod,FurnType,"OpenSide",OpenSide);
+err=AddScratch(ScrMod,FurnType,"HandleType",HandleType);
+err=AddScratch(ScrMod,FurnType,"HandleH",HandleH);
+err=AddScratch(ScrMod,FurnType,"HandleA",HandleA);
+err=AddScratch(ScrMod,FurnType,"HandlePlace",HandlePlace);
+err=AddScratch(ScrMod,FurnType,"DoubleDoor",DoubleDoor);
+err=AddScratch(ScrMod,FurnType,"OpenDoor",OpenDoor);
+err=AddScratch(ScrMod,FurnType,"HandleMove",HandleMove);
+err=AddScratch(ScrMod,FurnType,"HingeType",HingeType);
+err=AddScratch(ScrMod,FurnType,"Nfasad",Nfasad);
+err=AddScratch(ScrMod,FurnType,"BandColor",BandColor);
+err=AddScratch(ScrMod,FurnType,"BandType",BandType);
+err=AddScratch(ScrMod,FurnType,"FixCorp",FixCorp);
+err=AddScratch(ScrMod,FurnType,"DoorType",DoorType);
+err=AddScratch(ScrMod,FurnType,"HasDuct",HasDuct);
+err=AddScratch(ScrMod,FurnType,"ShiftDuct",ShiftDuct);
+err=AddScratch(ScrMod,FurnType,"WidthDuct",WidthDuct);
+err=AddScratch(ScrMod,FurnType,"DepthDuct",DepthDuct);
+err=AddScratch(ScrMod,FurnType,"ShelfRemCut",cutSh);
+err=AddScratch(ScrMod,FurnType,"FixShelfRem",FixShelfRem);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+exit;

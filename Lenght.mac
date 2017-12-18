@@ -1,0 +1,41 @@
+//-- Макропрограмма рисования объектов вдоль прямой
+//-- Входные параметры:
+//-- x1,y1,z1 - координаты начала профиля, по которому расставлять комплектующие
+//-- x2,y2,z2 - координаты конца профиля
+//-- IDPrice - ID комплектующего из прайса
+//-- Name - название типа комплектующего из таблицы Types_Komp базы DoorSys.mdb
+//-- Shift - величина начального и конечного сдвига объекта по профилю
+//-- Coeff - зарезервировано
+//-- MacroExtra - имя макропрограммы дополнительных преобразований
+//-- Макропрограмма устанавливает объект вдоль профиля,
+//-- задавая начальное и конечное смещение, равное Shift
+
+global ProtoPath;
+getpar x1,y1,z1 x2,y2,z2 IDPrice,Name,Shift,Coeff,MacroExtra;
+//-- Умолчания на направления оси OY
+xp3=x1;
+yp3=(y1+y2)/2+10;
+zp3=z1;
+
+#OBJUCS box 0 0 0 1 1 1 ;
+setucs x1,y1,z1 x2,y2,z2 xp3,yp3,zp3;
+//-- Находим количество элементов
+dx=x1-x2;
+dy=y1-y2;
+dz=z1-z2;
+lenght=sqrt(dx*dx+dy*dy+dz*dz);
+macro ProtoPath+"SetEnam.mac" Name ;
+macro ProtoPath+"SetProfC.mac" IDPrice Shift Shift 0 0 0 0 0 0;
+Macro ProtoPath+"MakeProf.mac" 0,0,0 lenght,0,0;
+objident last 1 obj;
+if (len(MacroExtra)!=0)
+{
+  macro ProtoPath+MacroExtra obj;
+}
+setucs lcs OBJUCS ;
+delete OBJUCS ;
+exit;
+
+
+                               
+

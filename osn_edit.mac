@@ -1,0 +1,318 @@
+//-- Программа редактирования содержимого основной надписи
+
+defarr cap[18], g[6],aTxtInfo[8],error[5];
+global  ProtoPath;
+ProtoPath=GetProtoMac("Shkaf.ptl");
+//--проверяем на наличие  старых бланков
+if IsAttrDef("Capt")
+{
+	macro ProtoPath+"osn_editOLD.mac" done ;
+	exit;
+}
+NULLOUT=GetSnap();
+fileName=ProtoPath+"AttrListStamp.Txt";
+n_str=GetCount(fileName); //-- сколько строк в файле
+if n_str==0
+{
+	macro protopath+"ShowError.mac" "Отсутствует файл AttrListStamp.txt в папке PROTO" "" "Для редактирования основной надписи нужен список имен атрибутов;пояснений построчно" ;
+	goto labend; 
+}
+
+keyError=1; //-- Ключик о том что активно состояние ошибки
+//== Ищем бланки
+vimage off;
+onerror labend;
+st="";
+i=0
+lab0:
+if i<100
+{
+	dops=iif(st!="","||","")
+	nsel=0
+	 if IsAttrDef("IPRLNDW"+str(i)) 
+	 { 
+		selbyattr "IPRLNDW"+str(i)+">"+str(0) partly all done; 
+		nsel=sysvar(61)
+	 }
+	
+	if nsel>0
+	{
+	 st=st+dops+"IPRLNDW"+str(i)+">"+str(0)
+	 =st
+	}
+	 i=i+1;
+	 goto lab0;
+}
+vimage on;
+if st!=""
+{
+//== Наверное нашли
+onerror labend;
+	switch autosingle on; //--  нужен (on) или не нужен (off) автовыход после первого выбора
+	selbyattr st partly :
+	objON=getselnum(1); //-- Указатель на бланк чертежа
+	offerror;
+	switch autosingle off; //--  нужен (on) или не нужен (off) автовыход после первого выбора
+	
+}
+else
+{
+//== Не нашли основных надписей
+	macro protopath+"ShowError.mac" "Отсутствуют бланки чертежей!" "" "Для редактирования основной надписи нужен хотя бы один бланк чертежа" ;
+}
+save auto [ overwrite ] ;
+gosub sClAttr;
+vimage off;
+select all done;
+vimage on;
+n_obj=sysvar(61); 
+if n_obj==0 
+{ 
+	macro protopath+"ShowError.mac" "Отсутствуют видимые объекты!" "" "Для редактирования основной надписи нужен хотя бы один видимый бланк чертежа" ;
+	goto labend; 
+}
+defarr aobj[n_obj];
+macro ProtoPath+"ArrObj.mac" n_obj aobj done; // --загоняем все видимые объекты в массив
+vimage off;
+invisible all remove objON done ;
+vimage on
+invN=n_obj;
+//== Ищем в бланке чертежа объекты типа текст с атрибутами
+onerror labend;
+Err=Fltrtype("Text");
+if Err==0 { goto labend; }
+vimage off;
+select partly all done ;
+vimage on;
+n_obj=sysvar(61);
+if n_obj==0 
+{ 
+	gosub sErrorOut;
+	macro protopath+"ShowError.mac" "Отсутствуют объекты типа текст!" "" "Для редактирования основной надписи нужен хотя бы один видимый бланк чертежа и иметь текстовые надписи" ;
+	goto labend; 
+}
+Err=Fltrtype(0);
+defarr aTexHold[n_obj];
+macro ProtoPath+"ArrObj.mac" n_obj aTexHold done; // --загоняем все  объекты типа текст в массив
+gosub sGetAtrrObj; //-- заполняем массивы именами атрибутов и комментариями к ним.
+
+#tx text "a" done 0 0 0 1 0 0 ;
+Result=GetTextLine(tx,aTxtInfo) ;  //Функция заполняет массив Info информацией об объекте obj типа «Текст»
+
+delete tx;
+i=0;
+lab1:
+//== теперь ищем атрибуты у этих объектов
+// n_str - число определенных атрибутов
+// aAtrName[n_str] aAtrComent[n_str] имена и коментарии к ним
+// aAtrVal[n_str] значения
+if i<n_str
+{
+	i=i+1;
+	j=0;
+	lab2:
+	if j<n_obj
+	{	
+		j=j+1;
+		vVAl=GetAttr(aTexHold[j],aAtrName[i],0);
+		if vVAl!=0
+		{
+			Err=GetTextLine(aTexHold[j],aTxtInfo);
+			if err==-1
+			{
+				error[1]="Обратитесь к разработчикам с описанием возникшей ситуации"
+				macro protopath+"ShowSmartError.mac" "Не смогли прочитать информацию из текcта" 1 error ;
+				i=0;
+				goto lab4; 
+			}
+			aAtrVal[i]=aTxtInfo[1];
+			goto lab1;
+		}
+		goto lab2;
+	}
+	goto lab1;
+}
+
+gosub sInitTS;
+
+//== Рисуем диалог
+#ok_flag   //Если после setvar будет 0 - Нажали кнопку "Отмена"
+setvar
+"Основная надпись"           // Заголовок окна
+""                  // Имя файла иллюстрации
+// Пояснительный текст
+center         //с выравниванием слева
+" Определите/Измените значения полей основной надписи"
+done          // конец пояснительного текста
+let i=0
+lab3:
+if i<n_str {
+	let i=i+1
+	if len(aAtrVal[i])>0
+	{  
+		string  auto default  str(aAtrVal[i])  aAtrComent[i] aAtrValN[i] 
+	}
+	goto lab3
+}
+done  // Конец команды
+
+//==================
+// возвращаем погашеные объекты на место
+vimage off;
+i=0;
+lab4:
+if i<invN
+{
+	i=i+1;
+	if !GetObjVisual(aobj[i]) 
+	{ 
+		visible aobj[i] done; 
+	}
+	goto lab4;
+}
+vimage on;
+if ok_flag==0 { goto labend ; }
+i=0;
+lab5:
+//== теперь переписываем тексты 
+// n_str - число определенных атрибутов
+// aAtrName[n_str] aAtrComent[n_str] имена и коментарии к ним
+// aAtrVal[n_str] значения
+if i<n_str
+{
+	i=i+1;
+	j=0;
+	lab6:
+	if j<n_obj
+	{	
+		j=j+1;
+		
+		PP=aTexHold[j]; 
+		if isvardef("PP")==16
+		{	
+			vVAl=GetAttr(PP,aAtrName[i],0);
+			if vVAl!=0
+			{   
+				if aAtrVal[i]!=aAtrValN[i]
+				{
+					text edit partly PP aAtrValN[i] done;					
+					gosub sRestTS;
+				}
+			}
+			goto lab6;
+		}
+	}
+	goto lab5;
+}
+
+gosub sClAttr;
+//==================
+keyError=0;
+labend:
+offerror;
+
+if keyError { gosub sErrorOut; }
+NULLOUT=ReSnap();
+exit;
+//-----
+sErrorOut:
+	vimage on;
+	regen all;
+	Nullout=Fltrtype(0);
+	switch autosingle off; //--  нужен (on) или не нужен (off) автовыход после первого выбора
+return;
+//-----
+sGetAtrrObj:
+// -- здесь надо прочитать атрибуты у найденных текстов и по этим атрибутам составить карточку редактирования
+// -- пока представим себе , что это сделано и немножко смухлюем
+// -- возьмем данные из внешнего файла где в строках напишем имя атрибута и его подсказку
+// -- если текст обладает признаком такого атрибута, то  формируем для него поле в карточке
+// -- Начинаем мухлевать: Читаем список из AttrListStamp.Txt который в PROTO суем его в два массива. Если в файле инфа лажа, то тот кто его заполнял сам виноват
+fileName=ProtoPath+"AttrListStamp.Txt";
+n_str=GetCount(fileName); //-- сколько строк в файле
+if n_str==0
+{
+	macro protopath+"ShowError.mac" "Отсутствует файл AttrListStamp.txt в папке PROTO" "" "Для редактирования основной надписи нужен список имен атрибутов;пояснений построчно" ;
+	goto labend; 
+}
+defarr aAtrName[n_str] aAtrComent[n_str] aAtrVal[n_str] aAtrValN[n_str] aTemp[3] aPos[n_str];
+Nullout=InitArray(aAtrName,"");
+Nullout=InitArray(aAtrComent,"");
+Nullout=InitArray(aAtrVal,"");
+Nullout=InitArray(aAtrValN,"");
+i=0;
+lAtrObj0:
+if i<n_str
+{
+	i=i+1;
+	vStr=GetStr(fileName,i);  //-- читаем строку из файла
+	N=SplitByDelim(vStr,";",aTemp);   //-- рвем ее на кусочки по разделителю ";"
+	if N!=2
+	{
+		macro protopath+"ShowError.mac" "Ошибка файла AttrListStamp.txt в папке PROTO" "" "Каждая строка должна состоять из 2-х элементов разделенных \";\"" ;
+		goto labend;
+	}
+	aAtrName[i]=aTemp[1]; 	//-- здесь список имен атрибутов
+	aAtrComent[i]=aTemp[2]; //-- здесь список коментариев к ним
+	goto lAtrObj0;
+}
+return;
+
+//-- создаем атрибуты если надо и чистим следы былой работы
+sClAttr:
+	if (!IsAttrdef("TempSel"))
+	{
+		Attribute Create "TempSel" "Признак избранности" Real 12 5  ;
+	}
+	else
+	{
+		vimage off;
+		selbyattr "TempSel>"+str(0) partly all done ;
+		if SysVar(61)>0
+		{
+			n=SysVar(61);
+			if isvardef("atmp")==0 { defarr atmp[n]; }
+			macro ProtoPath+"Arrobj.mac" n, atmp;
+			i=0;
+			labT2:
+			if i<n
+			{
+				i=i+1;
+				attrobj delete partly atmp[i] "TempSel" done;
+				goto labT2;
+			}
+			
+		}
+		vimage on;
+	}
+return;
+
+sInitTS:
+// метим тексты
+	i=0
+	labn1:
+	if i<n_obj
+	{
+		i=i+1;
+		attrobj attach "TempSel" done partly  aTexHold[i] i ;
+		goto labn1;
+	}
+return;
+
+sRestTS:
+// востанавливаем метки тексты
+vimage off;
+	ii=0
+	labn2:
+	if ii<n_obj
+	{
+		ii=ii+1;
+		selbyattr "TempSel=="+str(ii) partly all done ;
+		if sysvar(61)>0
+		{
+			aTexHold[ii]=getselnum(1) ;
+		}	
+		goto labn2;
+	}
+vimage on;
+return;

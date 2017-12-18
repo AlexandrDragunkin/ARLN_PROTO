@@ -1,0 +1,71 @@
+//-- Установка крепежа
+global ProtoPath;
+global HoldName ; //-- Имя хозяина
+global UnitCode ; //-- Код изделия (текст)
+global ElemCode ; //-- Код мебельных элементов
+KarkasNumb=getcarcnumb(); //-- Порядковый номер каркаса в сцене
+
+getpar
+xn yn zn	//-- Положение 0 локальной системы координат
+xv yv zv	//-- Направление оси крепежа
+xt yt zt  //-- Направление оси торца (перпенд. оси крепежа)
+FixType;  //-- Тип крепежа
+
+if (FixType==0) { exit; }
+
+NULLOUT=getsnap();
+object_1=sysvar(60); //-- Кол-во объектов
+
+  accessory "060000" FixType  0 yes ;
+  objident last 1 Elem;
+
+object_2=sysvar(60)-object_1; //-- Кол-во объектов
+if (object_2==0) //-- Нет объектов
+{
+  exit;
+}
+
+selbyattr "isassign(\"FixHole\")" partly child Elem;
+n=sysvar(61)
+if n>0
+{
+	i=0;
+	nn:
+	i=i+1;
+	if i<=n
+	{
+		attrobj delete partly getselnum(i) "FixHole" done;
+		goto nn;
+	}
+}
+
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done Elem done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done Elem KarkasNumb;
+}
+if (isattrdef("HoldName"))
+{
+  attrobj attach "HoldName" done Elem HoldName ;
+}
+if len(ElemCode)>0
+{
+	attrobj attach "UnitCode" done Elem ElemCode ;
+}
+attrobj attach "GroupID" done Elem 24 ; //-- 24 - Группа крепеж
+attrobj attach "XUnit" "YUnit" "ZUnit" done Elem 0 0 0 ; //-- Размеры детали
+
+//macro ProtoPath+"AddAttrPI.mac" Elem FixType 134 ;
+NULLOUT=addattrpi(Elem,1,134,FixType);
+FurnType="040400";
+attrobj attach "FurnType" done Elem FurnType ;
+//-- Присваиваем атрибуты комплектующим
+macro ProtoPath+"CompAttr.mac" FixType 1 ;
+setucs xn yn zn oz xn+xv yn+yv zn+zv xn+xt yn+yt zn+zt;
+place Elem ;
+NULLOUT=resnap();
+exit;

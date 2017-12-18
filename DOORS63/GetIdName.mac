@@ -1,0 +1,51 @@
+//-- Поиск ID группы по названию группы и порядковому номеру
+//-- Плиск сначала осуществляетя по обоим параметрам и, 
+//-- если результат отрицательный - только по номеру
+//-- Входные параметры:
+//-- PorName - Название группы
+//-- PorNum - Порядковый номер группы
+//-- Выходные параметры:
+//-- g_result - ID группы или ноль в случае неудачного поиска
+global g_result;
+g_result=0;
+getpar
+PorName    //-- Название группы
+PorNum;    //-- Порядковый номер группы
+
+//-- Устанавливаем соединение со справочником
+//tab_place=getfilepath(GetGuides())+"tmguidesv6.mdb";
+tab_place=GetGuides();
+SQLStr1="SELECT * FROM TProtoParGroups WHERE GroupName = '"+PorName+"' AND GroupSort = "+str(PorNum);
+SQLStr2="SELECT * FROM TProtoParGroups WHERE GroupSort = "+str(PorNum);
+if (fileexist(tab_place)==0)
+{
+  tab_place=getfilepath(GetGuides())+"dbguides.mdb";
+  SQLStr1="SELECT * FROM TpGroupPKM WHERE GroupName = '"+PorName+"' AND GroupSort = "+str(PorNum);
+  SQLStr2="SELECT * FROM TpGroupPKM WHERE GroupSort = "+str(PorNum);
+}
+szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+tab_place;
+Ordercon=adbCon(szSrc);
+if (Ordercon==0)
+{
+  exit;
+}
+idRS=adbOpen(Ordercon,SQLStr1);
+total_s=adbRecCount(idRS);
+if  (total_s==0)
+{
+  idRs=adbClose(idRs);
+  idRS=adbOpen(Ordercon,SQLStr2);
+  total_s=adbRecCount(idRS);
+  if  (total_s==0)
+  {
+    g_result=0;
+    idRs=adbClose(idRs);
+    NULLOUT=adbDisCon(Ordercon);
+    exit;
+  }
+}
+NULLOUT=adbMoveFirst(idRS);
+g_result=adbGetValue(idRS,0);
+idRs=adbClose(idRs);
+NULLOUT=adbDisCon(Ordercon);
+exit;

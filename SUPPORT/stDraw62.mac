@@ -1,0 +1,163 @@
+//stDraw62.mac
+//
+//============================================
+// (c) Драгункин Александр г.Дубна 2008 г.
+//============================================
+//создание заготовки чертежа плоского длинномера
+//
+//
+//
+//
+global L_SUPPORT ;
+global
+Idkrom
+Ukas
+ElUkas
+CurentNum //текущий номер обрабатываемой столешницы
+CurentMat
+CBDPAth
+ProtoPath
+;
+
+NULLOUT=GetSnap();
+
+
+defarr xm[6] ;
+defarr arr1[4] arr2[4] arr3[4] arr4[4];
+
+
+TypLS=7
+TipLO=0
+WidthLS=0.2
+WidthLS=0.4
+   If (!IsAttrdef("LongSTx"))  {
+      Attribute Create "LongSTx" "Параметр X в ЛСК длинномера" Real 12 5  ;
+   }
+   If (!IsAttrdef("LongSPN"))  {
+      Attribute Create "LongSPN" "Параметр номер куска длинномера" Real 5 0  ;
+   }
+   If (!IsAttrdef("PriceID"))  {
+      Attribute Create "PriceID" "Номер материала в библиотеке" Real 7 0  ;
+   }
+   If (!IsAttrdef("LongSKN"))  {
+      Attribute Create "LongSKN" "Параметр признак контура куска" Real 5 0  ;
+   }
+   If (!IsAttrdef("DwChainLoc")) {
+      Attribute Create "DwChainLoc" "Принадлежность цепочке" Real 5 0 ;
+   }
+//Укажите  длинномер
+//objident   :  pnt ;
+getpar
+pnt
+;
+//Result=SetLongObj(pnt);
+//CurMat=GetLongMat();
+select all ;
+N=sysVar(61) ;
+if N>1 {
+   Invisible all remove pnt ;
+   }
+//vimage off ;
+                                           //погасили все кроме объекта интереса
+setucs lcs pnt;                            //перешли в локалку куска
+ChLoc=GetAttr(pnt,"ChainLoc",-1) ;
+=ObjGab3(pnt,xm) ;
+
+//начало координат должно совпадать с началом габаритов проверяем и сдвигаем.
+if (xm[1]<0)||(xm[2]<0) {
+   //setucs move xm[1] xm[2] 0 ;
+  Nulout=ObjGab3(pnt,xm) ;
+  //=xm[1] =xm[2] =xm[4] =xm[5]
+
+ }
+TZ=xm[6]-xm[3]
+                         //гасим оригинал
+
+leng=xm[4]-xm[1]                          //определяем реальную длинну объекта
+macro L_SUPPORT+"Konty62.mac" pnt ;     //рассекли объект
+objident last 1 sec ;                   //присваиваем имя сечению
+
+TypSec=GetObjType(sec);                 //5-контур 7-группа
+if TypSec==7 {
+   objects=sysvar(60) ;
+
+   explode Sec done ;
+   objects=sysVar(60)-objects+1
+               If (IsAttrdef("LongSTx"))    { attrobj attach "LongSTx" done group last objects done xm[1] ;           }
+               If (IsAttrdef("LongSPN"))    { attrobj attach "LongSPN" done group last objects done 1 ;               }
+               If (IsAttrdef("PriceID"))    { attrobj attach "PriceID" done group last objects done CurentMat ;       }
+               If (IsAttrdef("LongSKN"))    { attrobj attach "LongSKN" done group last objects done CurentNum ;       }
+               If (IsAttrdef("ChainLoc"))   { attrobj attach "ChainLoc" done group last objects done Chloc ;          }
+               gosub sortobj ;
+               extrusion
+                 let i=0
+                 meto1:
+                 if i<objects {
+                    let i=i+1
+                    if !GetObjVisual(obj[i]) { visible obj[i] }
+                    obj[i]
+                    goto meto1
+                    }
+
+                 done
+                 vector 0 0 TZ ;
+               
+}
+else {
+               If (IsAttrdef("LongSTx"))    { attrobj attach "LongSTx" done sec xm[1] ;           }
+               If (IsAttrdef("LongSPN"))    { attrobj attach "LongSPN" done sec 1 ;               }
+               If (IsAttrdef("PriceID"))    { attrobj attach "PriceID" done sec CurentMat ;       }
+               If (IsAttrdef("LongSKN"))    { attrobj attach "LongSKN" done sec CurentNum ;       }
+               If (IsAttrdef("ChainLoc"))   { attrobj attach "ChainLoc" done sec Chloc ;          }
+               extrusion sec done vector 0 0 TZ ;
+}
+objident last 1 pnts ;
+
+TypPnts=GetObjType(pnts) ;              //5-контур 7-группа
+if TypPnts==7 {
+   objects=sysvar(60) ;
+   explode pnts done ;
+   objects=sysVar(60)-objects+1
+   If (IsAttrdef("DwChainLoc")) { attrobj attach "DwChainLoc" done group last objects done Chloc ;    }
+}
+else {
+               If (IsAttrdef("DwChainLoc")) { attrobj attach "DwChainLoc" done pnts Chloc ;    }
+}
+
+
+NULLOUT=ReSnap();
+
+exit;
+
+//Ищем самый большой по габаритам
+SortObj:
+defarr Obj[Objects] ;
+Select last Objects done;
+i=0
+metR1:
+if i<objects {
+   i=i+1
+   Obj[i]=getselnum(i) ;
+   goto metR1 ;
+}
+i=0
+metr2:
+if i<objects-1 {
+   i=i+1
+   j=i+1
+   pnt1=Obj[i]
+   pnt2=Obj[j]
+   err=objgab3(pnt1,xm) ;
+   Xgab1=xm[4]-xm[1]
+   err=objgab3(pnt2,xm) ;
+   Xgab2=xm[4]-xm[1]
+   if Xgab2>Xgab1 {
+      obj[i]=pnt2 ;
+      obj[j]=pnt1 ;
+   }
+   else {
+   }
+   goto metR2 ;
+}
+return;
+

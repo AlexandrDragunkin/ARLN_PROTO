@@ -1,0 +1,59 @@
+//-- Óñòàíîâèòü ïëåíêàó ìîäèôèöèğóşùàÿ öâåò ïàíåëè
+//-- Âõîäíûå ïàğàìåòğû
+//-- Side - ñòîğîíà îòäåëêè
+//-- FoilType - òèï îòäåëêè
+//-- FoilColor - öèâåò îäåëêè
+
+defarr  g_FoilModAF[24];
+global g_FoilModef;     //-- Êîëè÷åñòîâî îòäåëîê ïàíåëè
+global g_FoilModAF;     //-- Ìàññèâ îòäåëîê èç 8 ãğóïï ïî 3 ıëåìåíòà
+                        //-- Ïåğâûé - ïëàñòü (À,F, 0 (íîëü) - îáíóëèòü îòäåëêó)
+                        //-- Âòîğîé - òèï îòäåëêè
+                        //-- Òğåòèé - öâåò îòäåëêè
+
+getpar Side, FoilType, FoilColor;
+Putmsg("SetFoil64 - óñòàğåëà");
+exit;
+
+if (!isvardef("g_foilmodef")) { exit; }
+
+if (Side=="0")    //-- Åñëè íåò ñòîğîíû
+{
+  g_FoilModef=0;
+  exit;
+}
+if (FoilColor==0) //-- Åñëè íåò öâåòà
+{
+  exit;
+}
+if (g_FoilModef>23)
+{
+  exit;
+}
+if (Side=="A")
+{
+  g_FoilModAF[g_FoilModef+1]=5;
+}
+else
+{
+  if (Side=="F")
+  {
+    g_FoilModAF[g_FoilModef+1]=6;
+  }
+  else
+  {
+    ret=val(Side);
+    if (ret>=0&&ret<=12)
+    {
+      g_FoilModAF[g_FoilModef+1]=ret;
+    }
+    else
+    {
+      exit;
+    }
+  }
+}
+g_FoilModAF[g_FoilModef+2]=FoilType;
+g_FoilModAF[g_FoilModef+3]=FoilColor;
+g_FoilModef=g_FoilModef+3;
+exit;

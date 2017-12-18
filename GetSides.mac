@@ -1,0 +1,234 @@
+//-- Программа возвращает параметры боковин по критерию
+//-- Входные параметры:
+//-- IDRail - ID направляющих из таблицы направляющих
+//-- IDColor - ID цвета верхнего рельса
+//-- criteria - критерий выбора боковин
+//--          = 0 - Боковины - по умолчанию, размер по умолчанию
+//--          = 1 - Боковины выбираются, размер по умолчанию
+//--          = 2 - Боковины выбираются, размер задается
+//-- Выходные параметры:
+//-- g_IDLParam - ID записи левой боковины из таблицы соответствия боковин
+//-- g_LColDim - ID цвета левой боковины или ее размер
+//-- g_IDRParam - ID записи правой боковины из таблицы соответствия боковин
+//-- g_RColDim - ID цвета правой боковины или ее размер
+
+global ProtoPath;
+getpar IDRail,IDColor,criteria;
+
+global g_IDLParam,g_LColDim,g_IDRParam,g_RColDim;
+g_IDLParam=0;
+g_LColDim=0;
+g_IDRParam=0;
+g_RColDim=0;
+
+MAXINST=100; //-- Максимальное количество материалов боковин
+defarr IDMaterP[MAXINST],IDMaterN[MAXINST];
+defarr tempmat[2];
+xside=100; //-- Умолчание не размер листовых боковин
+
+tab_place=ProtoPath+"DoorSys1.mdb"; //-- База данных систем дверей
+szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+tab_place;
+Doorscon=adbCon(szSrc);
+
+SQLstr1="SELECT [PriceID] FROM [Sides], [Colors] WHERE [RailID]="+str(IDRail);
+SQLstr2=" AND ([Colors].[ID]="+str(IDColor)+" AND [ProfOrSquare]=0) OR [ProfOrSquare]=1";
+SQLstr3=" ORDER BY [Sides].[Default],[Sides].[Sort]";
+rs=adbOpen(Doorscon,SQLstr1+SQLstr2+SQLstr3,);
+NMater=FieldToArray(rs,0,IDMaterP);
+rs=adbClose(rs);
+//NMater=RSetToArray(Doorscon,SQLstr1+SQLstr2+SQLstr3,IDMaterP);
+if (NMater<1)
+{
+  errcode="Кол-во материалов боковин для направляющих с ID="+str(IDRail)+" равно "+str(NMater);
+  gosub err;
+  goto end;
+}
+if (cruteria==0)
+{
+  SQLstr1="SELECT [ID] FROM [Sides] WHERE [RailID]="+str(IDRail);
+rs=adbOpen(Doorscon,SQLstr1+SQLstr2+SQLstr3);
+NMater=FieldToArray(rs,0,IDMaterN);
+rs=adbClose(rs);
+//  NMater=RSetToArray(Doorscon,SQLstr1+SQLstr2+SQLstr3,IDMaterN);
+  Side=IDMaterN[1];
+  gosub getcolor;
+  g_IDLParam=Side;
+  g_LColDim=Color;
+  g_IDRParam=Side;
+  g_RColDim=Color;
+}
+if (cruteria==1)
+{
+  SQLstr1="SELECT [TPrice].[MName] FROM [TPrice], [Materials] WHERE [TPrice].[PriceID]=("+SQLstr1+")";
+rs=adbOpen(Doorscon,SQLstr1+SQLstr3);
+NMater=FieldToArray(rs,0,IDMaterN);
+rs=adbClose(rs);
+//  NMater=RSetToArray(Doorscon,SQLstr1+SQLstr3,IDMaterN);
+}
+end:
+Doorscon=adbDisCon(Doorscon); //-- Разрываем соединение
+exit;
+//==============================================================================
+//------------------------------------------------------------------------------
+//-- Вывод окна сообщения об ошибке
+//-- Входные параметры:
+//-- errcode - сод ошибки
+err:
+//-- ShowSmartError
+#ok_flag
+     alternative "Ошибка базы данных"
+     msgbox text "Некорректно заполнена база данных систем дверей"
+     " "
+     errcode
+     done
+     "  OK  "
+     done;
+return;
+//------------------------------------------------------------------------------
+//-- Подпрограмма выбора боковин
+//-- Входные параметы:
+//-- IDMaterP - массив ID боковин
+//-- IDMaterN - массив названий боковин
+//-- NMater - количество записей в массивах
+//-- IDRail - ID направляющих из таблицы направляющих
+//-- Выходные параметр:
+//-- g_IDLParam - ID записи левой боковины из таблицы соответствия боковин
+//-- g_LColDim - ID цвета левой боковины или ее размер
+//-- g_IDRParam - ID записи правой боковины из таблицы соответствия боковин
+//-- g_RColDim - ID цвета правой боковины или ее размер
+
+SQLstr="SELECT [TPrice].[Mname] FROM [TPrice] WHERE [TPrice].[PriceID]=[Rails].[IDPrice]";
+SQLstr=SQLstr+" WHERE [Rails].[ID]=(SELECT [ID] FROM [Rails] WHERE [ID]="+str(RailID)+")";
+SidesRs=adbOpen(Doorscon,SQLstr);
+ij1=adbRecCount(SidesRs);
+
+if (ij1<1)
+{
+  errcode="В прайс-листе нет направляющих с ID="+str(IDRail)
+  gosub err;
+  SidesRs=adbClose(SidesRs);
+  return;
+}
+NULLOUT=adbMoveFirst(SidesRS);
+Railsname=abdGetValue(SidesRS,0);
+SidesRs=adbClose(FSidesRs);
+
+#ok_flag
+setvar
+"Выбор боковин"
+""
+left
+"Выберите боковины"
+"Направляющие: '"+Railsname+"' ID="+str(IDRail)
+done
+str 	listonly
+	let j=1
+	LoopJ1:
+	if (j=1)
+	{
+	  current
+	}
+	IDMaterN[j]
+	if (j<NMater) { Let j=j+1 goto LoopJ1 }
+	done
+	"Левая боковина: " tempmat[1]
+str 	listonly
+	let j=1
+	LoopJ2:
+	if (j=1)
+	{
+	  current
+	}
+	IDMaterN[j]
+	if (j<NMater) { Let j=j+1 goto LoopJ2 }
+	done
+	"Правая боковина: " tempmat[2]
+done;
+if (ok_flag==0)
+{
+ return;
+}
+SQLstrG="SELECT [Sides].[ID] FROM [Sides], [TPrice] WHERE [Sides].[PriceID]=";
+SQLstrG=SQLstrG+"(SELECT [TPrice].[PriceID]  WHERE [TPrice].[MName]="+tempmat[1]+")";
+rs=adbOpen(Doorscon,SQLstrG);
+NULLOUT=adbMoveFirst(rs);
+g_IDLParam=adbGetValue(rs,0);
+rs=adbClose(rs);
+//NULLOUT=RSetTOArray(Doorscon,SQLstrG,tt);
+//g_IDLParam=tt[1];
+
+SQLstrG="SELECT [ColorID],[ProfOrSquare] FROM [Sides] WHERE [ID]="+str(g_IDLParam);
+SidesRs=adbOpen(Doorscon,SQLstr);
+NULLOUT=adbMoveFirst(SidesRS);
+pos1=abdGetValue(SidesRS,1);
+if (pos1==0)
+{
+  g_LColDim=abdGetValue(SidesRS,0);
+}
+SidesRs=adbClose(FSidesRs);
+
+SQLstrG="SELECT [Sides].[ID] FROM [Sides], [TPrice] WHERE [Sides].[PriceID]=";
+SQLstrG=SQLstrG+"(SELECT [TPrice].[PriceID]  WHERE [TPrice].[MName]="+tempmat[2]+")";
+rs=adbOpen(Doorscon,SQLstrO1+SQLstrO2+SQLstrO3+SQLstrHD+SQLstrC+SQLstr+SQLstrO4);
+NULLOUT=adbMoveFirst(rs);
+g_IDRParam=adbGetValue(rs,0);
+rs=adbClose(rs);
+//NULLOUT=RSetTOArray(Doorscon,SQLstrG,tt);
+//g_IDRParam=tt[1];
+
+SQLstrG="SELECT [ColorID],[ProfOrSquare] FROM [Sides] WHERE [ID]="+str(g_IDRParam);
+SidesRs=adbOpen(Doorscon,SQLstr);
+NULLOUT=adbMoveFirst(SidesRS);
+pos2=abdGetValue(SidesRS,1);
+if (pos2==0)
+{
+  g_RColDim=abdGetValue(SidesRS,0);
+}
+SidesRs=adbClose(FSidesRs);
+gosub GetX;
+return;
+//------------------------------------------------------------------------------
+//-- Подпрограмма задания размеров боковин
+//-- Входные параметы:
+//-- pos1 - ProfiOrSquare левой боковины
+//-- pos2 - ProfiOrSquare правой боковины
+//-- sidex - умолчание на размер боковин
+//-- criteria - критерий задания размеров
+//--          = 1 - размеры по умолчанию
+//--          = 2 - размеры задаются
+//-- g_LColDim - размер левой боковины
+//-- g_RColDim - размер правой боковины
+GetX:
+if (pos1==0&&pos2==0)
+{
+  return;
+}
+if (pos1==1)
+{
+  g_LColDim=sidex;
+}
+if (pos2==1)
+{
+  g_RColDim=sidex;
+}
+if (criteria==1)
+{
+  return;
+}
+#ok_flag
+   setvar
+   "Размеры боковин"
+   ""
+  left
+  "Введите размеры боковин"
+   done
+   if (pos1==1)
+   {
+     real default sidex  "Левая боковина:" g_LColDim
+   }
+   if (pos2==1)
+   {
+     real default sidex  "Правая боковина:" g_RColDim
+   }
+   done;
+return;

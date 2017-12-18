@@ -1,0 +1,236 @@
+global DRWZPath g_osn, g_dorab, g_drawall, g_pict, g_scala, g_draw d_support l_support  Pl_MatrZag g_name;
+global g_vidUnic ; // 0-объединять на один бланк 1-разносить на несколько бланков (как печатать чертеж если видов несколько например сторона А и F);
+global G_numTxt G_numWmf g_ik g_cldraw;
+
+defarr aObjv[10] aObj[10] aLeg[10]; // массисв для ссылок на объекты чертежа и легеды
+defarr xm[6] aoLeg[100];
+
+getpar projname, adraw, iVid, aVid, numTxt, numWmf;
+
+ProjPath=getfilepath(sysvar(2));
+title=getfiletitle(sysvar(2))-3+"_"+g_name
+if (!IsAttrdef("Legend"))
+	{
+		Attribute Create "Legend" "Legenda" Real 12 5  ;
+	}
+G_numTxt=numTxt;
+G_numWmf=numWmf;
+nObj=GetArrObjG(g_draw,aObj); // Определяем сколько в составе g_draw элементов и суем их в массив
+	explode g_draw done;
+	i=0;
+	j=0;
+	k=0;
+	lab1:
+	if i<nobj
+	{
+		i=i+1;
+		TypObj=GetAttr(aObj[i],"IDRWN",-1);
+		TypLeg=GetAttr(aObj[i],"IDRWL",-1);
+		if TypLeg>0
+		{
+			j=j+1;
+			aLeg[j]=aobj[i];
+			if j==1
+			{
+				#legend group aLeg[j] done;
+			}
+			if j!=1
+			{
+				add legend aleg[j] done;
+			}
+		}
+		else
+		{
+			k=k+1;
+			aObjv[k]=aObj[i];
+		}
+		goto lab1;
+	}
+	nobj=k;
+
+	i=0;
+	lab2:
+	if i<nobj
+	{
+		i=i+1;
+		if g_vidUnic==1
+		{
+			invisible all ; // гасит все кроме нужного процедура стыкует легенду к виду 
+			visible aobjv[i];
+			if isvardef("legend")
+			{
+				visible legend;
+				nullout=objgab3(aobjv[i],xm);
+				xp=xm[4]; yp=xm[5]; zp=xm[3];
+				nullout=objgab3(legend,xm);
+				kf=(xm[5]-xm[2])/100
+				move nocopy legend done 2points xm[4] xm[2] xm[3] xp yp+kf zp
+			}
+			if (g_osn==1)
+			{
+			
+				macro DRWZPath+"Win_PanelDw64.mac";
+				
+				//'grfcoeff 1;
+				//'valcoeff 1;
+			}
+		}
+		//explode aObj[i] done;
+		if g_vidUnic==1
+		{
+			// tname=g_name;
+			// g_name=g_name+"_"+str(i);
+			vnumTxt=numTxt-3+"_"+str(i)+".k3";
+			
+			gosub extrLeg;
+			//macro DRWZPath+"ChGRCOEF.mac" ;
+			pict g_pict yes ;
+			gosub subClDraw;
+			
+			save no select all done vnumTxt [ overwrite ] ;
+			iVid=iVid+1
+			aVid[iVid]=vnumTxt
+			if isvardef("objects1")>0
+			{
+				if objects1!=0
+				{
+					#legend group last objects1 done ;
+				}
+			}
+			
+			//g_name=tname;
+			//new;
+			//open projname;
+		}
+		goto lab2;
+	}
+	object_name=sysvar(2);
+	if g_vidUnic==100
+	{
+		// собираем виды в один чертеж
+		i=0;
+		object_name=sysvar(2);
+		//PutMsg(object_name,1);
+		new;
+		lab3:
+		if i<nobj
+		{
+			i=i+1;
+			namea=numTxt-3+"_"+str(i);
+			//PutMsg(namea,1);
+			objects=sysvar(60);
+			append namea+".k3";
+			objects=sysvar(60)-objects;
+			#gr group last objects done;
+			nullout=objgab3(gr,xm);
+			if i>1
+			{
+				move nocopy gr done 2points xm[4] xm[2] xm[3] xb yb zb
+			}
+			explode gr done ;
+			xb=xm[1]; yb=xm[2]; zb=xm[3];
+			goto lab3;
+		}
+		gosub subdor;
+	}
+	if g_vidUnic==0
+	{
+	
+		macro DRWZPath+"Win_PanelDw64.mac";
+		
+		gosub extrLeg;
+		//macro DRWZPath+"drawsave64.mac" ;
+		gosub subdor;
+		selbyattr "legend>"+str(0) all done;
+		if sysvar(61)>0
+		{
+			#legend group attribute "legend>"+str(0) done ;
+		}
+	}
+	
+exit;
+//----------------------------------
+extrLeg:
+	objectS=Sysvar(60);
+
+	if IsVardef("legend")!=16
+	{
+		return;
+	}
+	nLegend=Scang(legend,aoLeg);
+	il=0;
+	labil:
+	if il<nlegend
+	{
+		il=il+1;
+		labil1:
+		if GetObjHold(aoleg[il],obhold)
+		{
+			extract partly obhold aoleg[il];
+			goto labil1;
+		}
+		goto labil;
+	}
+	objects1=sysvar(60)-(objectS);
+	attrobj attach "legend" done group last objects1-1 done 1 
+return;
+//--------------
+subClDraw:
+	if !g_cldraw {
+		chprop color partly all done sysvar(40)
+	}
+return;
+subDor:
+//numTxt=object_name-3+"_"+g_name+".k3";
+	
+	g_ik=g_ik+1
+	//putmsg(numtxt,1);
+
+	adraw[g_ik]=numTxt;
+	pict g_pict yes ;
+	zoom all ;
+	//macro DRWZPath+"ChGRCOEF.mac" ;
+	gosub subClDraw;
+	
+	save no select all done numTxt [ overwrite ]
+	F2000=DbVar("F2000",0);
+	//putmsg("*********************************************************************************");
+	zoom all ;
+	If F2000 
+	{ 
+		exp2d wmf yes optimized yes inscribe yes numWmf [ overwrite ] 
+	}   
+	else     
+	{ 
+		exp2d wmf yes  optimized yes inscribe yes numWmf [ overwrite ] 
+	} 
+	if (g_dorab==1)
+	{
+		setvar
+		"Чертеж сохранен"
+		numWmf
+		left
+		" в файл: "+numTxt
+		done
+		logical  default 0  "Доработать чертеж?"  Wflag
+		logical  default 0  "Не предлагать доработать чертеж"  Wflag1
+		done
+		if (Wflag==1)
+		{
+			g_dorab=2;
+		}
+		if (Wflag1==1)
+		{
+			g_dorab=0
+		}
+	}
+	if (g_dorab==2)
+	{
+		NULLOUT=ReSnap();
+		new ;
+		//loadorder last
+		open numTxt;
+		exit;
+	}
+	
+return;	

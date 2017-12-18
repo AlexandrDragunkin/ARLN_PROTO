@@ -1,0 +1,34 @@
+
+//**********************************************
+//            Выбор по атрибуту
+//              Драгункин А.Р.
+//              ГеоС 2013-14 г.
+//**********************************************
+// макрос выполняет процедуру выбора объектов по атрибуту
+// вместо selbyattr
+// macro ProtoPath+"Support.zk3|mselbyattr.mac" "IsAssign("KitchenDef ",pt)" ByRef arr1 ByRef nobj ;
+// macro ProtoPath+"Support.zk3|mselbyattr.mac" "getattr(pt,\"IPRLN"+str(Ltype)+"\",0)>0"  arr1 ByRef nobj ;
+// pt - обязательно это указатель на владельца
+// строка с условием
+// arr1 массив для заполнения
+// nobj число выбранных
+
+getpar logAttrr arr1 g_nObjUP;
+
+<?python
+import k3
+logAttrr = k3.Var('logAttrr')
+arr1 = k3.VarArray(100,'arr1')
+g_nObjUP = k3.Var('g_nObjUP')
+g_nObjUP.value = 0
+nn = k3.sysvar(62)
+n = 32767 if nn>32767 else int(nn)
+arr = k3.VarArray(n)
+if_Ok,if_Err = k3.Var(),  k3.Var()
+m = k3.scanscene(arr)
+for pt in tuple(arr):
+    if eval('k3.'+logAttrr.value):
+        arr1[int(g_nObjUP.value)]=pt.value
+        g_nObjUP.value=g_nObjUP.value+1
+?>
+exit;

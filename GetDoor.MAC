@@ -1,0 +1,61 @@
+// Выбор системы дверей (загрузка параметров)
+global RD_Dsys RD_NSys RD_Name RD_Hn RD_Dn1 RD_Dn2 RD_Dn3 RD_Hv RD_Dv1 RD_Dv2 RD_Wst;
+global RD_Nhst RD_Z2d RD_Zn RD_Zv RD_HdMax RD_HdMin RD_WdMax RD_WdMin RD_WBok;
+
+getpar NRail ;
+
+if (len(NRail)==0) { goto MDefault; }
+
+DBFRail=GetProtoMac("Shkaf.ptl")+"DoorSys.dbf" ;
+DbOpen rcd, DBFRail,"";
+DbFilter rcd, "NSYS==NRail";	// Выбрали систему по номеру
+total_s=DbRecCount(rcd);
+
+if (total_s==0) { goto MDefault; }
+DbMoveFirst rcd;
+
+RD_Dsys=DbGetValue(rcd,0);     //-- Ключевое имя дверной системы
+RD_NSys=DbGetValue(rcd,1);     //-- Краткое имя дверной системы (поле S2 прайс-листа для створок, треков и обрамления)
+RD_Name=DbGetValue(rcd,2);     //-- Полное наименование дверной системы
+RD_Hn=DbGetValue(rcd,3);       //-- Установочная высота нижней направляющей
+RD_Dn1=DbGetValue(rcd,4);      //-- Расстояние от фасада до нижней направляющей
+RD_Dn2=DbGetValue(rcd,5);      //-- Ширина нижней направляющей (при построении створки на используется)
+RD_Dn3=DbGetValue(rcd,6);      //-- Резерв
+RD_Hv=DbGetValue(rcd,7);       //-- Высота верхней направляющей (определяет высоту створки)
+RD_Dv1=DbGetValue(rcd,8);      //-- Расстояние от фасада до верхней направляющей (определяет положение створки)
+RD_Dv2=DbGetValue(rcd,9);      //-- Ширина верхней направляющей (участвует в "удалении" створок друг от друга)
+RD_Wst=DbGetValue(rcd,10);     //-- Толщина двери (участвует в "удалении" створок друг от друга)
+RD_Nhst=DbGetValue(rcd,11);    //-- Нахлест обрамления
+RD_Z2d=DbGetValue(rcd,12);     //-- Зазор по глубине
+RD_Zn=DbGetValue(rcd,13);      //-- Зазор снизу по высоте
+RD_Zv=DbGetValue(rcd,14);      //-- Зазор сверху по высоте (возможно отрицательное значение)
+RD_HdMax=DbGetValue(rcd,15);   //-- Максимальная высота створки двери
+RD_HdMin=DbGetValue(rcd,16);   //-- Минимальная высота створки двери
+RD_WdMax=DbGetValue(rcd,17);   //-- Максимальная ширина створки двери
+RD_WdMin=DbGetValue(rcd,18);   //-- Минимальная ширина створки двери
+RD_WBok=DbGetValue(rcd,19);    //-- Ширина боковины каркаса
+DbClose rcd;
+rcd=-1;
+goto MGeo;
+
+MDefault:
+RD_NSys="NewS";
+RD_Name="NewS";
+RD_Hn=10;
+RD_Dn1=40;
+RD_Dn2=55;
+RD_Dn3=10;
+RD_Hv=60;
+RD_Dv1=10;
+RD_Dv2=85;
+RD_Wst=30;
+RD_Nhst=20;
+RD_Z2d=15;
+RD_Zn=5;
+RD_Zv=5;
+RD_HdMax=2590
+RD_HdMin=300
+RD_WdMax=762
+RD_WdMin=300
+RD_WBok=50;
+MGeo:

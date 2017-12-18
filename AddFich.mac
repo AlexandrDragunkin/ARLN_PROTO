@@ -1,0 +1,81 @@
+//-- Добавление комплектующих в сцену
+ProtoPath=GetProtoMac("Shkaf.ptl");
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+
+defarr altxt[15], altfl[15];
+defarr arr[10], arrin[15];
+defarr compl[8], tm[6];
+defarr furnty[10], arracc[100], arrpic[100], arrnam[100];
+
+furnty[2]="040500"
+furnty[3]="040800"
+furnty[4]="041300"
+furnty[5]="041500"
+furnty[6]="040000"
+
+compl[2]=54;
+compl[3]=67;
+compl[4]=66;
+compl[5]=70;
+compl[6]=22;
+compl[7]=0;
+
+altfl[1]=PicturesPath+"HandlePic.jpg"
+altfl[2]=PicturesPath+"hook.jpg"
+altfl[3]=PicturesPath+"Fastener.jpg"
+altfl[4]=PicturesPath+"Catch.jpg"
+altfl[5]=PicturesPath+"Drier.jpg"
+altfl[6]=PicturesPath+"Transformer.jpg"
+
+defarr Ptype[20];
+
+Ptype[1]="Ручки";
+Ptype[2]="Крючки";
+Ptype[3]="Лифты";
+Ptype[4]="Замки";
+Ptype[5]="Сушилки";
+Ptype[6]="Разное";
+//Ptype[3]="Шпингалет";
+//Ptype[4]="Магнитная защелка";
+//Ptype[5]="Трансформатор";
+//Ptype[6]="Провод моток 10 м";
+
+
+#altnum
+  alternative
+  "Установка аксессуаров"
+  picbox
+  text
+  center
+  "Выберите нужный"
+  done
+  default 1
+  Ptype[1]  altfl[1]
+  Ptype[2]  altfl[2]
+  Ptype[3]  altfl[3]
+  Ptype[4]  altfl[4]
+  // Ptype[5]  altfl[5]
+  // Ptype[6]  altfl[6]
+//  Ptype[7]  altfl[7]
+//  Ptype[8]  altfl[8]
+done;
+
+if altnum==0
+{
+  cancel;
+}
+NULLOUT=GetSnap();
+
+if (altnum==1) {
+  macro ProtoPath+"AddHandl.mac" ;
+  NULLOUT=ReSnap();
+  exit;
+}
+macro ProtoPath+"AddAcce.mac" compl[altnum] furnty[altnum];
+NULLOUT=ReSnap();
+exit;
+
+nend:
+delete fich;
+NULLOUT=ReSnap();
+exit;

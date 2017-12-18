@@ -1,0 +1,28 @@
+//-- Формируем массив значений FurnType
+global ProtoPath;
+global g_IFurnType,g_FurTyp;
+
+getpar lim;               //-- Количество значимых позиций атрибута FurnType
+macro ProtoPath+"GetFurnType.mac";
+FuDim=GetDimArray(g_IFurnType);         //-- Размерность массива g_IFurnType
+defarr g_FurTyp[FuDim];
+InitArray(g_FurTyp,"000000");
+i=1;
+j=1;
+loop1:
+p=left(str(g_IFurnType[i]),lim)+(6-lim)*"0";
+if (len(p)<6) 
+{ 
+	p="000000" 
+}
+if (findinarray(g_FurTyp,p)==0)
+{
+  g_FurTyp[j]=p;
+  j=j+1;
+}
+i=i+1;
+if (i<FuDim)
+{
+  goto loop1;
+}
+exit;

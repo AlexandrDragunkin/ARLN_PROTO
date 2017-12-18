@@ -1,0 +1,19 @@
+//-- Макропрограмма создания нематериального гнутого на 90 гр. профиля
+//-- Входные параметры:
+//-- xn, yn, zn - точка установки
+//-- w, d - ширина и глубина
+//-- Rad - радиус скругления
+//-- flagPer - флаг переогиентации
+//-- Transp - флаг прозрачности
+
+global ProtoPath;
+
+getpar xn,yn,zn,w,d,Rad,flagPer,Transp;
+
+//-- Создаем направляющую
+Macro ProtoPath+"CreateGnPath.mac" 0 d 0 w d Rad ;
+objident last 1 P1;        	
+//-- Строим профиль по созданной направляющей
+Macro ProtoPath+"CreatePtProf.mac" xn yn zn flagPer P1 Transp;
+delete P1 ;
+exit;

@@ -1,0 +1,1112 @@
+global PKM_SP ;
+if isvardef("PKM_SP")==0 {
+   //Функция определяет, определена ли к данному моменту переменная, имя которой содержит строка variable. Функции возвращает:
+   //0  – переменная не определена;
+   //3  – переменная является массивом
+   //5  – переменная числового типа
+   //6  – переменная строкового типа
+   //16  – переменная является ссылкой на объект
+
+    //macro GetProtoMac("Shkaf.ptl")+"Glob_Sp.mac" ; // Загружаем переменныые для макросов из   L_SUPPORT
+}
+CurStat=SysVar(70) ;
+=Curstat
+if CurStat==0 { CurStat=2  }
+//ErrMsg=MsgLevel(4) ;  // 2008/05/23 ;
+//DrwPr.mac
+//*********************************************
+//  Чертеж профильного длинномера (Пр.карниз н.пофиль балюстрада)
+//              Драгункин А.Р.
+//              ГеоС 2007 г.
+//*********************************************
+//ErrMsg=MsgLevel(4) ;  // 2008/05/23 ;
+global L_SUPPORT ;
+setucs save "DrwPr" ;
+//=======================================
+// Умолчания для типов линий  из global_s.mac
+global
+TiLDef    // Толщина тонких линий (умолчание)
+TiLDet    // Толщина линий детали
+TiLPaz    // Толщина линий паза
+TiLKrom   // Толщина линий кромки
+TiLOs     // Толщина осевых линий
+TyLOs     // Тип осевых линий
+cv
+currvi
+Xpop
+Xlkn Ylkn Zlkn      // Лицевое конец
+Xlkg Ylkg Zlkg      // Лицевое начало
+Xlkgl Ylkgl Zlkgl   // Лицевое начало обекта
+Ygab
+PlFlags
+;
+
+
+defarr
+xmm[15]
+xm[6]
+bd[11]
+arr[4]
+ob[4]
+ob0[4]
+ob00[4]
+dimAr[20]
+DimPar[48]
+Flag[48]
+grf[13]
+MtCS[9]
+
+;
+//==================================setvar
+getpar
+auto
+;
+
+if auto==0 {
+//ErrMsg=MsgLevel(2) ;
+PutMsg("Укажите длинномер",1) ;
+objident : plg
+
+KeyLTrim=1 //Обрезать длинные  1-да 0-нет
+KeyAdim=1  //Углы образмеривать 1-да 0-нет
+KeyLdim=1  //Линейные размеры ставить 1-да 0-нет
+MaxL=Xgab*8
+Poslog=1
+seclog=1
+}
+if auto==1 {
+   getpar
+   plg
+   KeyLTrim //Обрезать длинные  1-да 0-нет
+   KeyAdim  //Углы образмеривать 1-да 0-нет
+   KeyLdim  //Линейные размеры ставить 1-да 0-нет
+   MaxL     // Максимальная длинна
+   Poslog   // ставить позиции
+   Seclog   // строить сечения
+   ;
+}
+eps_n=1.e-6 //погрешность точности
+eps_d=sysvar(32);
+//Создаем уровни для отображения размеров
+ layers new "VidDim_1" ;
+ layers new "VidDim_2" ;
+ layers new "VidDim_3" ;
+ layers new "VidDim_4" ;
+ CurLayer=Sysvar(42) ;
+ layers set "VidDim_3" ;
+  If (!IsAttrdef("AutoPlace"))
+ { Attribute Create "AutoPlace" "Тип установки" Real 5 0 ; }
+   If (!IsAttrdef("VidDimPlace"))
+ { Attribute Create "VidDimPlace" "Номер вида на котором определен размер" Real 5 0 ; }
+ If (!IsAttrdef("LongDim"))
+ { Attribute Create "LongDim" "Размеры длинномера" Real 5 0  ; }
+// Размер - уровень
+ CurrVi=SysVar(51)   ;
+ CV="VidDim_"+Str(CurrVi) ;
+ 'grfcoeff  1 ;
+//=================================
+setucs lcs plg ;
+Result=SetLongObj(Plg);
+err=GetBentProf(bd) ;
+Result=GetLongCut(arr);
+err=SysArr(43,grf) ;
+GrK=SysVar(76)*grf[3] ;
+
+err=SysArr(80,dimAr);
+sdv=0  //Конкретное размещение текста:  0 - По центру 1 - Слева 2 - Справа 3 - Ручным сдвигом вдоль 4 - Ручным сдвигом по двум точкам 5 - На выноске
+Xpop=0
+//======================
+Err=GetUCSMatr(MtCS);
+Ksdv=1
+#Acs angle mtcs[1] mtcs[2] mtcs[3]  mtcs[4] mtcs[5] mtcs[3] mtcs[1]+100 mtcs[2] mtcs[3] ;
+if acs==360 { acs=0 }
+If acs>=0&&acs<=90     { Ksdv=0 }
+If acs>271&&acs<=360 { Ksdv=0 }
+
+//======================
+Xgab=0
+Ygab=0
+plgYmax=0
+plgYmin=0
+LongPath=GetLongFile(Xgab,Ygab,plgYmax,plgYmin);
+plgYmax=iif((abs(plgYmax-plgYmin)<eps_d)&&(abs(plgYmax)<eps_d),xgab,plgYmax);
+plgYmin=-plgYmin;
+gosub PrBDR ;
+//=========================
+Hst=Xgab/2
+if 100/(Grk*dimar[1])>4 {
+   grf3=(100/(Grk*dimar[1]))/4
+   GrK=SysVar(76)*grf3 ;
+   'grfcoeff  grf3 ;
+
+}
+
+Delta=Grk*(dimar[1]*1.6) //Grk*(dimar[1]*(1+4*dimar[5]/100))
+
+maxXYgab=0
+Sobj=SysVar(60) ;
+R=ABS(BD[3])
+if R==0 {
+   Zn=1
+   GoSub BasePlin ;
+   }
+else {
+     Zn=1
+     if BD[3]<0 { Zn=-1 }                //коэффициент знака радиуса
+     if ((2*R-bd[1])>=0)&&(bd[2]<0.1)  { //линейных участков нет
+        GoSub BasePath ;
+        }
+        else {                            //линейные участки есть
+        GoSub BasePath ;
+     }
+}
+if Isvardef("SdObj")==0 { SdObj=0 }
+SdObj=SysVar(60)-SdObj ;
+if SdObj>0 {
+   chprop layer  last SdObj done CV ;
+   Attrobj Attach  "AutoPlace"    Done Last SdObj 1 ;
+   Attrobj Attach  "VidDimPlace"  Done Last SdObj CurrVi;
+   if SObj>0 {
+      SObj=SysVar(60)-SObj ;
+      group last Sobj done ;
+      chprop layer  last 1 done CV ;
+      Attrobj Attach  "AutoPlace"    Done Last 1 1 ;
+      Attrobj Attach  "VidDimPlace"  Done Last 1 CurrVi;
+   }
+}
+
+      Xtkl=Xtk+Xpop
+      Xlkl=xlk+Xpop
+      PtransCS(0,3,Xtkl,Ytk,0,Xtkgl,Ytkgl,Ztkgl) ;
+      PtransCS(0,3,Xlkl,Ylk,0,Xlkgl,Ylkgl,Zlkgl) ;
+layers set CurLayer ;
+setucs restore "DrwPr" ;
+setucs delete "DrwPr" ;
+'grfcoeff  grf[3] ;
+//ErrMsg=MsgLevel(CurStat) ;
+//'redraw,,
+exit ;
+
+//=======================================
+BasePlin:
+   Ln=GetLongLen(PLG) ;
+   Xln=0
+   Xlk=0
+   Xtn=0
+   Xtk=0
+   Ylk=plgYmax
+   Yln=plgYmax
+   Ytk=plgYmin
+   Ytn=plgYmin
+
+   LnR=Ln
+   if (MaxL<Ln)&&(KeyLtrim==1) { Xpop=Ln-MaxL; Ln=MaxL; dimtext 0 str(Round(lnR)) done ; }
+   if arr[1]>0 { Xtn=abs(Xgab*TAN(arr[1])) }
+   if arr[1]<0 { Xln=abs(Xgab*TAN(arr[1])) }
+   
+   if arr[2]>0 { Xlk=abs(Xgab*TAN(arr[2])) }               //Линейный
+   if arr[2]<0 { Xtk=abs(Xgab*TAN(arr[2])) }
+   #Lplg Line 0 0 0 Ln 0 0 done ;                          // Базовая
+      Ob[4]=1 ; Objident last 1 Ob[Ob[4]] ;
+   #Lplg0 Line Xtn plgYmin 0 Ln-xtk plgYmin 0 done ;       //Тыльная
+      Ob0[4]=1 ; Objident last 1 Ob0[Ob0[4]] ;
+   #Lplg00 Line Xln plgYmax 0 Ln-xlk plgYmax 0 done ;      //Лицевая
+   //putmsg(str(Xtn),0);
+   //putmsg(str(Xln),0);
+   //putmsg(str(plgYmin),0);
+   //putmsg(str(plgYmax),0);
+
+   #ttds dist  Xtn plgYmin 0 Xln plgYmax 0 done ;
+   //putmsg(str(ttds),0);
+   #Lplgn line  Xtn plgYmin 0 Xln plgYmax 0 done ;        //боковая в начале
+
+   #Lplgk line  Ln-xtk plgYmin 0 Ln-xlk plgYmax 0 done ;   //боковая в конце
+      Ob00[4]=1 ; Objident last 1 Ob00[Ob00[4]] ;
+      chprop ltype  lplg done  TyLOs ; // Тип осевых линий
+      chprop lwidth lplg done  TiLOs ; // Толщина осевых линий
+   #phab path select lplg0 lplg00 lplgn lplgk done lplg0 create ;
+      chprop lwidth phab done TiLDet ; // Толщина линий детали
+   If KeYADim==1 {
+      // =====Угловые размеры в начале и в конце====================
+      SdObj=SysVar(60);
+      if arr[1]>0 {
+         sdv=1
+         if ksdv==1 { sdv=2 }
+         #angn adim 3ddim 3points Xtn plgymin 0 Xtn plgymin+1 0   Xln plgymax 0  ^Xtn/2 plgymax+delta 0  ; gosub DMPARRA1 ;
+         }
+      if arr[1]<0 {
+         sdv=1
+         if ksdv==1 { sdv=2 }
+         #angn adim 3ddim 3points Xln plgymax 0 Xln plgymax-1 0   Xtn plgymin 0  ^Xln/2 plgymin-Hst 0  ;  gosub DMPARRA1 ;
+         }
+      if SysVar(60)!=SdObj {  =sdv     }
+         SdObj=SysVar(60);
+      if arr[2]<0 {
+         sdv=2  //Конкретное размещение текста:  0 - По центру 1 - Слева 2 - Справа 3 - Ручным сдвигом вдоль 4 - Ручным сдвигом по двум точкам 5 - На выноске
+         if ksdv==1 { sdv=1 }
+         #angk adim 3ddim 3points Ln-xtk plgymin 0 Ln-xtk plgymin+1 0   Ln-xlk plgymax 0  ^ln-xtk/2 plgymax+delta 0  ; gosub DMPARRA1 ;
+         }
+      if arr[2]>0 {
+         sdv=2  //Конкретное размещение текста:  0 - По центру 1 - Слева 2 - Справа 3 - Ручным сдвигом вдоль 4 - Ручным сдвигом по двум точкам 5 - На выноске
+         if ksdv==1 { sdv=1 }
+         #angk adim 3ddim 3points Ln-xlk plgymax 0 ln-xlk plgymax-1 0   ln-xtk plgymin 0  ^ln-xlk/2 plgymin-Hst 0  ;  gosub DMPARRA1 ;
+         }
+      if SysVar(60)!=SdObj { =sdv     }
+      sdv=0
+   }
+   if KeyLdim==1 {
+   // =====Линейный размер====================
+   SdObj=SysVar(60);
+   if ((arr[1]<0)&&(arr[2]>0))                          { ldim 3ddim ln plgymin 0 0 plgymin 0 free ln plgymin-(Hst+delta) 0 ;Bpos=plgymax ; apos=1 }
+   else {
+        if ((arr[1]<0)&&(abs(arr[1])>=abs(arr[2])))     { ldim 3ddim ln plgymax 0 0 plgymin 0 free ln plgymin-(Hst+delta) 0 ;Bpos=plgymax ; apos=1  }
+        else {
+             if ((arr[2]>0)&&(arr[1]<=arr[2]))          { ldim 3ddim ln plgymin 0 0 plgymax 0 free ln plgymin-(Hst+delta) 0 ;Bpos=plgymax ; apos=1  }
+             else {
+                  if ((arr[1]>=0)&&(arr[2]<=0))         { ldim 3ddim ln plgymax 0 0 plgymax 0 free ln plgymax+(Hst+delta) 0 ;Bpos=plgymin  ; apos=-1 }
+                  else {
+                       if ((arr[1]>=0)&&(arr[1]>arr[2]))                { ldim 3ddim ln plgymin 0 0 plgymax 0 free ln plgymax+(Hst+delta) 0 ;Bpos=plgymin  ;apos=-1 }
+                       else {
+                            if ((arr[2]<=0)&&(abs(arr[1])>abs(arr[2]))) { ldim 3ddim ln plgymax 0 0 plgymin 0 free ln plgymax+(Hst+delta) 0 ;Bpos=plgymin  ;apos=-1 }
+                            else {
+                                 if ((arr[2]<=0)&&(abs(arr[2])>abs(arr[1]))) { ldim 3ddim ln plgymax 0 0 plgymin 0 free ln plgymax+(Hst+delta) 0 ;Bpos=plgymin  ;apos=-1 }
+                                 }
+                            }
+                       }
+                  }
+             }
+        }
+
+   If SysVar(60)!=SdObj { gosub dmparr1 ;   }
+
+   }
+if posLog>0 { GoSub LeaderLin ; } //Указатель позиции
+if (Ln>2*Xgab)&&(Seclog>0) {
+   macro L_SUPPORT+"CutZyrt.mac" plg ;
+   if MaxL<LnR { move last 1 done 2points LnR/2 0 0 Ln/2 0 0 nocopy ; }
+   }
+dimtext 0 "<>" ;
+      xlk=Ln-xlk
+      Xtk=Ln-xtk
+      PtransCS(0,3,Xtn,Ytn,0,Xtkn,Ytkn,Ztkn) ;
+      PtransCS(0,3,Xln,Yln,0,Xlkn,Ylkn,Zlkn) ;
+      PtransCS(0,3,Xtk,Ytk,0,Xtkg,Ytkg,Ztkg) ;
+      PtransCS(0,3,Xlk,Ylk,0,Xlkg,Ylkg,Zlkg) ;
+return;
+
+//********************************
+//построение базовой линии гнутого длинномера  И линий габарита
+BasePath:
+   Xln=0
+   Xlk=0
+   Xtn=0
+   Xtk=0
+   Ylk=plgYmax
+   Yln=plgYmax
+   Ytk=plgYmin
+   Ytn=plgYmin
+Result=SetLongObj(Plg);
+gosub PrBDR ;
+Result=GetBentProf(Bd);
+R=ABS(BD[3])
+Zn=1
+Ob[4]=0  //Счетчик элементов
+Ob0[4]=0  //Счетчик элементов
+Ob00[4]=0  //Счетчик элементов
+if BD[3]<0 { Zn=-1 }
+//if (2*R-bd[1])>=0&&(R-bd[2])>0  {
+if ((2*R-bd[1])>=0)&&(bd[2]<0.1)  {  //линейных участков нет
+   h=R-SQRT(R*R-BD[1]*BD[1]/4)
+   Zn=1
+   if  bd[3]<0 { Zn=-1 }
+   #ArcBD Arc 0 0 0 BD[1] 0 0 BD[1]/2 Zn*h 0 ;                                   //Строим дугу  на базе
+   //If Prz==2 { #ArcBD Arc Center bd[1]/2 zn*h-Bd[3] 0 start 0 0 0 end bd[1] 0 0 }                 //Строим дугу  на базе
+   //if Prz==1 { #ArcBD Arc Center bd[1]/2 zn*h-Bd[3] 0 start bd[1] 0 0 end 0 0 0 }               //Строим дугу  на базе
+   ; Ob[4]=Ob[4]+1 ; Objident last 1 Ob[Ob[4]] ;
+   //================
+
+   if (arr[2]<=0&&Bd[3]>0)||(arr[2]>=0&&Bd[3]<0) {
+      setucs lcs plg ;
+      setucs bd[1] 0 0 bd[1]/2 -bd[3]+zn*h 0 0 0 0  ;
+      if zn>0 { setucs move -Zn*plgymax 0 0 ; }
+      if zn<0 { setucs move -Zn*plgymin 0 0 ; }
+      GoSub GetXYK1 ;
+
+      //#Lplgk Line 0 0 0 Xtk Ytk 0 done ;
+      }
+      
+   if (arr[2]<=0&&Bd[3]<0)||(arr[2]>=0&&Bd[3]>0) {
+      setucs lcs plg ;
+      setucs bd[1] 0 0 bd[1]/2 -bd[3]+zn*h 0 0 0 0  ;
+
+      if zn>0 { setucs move -Zn*plgymin 0 0 ; }
+      if zn<0 { setucs move -Zn*plgymax 0 0 ; }
+      GoSub GetXYK2 ;
+
+      //#Lplgk Line 0 0 0 Xlk Ylk 0 done ;
+      }
+
+  //*************
+   if (arr[1]<=0&&Bd[3]<0)||(arr[1]>=0&&Bd[3]>0) {
+      setucs lcs plg ;
+      setucs 0 0 0 bd[1]/2 -bd[3]+zn*h 0 bd[1] 0 0  ;
+      if zn>0 { setucs move -Zn*plgymax 0 0 ; }
+      if zn<0 { setucs move -Zn*plgymin 0 0 ; }
+      GoSub GetXYN1 ;
+      //#Lplgn Line 0 0 0 Xtn Ytn 0 done ;
+      }
+      
+   if (arr[1]<=0&&Bd[3]>0)||(arr[1]>=0&&Bd[3]<0) {
+      setucs lcs plg ;
+      setucs 0 0 0 bd[1]/2 -bd[3]+zn*h 0 bd[1] 0 0  ;
+      if zn>0 { setucs move -Zn*plgymin 0 0 ; }
+      if zn<0 { setucs move -Zn*plgymax 0 0 ; }
+      GoSub GetXYN2 ;
+     // #Lplgn Line 0 0 0 Xln Yln 0 done ;
+      }
+
+
+   //================
+      setucs lcs plg ;
+      PtransCS(3,0,Xtkn,Ytkn,Ztkn,Xtn,Ytn,Ztn) ;
+      PtransCS(3,0,Xlkn,Ylkn,Zlkn,Xln,Yln,Zln) ;
+      PtransCS(3,0,Xtkg,Ytkg,Ztkg,Xtk,Ytk,Ztk) ;
+      PtransCS(3,0,Xlkg,Ylkg,Zlkg,Xlk,Ylk,Zlk) ;
+      If zn>0 {
+         #ArcT Arc Center bd[1]/2 zn*h-Bd[3] 0 start xtk ytk 0 end Xtn ytn 0 ; //Строим дугу  тыльную
+         #ArcL Arc Center bd[1]/2 zn*h-Bd[3] 0 start xlk ylk 0 end Xln yln 0 ; //Строим дугу  лицевую
+         }
+      If zn<0 {
+         #ArcT Arc Center bd[1]/2 zn*h-Bd[3] 0 start Xtn ytn 0 end xtk ytk 0 ; //Строим дугу  тыльную
+         #ArcL Arc Center bd[1]/2 zn*h-Bd[3] 0 start Xln yln 0 end xlk ylk 0 ; //Строим дугу  лицевую
+         }
+      #Lplgk Line Xtk Ytk 0 Xlk Ylk 0 done ;
+      #Lplgn Line Xtn Ytn 0 Xln Yln 0 done ;
+      #Ln dist Xtn ytn 0  xtk ytk 0  done ;
+      if (Ln>2*Xgab)&&(Seclog>0)  {
+         macro L_SUPPORT+"CutZyrt.mac" plg ;
+      }
+      setucs  Xtn ytn 0  xtk ytk 0  Xln yln 0 ;
+      PtransCS(3,0,Xtkn,Ytkn,Ztkn,Xtn,Ytn,Ztn) ;
+      PtransCS(3,0,Xlkn,Ylkn,Zlkn,Xln,Yln,Zln) ;
+      PtransCS(3,0,Xtkg,Ytkg,Ztkg,Xtk,Ytk,Ztk) ;
+      PtransCS(3,0,Xlkg,Ylkg,Zlkg,Xlk,Ylk,Zlk) ;
+      if zn>0 { h1=(R+PlgYmin)-SQRT((R+PlgYmin)*(R+PlgYmin)-(Xtk-Xtn)*(Xtk-Xtn)/4) }
+      if zn<0 { h1=(R-PlgYmax)-SQRT((R-PlgYmax)*(R-PlgYmax)-(Xtk-Xtn)*(Xtk-Xtn)/4) }
+      #Ln dist Xtn ytn 0  xtk ytk 0  done ;
+      Xmid=Ln/2
+      Ymidmin=h1+PlgYmin*0.1
+      Ymidmax=Ymidmin+Xgab*1.1
+      SdObj=SysVar(60);
+      dimtext 0 "<>" ;
+      if KeyLDim==1 {
+          ;macro L_SUPPORT+"RdimPath692.mac" ArcBD ;
+         ldim 3ddim xtk ytk 0 Xmid Ymidmin 0 free xtk (ytk-(Hst+delta))   0 ; gosub dmparr01 ;
+         ldim 3ddim Xtn ytn 0 Xmid Ymidmin 0 free Xtn (ytk-(Hst+delta))   0 ; gosub dmparr01 ;
+         ldim 3ddim xtk ytk 0 Xtn  ytn     0 free xtk (ytk-(Hst+2*delta)) 0 ; gosub dmparr1 ;
+
+         ldim 3ddim xlk ylk 0 Xmid Ymidmax 0 free xlk (Ymidmax+(Hst+delta))   0 ; gosub dmparr01 ;
+         ldim 3ddim Xln yln 0 Xmid Ymidmax 0 free Xln (Ymidmax+(Hst+delta))   0 ; gosub dmparr01 ;
+         ldim 3ddim xlk ylk 0 Xln  yln     0 free xlk (Ymidmax+(Hst+2*delta)) 0 ; gosub dmparr1 ;
+         sdv=2
+         if ksdv==1 { sdv=1 }
+         Ldim 3ddim Xtk ytk 0 Xmid h1+Xgab 0 free  Xmid+(Hst+delta) ytk 0 ;     gosub dmparr1 ;
+         sdv=0
+
+         if zn>0 {
+            ;macro L_SUPPORT+"RdimPath692.mac" ArcL ;
+            Bpos=-Xgab
+            }
+         if zn<0 {
+            ;macro L_SUPPORT+"RdimPath692.mac" ArcT ;
+            Bpos=Xgab
+            }
+         GoSub LeaderRad ; //Указатель позиции
+     }
+     if KeyAdim==1  {
+        sdv=1  //********
+        if ksdv==1 { sdv=2 }
+        if abs(xln-xtn)>0.1 {#angn adim 3ddim 3points Xtn Ytn 0 Xtn Ytn+1 0   Xln Yln 0  ^Xln/2 Ymidmax+Hst 0  ;         gosub DMPARRA1 ;  }
+        sdv=2  //Конкретное размещение текста:  0 - По центру 1 - Слева 2 - Справа 3 - Ручным сдвигом вдоль 4 - Ручным сдвигом по двум точкам 5 - На выноске
+        if ksdv==1 { sdv=1 }
+        if abs(xlk-xtk)>0.1 { #angk adim 3ddim 3points xtk Ytk 0 xtk Ytk+1 0   xlk Ylk 0  ^xtk+(xlk-xtk)/2 Ymidmax+Hst 0  ; gosub DMPARRA1 ; }
+        sdv=0
+     }
+
+     #Lsim Line   Xmid Ymidmin 0 Xmid Ymidmax 0  done ;
+     chprop lwidth ArcT ArcL lplgn lplgk done TiLDet ; // Толщина линий детали
+
+     chprop ltype Lsim ArcBD done  TyLOs ; // Тип осевых линий
+     chprop lwidth Lsim ArcBD done  TiLOs ; // Толщина осевых линий
+}
+
+else {       //линейные участки есть
+     SdObj=SysVar(60);
+     Xtn=0
+     Xln=0
+     Xtk=0
+     Xlk=0
+     if arr[1]>0 { Xtn=abs(Xgab*TAN(arr[1])) }
+     if arr[1]<0 { Xln=abs(Xgab*TAN(arr[1])) }
+     if arr[2]>0 { Xlk=abs(Xgab*TAN(arr[2])) }               //Линейный
+     if arr[2]<0 { Xtk=abs(Xgab*TAN(arr[2])) }
+     
+                        //*******************************
+     if zn>0 {
+        gosub PrBDR ;
+        if  bd[1]>R {
+        #LinBd1 Line 0 0 0 Bd[1]-R 0 0 done ;                      //Линейный участок в начале
+        Ob[4]=Ob[4]+1 ; Objident last 1 Ob[Ob[4]] ;
+        #LinBd01 Line Xtn plgYmin 0 Bd[1]-R plgYmin 0 done ;         //Линейный участок в начале
+        Ob0[4]=Ob0[4]+1 ; Objident last 1 Ob0[Ob0[4]] ;
+        #LinBd10 Line Xln plgYmax 0 Bd[1]-R plgYmax 0 done ;         //Линейный участок в начале
+        Ob00[4]=Ob00[4]+1 ; Objident last 1 Ob00[Ob00[4]] ;
+        Ytn=plgYmin
+        Yln=plgYmax
+
+        #Lplgn Line Xtn plgYmin 0 Xln plgYmax 0 done
+        chprop ltype LinBd1  done  TyLOs ; // Тип осевых линий
+        chprop lwidth LinBd1  done  TiLOs ; // Толщина осевых линий
+        chprop lwidth LinBd01 LinBd10 Lplgn done TiLDet ; // Толщина линий детали
+        }
+        if  bd[1]<R {
+
+        }
+        if  bd[2]>=R {
+        #LinBd2 Line Bd[1] -R 0 Bd[1] -1*(bd[2]+0.01) 0 done                       //Линейный участок в конце
+        Ob[4]=Ob[4]+1 ; Objident last 1 Ob[Ob[4]] ;
+        #LinBd02 Line Bd[1]+plgYmin -R 0 Bd[1]+plgYmin -bd[2]+Xtk-0.01 0 done      //Линейный участок в конце
+        Ob0[4]=Ob0[4]+1 ; Objident last 1 Ob0[Ob0[4]] ;
+        #LinBd20 Line Bd[1]+plgYmax -R 0 Bd[1]+plgYmax -bd[2]+Xlk-0.01 0 done     //Линейный участок в конце
+        Ob00[4]=Ob00[4]+1 ; Objident last 1 Ob00[Ob00[4]] ;
+
+        Ytk=-bd[2]+Xtk
+        Xtk=Bd[1]+plgYmin
+        Ylk=-bd[2]+Xlk
+        Xlk=Bd[1]+plgYmax
+        #Lplgk Line Xtk Ytk 0 Xlk Ylk 0 done ;
+        chprop ltype LinBd2  done  TyLOs ; // Тип осевых линий
+        chprop lwidth LinBd2  done  TiLOs ; // Толщина осевых линий
+        chprop lwidth LinBd02 LinBd20 Lplgk done TiLDet ; // Толщина линий детали
+        }
+        if  bd[2]<R {
+
+        }
+        if  bd[1]<R {
+            nbd2=abs(R)-sqrt((pow(r,2)-pow((abs(r)-bd[1]),2)))
+            #ArcBD Arc bd[1] -R 0 center bd[1]-R -R 0 end  0 -nbd2 0;                   //Строим дугу  в начале
+            Ob[4]=Ob[4]+1 ; Objident last 1 Ob[Ob[4]] ;
+            Xarn=bd[1]-R
+            Yarn=0
+            Xark=Bd[1]
+            Yark=-R
+            setucs  0 -nbd2 0  bd[1]-R -R 0   bd[1] -R 0 ;
+            If arr[1]>=0 {
+               setucs move -plgYmax 0 0 ;
+               GoSub GetXYN1 ;
+            }
+            if arr[1]<=0 {
+               setucs move -plgYmin 0 0 ;
+               GoSub GetXYN2 ;
+            }
+            //================
+            setucs lcs plg ;
+            PtransCS(3,0,Xtkn,Ytkn,Ztkn,Xtn,Ytn,Ztn) ;
+            PtransCS(3,0,Xlkn,Ylkn,Zlkn,Xln,Yln,Zln) ;
+            //PtransCS(3,0,Xtkg,Ytkg,Ztkg,Xtk,Ytk,Ztk) ;
+            //PtransCS(3,0,Xlkg,Ylkg,Zlkg,Xlk,Ylk,Zlk) ;
+            #ArcT Arc bd[1]+plgYmin -R 0 center bd[1]-R -R 0 end  Xtn Ytn 0;                   //Строим дугу  в начале  тыльная
+            #ArcL Arc bd[1]+plgYmax -R 0 center bd[1]-R -R 0 end  Xln Yln 0;                   //Строим дугу  в начале  лицевая
+            #Lplgn Line Xtn Ytn 0 Xln Yln 0 done ;
+            chprop ltype ArcBD  done  TyLOs ; // Тип осевых линий
+            chprop lwidth ArcBD  done  TiLOs ; // Толщина осевых линий
+            chprop lwidth ArcT ArcL Lplgn done TiLDet ; // Толщина линий детали
+        }
+        if  bd[2]<R {
+            nbd1=bd[1]-(abs(R)-sqrt((pow(r,2)-pow((abs(r)-bd[2]),2))))
+            #ArcBD Arc nbd1 -bd[2] 0 center Bd[1]-R -R 0 end Bd[1]-R 0 0 ;                    //Строим дугу  в конце
+            Ob[4]=Ob[4]+1 ; Objident last 1 Ob[Ob[4]] ;
+            Xarn=Bd[1]-R
+            Yarn=0
+            Xark=Bd[1]
+            Yark=-R
+            setucs  nbd1 -bd[2] 0  bd[1]-R -R 0   Bd[1]-R 0 0 ;
+            If arr[2]>=0 {
+               setucs move -plgYmin 0 0 ;
+               GoSub GetXYK2 ;
+            }
+            if arr[2]<=0 {
+               setucs move -plgYmax 0 0 ;
+               GoSub GetXYK1 ;
+            }
+            //================
+            setucs lcs plg ;
+            //PtransCS(3,0,Xtkn,Ytkn,Ztkn,Xtn,Ytn,Ztn) ;
+            //PtransCS(3,0,Xlkn,Ylkn,Zlkn,Xln,Yln,Zln) ;
+            PtransCS(3,0,Xtkg,Ytkg,Ztkg,Xtk,Ytk,Ztk) ;
+            PtransCS(3,0,Xlkg,Ylkg,Zlkg,Xlk,Ylk,Zlk) ;
+            #ArcT Arc Xtk Ytk 0 center bd[1]-R -R 0 end  Bd[1]-R -PlgYmin 0 ;                   //Строим дугу  в конце  тыльная
+            #ArcL Arc Xlk Ylk 0 center bd[1]-R -R 0 end  Bd[1]-R -PlgYmax 0 ;                   //Строим дугу  в конце  лицевая
+            #Lplgk Line Xtk Ytk 0 Xlk Ylk 0 done ;
+            chprop ltype ArcBD  done  TyLOs ; // Тип осевых линий
+            chprop lwidth ArcBD  done  TiLOs ; // Толщина осевых линий
+            chprop lwidth ArcT ArcL Lplgk done TiLDet ; // Толщина линий детали
+        }
+        if (bd[1]>=R)&&(bd[2]>=R)  {
+           #ArcBD Arc Bd[1]-R 0 0 center Bd[1]-R -R 0 angle -90 ;                //строим дугу в середине
+           Ob[4]=Ob[4]+1 ; Objident last 1 Ob[Ob[4]] ;
+           Xarn=Bd[1]-R
+           Yarn=0
+           Xark=Bd[1]
+           Yark=-R
+           macro L_SUPPORT+"ecvArc.mac" 1 ArcBD Zn*plgYmin  ;  //Дуга на минимуме
+           Ob0[4]=Ob0[4]+1 ; Objident last 1 ArcT ;    //тыльная
+           macro L_SUPPORT+"ecvArc.mac" 1 ArcBD Zn*plgYmax  ;  //Дуга на максимуме
+           Ob00[4]=Ob00[4]+1 ; Objident last 1 ArcL ;   //лицевая
+            chprop ltype ArcBD  done  TyLOs ; // Тип осевых линий
+            chprop lwidth ArcBD  done  TiLOs ; // Толщина осевых линий
+            chprop lwidth ArcT ArcL  done TiLDet ; // Толщина линий детали
+        }
+     }
+     
+                        //*******************************
+     if zn<0 {
+        gosub PrBDR ;
+        if  bd[2]>=R {
+            #LinBd2 Line 0 0 0 0 R-Bd[2]+0.01  0 done        //Линейный участок в начале
+            Ob[4]=Ob[4]+1 ; Objident last 1 Ob[Ob[4]] ;
+            #LinBd02 Line plgYmin -Xtn 0 plgYmin R-Bd[2]+0.01  0 done        //Линейный участок в начале
+            Ob0[4]=Ob0[4]+1 ; Objident last 1 Ob0[Ob0[4]] ;          //тыльная
+            #LinBd20 Line plgYmax -Xln 0 plgYmax R-Bd[2]+0.01  0 done        //Линейный участок в начале
+            Ob00[4]=Ob00[4]+1 ; Objident last 1 Ob00[Ob00[4]] ;      //лицо
+            Yln=-Xtn
+            Ytn=-Xln
+            Xln=plgYmin
+            Xtn=plgYmax
+            #Lplgn Line Xtn Ytn 0 Xln Yln  0 done
+
+            chprop ltype LinBd2  done  TyLOs ; // Тип осевых линий
+            chprop lwidth LinBd2  done  TiLOs ; // Толщина осевых линий
+            chprop lwidth LinBd02 LinBd20 Lplgn done TiLDet ; // Толщина линий детали
+        }
+        if  bd[2]<R  {
+
+        }
+        if  bd[1]>=R {
+            #LinBd1 Line R -Bd[2] 0 bd[1]+0.01 -Bd[2] 0  done         //Линейный участок в конце
+            Ob[4]=Ob[4]+1 ; Objident last 1 Ob[Ob[4]] ;
+            #LinBd01 Line R -Bd[2]+plgYmin 0 bd[1]-Xtk -Bd[2]+plgYmin 0  done        //Линейный участок в конце
+            Ob0[4]=Ob0[4]+1 ; Objident last 1 Ob0[Ob0[4]] ;          //тыльная
+            #LinBd10 Line R -Bd[2]+plgYmax 0 bd[1]-Xlk -Bd[2]+plgYmax 0  done        //Линейный участок в конце
+            Ob00[4]=Ob00[4]+1 ; Objident last 1 Ob00[Ob00[4]] ;      //лицо
+            a=Xlk
+            b=Xtk
+            Xlk=bd[1]-b
+            Xtk=bd[1]-a
+            Ylk=-Bd[2]+plgYmin
+
+            Ytk=-Bd[2]+plgYmax
+            #Lplgk Line Xtk Ytk 0 Xlk Ylk 0 done
+            chprop ltype LinBd1  done  TyLOs ; // Тип осевых линий
+            chprop lwidth LinBd1  done  TiLOs ; // Толщина осевых линий
+            chprop lwidth LinBd01 LinBd10 Lplgk done TiLDet ; // Толщина линий детали
+        }
+        if  bd[1]<R {
+
+        }
+        if  bd[2]<R  {
+            nbd1=abs(R)-sqrt((pow(r,2)-pow((abs(r)-bd[2]),2)))
+            #ArcBD Arc nbd1 0 0 center R R-bd[2]+0.01 0  end R -bd[2] 0 ;   //Строим дугу  в начале
+            Ob[4]=Ob[4]+1 ; Objident last 1 Ob[Ob[4]] ;
+           Xarn=0
+           Yarn=R-bd[2]
+           Xark=R
+           Yark=-Bd[2]
+           setucs  nbd1 0 0  R R-bd[2]+0.01 0   R -bd[2] 0 ;
+           If arr[1]>=0 {
+              setucs move  plgYmax 0 0 ;
+              GoSub GetXYN2 ;
+           }
+           if arr[1]<=0 {
+              setucs move  plgYmin 0 0 ;
+              GoSub GetXYN1 ;
+           }
+                      //================
+           setucs lcs plg ;
+           PtransCS(3,0,Xtkn,Ytkn,Ztkn,Xtn,Ytn,Ztn) ;
+           PtransCS(3,0,Xlkn,Ylkn,Zlkn,Xln,Yln,Zln) ;
+           //PtransCS(3,0,Xtkg,Ytkg,Ztkg,Xtk,Ytk,Ztk) ;
+           //PtransCS(3,0,Xlkg,Ylkg,Zlkg,Xlk,Ylk,Zlk) ;
+           #ArcT Arc Xln Yln 0 center R R-bd[2] 0  end R -bd[2]+plgYmin 0  ;                   //Строим дугу  в начале  тыльная
+           #ArcL Arc Xtn Ytn 0 center R R-bd[2] 0  end R -bd[2]+plgYmax 0  ;                   //Строим дугу  в начале  лицевая
+           #Lplgn Line Xtn Ytn 0 Xln Yln 0 done ;
+           chprop ltype ArcBD  done  TyLOs ; // Тип осевых линий
+           chprop lwidth ArcBD  done  TiLOs ; // Толщина осевых линий
+           chprop lwidth ArcT ArcL Lplgn done TiLDet ; // Толщина линий детали
+        }
+        if  bd[1]<R {
+            nbd2=abs(R)-sqrt((pow(r,2)-pow((abs(r)-bd[1]),2)))
+            #ArcBD Arc 0 -Bd[2]+R  0 center R -Bd[2]+R 0 end bd[1] -bd[2]+nbd2 0 ;  //Строим дугу  в конце
+            Ob[4]=Ob[4]+1 ; Objident last 1 Ob[Ob[4]] ;
+            Xarn=0
+            Yarn=-Bd[2]+R
+            Xark=R
+            Yark=-Bd[2]
+            setucs  bd[1] -bd[2]+nbd2 0  R -Bd[2]+R 0   0 -Bd[2]+R ;
+            If arr[2]>=0 {
+              setucs move  plgYmin 0 0 ;
+              GoSub GetXYK1 ;
+            }
+            if arr[2]<=0 {
+              setucs move  plgYmax 0 0 ;
+              GoSub GetXYK2 ;
+            }
+                      //================
+            setucs lcs plg ;
+            //PtransCS(3,0,Xtkn,Ytkn,Ztkn,Xtn,Ytn,Ztn) ;
+            //PtransCS(3,0,Xlkn,Ylkn,Zlkn,Xln,Yln,Zln) ;
+            PtransCS(3,0,Xtkg,Ytkg,Ztkg,Xtk,Ytk,Ztk) ;
+            PtransCS(3,0,Xlkg,Ylkg,Zlkg,Xlk,Ylk,Zlk) ;
+            #ArcT Arc plgYmin -Bd[2]+R  0 center R -Bd[2]+R 0 end  Xlk Ylk 0  ;                   //Строим дугу  в конце  тыльная
+            #ArcL Arc plgYmax -Bd[2]+R  0 center R -Bd[2]+R 0 end  Xtk Ytk 0  ;                   //Строим дугу  в конце  лицевая
+            #Lplgk Line Xtk Ytk 0 Xlk Ylk 0 done ;
+            chprop ltype ArcBD  done  TyLOs ; // Тип осевых линий
+            chprop lwidth ArcBD  done  TiLOs ; // Толщина осевых линий
+            chprop lwidth ArcT ArcL Lplgk done TiLDet ; // Толщина линий детали
+        }
+        if (bd[1]>=R)&&(bd[2]>=R)  {
+           #ArcBD Arc 0 -Bd[2]+R  0 center R -Bd[2]+R 0 angle 90 ;     //строим дугу в середине
+           Ob[4]=Ob[4]+1 ; Objident last 1 Ob[Ob[4]] ;
+           Xarn=0
+           Yarn=-Bd[2]+R
+           Xark=R
+           Yark=-Bd[2]
+           macro L_SUPPORT+"ecvArc.mac" 1 ArcBD Zn*plgYmin  ;  //Дуга на минимуме
+           Ob0[4]=Ob0[4]+1 ; Objident last 1 ArcT ;    //тыльная
+           macro L_SUPPORT+"ecvArc.mac" 1 ArcBD Zn*plgYmax  ;  //Дуга на максимуме
+           Ob00[4]=Ob00[4]+1 ; Objident last 1 ArcL ;   //лицевая
+           chprop ltype ArcBD  done  TyLOs ; // Тип осевых линий
+           chprop lwidth ArcBD  done  TiLOs ; // Толщина осевых линий
+           chprop lwidth ArcT ArcL  done TiLDet ; // Толщина линий детали
+        }
+
+     }
+     
+     ;macro L_SUPPORT+"RdimPath692.mac" ArcBD ;
+     //if zn>0 { ;macro L_SUPPORT+"RdimPath692.mac" ArcT ; }
+     //if zn<0 { ;macro L_SUPPORT+"RdimPath692.mac" ArcL ; }
+
+     GoSub LeaderKl ;
+     
+     if (bd[1]>=R)&&(bd[2]>=R)  {  //бумер
+
+        GoSub dAngLt1 ;
+        GoSub dAngLt2 ;
+        if KeyLdim==1 {
+           if zn>0 {  //Размер линейного участка
+              if arr[1]>=0 {
+                 if bd[1]>R {
+                    ldim 3ddim bd[1]-R         Yln           0 Xln Yln 0 free bd[1]-R         Yln+(Hst+delta)     0 ; gosub dmparr01 ;
+                 }
+                 ldim 3ddim bd[1]+PlgYmax   Yln-R+PlgYmin 0 Xln Yln 0 free bd[1]+PlgYmax   Yln+(Hst+2*delta) 0 ; gosub dmparr1 ;
+              }
+              if arr[1]<0 {
+                 if bd[1]>R {
+                    ldim 3ddim bd[1]-R         Ytn           0 Xtn Ytn 0 free bd[1]-R         Ytn-(Hst+delta)     0 ; gosub dmparr01 ;
+                 }
+                 ldim 3ddim bd[1]+PlgYmax   Ytn-R+PlgYmin 0 Xtn Ytn 0 free bd[1]+PlgYmax   Ytn-(Hst+2*delta) 0 ; gosub dmparr1 ;
+              }
+              if arr[2]>0 {
+                 ldim 3ddim xtk ytk 0 xtk -R 0 free Xtk-(Hst+delta) Ytk 0 ; gosub dmparr01 ;
+                 ldim 3ddim xtk ytk 0 xtk-R-plgYmin plgYmax 0 free Xtk-(Hst+2*delta) Ytk 0 ; gosub dmparr1 ;
+              }
+              if arr[2]<=0 {
+              DDis=0
+              #DDis dist Xlk Ylk 0 Xlk iif(sgn(ylk)==1,-1,1)*R 0 ;
+                 if ddis>0
+                 {
+                    ldim 3ddim Xlk Ylk 0 Xlk iif(sgn(ylk)==1,-1,1)*R 0 free Xlk+(Hst+delta) Ylk 0 ; gosub dmparr01 ;
+                 }
+              DDis=0
+              #DDis dist Xlk Ylk 0 Xlk-R-plgYmax plgYmax 0 ;
+                 if ddis>0
+                 {
+                    ldim 3ddim Xlk Ylk 0 Xlk-R-plgYmax plgYmax 0 free Xlk+(Hst+2*delta) Ylk 0 ; gosub dmparr1 ;
+                 }
+              }
+           }  //Размер линейного участка
+           if zn<0 {  //Размер линейного участка
+              if arr[1]>0 {
+                 ldim 3ddim Xtn -bd[2]+R       0 Xtn Ytn 0 free Xtn+(Hst+delta)   -bd[2]+R       0 ; gosub dmparr01 ;
+                 ldim 3ddim R   -bd[2]+plgYmin 0 Xtn Ytn 0 free Xtn+(Hst+2*delta) -bd[2]+plgYmin 0 ; gosub dmparr1 ;
+              }
+              if arr[1]<=0 {
+                 ldim 3ddim Xln -bd[2]+R       0 Xln Yln 0 free Xln-(Hst+delta)   -bd[2]+R       0 ; gosub dmparr01 ;
+                 ldim 3ddim R   -bd[2]+plgYmin 0 Xln Yln 0 free Xln-(Hst+2*delta) -bd[2]+plgYmin 0 ; gosub dmparr1 ;
+              }
+              if arr[2]>0 {
+                 ldim 3ddim xlk ylk 0 R       Ylk       0 free Xlk Ylk-(Hst+delta)   0 ; gosub dmparr01 ;
+                 ldim 3ddim xlk ylk 0 plgYmin -bd[2]+R  0 free Xlk Ylk-(Hst+2*delta) 0 ; gosub dmparr1 ;
+              }
+              if arr[2]<=0 {
+                 ldim 3ddim Xtk Ytk 0 R       Ytk        0 free Xtk Ytk+(Hst+delta)   0 ; gosub dmparr01 ;
+                 ldim 3ddim Xtk Ytk 0 plgYmin -bd[2]+R   0 free Xtk Ytk+(Hst+2*delta) 0 ; gosub dmparr1 ;
+              }
+           }  //Размер линейного участка
+        }
+     }
+     else {
+     if (bd[1]>=R)&&(zn>0) {  //клюшка положительная лин нач
+        GoSub dAngLt1 ;
+        GoSub dAngBt2 ;
+        if arr[1]>=0 {
+                 ldim 3ddim bd[1]-R  Yln 0 Xln Yln 0 free     bd[1]-R Yln+(Hst+delta)   0 ; gosub dmparr01 ;
+                 ldim 3ddim Xtk      Ytk 0 Xtn Ytn 0 parallel 0       Ytn-(Hst+2*delta) 0 ; gosub dmparr1  ;
+              }
+              if arr[1]<0 {
+                 ldim 3ddim bd[1]-R  Ytn 0 Xtn Ytn 0 free     bd[1]-R Ytn-(Hst+delta)     0 ; gosub dmparr01 ;
+                 ldim 3ddim Xtk      Ytk 0 Xtn Ytn 0 parallel 0       Ytn-(Hst+2*delta)   0 ; gosub dmparr1  ;
+              }
+     }
+
+     else {
+          if (bd[1]<=R)&&(zn<0) {  //клюшка отрицательная лин нач
+             GoSub dAngLt1 ;
+             GoSub dAngBt2 ;
+             if arr[1]>0 {
+                 ldim 3ddim Xtn -bd[2]+R       0 Xtn Ytn 0 free Xtn+(Hst+delta)   -bd[2]+R       0 ; gosub dmparr01 ;
+                 ldim 3ddim Xtk      Ytk 0 Xtn Ytn 0 parallel Xtn+(Hst+2*delta) 0       0 ; gosub dmparr1  ;
+              }
+              if arr[1]<=0 {
+                 ldim 3ddim Xln -bd[2]+R  0 Xln Yln 0 free     Xln-(Hst+delta)   -bd[2]+R 0 ; gosub dmparr01 ;
+                 ldim 3ddim Xtk Ytk       0 Xtn Ytn 0 parallel Xtn+(Hst+delta) 0        0 ; gosub dmparr1  ;
+              }
+          }
+          else {
+               if (bd[1]>=R)&&(zn<0) {  //клюшка отрицательная лин конец
+                  GoSub dAngLt2 ;
+                  GoSub dAngBt1 ;
+                  if arr[2]>0 {
+                     ldim 3ddim xlk ylk 0 R       Ylk       0 free Xlk Ylk-(Hst+delta)   0 ; gosub dmparr01 ;
+                     ldim 3ddim Xtk      Ytk 0 Xtn Ytn 0 parallel Xtn+(Hst+2*delta) 0       0 ; gosub dmparr1  ;
+                  }
+                  if arr[2]<=0 {
+                     ldim 3ddim Xtk Ytk 0 R       Ytk        0 free Xtk Ytk+(Hst+delta)   0 ; gosub dmparr01 ;
+                     ldim 3ddim Xtk      Ytk 0 Xtn Ytn 0 parallel Xtn+(Hst+2*delta) 0       0 ; gosub dmparr1  ;
+                  }
+               }
+               else {
+                     if (bd[1]<=R)&&(zn>0) {  //клюшка положительная лин конец
+                        GoSub dAngLt2 ;
+                        GoSub dAngBt1 ;
+                        if arr[2]>0 {
+                           ldim 3ddim xtk ytk 0 xtk -R 0 free Xtk-(Hst+delta) Ytk 0 ; gosub dmparr01 ;
+                           ldim 3ddim Xtk Ytk 0 Xtn Ytn 0 parallel Xtn-(Hst+2*delta) 0       0 ; gosub dmparr1  ;
+                        }
+                        if arr[2]<=0 {
+                           ldim 3ddim Xlk Ylk 0 Xlk -R 0 free Xlk+(Hst+delta) Ylk 0 ; gosub dmparr01 ;
+                           ldim 3ddim Xtk Ytk 0 Xtn Ytn 0 parallel Xtn-(Hst+2*delta) 0       0 ; gosub dmparr1  ;
+                        }
+                     }
+               }
+          }
+     }
+     }
+}
+if zn<0 {
+   A=Xlk
+   A1=Ylk
+   B=Xtk
+   B1=Ytk
+   Xlk=B
+   Ylk=B1
+   Xtk=A
+   Ytk=A1
+   
+   A=Xln
+   A1=Yln
+   B=Xtn
+   B1=Ytn
+   Xln=B
+   Yln=B1
+   Xtn=A
+   Ytn=A1
+}
+PtransCS(0,3,Xtn,Ytn,0,Xtkn,Ytkn,Ztkn) ;
+PtransCS(0,3,Xln,Yln,0,Xlkn,Ylkn,Zlkn) ;
+PtransCS(0,3,Xtk,Ytk,0,Xtkg,Ytkg,Ztkg) ;
+PtransCS(0,3,Xlk,Ylk,0,Xlkg,Ylkg,Zlkg) ;
+return;
+DMPARR1:
+   objident last 1  diml ;
+   err=GetDimInfo(diml,dimpar);
+   if IsVarDef(dimpar[19])==5  { dimpar[19]=str(Round(Val(dimpar[19])))   }
+   //if dimpar[19]!="<>"
+   //:
+   //dimpar[18]="eskdk3.shx"
+   //dimpar[24]=70 ; //Отношение ширины к высоте(в процентах)
+   //dimpar[25]=15 ; //Угол наклона шрифта(в градусах)
+   //dimpar[27]=50 ; //Разрядка между символами по вертикали (в процентах)
+   dimpar[28]=0  ; //1 - Углы с десятыми долями
+   dimpar[29]=1 ;  //Точность округления
+   dimpar[34]=sdv ; //Конкретное размещение текста:  0 - По центру 1 - Слева 2 - Справа 3 - Ручным сдвигом вдоль 4 - Ручным сдвигом по двум точкам 5 - На выноске
+   err=PutDimInfo(diml,dimpar);
+      chprop layer  last 1 done CV ;
+      Attrobj Attach  "AutoPlace"    Done Last 1 1 ;
+      Attrobj Attach  "VidDimPlace"  Done Last 1 CurrVi;
+      GoSub EdToleran ;
+   return ;
+DMPARR01:
+   objident last 1  diml ;
+   err=GetDimInfo(diml,dimpar);
+   if IsVarDef(dimpar[19])==5  { dimpar[19]=str(Round(Val(dimpar[19]),0.1))   }
+   //dimpar[18]="eskdk3.shx"
+   //dimpar[24]=70 ; //Отношение ширины к высоте(в процентах)
+   //dimpar[25]=15 ; //Угол наклона шрифта(в градусах)
+   //dimpar[27]=50 ; //Разрядка между символами по вертикали (в процентах)
+   dimpar[28]=0  ; //1 - Углы с десятыми долями
+   dimpar[29]=0.1 ;  //Точность округления
+   dimpar[34]=sdv  //Конкретное размещение текста:  0 - По центру 1 - Слева 2 - Справа 3 - Ручным сдвигом вдоль 4 - Ручным сдвигом по двум точкам 5 - На выноске
+   err=PutDimInfo(diml,dimpar);
+      chprop layer  last 1 done CV ;
+      Attrobj Attach  "AutoPlace"    Done Last 1 1 ;
+      Attrobj Attach  "VidDimPlace"  Done Last 1 CurrVi;
+      GoSub EdToleran ;
+   return ;
+DMPARRA1:
+   objident last 1  diml ;
+   err=GetDimInfo(diml,dimpar);
+   //dimpar[18]="eskdk3.shx"
+   //dimpar[24]=70 ; //Отношение ширины к высоте(в процентах)
+   //dimpar[25]=15 ; //Угол наклона шрифта(в градусах)
+   dimpar[28]=1  ; //1 - Углы с десятыми долями
+   dimpar[29]=0.1 ;  //Точность округления
+   dimpar[33]=iif(dimpar[33]>=256,dimpar[33]-256,dimpar[33])
+   dimpar[34]=sdv  //Конкретное размещение текста:  0 - По центру 1 - Слева 2 - Справа 3 - Ручным сдвигом вдоль 4 - Ручным сдвигом по двум точкам 5 - На выноске
+   err=PutDimInfo(diml,dimpar);
+      chprop layer  last 1 done CV ;
+      Attrobj Attach  "AutoPlace"    Done Last 1 1 ;
+      Attrobj Attach  "VidDimPlace"  Done Last 1 CurrVi;
+   return ;
+GetXYN1: //(arr[1]<=0&&Bd[3]<0)||(arr[1]>=0&&Bd[3]>0)
+      Rmax=R+PlgYmax
+      Rmin=R+PlgYmin
+      Dr=Rmax*Cos(abs(arr[1]))-sqrt(Rmin*Rmin-Rmax*Rmax*SIN(abs(arr[1]))*SIN(abs(arr[1])));
+      Xln=0
+      Yln=0
+      Zln=0
+      Ztn=0
+      Xtn=Cos(abs(arr[1]))*dr
+      Ytn=Sin(abs(arr[1]))*dr
+      PtransCS(0,3,Xtn,Ytn,Ztn,Xtkn,Ytkn,Ztkn) ;
+      PtransCS(0,3,Xln,Yln,Zln,Xlkn,Ylkn,Zlkn) ;
+return;
+GetXYN2:  //(arr[1]<=0&&Bd[3]>0)||(arr[1]>=0&&Bd[3]<0)
+      Rmax=R+PlgYmax
+      Rmin=R+PlgYmin
+      Dr=Rmin*Cos(pi()-abs(arr[1]))+sqrt(Rmax*Rmax-Rmin*Rmin*SIN(pi()-abs(arr[1]))*SIN(Pi()-abs(arr[1])));
+      Xtn=0
+      Ytn=0
+      Zln=0
+      Ztn=0
+      Xln=-1*(Cos(abs(arr[1]))*dr)
+      Yln=Sin(abs(arr[1]))*dr
+      PtransCS(0,3,Xtn,Ytn,Ztn,Xtkn,Ytkn,Ztkn) ;
+      PtransCS(0,3,Xln,Yln,Zln,Xlkn,Ylkn,Zlkn) ;
+return;
+GetXYK2: //(arr[2]<=0&&Bd[3]<0)||(arr[2]>=0&&Bd[3]>0)
+      Rmax=R+PlgYmax
+      Rmin=R+PlgYmin
+      Dr=Rmin*Cos(pi()-abs(arr[2]))+sqrt(Rmax*Rmax-Rmin*Rmin*SIN(pi()-abs(arr[2]))*SIN(Pi()-abs(arr[2])));
+      Xtk=0
+      Ytk=0
+      Zlk=0
+      Ztk=0
+      Xlk=-1*(Cos(abs(arr[2]))*dr)
+      Ylk=Sin(abs(arr[2]))*dr
+      PtransCS(0,3,Xtk,Ytk,Ztk,Xtkg,Ytkg,Ztkg) ;
+      PtransCS(0,3,Xlk,Ylk,Zlk,Xlkg,Ylkg,Zlkg) ;
+return;
+GetXYK1: //(arr[2]<=0&&Bd[3]>0)||(arr[2]>=0&&Bd[3]<0)
+      Rmax=R+PlgYmax
+      Rmin=R+PlgYmin
+      Dr=Rmax*Cos(abs(arr[2]))-sqrt(Rmin*Rmin-Rmax*Rmax*SIN(abs(arr[2]))*SIN(abs(arr[2])));
+      Xlk=0
+      Ylk=0
+      Zlk=0
+      Ztk=0
+      Xtk=Cos(abs(arr[2]))*dr
+      Ytk=Sin(abs(arr[2]))*dr
+      PtransCS(0,3,Xtk,Ytk,Ztk,Xtkg,Ytkg,Ztkg) ;
+      PtransCS(0,3,Xlk,Ylk,Zlk,Xlkg,Ylkg,Zlkg) ;
+return;
+dAngBt1: //Угол 1 клюшки относительно базовой линии через Xtn Ytn 0 xtk Ytk 0
+   If KeYADim==1 {
+      // =====Угловые размеры в начале и в конце====================
+      PtransCS(0,3,Xtn,Ytn,0,Xtkn,Ytkn,Ztkn) ;
+      PtransCS(0,3,Xln,Yln,0,Xlkn,Ylkn,Zlkn) ;
+      PtransCS(0,3,Xtk,Ytk,0,Xtkg,Ytkg,Ztkg) ;
+      PtransCS(0,3,Xlk,Ylk,0,Xlkg,Ylkg,Zlkg) ;
+
+      Setucs Xtn Ytn 0 xtk Ytk 0 100 zn*100 0 ;
+
+      PtransCS(3,0,Xtkn,Ytkn,Ztkn,Xtn1,Ytn1,Ztn1) ;
+      PtransCS(3,0,Xlkn,Ylkn,Zlkn,Xln1,Yln1,Zln1) ;
+      PtransCS(3,0,Xtkg,Ytkg,Ztkg,Xtk1,Ytk1,Ztk1) ;
+      PtransCS(3,0,Xlkg,Ylkg,Zlkg,Xlk1,Ylk1,Zlk1) ;
+      SdObj=SysVar(60);
+      if Xln1<Xtn1 {
+         #angn adim 3ddim 3points Xtn1 Ytn1 0 Xtn1     1 0   Xln1 Yln1 0  ^(Xln1-Xtn1)/2 (2*Xgab+Hst) 0  ;
+         }
+      if Xln1>Xtn1 {
+         #angn adim 3ddim 3points Xln1 Yln1 0 Xln1 Yln1-1 0   Xtn1 Ytn1 0  ^(Xln1-Xtn1)/2 -1*(2*Xgab+Hst) 0  ;
+         }
+      if SysVar(60)!=SdObj { gosub DMPARRA1 ;     }
+
+   }
+
+   setucs lcs plg ;
+return;
+dAngBt2: //Угол 2 клюшки относительно базовой линии через Xtn Ytn 0 xtk Ytk 0
+   If KeYADim==1 {
+      // =====Угловые размеры в начале и в конце====================
+      PtransCS(0,3,Xtn,Ytn,0,Xtkn,Ytkn,Ztkn) ;
+      PtransCS(0,3,Xln,Yln,0,Xlkn,Ylkn,Zlkn) ;
+      PtransCS(0,3,Xtk,Ytk,0,Xtkg,Ytkg,Ztkg) ;
+      PtransCS(0,3,Xlk,Ylk,0,Xlkg,Ylkg,Zlkg) ;
+
+      Setucs Xtn Ytn 0 xtk Ytk 0 100 zn*100 0 ;
+
+      PtransCS(3,0,Xtkn,Ytkn,Ztkn,Xtn1,Ytn1,Ztn1) ;
+      PtransCS(3,0,Xlkn,Ylkn,Zlkn,Xln1,Yln1,Zln1) ;
+      PtransCS(3,0,Xtkg,Ytkg,Ztkg,Xtk1,Ytk1,Ztk1) ;
+      PtransCS(3,0,Xlkg,Ylkg,Zlkg,Xlk1,Ylk1,Zlk1) ;
+
+
+         SdObj=SysVar(60);
+      sdv=2  //Конкретное размещение текста:  0 - По центру 1 - Слева 2 - Справа 3 - Ручным сдвигом вдоль 4 - Ручным сдвигом по двум точкам 5 - На выноске
+      if ksdv==1 { sdv=1 }
+      if Xlk1<Xtk1 {
+         #angk adim 3ddim 3points Xlk1 Ylk1 0 Xlk1 Ylk1-1 0 Xtk1 Ytk1 0  ^Xlk1+(Xtk1-Xlk1)/2 -zn*(Hst) 0  ;
+         }
+      if Xlk1>Xtk1 {
+         #angk adim 3ddim 3points Xtk1 Ytk1 0 Xtk1 Ytk1+1 0 Xlk1 Ylk1 0  ^Xtk1+(Xlk1-xtk1)/2 zn*(2*Xgab+Hst) 0 ;
+         }
+      if SysVar(60)!=SdObj { gosub DMPARRA1 ;    }
+   }
+   sdv=0
+   setucs lcs plg ;
+return;
+dAngLt1: //Угол 1 клюшки относительно ЛСК
+   If KeYADim==1 {
+      // =====Угловые размеры в начале и в конце====================
+
+     SdObj=SysVar(60);
+     if zn>0  {
+      if Xln<Xtn  {
+         #angn adim 3ddim 3points Xtn  Ytn  0 Xtn  Ytn+3 0   Xln  Yln  0  ^(xtn-xln)/2 ytn+zn*(Xgab+Hst) 0  ;
+         }
+      if Xln>Xtn  {
+         #angn adim 3ddim 3points Xln  Yln   0  Xln  Yln-3 0 Xtn  Ytn   0  ^(Xln-Xtn)/2 Yln-zn*(Xgab+Hst) 0  ;
+         }
+      if SysVar(60)!=SdObj { gosub DMPARRA1 ;     }
+     }
+     if zn<0  {
+      if Yln>Ytn  {
+         #angn adim 3ddim 3points Xtn  Ytn  0 Xtn+3  Ytn 0   Xln  Yln  0  ^xln+zn*(Hst) Yln+(Ytn-Yln)/2  0  ;
+         }
+      if Yln<Ytn  {
+         #angn adim 3ddim 3points Xln  Yln   0  Xln-3  Yln 0 Xtn  Ytn   0  ^xtn-zn*(2*Hst)  Ytn+(Yln-Ytn)/2  0 ;
+         }
+      if SysVar(60)!=SdObj { gosub DMPARRA1 ;     }
+     }
+
+   }
+   setucs lcs plg ;
+return;
+dAngLt2: //Угол 2 клюшки относительно ЛСК
+   If KeYADim==1 {
+      // =====Угловые размеры в начале и в конце====================
+     SdObj=SysVar(60);
+     sdv=2
+     if ksdv==1 { sdv=1 }
+     if zn>0  {
+      if Ylk>Ytk  {
+         #angk adim 3ddim 3points Xlk  Ylk  0 Xlk-2  Ylk 0 Xtk  Ytk  0  ^xlk-zn*(Xgab+Hst) Ylk+(Ytk-Ylk)/2  0  ;
+         }
+      if Ylk<Ytk  {
+         #angk adim 3ddim 3points Xtk  Ytk  0 Xtk+2  Ytk 0 Xlk  Ylk  0  ^xtk+zn*(Xgab+2*Hst)  Ytk+(Ylk-Ytk)/2  0 ;
+         }
+      if SysVar(60)!=SdObj { gosub DMPARRA1 ;    }
+     }
+     if zn<0  {
+      if Xlk>Xtk  {
+         #angk adim 3ddim 3points Xtk  Ytk  0 Xtk  Ytk-2 0 Xlk  Ylk  0  ^xlk+(xtk-xlk)/2 ytk+zn*(Xgab+Hst) 0   ;
+         }
+      if Xlk<Xtk  {
+         #angk adim 3ddim 3points Xlk  Ylk  0 Xlk  Ylk+2 0 Xtk  Ytk  0  ^Xtk+(Xlk-Xtk)/2 Ylk-zn*(Xgab+2*Hst) 0;
+         }
+      if SysVar(60)!=SdObj { gosub DMPARRA1 ;    }
+     }
+   }
+   sdv=0
+   setucs lcs plg ;
+return;
+
+LeaderLin:
+          if Hst<50 {
+          H_Hst=50
+          }
+          else {
+          H_Hst=Hst;
+          }
+          if (Plgymax-plgymin)/8<20 {
+          T_Hs=Ln/2-20 ;
+          }
+          else {
+           T_Hs=ln/2-(Plgymax-plgymin)/8 ;
+          }
+          
+          macro L_SUPPORT+"leaderman1.mac" 1 plg ln/2 plgymin+(plgymax-plgymin)/2 0
+          T_Hs Bpos+Apos*(H_Hst) 0 ;
+return ;
+LeaderRad:
+          macro L_SUPPORT+"leaderman1.mac" 1 plg Xmid Xgab/2+h1 0  Xmid-(Plgymax-plgymin)/8 Bpos+Zn*(Hst) 0 ;
+return;
+LeaderKl:
+         ;macro L_SUPPORT+"RdimPath692.mac" ArcBD ;
+         objident last 1 rd ;
+         =GetDimInfo(Rd,Flag) ;
+         Ptranscs(3,0,flag[3],flag[4],flag[5],flag[3],flag[4],flag[5]) ;
+         Ptranscs(3,0,flag[6],flag[7],flag[8],flag[6],flag[7],flag[8]) ;
+         fl=2
+         metfl:
+         if fl<14 {
+            fl=fl+1
+            =Flag[fl]
+            goto metfl ;
+         }
+         delete rd done ;
+         if PlFlags==1 {
+            ;macro L_SUPPORT+"leaderman1.mac" 1 plg flag[3] flag[4] flag[5] flag[6] flag[7] flag[8] ;
+         }
+         else {
+            ;macro L_SUPPORT+"leaderman1.mac" 1 plg flag[6] flag[7] flag[8] flag[3] flag[4] flag[5] ;
+         }
+return ;
+
+EdToleran:
+  objident last 1 dm ;
+  macro L_SUPPORT+"EditDim.mac" 1 dm ;
+return ;
+
+PrBDR: // проверка совпадения значений
+if (bd[3]!=0) {
+   if Abs(Bd[3])==Abs(Bd[1]) {
+      Bd[1]=Bd[1]+sgn(Bd[1])*0.01
+   }
+   if Abs(Bd[3])==Abs(Bd[2]) {
+      Bd[2]=Bd[2]+sgn(Bd[2])*0.01
+   }
+}
+return;

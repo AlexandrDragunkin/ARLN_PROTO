@@ -1,0 +1,18 @@
+// Ќачать ящик 
+exit
+global 
+UnitCode, //  од издели€ (текст)
+ULayer,  // массив номеров 1 уровн€
+NUnit,   // ѕор€дковый номер детали и узла
+LUnit,   // “екущий верхнего номер узла
+TLayer,   // тип текущего уровн€
+CLayer;   // номер текущего уровн€
+//getpar Code ;
+
+if CLayer==0 { exit ; }
+CLayer=CLayer+1
+NUnit=NUnit+1;
+LUnit[CLayer]=NUnit
+TLayer[CLayer]="30" ; // тип ящик 
+
+exit

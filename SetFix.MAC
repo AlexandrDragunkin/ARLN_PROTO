@@ -1,0 +1,10 @@
+//-- Установить текущий крепеж по сторонам панели
+global FixtPan; //-- Крепеж по сторонам
+defarr FixtPan[8];
+getpar FixB FixC FixD FixE;
+FixtPan[1]=FixB;
+FixtPan[2]=FixC;
+FixtPan[3]=FixD;
+FixtPan[4]=FixE;
+NULLOUT=setarrinst(1,"FixtPan",FixtPan);
+exit;

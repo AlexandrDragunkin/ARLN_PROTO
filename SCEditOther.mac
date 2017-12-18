@@ -1,0 +1,77 @@
+global ProtoPath;
+Ncount=5;
+defarr SCount[Ncount], SCountName[Ncount];
+defarr TypeArr[4];
+// TypeArr[1]="шт";
+// TypeArr[2]="п/м";
+// TypeArr[3]="кв/м";
+// TypeArr[4]="компл";
+
+nullout=getVarinst(2,"n_units",n_units,7);
+defarr UnitsID[n_units];
+defarr UnitsName[n_units];
+nullout=getArrinst(2,"UnitsID",UnitsID);
+nullout=getArrinst(2,"UnitsName",UnitsName);
+
+getpar ObjName, Article, TypeStr, Count, CostObj, Discont, priceid, obj;
+onerror finerror;
+TypeID=findinarray(UnitsName,TypeStr);
+
+nullout=getvarinst(2,"AttrScrName",AttrScrName,"SumCostInfo");
+nullout=getvarinst(2,"SCLayName",LayName,"SumCostOther");
+
+// Проверим, открыт ли слой
+res=CountLayers();
+defarr Lay[res], OnOff[res];
+err=NameLayers(Lay,OnOff);
+
+i=0;
+nexti:
+i=i+1;
+if i<=res
+{
+	if Lay[i]==LayName
+	{
+		if OnOff[i]==1
+		{
+			layers on LayName;
+			goto finlay;
+		}
+		else { goto finlay; }
+		goto nexti;
+	}
+	goto nexti
+}
+finlay:
+NmTpID=-1;	QmatId=-1;
+if priceid>0 { NmTpID=1; QmatId=priceid; }
+
+ScrName="OtherElem";
+nullout=initarray(SCount,"");
+nullout=initarray(SCountName,"");
+SCountName[1]="Number";			SCount[1]=Count;
+SCountName[2]="Discont";		SCount[2]=(100-Discont)/100;
+SCountName[3]="SumCostElem";	SCount[3]=CostObj;
+macro ProtoPath+"SCAddInfoScr.mac" obj,
+								   NmTpID,
+								   QmatId,
+								   AttrScrName,
+								   ScrName,
+								   SCountName,
+								   SCount,
+								   NCount,
+								   ByRef SumCostRes;
+
+attrobj attach "ElemName" done obj iif(len(ObjName)>0,ObjName,"None");
+attrobj attach "Posit" done obj 1001;
+attrobj attach "FurnType" done obj "999999";
+attrobj attach "PrimM" done obj iif(len(Article)>0,Article,"None");
+// attrobj attach "PositionType" done obj UnitsID[TypeID];
+attrobj attach "UnitType" done obj UnitsID[TypeID];
+attrobj attach "PriceID" done obj priceid;
+chprop layer partly obj done LayName;
+exit;
+
+finerror:
+layers off LayName;
+exit;

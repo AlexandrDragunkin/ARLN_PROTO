@@ -1,0 +1,179 @@
+//-- Подпрограмма создания карусельной дверки
+//-- Входные параметры:
+//-- xn,yn,zn - координаты правого нижнего дальнего угла установки двери
+//-- dx,dy,dz - размеры двери по ширине, глубина и по высоте
+//-- R_Fas,L_Fas,U_Fas,D_Fas - увеличение фасада спарва, слева, сверху, снизу
+//-- Variant - сторона открывания двери
+
+global ProtoPath;
+global FindMatID;
+global		            //-- Для фасадов и дверей
+DoorKonst,            //-- Тип конструкции двери
+DoorMater,            //-- Материал панелей двери
+DoorBCol,             //-- Цвет кромки двери
+DoorBand,             //-- Тип кромки фасада
+//DoorPlace,            //-- Сторона открывания
+DoorPict,             //-- Тип рисунка
+DoorDuble,            //-- Двойная/одинарная
+DoorOpen,             //-- Открытая/закрытая
+DoorHinge;
+global DoorKonst;            //-- Тип конструкции двери
+global		            //-- Для ручек
+HandleType,           //-- Тип ручки
+HandleX,              //-- Сдвиг ручки по x
+HandleZ,              //-- Сдвиг ручки по z
+HandleA,              //-- Поворот ручки
+HandleD,	            //-- Двойная или одиночная ручка
+HandleR;	            //-- Тип положения ручки (0-свободно 1-по центру 3-сверху 4-снизу)
+
+global g_FurnType;
+defarr Arr[3];
+defarr error[10];
+NULLOUT=initarray(error,"");
+
+getpar
+xn,yn,zn,  //-- Положение
+dx,dy,dz,  //-- Ширина, глубина и высота
+R_Fas L_Fas U_Fas D_Fas
+Door_Zw       // Зазор между фасадами
+Variant
+;    //-- Сторона открывания
+
+if (Variant!=1&&Variant!=2&&Variant!=0)
+{
+  error[1]="Недопустимый тип открывания двери.";
+  error[2]="Для данного типа двери допустимы только следующие типы открывания:";
+  error[3]="'Слева', 'Справа' и без открывания";
+  error[4]=" ";
+  error[5]="Убедитесь, что тип открывания указан правильно."
+  error[6]="Проверьте, правильно ли выбран тип двери."
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров карусельной двери" 6 error;
+  cancel;
+}
+
+kray=35/5+5;  //-- Отступ от края двери до поворотных петель
+krayz=100; //-- Минимальный отступ петли от края створки по высоте
+
+h_fas=PriceInfo(DoorMater,"Thickness",16);
+DoorHin=PriceInfo(DoorKonst,"HingeID",0,2);    // Петля для карусельной ID
+
+object_1=sysvar(60);
+macro ProtoPath+"SetFasdV.mac" Variant;
+macro ProtoPath+"SetCuts.mac" 0 0 0 0 ;
+//-- Строим первую створку
+if (abs(variant)>0)
+{
+	object_4=sysvar(60);
+	macro ProtoPath+"DoorHing.mac" xn,yn,zn,dx,dz,R_Fas,L_Fas,U_Fas,D_Fas,variant;
+  object_5=sysvar(60)-object_4;
+  if (object_5>0)
+  {
+    if (variant==1)
+    {
+      rotate last object_5 done 2points xn yn zn xn yn zn+1 -90 nocopy;
+    }
+    if (variant==2)
+    {
+			move last object_5 done 0 -dy 0 nocopy;
+    }
+  }
+	if (variant==1)
+	{
+		macro ProtoPath+"MakeFas.mac"	xn-R_Fas yn zn-D_Fas dy-h_fas-Door_Zw/2+R_Fas dz+D_Fas+U_Fas;
+		rotate last 1 done 2points xn yn zn xn yn zn+1 -90 nocopy;
+	}
+	if (variant==2)
+	{
+		macro ProtoPath+"MakeFas.mac"	xn+h_fas+Door_Zw/2 yn-dy zn-D_Fas dx-h_fas-Door_Zw/2+L_Fas dz+D_Fas+U_Fas;
+	}
+}
+object_Cin=sysvar(60)-object_1;
+//-- Присваиваем атрибут Cinema
+if (object_Cin>0)
+{
+	objDo=object_1
+	objPosle=sysvar(60);
+	HaveCinP1=0;
+	macro ProtoPath+"SetCinemaFromObj.mac" byref HaveCinP1 byref ScrCinO1 0 objDo objPosle dx 0 0 0 0;
+	if (object_Cin>0&&HaveCinP1==1)
+	{
+		NULLOUT=AddScratch(ScrCinO1,"Main","Control",0);
+		macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0000" ;
+		NULLOUT=AddScratch(ScrCinO1,"Main","Control",2);
+		macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0406" ;
+		macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0408" ;
+	}
+}
+
+//-- Строим вторую створку
+object_1=sysvar(60);
+obs=sysvar(60);
+if (abs(variant)>0)
+{
+  macro ProtoPath+"SetECod.mac" "7401" ;
+  macro ProtoPath+"SetEnam.mac" "Петля" ;
+	DoorHinge=DoorHin;
+	macro ProtoPath+"DoorHing.mac" xn,yn,zn,dx,dz,R_Fas,L_Fas,U_Fas,D_Fas,variant;
+  object_2=sysvar(60)-obs;
+  if object_2>0
+  {
+    objident last 1 kom;
+		///-- Вносим изменения "детям" петли с атрибутом Cinema --///
+		selbyattr "isassign(\"$CinemaScr\")&&isassign(\"FurnType\")!=1" child kom done;
+		ChildPetly=sysvar(61);
+	  if (ChildPetly>0)
+	  {
+			FrPelty=getselnum(1);
+			attrobj copy partly kom "$CinemaScr" done FrPelty done;
+			ScrCinPart=readscratch("$CinemaScr",FrPelty);
+			NULLOUT=AddScratch(ScrCinPart,"Main","Control",0);
+			NULLOUT=writescratch(ScrCinPart,"$CinemaScr",FrPelty);
+	  }
+    objgab(kom,Arr);
+		if (variant==1)
+		{
+			 rotate last object_2 done 2points xn yn zn xn yn zn+1 180 nocopy;
+		   move last object_2 done 0 -dy 0 nocopy ;
+		}
+		if (variant==2)
+		{
+			move last object_2 done -dx -dy 0 nocopy ;
+			rotate last object_2 done 2points xn yn-dy zn xn yn-dy zn+1 90 nocopy;
+		}
+  }
+}
+if (variant==2)
+{
+	macro ProtoPath+"MakeFas.mac"	xn-R_Fas yn zn-D_Fas dy-h_fas-Door_Zw/2+R_Fas dz+D_Fas+U_Fas;
+	rotate last 1 done 2points xn yn zn xn yn zn+1 -90 nocopy;
+}
+if (variant==1)
+{
+	macro ProtoPath+"MakeFas.mac"	xn+h_fas+Door_Zw/2 yn-dy zn-D_Fas dx-h_fas-Door_Zw/2+L_Fas dz+D_Fas+U_Fas;
+}
+obs=sysvar(60)-obs;
+    macro Protopath+"tr_kar_HND.mac"
+		  xn,yn,zn,         //-- Базовый угол двери
+		  dx,dy,dz,
+      abs(Variant)           //-- Ширина, высота и сторона открывания двери
+      HandleType,HandleX,HandleZ,HandleA;  //-- Тип ручки и параметры положения
+//-- Присваиваем атрибут Cinema
+object_Cin=sysvar(60)-object_1;
+if (object_Cin>0&&HaveCinP1==1)
+{
+	objDo=object_1
+	objPosle=sysvar(60);
+	HaveCinP2=0;
+	macro ProtoPath+"SetCinemaFromObj.mac" byref HaveCinP2 byref ScrCinO2 0 objDo objPosle dx 0 0 0 0;
+	if (object_Cin>0&&HaveCinP2==1)
+	{
+		macro ProtoPath+"SetCinemaScrUnite.mac" ScrCinO1 ScrCinO2 byref ScrCinO3;
+		NULLOUT=AddScratch(ScrCinO3,"Main","Control",0);
+		macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO3 "0000" ;
+		NULLOUT=AddScratch(ScrCinO1,"Main","Control",0);
+		macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0406" ;
+		macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0408" ;		
+	}
+}
+g_FurnType="230200";
+exit;

@@ -1,0 +1,24 @@
+//-- Создание объекта - "Фасад прото"
+//-- Нужен исключительно дя Мебельного Предприятия
+global ProtoPath;
+global MacroSw;
+MacroSw=0;
+
+W=DbVar("W",300);               //-- Ширина  фасада
+H=DbVar("H",450);               //-- Высота  фасада
+Fastype=DbVar("Fasrtype",0);    //-- Рисунок фасада
+FsMaterl=DbVar("PrMater",0);    //-- Материал обрамления
+PrMatVs1=DbVar("PrMatVs1",0);   //-- Материал первой вставки
+PrMatVs2=DbVar("PrMatVs2",0);   //-- Материал второй вставки
+DoorBCol=DbVar("Face_col",0);   //-- Цвет кромки
+DoorBand=DbVar("Band",0);       //-- Тип кромки
+Variant=DbVar("Variant",1);     //-- Вариант
+
+macro ProtoPath+"SetInit.mac" ;
+macro ProtoPath+"SetFasdN.mac" FsMaterl Fastype DoorBCol DoorBand PrMatVs1 PrMatVs2 ;
+d_dxn=dbvar("d_dxn",2);
+d_dzn=dbvar("d_dzn",2);
+w=w-2*d_dxn;
+h=h-2*d_dzn;
+macro ProtoPath+"MakeFas.mac" 0 0 0 W H ;
+exit;

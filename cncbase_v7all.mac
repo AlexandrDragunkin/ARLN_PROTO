@@ -1,0 +1,175 @@
+//-- Подготовка программ для станков с ЧПУ
+
+global ProtoPath, clearCNC;
+
+pref1="CNC\\";                    //-- Имя папки внутри папки проекта для создания управляющих программ
+ProjPath=getfilepath(sysvar(2));
+pSettings=getcncdata();           //-- Папка с py файлами создания управляющих программ
+BaseName=ProjPath+getfiletitle(sysvar(2))-3+".mdb"; //-- Имя будущей базы
+pathCNC=ProjPath+pref1;         //-- Папка, куда будут складываться управляющие программы
+Pref=getfiletitle(sysvar(2))-3;   //-- Префикс соотетствует ID заказа
+CreatorPath=getcnc();
+if (udgetentity("CNCType",ValType,CNCType,sVal)==0) //-- Тип станка для управляющих программ
+{
+  CNCType=1;
+}
+//-------------------------------------------------------------------
+if (!isattrdef("Selobj"))
+{
+    attribute create "Selobj" "Для списка выбранных" Real 5 0 ;
+}
+if (!isattrdef("NumOrder"))
+{
+    attribute create "NumOrder" "Префикс программы для ЧПУ" String 20 20 ;
+}
+if (!isattrdef("FrontF"))
+{
+    attribute create "FrontF" "Лицо по пласти F" Real 5 0 ;
+}
+//-- Удаляем атрибуты указания панелей
+NULLOUT=attrdelete("Selobj","NumOrder");
+
+macro ProtoPath+"addAttrList.mac" "FrontF";
+//-------------------------------------------------------------------
+//-- Включаем кромку
+macro ProtoPath+"IsBand.mac" ;
+//-- Проверяем наличие крепежа и сверловки
+macro ProtoPath+"IsFixHole.mac" ;
+// //-- Перенумерация
+// NULLOUT=initselected();
+// select partly attribute "FurnType!=\"010000\"&&Furntype!=\"050000\"&&!IsAssign(\"CommonPos\")" done;
+// if (sysvar(61)>0)
+// {
+  // macro ProtoPath+"Num.mac" ;
+// }
+onerror endlab;
+NULLOUT=initselected();
+
+selbyattr  "(FurnType==\"010100\")||(FurnType==\"010200\")||(FurnType==\"010300\")||(FurnType==\"010400\")"
+prompt "Укажите панели для вывода программ для станков с ЧПУ"  partly all done ; //:
+
+n=sysvar(61);
+if (n==0)
+{
+    goto endlab;
+}
+clearCNC=1
+// #aaa
+// setvar
+// "Управляющие программы для станка с ЧПУ"
+// ""
+// center
+// "Введите параметры для управляющих программ"
+// done
+// string auto default Pref "Префикс имен программ:" Pref
+// string auto listonly
+// let nt=udcombototal("CNCType")
+// let i=0
+// loop:
+// let i=i+1
+// let NULLOUT=udcombonext("CNCType",i,q,qq)
+// if (q==CNCType)
+// {
+  // current
+// }
+// qq
+// if (i<nt)
+// {
+  // goto loop
+// }
+// done
+// "Выберите станок" var
+// Logical default 1
+// "Очищать папку с управляющими программами" clearCNC
+// done;
+
+// PutMsg(var);
+// PutMsg(clearCNC);
+
+// if (aaa==0)
+// {
+    // goto endlab;
+// }
+defarr obj[n];
+macro protopath+"arrobj.mac" n obj;
+<?python
+# -*- coding: cp1251 -*-
+import k3
+protopath = k3.GlobalVar('protopath').value
+n=k3.Var('n')
+obj=k3.VarArray(int(n.value),'obj')
+hd=k3.Var()
+pref=k3.Var('Pref')
+hn=k3.Var()
+IsF=k3.Var()
+for pt in obj:
+    hd.value = pt.value
+    err=1
+    i=0
+    while err==1 and i<10:
+        i+=1
+        err=k3.getobjhold(hd,hd)
+        lt=k3.getattr(hd.value,"LongsType",-99);
+        if lt>=0:
+            err=0
+            print( 'Это длинномер. Программу не выводим.')
+            break
+    if lt<0:
+        IsF.value = 0
+        k3.macro(protopath+"\\ProjectsUtilites\\isFront.py", k3.k_byref, pt, k3.k_byref, IsF)
+        k3.attrobj( k3.k_attach, "SelObj", "NumOrder", "FrontF", k3.k_done, k3.k_partly, pt.value,  1 , pref.value, IsF.value)
+?>
+
+//-- Выгружаем базу данных
+res=fileexist(BaseName);
+if (res==1)
+{
+  res=removefile(BaseName);
+  if (res==0)
+  {
+     putmsg("Не удалось выгрузить мебельную базу ",0);
+     exit;
+  }
+}
+#res mebelbase BaseName;
+if (res=0)
+{
+  putmsg("Не удалось выгрузить мебельную базу ",0);
+  mbcarcase set yes;
+  exit;
+}
+if (FolderExist(pathCNC)==0)
+{
+  err=CreateFolder(pathCNC);
+  if (err==0)
+  {
+    putmsg("Ошибка доступа. Не удается создать папку "+pathCNC,0);
+    exit;
+  }
+}
+if (clearCNC==1)
+{
+  err=EmptyFolder(pathCNC);
+  if (err==0)
+  {
+    putmsg("Ошибка доступа. Не удается очистить папку "+pathCNC,0);
+    exit;
+  }
+}
+
+var="LivraPD4"
+gosub goMachine;
+var="BiesseWorksBPP";
+gosub goMachine;
+macro pSettings+"sp_fsys_cnc.py";
+endlab:
+exit;
+
+
+
+goMachine:
+    sett="--off \""+pSettings+var+"_b_settings.py\""; // Вырубает окно вывода
+    //sett=" \""+pSettings+var+"_b_settings.py\"";
+    comline=sett+" \""+BaseName+"\" \""+pathCNC+"\"";
+execute wait prompt "Выгрузка данных в "+var "\""+creatorPath+"\" "+comline
+return;

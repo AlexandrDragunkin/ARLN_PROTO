@@ -1,0 +1,94 @@
+//RestoreParSp.mac
+//*********************************************
+//***востановление стартовых параметров,
+//подлежащих востановлению при аварийном завершении макро****
+//              Драгункин А.Р.
+//              ГеоС 2008 - 2014 гг.
+//*********************************************
+
+defarr
+cpr[13]     //текущие свойства объекта
+SyV[13]     //текущие свойства сцены
+
+PdList[4]   //подрез по ширине и углы подрезки для текущего типа длинномера
+arr1[5] arr2[5] arr3[5] arr4[5]    //типы подрезки по углам длинномера и их параметры для текущего типа
+Cav[4]                             //прогибы по сторонам длинномера
+bd[11]                             //параметры гнутого длинномера
+glb1[4] glb2[4] glb3[4] glb4[4]   //кромку (тип и цвет) по сторонам и углам длинномера
+;
+
+
+//Vimage on ;             //включаем режим отображения
+err=FltrType(0) ;       //Выключаем фильтр по типу
+err=FltrLayer(1,"0") ;err=FltrLayer(0,"0") ;      //выключаем фильтр по слою
+
+//загружаем файл конфигурации
+getpar
+NameFile //Имя файла
+DelOn    //удалять новые объекты 1-да 0-нет
+;
+namecfg=NameFile ; //"ParSp.cfg" ;Sysvar(1)+
+
+if FileExist(namecfg) {  
+	putmsg("Rconfig "+namecfg);
+	rconfig namecfg  ; 
+}
+//else { rconfig "Mebel.cfg"  ; } Шубин сказал в письме 15,01,2014 , что это ошибка
+//-----------
+//читаем данные по длинномерам и ПСК
+ReadStr GetProtoMac("Shkaf.ptl")+NameFile
+MsgLv
+
+xs ys zs
+xe ye ze
+xn yn zn
+ShVid CrVid ZoVid
+Objects
+;
+//Востанавливаем виды
+vport scheme
+if Shvid==1  { 1vport }
+if shvid==2  { horizontal }
+if shvid==3  { vertical }
+if shvid==4  { 3 horizontal }
+if shvid==5  { 3 vertical }
+if shvid==6  { top }
+if shvid==7  { bottom }
+if shvid==8  { left }
+if shvid==9  { right }
+if shvid==10 { 4vport }
+;
+vport CrVid ;
+vport zoomvp
+if ZoVid==0 { off }
+else { on }
+;
+//Востанавливаем ПСК
+setucs gcs ;
+setucs xs ys zs xe ye ze xn yn zn ;
+Objs=SysVar(60)
+if (Delon==1)&&((Objs-Objects)>0) {
+   #ok_flag
+   alternative "Внимание!"
+   msgbox text "С момента последнего сохранения настроек"
+           "созданы "+str(Objs-Objects)+" новых объекта"
+               done "Удалить" "Оставить"  done
+   // А это обработка результата
+
+	if ok_flag==1 {
+	   N=Objs-Objects ;
+	   i=0
+	   mdel:
+	   if i<N {
+		   i=i+1
+		   pnt=GetObjNum(Objs-i) ;
+		   if !GetObjVisual(pnt)  {   visible last N done ; }
+	   delete  last N done ;
+	   }
+	}
+}
+exit;
+
+
+
+

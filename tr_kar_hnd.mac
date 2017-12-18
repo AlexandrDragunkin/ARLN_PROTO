@@ -1,0 +1,98 @@
+//-- Установка ручки на дверь распашную с гнутым или трапецеидальным фасадом
+//-- Входные параметры:
+//-- Rplace - сторона открывания двери
+//-- HandleType - тип ручки из прайс-листа
+//-- ARMX, ARMZ, ARMA	- сдвиги и угол поворота ручки
+global
+DoorKonst               //  Тип конструкции двери
+DoorMater,              //-- Материал панелей двери
+DoorPict,    // тип фасада(рисунка)
+;
+global ProtoPath  ;
+defarr error[10];
+NULLOUT=initarray(error,"");
+
+global		
+HandleD,	    //-- Двойная или одиночная ручка
+HandleR	,	    //-- Тип положения ручки 0-свободно 1-центр 3-сверху 4-снизу
+global		FasVaria ;  // Вариант фасада
+global g_FasPlas;       // массив со значениями текущих +ов по сторонам фасада
+
+defarr arr[7],arrout[5];
+
+getpar dx,dy,dz,   //-- Базовый угол двери
+dwx,dwy,dwz,          //-- Ширина, глубина, высота
+Rplace,               //-- Cторона открывания двери  (слева, справа, сверху, снизу, нет - 0)
+HandleType,           //-- Тип ручки и параметры положения
+ARMX,ARMZ,ARMA;
+
+if (HandleType==0) //-- Если нет ручки - выходим
+{ 
+  exit; 
+}
+h_fas=priceinfo(DoorPict,"Thickness",priceinfo(DoorMater,"Thickness",16),2);
+
+arr[1]=dwy-h_fas;
+arr[2]=dwx;
+arr[3]=10;
+arr[4]=0;
+NULLOUT=Param2DFunc(2,arr,arrout);
+Length=arrout[1];
+
+//-- Размеры ручки
+dRucUp=PriceInfo(HandleType,"Height",50);
+dRucR=PriceInfo(HandleType,"Length",0);
+DZn=dRucUp/2;				                     //-- Смещение ручки по ширине
+if (ARMA==90)||(ARMA==270)
+{
+//  DXn=dRucUp/2;
+  DZn=dRucR/2;
+}
+Zh=ARMZ-g_FasPlas[4]+DZn;
+if (HandleR==1) { Zh=0+dwz/2; }
+if (HandleR==3) { Zh=0+dwz-(ARMZ-g_FasPlas[3]+DZn); }
+
+Xh=ARMX-g_FasPlas[1];
+if (Rplace==1) { Xh=Length-(ARMX-g_FasPlas[2]); }
+if (Rplace==2) { Xh=(ARMX-g_FasPlas[2]); }
+
+arr[4]=Xh/Length;
+NULLOUT=Param2DFunc(2,arr,arrout);
+
+NULLOUT=getsnap();
+xr=-arrout[3]; //-y
+yr=-arrout[2]; //-x
+xrn=-arrout[5]; //-y
+yrn=-arrout[4]; //-x
+xrn=xr+abs(xr-xrn)
+yrn=yr+abs(yr-yrn)
+//if (Rplace==2)       // Этот вариант панели фасада "зеркальный"
+//{
+//  arrout[2]=-arrout[2];
+//  arrout[4]=-arrout[4];
+ // arrout[2]=arrout[2]+dwx;
+//  arrout[4]=arrout[4]+dwx;
+//}
+setucs  xr  yr Zh  oy  xrn  yrn Zh ;
+//setucs  arrout[2]  arrout[3] Zh  oy  arrout[4]  arrout[5] Zh ;
+macro ProtoPath+"SetECod.mac" "7202" ;
+// macro ProtoPath+"SetKCod.mac" "РУЧК" 0 0;
+macro ProtoPath+"SetEnam.mac" "Ручка мебельная" ;
+if (Xh<dwy) {
+  Macro ProtoPath+"MakeHand.mac" HandleType 1 0 h_fas 0
+      90 ARMA+90 -90 ;
+//  0 0 0;
+}
+else {
+  Macro ProtoPath+"MakeHand.mac" HandleType 1 0 0 0
+      90 ARMA+90 -90 ;
+}
+//      0 0 0;
+//if (abs(ARMA)>0) {
+//  rotate last 1 done 2points  0 0 0 0 h_fas 0 ARMA nocopy ;
+//}
+NULLOUT=resnap();
+move last 1 done  dx,dy,dz nocopy ;
+exit;
+//=================================================================
+

@@ -1,0 +1,17 @@
+// Установить тек. материалы Раздвижной двери для библиотеки стандартных объектов
+global		// Для фасадов и дверей
+RDoorMater , // Материал полотна двери
+RDoorBCol ,  // Материал обрамления двери
+RDoorMBok ,  // Материал боковин
+RDoorRail ;  // Материал направляющих
+
+
+getpar  P1 P2  P3 P4 ; // 
+ 
+RDoorMater=P1
+RDoorBCol=P2
+RDoorMBok=P4
+RDoorRail=P3
+
+
+exit

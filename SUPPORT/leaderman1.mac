@@ -1,0 +1,81 @@
+//LeaderMan.mac
+//
+//*********************************************
+// автоматическая простановка указателей позиций.
+//              Драгункин А.Р.
+//              ГеоС 2005-2008 г.
+//*********************************************
+
+// доработка 20/05/05 строка 49 parallel vcs
+
+defarr first[3], second[3], next[3];
+//global level;
+NULLOUT=GetSnap();
+ layers new "VidDim_1" ;
+ layers new "VidDim_2" ;
+ layers new "VidDim_3" ;
+ layers new "VidDim_4" ;
+getpar
+auto
+;
+ If (!IsAttrdef("DimLeader"))
+ { Attribute Create "DimLeader" "Указатель" Real 5 0  ; }
+if auto==0 {
+ //Укажите объект к которому прставляется номер
+Objident : pnt ;
+level=getattr(pnt,"PorNumber",-1);
+SETUCS VCS ;
+get "Первая точка" point missing  first[1] first[2] first[3]  :
+//============= база для резины
+get "Следующая точка" point first[1] first[2] first[3]
+second[1] second[2] second[3]  :
+}
+else {
+     getpar
+     pnt
+     first[1] first[2] first[3]
+     second[1] second[2] second[3]
+     ;
+     level=getattr(pnt,"PorNumber",-1);
+      ss1=second[1] ss2=second[2] ss3=second[3] ;
+     ptranscs(0,1,first[1],first[2],first[3],first[1],first[2],first[3]);
+     ptranscs(0,1,second[1],second[2],second[3],second[1],second[2],second[3]);
+     SETUCS VCS ;
+}
+
+
+
+        IF SECOND[1]<first[1] { ArowL=0 ArowR=4 }
+        else { ArowL=4 ArowR=0 }
+	//level=level+1;
+        xlev=first[1]; ylev=first[2]; zlev=first[3]; hlev=40
+	gosub metlevel
+
+NULLOUT=ReSnap();
+EXIT
+
+metlevel:
+ If (!IsAttrdef("AutoPlace"))
+ { Attribute Create "AutoPlace" "Тип установки" Real 5 0 ; }
+   If (!IsAttrdef("VidDimPlace"))
+ { Attribute Create "VidDimPlace" "Номер вида на котором определен размер" Real 5 0 ; }
+// Размер - уровень
+ CurrVi=SysVar(51)   ;
+ CV="VidDim_"+Str(CurrVi) ;
+
+dimarrows ArowL ArowR // Стрелки
+dimlnflags 6
+dimtext 0 str(level) done
+
+ldim 3ddim xlev ylev zlev second[1] second[2] second[3] parallel vcs @ -0.02*ArowR+0.01 0 0
+ldim edit place lider 1 second[1] second[2] second[3] @ -0.02*ArowR+0.01 0 0 done //done
+dimarrows auto
+dimlnflags 0
+dimtext 0 "<>" done
+
+    Attrobj Attach  "AutoPlace"  Done Last 1 1 ;
+    Attrobj Attach  "VidDimPlace"  Done Last 1 CurrVi;
+    Attrobj Attach  "DimLeader"  Done Last 1 1;
+    chprop layer last 1 done CV ;
+    layers on CV ;
+return

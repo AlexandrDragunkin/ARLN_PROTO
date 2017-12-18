@@ -1,0 +1,240 @@
+//-- Шкаф пятиугольный двухдверный
+global ProtoPath;		//-- Путь к папке с макропрограммами общей библиотеке прототипов
+//-- Параметры для расчета распашных дверей
+global D_DxU D_DzU D_DxN D_DzN D_DxD;
+
+defarr x[6],y[6],rad[5];
+
+PrMater=DbVar("КорпМат",0);     //-- Материал корпуса
+ЗСтМат=DbVar("ЗСтМат",0);       //-- Материал задней стенки
+w=DbVar("Шир",330);			        //-- Ширина
+d=DbVar("Глуб",320);			      //-- Глубина
+h=DbVar("Выс",822);			        //-- Высота
+Orient=dbvar("Orient",1);       //-- Ориентация
+ШирГлух=DbVar("ШирС",100);		  //-- Ширина торцевого фасада
+MinDepth=DbVar("ШирГ",100);		  //-- Глубина глухой секции
+ЦвКром=DbVar("ЦвКромки",0);     //-- Цвет кромки
+ТипКром=DbVar("ТипКромки",0);   //-- Тип кромки
+Крепеж=DbVar("Крепеж",0);   	  //-- Тип крепежа
+КрепЗС=DbVar("КрепЗС",0);   	  //-- Тип крепежа задней стенки
+ТипЗСтен=DbVar("ТипЗСтен",0);   //-- Тип задней стенки
+УстЗСтен=DbVar("УстЗСтен",0);   //-- Глубина установки задней стенки
+ЗаглПол=DbVar("ЗаглПол",0);     //-- Заглубление полок
+ФасМат=DbVar("ФасМат",0);       //-- Материал фасада
+ФасВсМат=DbVar("ФасВсМат",0);   //-- Материал вставки в фасад
+ТипРуч=DbVar("ТипРуч",0);       //-- Тип ручки
+ВысотРуч=DbVar("ВысотРуч",0);   //-- Высота установки ручки
+ПовРуч=DbVar("ПовРуч",0);       //-- Поворот ручки
+ОткрДверь=DbVar("ОткрДверь",0); //-- Открытая дверь
+Петля=DbVar("Петля",0);         //-- Тип петли
+ПетляУгл=DbVar("ПетляУгл",0);   //-- Тип петли углового фасада
+КолПЯ=DbVar("КолПЯ",0);         //-- Количество полок или ящиков
+РисФас=DbVar("РисФас",0);       //-- Рисунок фасада
+СдвРуч=DbVar("СдвРуч",40);      //-- Сдвиг ручки
+Rpl_r=dbvar("Rpl_r",0);		      //-- Расположение ручки
+HasDuct=DbVar("HasDuct",0);     //-- Наличие короба
+ShiftDuct=DbVar("ShiftDuct",0); //-- Сдвиг короба
+WidthDuct=DbVar("WidthDuct",0); //-- Ширина короба
+DepthDuct=DbVar("DepthDuct",0); //-- Глубина короба
+WallAngle=DbVar("WallAngle",90);//-- Пристенный угол
+Widsth=DbVar("Widsth",100);     //-- Ширина стяжки
+IsTop=DbVar("IsTop",1);         //-- Наличие крышки
+WallChamfer=DbVar("WallChamfer",0);//-- Размер пристенной фаски
+FixShelfRem=dbvar("FixShelfRem",0);//-- Тип крепежа съемной полки
+ShelfRemCut=dbvar("ShelfRemCut",0); //-- Величина подреза съемной полки
+Заполн=DbVar("Заполн",0);					  //-- Тип заполнения
+Naves=dbvar("Naves",0);						 //-- Тип навески
+//---------------------------------------------------
+//-- Константы
+D_DxN=DbVar("D_DxN",1.5);	//-- Зазор по ширине для накладных дверей
+D_DzN=DbVar("D_DzN",2);		//-- Зазор по высоте для накладных дверей
+D_DxD=DbVar("D_DxD",2);		//-- Зазор между двойными дверьми
+//---------------------------------------------------
+h_dsp=PriceInfo(PrMater,"Thickness",16); //-- Толщина материала корпуса
+h_dvp=PriceInfo(ЗСтМат,"Thickness",4);   //-- Толщина материала задней стенки
+ЗСтВрезка=8;                      //-- Врезка задней стенки
+ТипУгла=1;                        //-- Тип угла - фаска
+dum=120;                          //-- Размер "уголка" задней стенки под мойку
+offset=14;                        //-- Нахлест накладной стенки на корпус
+dst=60;                           //-- Ширина дополнительной планки для стенки под мойку
+HasCok=0;                         //-- Наличие цоколя
+Shiftcok=0;                       //-- Сдвиг цоколя
+Накладн=1;                        //-- Фасад накладной
+Dno=0;                            //-- Дно ненакладное
+LongPost=0;                       //-- Опорные стойки
+FasCok=0;                         //-- Размер фасок под цоколь
+ForOpen=0;                        //-- Для открытого
+ConfDuct=0;                       //-- Конфигурация выреза под короб по умолчанию
+Shift=50;                         //-- Сдвиг опор от края корпуса
+//-------------------------------------------------
+if (WallAngle!=90)
+{
+  putmsg("Для данного прототипа пристенный угол, отличный от 90 градусов не реализован",0);
+  WallAngle=90;
+}
+DimX=w-ШирГлух;
+DimY=d-MinDepth;
+Угол=grad(atan((DimY)/(DimX-h_dsp)));  //-- Угол стола пятиугольного 2-дверного
+
+if (Orient==0)
+{
+  dr=d-h_dsp;
+  dl=MinDepth;
+}
+else
+{
+  dl=d-h_dsp;
+  dr=MinDepth;
+}
+if (ТипЗСтен==3)
+{
+  offset=ЗСтВрезка;
+}
+//-- Определяем конфигурацию выреза под короб
+if (HasDuct!=0)
+{
+  if (ShiftDuct<=h_dsp&&WidthDuct>=(w-2*h_dsp))
+  {
+    ConfDuct=1;  //-- Вырез на всю ширину корпуса
+  }
+  if (ShiftDuct<=h_dsp&&WidthDuct<(w-2*h_dsp))
+  {
+    ConfDuct=2;  //-- Вырез примыкает справа
+  }
+  if (ShiftDuct>h_dsp&&(WidthDuct+ShiftDuct)>=(w-2*h_dsp))
+  {
+    ConfDuct=3;  //-- Вырез примыкает слева
+  }
+  if (ShiftDuct>h_dsp&&(WidthDuct+ShiftDuct)<=(w-2*h_dsp))
+  {
+    ConfDuct=4;  //-- Вырез внутри корпуса
+  }
+}
+if (ConfDuct==1)  //-- Если короб на всю ширину, то просто уменьшаем глубину корпуса
+{
+  d=d-DepthDuct;
+  HasDuct=0;
+}
+//-------------------------------------------------
+NULLOUT=getsnap();
+NULLOUT=pushinst(1);
+macro ProtoPath+"SetRemShelfCut.mac" ShelfRemCut;
+macro ProtoPath+"SetRemShelfFix.mac" FixShelfRem;
+macro ProtoPath+"SetTypeFill.mac" Заполн;
+macro ProtoPath+"SetDuct.mac" HasDuct,ShiftDuct,WidthDuct,DepthDuct;
+macro ProtoPath+"SetWallAngle.mac" WallAngle;
+macro ProtoPath+"SetCorpsCor.mac" Widsth, IsTop, 0;
+macro ProtoPath+"SetWallChamfer.mac" WallChamfer;
+macro ProtoPath+"SetNaves.mac" Naves;
+macro ProtoPath+"SetCorpsCorButts.mac" 0, 0;
+//-------------------------------------------------
+macro ProtoPath+"MakeCorpsCor.mac" 0 0 0
+    w,                    //-- Ширина
+    d,                    //-- Глубина
+    h,                    //-- Высота
+    0,                    //-- Высота цоколя
+    MinDepth,             //-- Размер меньшей стороны
+    ТипУгла,              //-- Тип угла
+    DimX,                 //-- Фаска Х/ Радиус
+    DimY+h_dsp,                 //-- Фаска Y
+    Orient,               //-- Правая ориентация
+    PrMater,        	    //-- Материал корпуса
+    ЗСтМат,               //-- Материал задней стенки
+    ЦвКром,               //-- Цвет кромки
+    ТипКром,              //-- Тип кромки
+    ТипЗСтен,             //-- Тип задней стенки
+    УстЗСтен,             //-- Глубина установки задней стенки
+    ЗСтВрезка,            //-- Врезка\Нахлест задней стенки
+    Крепеж,               //-- Тип крепежа корпуса
+    КрепЗС,      	        //-- Тип крепежа задней стенки
+    Dno,                  //-- Накладное дно
+    Dum,                  //-- Размер "уголка" задней стенки под мойку
+    Dst,                  //-- Ширина дополнительной планки
+    HasCok,               //-- Наличие цоколя
+    Shiftcok              //-- Сдвиг цоколя
+    LongPost              //-- Опорные стойки
+    FasCok                //-- Размер фасок под цоколь
+    ForOpen;              //-- Для открытого изделия
+;
+//-------------------------------------------------
+//-- Построение фасада фронтального
+if (РисФас!=0)
+{
+  macro ProtoPath+"SetMat.mac" PrMater ;
+  macro ProtoPath+"SetECod.mac" "1103" ;
+  macro ProtoPath+"SetEnam.mac" "Фасадная стенка" ;
+  macro ProtoPath+"SetKrom.mac" ЦвКром iif(Dno==1,0,ТипКром)
+                                iif(Dno==1,0,ТипКром) iif(Dno==1,0,ТипКром)
+                                ТипКром ;
+  // macro ProtoPath+"SetKCod.mac" "ФДНС" h ШирГлух;
+  macro ProtoPath+"SetFasdN.mac" ФасМат РисФас ЦвКром ТипКром ФасВсМат ФасВсМат ;
+  macro ProtoPath+"SetHandl.mac" ТипРуч СдвРуч ВысотРуч ПовРуч ;
+  macro ProtoPath+"SetHand.mac" 0 Rpl_r;
+  macro ProtoPath+"SetDoorK.mac" 0 ;
+  macro ProtoPath+"SetDoor.mac"  iif(Orient==0,1,2) 0 ОткрДверь Накладн Петля 0 h_dsp;
+  macro ProtoPath+"SetFasPlas.mac" D_DxN D_DxN D_DzN D_DzN;
+  macro ProtoPath+"MakeDoor.mac" iif(Orient==0,0,w-ШирГлух)+h_dsp,
+                                 iif(Orient==0,dr,dl)+h_dsp
+                                 h_dsp+iif(Dno==1,h_dsp,0) w-DimX-2*h_dsp h-2*h_dsp-iif(Dno==1,2*h_dsp,0);
+}
+//-----------------------------------------------------------------------------
+//-- Определим отступ сзади от типа задней стенки
+if (ТипЗСтен!=0)  { ОтстСз=0; }		      //-- Накладной
+if (ТипЗСтен==-1) { ОтстСз=0; }		      //-- Накладной для мойки
+if (ТипЗСтен==0)  { ОтстСз=h_dvp; }	    //-- Утопленный
+if (ТипЗСтен==2)  { ОтстСз=0; }		      //-- Нет
+if (ТипЗСтен==3)  { ОтстСз=УстЗСтен; }	//-- Врезной
+if (ТипЗСтен==4) { ОтстСз=h_dvp; }	  //-- Жесткая планка
+macro ProtoPath+"SetDuct.mac" HasDuct,ShiftDuct-iif(ConfDuct==2,0,2*h_dsp),WidthDuct+iif(ConfDuct==4,2*h_dsp,0),DepthDuct+h_dsp-ОтстСз;
+if (WallChamfer>0)
+{
+  macro ProtoPath+"SetWallChamfer.mac" WallChamfer-2*iif(ТипЗСтен==1,h_dvp,ОтстСз)+h_dsp*sqrt(2);
+}
+macro ProtoPath+"MakeNicheCor.mac" iif(WallChamfer==0,h_dsp,iif(ТипЗСтен==1,h_dvp,ОтстСз)) ОтстСз h_dsp
+    w-h_dsp-iif(WallChamfer==0,h_dsp,iif(ТипЗСтен==1,h_dvp,ОтстСз)),      //-- Ширина
+    d-ОтстСз, //-- Глубина
+    h-2*h_dsp,  //-- Высота
+    MinDepth,       //-- Размер меньшей стороны
+    ТипУгла,        //-- Тип угла
+    DimX-h_dsp,     //-- Фаска Х/ Радиус
+    DimY,     //-- Фаска Y
+    Orient, 	      //-- Правая ориентация
+    КолПЯ,          //-- Количество полок
+    0,              //-- Рисунок фасада
+    Угол,    	      //-- Угол поворота двери
+    ЗаглПол,	      //-- Заглубление полок
+    PrMater,        //-- Материал заполнения
+    ФасМат,         //-- Материал фасада
+    ФасВсМат,       //-- Материал вставки в фасад
+    2,              //-- Открывание двери
+    ТипРуч,         //-- Тип ручки
+    ВысотРуч,       //-- Высота установки ручки
+    ПовРуч,         //-- Угол поворота ручки
+    Rpl_r	          //-- Расположение ручки
+    0,              //-- Двойная дверь
+    ОткрДверь,      //-- Открытая дверь
+    СдвРуч,         //-- Сдвиг ручки
+    Петля,          //-- Тип петли
+    Накладн,        //-- Фасад накладной
+    ЦвКром,         //-- Цвет кромки
+    ТипКром,        //-- Тип кромки
+    Крепеж,				  //-- Тип крепежа
+    0 	            //-- Тип двери
+;
+macro ProtoPath+"SetDuct.mac" 0,0,0,0;
+macro ProtoPath+"SetECod.mac" "1102" ;
+// macro ProtoPath+"SetKCod.mac" "ДВЕР" DimX-2*h_dsp h-2*h_dsp ;
+macro ProtoPath+"SetEnam.mac" "Дверь";
+macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+macro ProtoPath+"SetFasdN.mac" ФасМат РисФас ЦвКром ТипКром ФасВсМат ФасВсМат ;
+macro ProtoPath+"SetHandl.mac" ТипРуч СдвРуч ВысотРуч ПовРуч ;
+macro ProtoPath+"SetHand.mac" 0 Rpl_r;
+macro ProtoPath+"SetDoorK.mac" 0 ;
+macro ProtoPath+"SetDoor.mac"      iif(Orient==0,2,1), //-- Открывание двери
+       0 ОткрДверь 2 ПетляУгл iif(Orient==0,-Угол,Угол), //-- Угол поворота двери
+       h_dsp;
+xd=iif(Orient==0,ШирГлух,h_dsp);
+macro ProtoPath+"MakeDoor.mac"  xd d D_DzN+iif(Dno==1,h_dsp,0) DimX-h_dsp h-2*D_DzN-iif(Dno==1,2*h_dsp,0);
+NULLOUT=popinst(1);
+NULLOUT=resnap();
+exit;

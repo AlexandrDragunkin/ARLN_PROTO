@@ -1,0 +1,26 @@
+//-- Макропрограмма исключает крепеж из панели (объекта)
+//-- Входные параметры:
+//-- obj - крепеж, который извлекаем
+
+global ProtoPath;
+getpar obj;
+//selbyattr "left(FurnType,4)==\"0404\"" prompt "Выберите крепеж" partly : ;
+//obj=getselnum(1);
+//-- Находим родителя объекта
+NULLOUT=GetObjHold(obj,par);
+if (NULLOUT==0)
+{
+  exit;
+}
+//-- Ниже - если нужно извлекать крепеж только из панелей.
+//aaa=getattr(par,"FurnType","");
+//if (left(aaa,4)!="8004")  //-- Если это линия крепежа (она бывает только на панелях)
+//{
+//  exit;
+//}
+extract partly par obj done;
+FixType=getattr(obj,"PriceID",0);
+attrobj attach "Posit" done obj 134;
+NULLOUT=addattrpi(obj,1,134,FixType);
+//macro ProtoPath+"AddAttrPI.mac" obj FixType 134 ;
+exit;

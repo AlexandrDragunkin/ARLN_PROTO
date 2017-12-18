@@ -1,0 +1,161 @@
+//-- Проверка объектов на пересечение
+defarr c1[6] c2[6];
+//-----------------------------------------------------------------------
+nfnd=0;
+NULLOUT=getvarinst(2,"FailColor",FailColor,12);      //-- Цвет объектов, не прошедших провеору
+iyf=getyadfixing();
+if (iyf==1)  //-- Если крепеж включен, выключаем его.
+{
+  putmsg("Выключаем крепеж и удаляем сверловку",1);
+  NULLOUT=setyadfixing(0);
+  holes delall all done;
+  fixing delauto all done;
+	fixing hide all done;
+}
+//-- Выбираем только те объекты, которые сравниваем
+select partly attribute "IsAssign(\"FurnType\")" done;
+sysv=sysvar(61);  //-- Общее количество выбранных объектов  в сцене
+if (sysv<2) //-- Не кому и не с чем пересекаться
+{
+  exit;
+}
+NULLOUT=renumerate();
+defarr fnd[sysv*sysv];
+NULLOUT=initarray(fnd,0);
+NULLOUT=infinitepb(1,"");  //-- Включаем ProgressBar
+//------------------------------------------------------------------------
+i=0;
+loop1:
+i=i+1;
+hobj1=getselnum(i);
+j=i;
+loop2:
+j=j+1;
+hobj2=getselnum(j);
+gosub objpenetr;
+if (intflag==1)
+{
+  nfnd=nfnd+1;
+  fnd[nfnd]=hobj1;
+  nfnd=nfnd+1;
+  fnd[nfnd]=hobj2;
+}
+if (j<sysv)
+{
+  goto loop2;
+}
+if (i<(sysv-1))
+{
+  goto loop1;
+}
+//---------------------------------------------------------------------------
+NULLOUT=infinitepb(3,"");  //-- Выключаем ProgressBar
+if (nfnd==0)
+{
+  #ok_flag
+  alternative "Проверка на пересечение"
+  msgbox picture 4 beep 4 text left
+  "В заказе нет пересекающихся объектов"
+  done
+  "  OK  "
+  done;
+}
+else
+{
+  jj=1;
+  loopjj:
+  if (nfnd>=jj)
+  {
+    objident fnd[jj] obj;
+    fnd[jj]=getattr(obj,"UnitPos",0);
+    jj=jj+1;
+    goto loopjj;
+  }
+}
+if (iyf==1)  //-- Если крепеж выключали, включаем его.
+{
+  fixing create all done;
+}
+flg=0;
+if (nfnd>0)
+{
+  NULLOUT=initselected();
+  jj=1;
+  stri="";
+  loopjj1:
+  if (nfnd>=jj)
+  {
+    stri=stri+"UnitPos=="+str(fnd[jj]);
+    if (len(stri)>220)
+    {
+      if (flg==0)
+      {
+        select stayblink partly attribute stri done;
+      }
+      else
+      {
+        select stayblink partly previous attribute stri done;
+      }
+      stri="";
+      flg=1;
+    }
+    jj=jj+1;
+    if (jj<=nfnd&&len(stri)>0)
+    {
+      stri=stri+"||";
+    }
+    goto loopjj1;
+  }
+  NULLOUT=initselected();
+  select stayblink partly attribute stri done;
+  #ok_flag
+  alternative "Проверка на пересечение"
+  msgbox picture 4 beep 4 text left
+  "Пересекающиеся объекты выделены мерцанием"
+  ""
+  "Отключить мерцание пересекающихся объектов?"
+  done
+  "Да"  "Нет" "Изменить цвет"
+  done;
+  if (ok_flag==1)
+  {
+    select all done;
+  }
+  if (ok_flag==3)
+  {
+    chprop color partly previous done FailColor ;
+  }
+}
+exit;
+//---------------------------------------------------------
+//-- Проверка на пересечение двух объектов.
+//-- Входные параметры:
+//-- hobj1 - первый объект
+//-- hobj2 - второй объект
+//-- Выходные параметры:
+//-- IntFlag (0 - нет пересечения, 1 - есть пересечение)
+objpenetr:
+NULLOUT=infinitepb(2,"");  //-- наращиваем счетчик ProgressBar
+NULLOUT=objgab3(hobj1,c1);
+NULLOUT=objgab3(hobj2,c2);
+intflag=0; //-- У нас презумпция невиновности. По умолчанию пересечений нет
+//-- Сначала осуществляем габаритный тест
+if (c1[1]-c2[4]>-0.0001||c2[1]-c1[4]>-0.0001)
+{
+  return;
+}
+if (c1[2]-c2[5]>-0.0001||c2[2]-c1[5]>-0.0001)
+{
+  return;
+}
+if (c1[3]-c2[6]>-0.0001||c2[3]-c1[6]>-0.0001)
+{
+  return;
+}
+//-- Если габаритный тест не пройден - извращаемся
+NULLOUT=penetrate(hobj1,hobj2);
+if (NULLOUT==3)
+{
+  intflag=1;
+}
+return;

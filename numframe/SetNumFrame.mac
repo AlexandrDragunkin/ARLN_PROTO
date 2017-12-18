@@ -1,0 +1,102 @@
+//-- Макро проставляет номера элементов вокруг сцены.
+global ProtoPath gabScene;
+ars=300;
+defarr
+gabO[6]									//-- массив габаритов объекта
+gabOld[6]								//-- массив габаритов предыдущего объекта
+ElemPointX[ars]					//-- массив координат X точек
+ElemPointY[ars]					//-- массив координат Y точек
+ElemNum[ars]						//-- массив номеров объектов и прочего текста выносок (не должен превышать 3х символов)
+ElemRef[ars]
+gabScene[6]
+;
+ok_flag=2;
+// #ok_flag
+     // alternative "Вариант расстановки номеров-выносок"
+// msgbox text "Укажите способ заполнения рамки вокруг объекта выносками"
+     // done
+     // "Равномерно"
+     // "Неравномерно"
+     // "Отмена"
+	 // done;
+
+if ok_flag==3
+{
+	exit;
+}
+else
+{
+	SetNotetype=ok_flag;
+}
+//macro ProtoPath+"Del_Num.mac" ;
+//macro ProtoPath+"ReNum.mac" ;
+select all;
+colObj=sysvar(61);
+if (colObj<1)
+{
+	exit;
+}
+err=initarray(gabOld,0);
+colPoint=0;
+NULLOUT=getsnap();
+If (!IsAttrdef("NumType"))
+{
+	Attribute Create "NumType" "NumType" Real 5 0 ;
+}
+onerror error;
+
+//-- Устанавливаем видовую систему и получаем габариты обьектов
+setucs vcs;
+macro protopath+"\\drawprof\\Utilites_K3.py" "FindGabScene" byref gabScene done;
+i=0;
+LOOP:
+i=i+1;
+obj=getselnum(i);
+err=objgab3(obj,gabO);
+gabO[1]=min(gabOld[1],gabO[1]);
+gabO[2]=min(gabOld[2],gabO[2]);
+gabO[3]=min(gabOld[3],gabO[3]);
+gabO[4]=max(gabOld[4],gabO[4]);
+gabO[5]=max(gabOld[5],gabO[5]);
+gabO[6]=max(gabOld[6],gabO[6]);
+gabOld[1]=gabO[1];
+gabOld[2]=gabO[2];
+gabOld[3]=gabO[3];
+gabOld[4]=gabO[4];
+gabOld[5]=gabO[5];
+gabOld[6]=gabO[6];
+if (i<colObj)
+{
+	goto LOOP;
+}
+setucs gabO[1],gabO[2],0 gabO[4],gabO[2],0 gabO[1],gabO[5],0;
+gabO[4]=gabO[4]-(gabO[1]);
+gabO[5]=gabO[5]-(gabO[2]);
+gabO[6]=0;
+gabO[1]=0;
+gabO[2]=0;
+gabO[3]=0;
+//-- Заполняем массив координатами и номерами объектов
+macro ProtoPath+"numframe\\GetPointNum.mac"
+	0														//-- способ определения точек  0 - центр объекта
+	0													//-- какие объекты нумеровать 0 - только панели
+	ElemPointX
+	ElemPointY
+	ElemNum
+	ElemRef
+	byref colPoint;							//-- возвращаемое значение - количество точек.
+//-- Строим рамку
+macro ProtoPath+"numframe\\CreateNumFrame.mac" 
+	gabO							//-- массив габаритов объекта
+	ElemPointX				//-- массив координат X точек
+	ElemPointY				//-- массив координат Y точек
+	ElemNum						//-- массив номеров объектов и прочего текста выносок (не должен превышать 3х символов)
+	ElemRef						//-- массив ссылок на объекты
+	colPoint					//-- количество точек для расстановки
+	0
+	SetNotetype
+	;
+error:
+NULLOUT=resnap();
+offerror;
+exit;

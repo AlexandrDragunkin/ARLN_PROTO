@@ -1,0 +1,10 @@
+// Разбор объекта - шкаф Клин нижний 
+global MacroSw  ; // Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+MacroSw=1;
+global ProtoPath;		//-- Путь к папке с макропрограммами общей библиотеке прототипов
+global LocalPath;		//-- Путь к папке с макропрограммами локальной библиотеке прототипов
+ProtoPath=GetProtoMac("Shkaf.ptl")
+LocalPath=GetProtoMac("Kitchen.ptl");
+Macro ProtoPath+"BegUnit.mac" "" ;
+macro LocalPath+"aboad2TV.mac" ;
+exit;

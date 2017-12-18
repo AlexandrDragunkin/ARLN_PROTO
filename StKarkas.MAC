@@ -1,0 +1,94 @@
+//-- Типовой проект основы шкафа
+global ProtoPath;
+defarr arr[3];
+global MacroSw;
+MacroSw=1;
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+NULLOUT=getvarinst(2,"LL_ShowFixing",kshow,1); //Показывать крепеж
+
+Def=str(getyadsubst(9))+"#"+str(192) ;      // Формируем строку умолчаний.
+
+#ok_flag
+setvar
+"Габариты основы шкафа"
+//PicturesPath+"shkaf.wmf"
+""
+center
+"Определите параметры основы шкафа"
+done
+str listonly current "Накладная"
+		     "Врезная"
+done	
+"Тип крыши:"    Top	 
+str listonly current "Накладной"
+		     "Врезной"
+done
+"Тип пола:"    dno
+
+real     default 70    "Высота цоколя:"      					Hcok
+real     default 0     "Заглубление цоколя спереди на:"    Ycok
+real     default 50    "Заглубление цоколя сзади от стены на:"     	ObrCok
+
+real     default 100   "Ширина фальшпанелей и фальшкоробов:"  	Sfp
+real     default 50    "Длина фальшкороба:"   					h_korob
+string auto default "Стойка"
+list
+"Фальшпанель"
+"Фальшкороб" 
+done
+"Справа" Rfpstr
+string auto default "Стойка"
+list
+"Фальшпанель"
+"Фальшкороб" 
+done
+"Слева" Lfpstr
+string auto default "Крыша"
+list
+"Фальшпанель"
+"Фальшкороб" 
+done
+"Сверху" Ufpstr
+string auto default "Дно"
+list
+"Фальшпанель"
+"Фальшкороб" 
+done
+"Снизу" Dfpstr
+real     default 0     "Свес для накладной крыши:"    ShF
+real     default 0     "Обрезать дно сзади на:"     	ObrDno
+string auto button 6 default Def "Тип крепежа для дна:" S_dno
+done;
+
+if (ok_flag==0) { exit; }
+
+splitbydelim(S_dno,"#",Arr);
+I_fixdno=Arr[2];
+
+if (dno=="Сквозное") { dno=1; }
+else { dno=0; }
+
+if Rfpstr=="Стойка" { Rfp=0;}
+if Rfpstr=="Фальшпанель" { Rfp=1;}
+if Rfpstr=="Фальшкороб" { Rfp=2; dnor=1;} // Фальшкороб всегда ставится на дно или пол 
+
+if Lfpstr=="Стойка" { Lfp=0;}
+if Lfpstr=="Фальшпанель" { Lfp=1;}
+if Lfpstr=="Фальшкороб" { Lfp=2; dnol=1;}
+
+if Ufpstr=="Крыша" { Ufp=0;}
+if Ufpstr=="Фальшпанель" { Ufp=1;}
+if Ufpstr=="Фальшкороб" { Ufp=2;}
+
+if Dfpstr=="Дно" { Dfp=0;}
+if Dfpstr=="Фальшпанель" { Dfp=1;}
+if Dfpstr=="Фальшкороб" { Dfp=2;}
+
+if (Top=="Накладная") { TopType=1; }
+else { TopType=0; }
+
+macro ProtoPath+"karkas.mac" hcok ycok ObrCok TopType Sfp Rfp Lfp Ufp Dfp dno ObrDno I_fixdno h_korob ShF;
+
+if (kshow)
+{ fixing create all done; }
+exit;

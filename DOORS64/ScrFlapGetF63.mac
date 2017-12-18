@@ -1,0 +1,493 @@
+//-- Макропрограмма извлекает из scratch атрибута точки средних профилей для систем дверей 63
+//-- Для лицевой вставки
+//-- в глобальные массивы gsf_XmidS (размер 10) gsf_ZmidS (размер 10) gsf_XmidE (размер 10) gsf_ZmidE (размер 10)
+//-- Материалы вставок gsf_FlMater (размер 20) направление шпона gsf_FlNshp (размер 20)
+
+//-- Если в атрибуте будет 0, то будет установлено умолчание
+
+
+//-- Входные параметры:
+
+//-- IsNull - если ноль - обнуляем число профилей. Это необходимо при перестроении
+
+global ProtoPath;
+global
+       gsf_IdMid  g_CLMid g_DRMid g_CLMid  // -- Id Разделительных профилей
+       gsf_MidHV             // -- Массив с парметрами эквидистанты для расчета вставок в районе средних профилей
+       gsf_XmidS  gsf_ZmidS   // -- координаты начальных точек разделительных профилей в створке
+       gsf_XmidE  gsf_ZmidE   // -- координаты конечных  точек разделительных профилей в створке
+       gsf_AngS   gsf_AngE    // -- Углы подрезки профиля вначале и в конце разделительного профиля
+       gsf_FlMater           // -- материалы вставок
+       gsf_FlOtdel           // -- материалы отделки вставки
+       gsf_FlOtdelN          // -- Число отделок вставки
+       gsf_FlNshp            // -- направление текстуры шпона вставок
+       gsf_IdFl              // -- Cчетчик обработанных в объекте вставок
+       gsf_Iotd              // -- Cчетчик обработанных в объекте отделок
+       gsf_IdMpr             // -- Cчетчик обработанных в объекте средних профилей
+       gsf_KFL               // -- Количество вставок из скретча
+       gsf_KMpr              // -- Количество средних профилей из скретча
+       ;
+global
+       gsf_ProfHM               //-- Массив с парметрами эквидистанты для расчета средних профилей
+       gsf_ProfHV               //-- Массив с парметрами эквидистанты для расчета вставок
+       gs_NProf
+       ;
+global
+       gsf_TlinX1               //-- массив с координатами X начала теоретических линий(осей)
+       gsf_TlinZ1               //-- массив с координатами Z начала теоретических линий(осей)
+       gsf_TlinX2               //-- массив с координатами X конца теоретических линий(осей)
+       gsf_TlinZ2               //-- массив с координатами Z конца теоретических линий(осей)
+       gsf_TlinHM               //-- Массив с парметрами эквидистанты для расчета средних профилей
+       gsf_TlinHV               //-- Массив с парметрами эквидистанты для расчета вставок
+       gsf_NTLin                //-- число теоретических линий(осей)
+       gsf_YSl                  //-- Сдвиг лицевой вставки по Y если 0, то ее нет
+       ;
+global
+      gsf_matVst
+      ;
+maxprof=8;
+maxlin=20;
+maxvst=50;
+defarr gsf_ProfHM[maxprof]
+       gsf_ProfHV[maxprof]
+       gsf_TlinX1[maxlin]
+       gsf_TlinZ1[maxlin]
+       gsf_TlinX2[maxlin]
+       gsf_TlinZ2[maxlin]
+       gsf_TlinHM[maxlin]
+       gsf_TlinHV[maxlin]
+       gsf_IdMid[30]
+       gsf_XmidS[30]
+       gsf_ZmidS[30]
+       gsf_XmidE[30]
+       gsf_ZmidE[30]
+       gsf_AngS[30]
+       gsf_AngE[30]
+       gsf_FlMater[100]
+       gsf_FlOtdel[900]
+       gsf_FlOtdelN[100]
+       gsf_FlNshp[100]
+       ;
+
+getpar IsNull;            //-- Если ноль, обнуляем число профилей
+
+gsf_IdFl=0
+gsf_Iotd=0
+gsf_kfl=0
+gsf_YSl=0
+err=0;
+defarr NamesGr[200] namesub[200];
+Namescr="ScrFlatF";
+ScrMod=0;
+err=isassign(Namescr,0);
+//putmsg("ScrFlapGet Ищем запись scrmod err="+str(err),0)
+
+if (isassign(Namescr,0))  
+{
+  ScrMod=readscratch(Namescr,0);   //-- Читаем из записи
+  //putmsg("ScrFlapGet ScrFlat определен",0);
+}
+else 
+{
+  ScrMod=filetoscrtch(ProtoPath+Namescr+".scr");
+  //putmsg("ScrFlapGet ScrFlat не определен",0);
+}
+ //NULLOUT=InitArray(gsf_FlMater,0);
+
+if (ScrMod==0) 
+{
+//putmsg("scrmod=0",1);
+ NULLOUT=InitArray(gsf_IdMid,0);
+ NULLOUT=InitArray(gsf_XmidS,0);
+ NULLOUT=InitArray(gsf_ZmidS,0);
+ NULLOUT=InitArray(gsf_XmidE,0);
+ NULLOUT=InitArray(gsf_ZmidE,0);
+ NULLOUT=InitArray(gsf_AngS,0);
+ NULLOUT=InitArray(gsf_AngE,0);
+ NULLOUT=InitArray(gsf_FlMater,0);
+ NULLOUT=InitArray(gsf_FlOtdel,0);
+ NULLOUT=InitArray(gsf_FlNshp,90);
+ NULLOUT=InitArray(gsf_ProfHM,0);
+ NULLOUT=InitArray(gsf_ProfHV,0);
+ NULLOUT=InitArray(gsf_TlinX1,0);
+ NULLOUT=InitArray(gsf_TlinZ1,0);
+ NULLOUT=InitArray(gsf_TlinX2,0);
+ NULLOUT=InitArray(gsf_TlinZ2,0);
+ NULLOUT=InitArray(gsf_TlinHM,0);
+ NULLOUT=InitArray(gsf_TlinHV,0);
+ 
+ // Это в том случае если предыдущие попытки не увенчались успехом и скрейча нет
+  ScrMod=InitScratch();
+  err=AddScratch(ScrMod,"Профиль","Колво",0); 	//-- Количество профилей по умолчанию
+  err=AddScratch(ScrMod,"ID профиля ","IDmidG",iif(isvardef("g_CLMid")!=0,g_CLMid,268));
+  i=1;
+  LoopS:
+  if (i<=30)
+  {
+    err=AddScratch(ScrMod,"ID профиля ","IDmid"+str(i),0); // ID конкретных разделительных профилей в створке
+    err=AddScratch(ScrMod,"X начала","Xn"+str(i),0); // начальных точек разделительных профилей в створке
+    err=AddScratch(ScrMod,"Z начала","Zn"+str(i),0);
+    err=AddScratch(ScrMod,"X конца","Xk"+str(i),0);
+    err=AddScratch(ScrMod,"Z конца","Zk"+str(i),0);
+    err=AddScratch(ScrMod,"Угол начала","An"+str(i),0);
+    err=AddScratch(ScrMod,"Угол конца","Ak"+str(i),0);
+    i=i+1;
+    goto LoopS;
+  }
+  err=AddScratch(ScrMod,"Вставка","Колво",0); 	//-- Количество вставок по умолчанию
+  err=AddScratch(ScrMod,"Вставка","Сдвиг_Y",0); //-- Сдвиг лицевой вставки по глубине
+     // Может быть несколько слоев вставок и при этом для каждого слоя будут свои  параметры для построения графов
+  i=0;
+  iot=0
+  LoopS1:
+  if (i<=90)
+  { i=i+1;
+    err=AddScratch(ScrMod,"ВставкаМ","Материал"+str(i),0); //Материал встави на слое
+    err=AddScratch(ScrMod,"Текстура","Направ"+str(i),0); //Текстура вставки на слое
+    err=AddScratch(ScrMod,"ОтделкаВс","КлвОтдел"+str(i),0); // Отделка вставки на слое
+    j=0
+    lOtd1:
+    if j<10
+    {
+            j=j+1;
+            iot=iot+1
+            err=AddScratch(ScrMod,"ОтделкаМ","Отд_"+str(i)+"_"+str(j),0); //
+            goto lOtd1;
+    }
+    goto LoopS1;
+  }
+  err=AddScratch(ScrMod,"Т-Пофиль","Колво",0); 	//-- Количество толстых профилей по умолчанию
+  i=1;
+  LoopS2:
+  if (i<=maxprof)
+  {
+    err=AddScratch(ScrMod,"Экв проф","Hm"+str(i),0);  // парметрами эквидистанты для расчета профиля
+    err=AddScratch(ScrMod,"Экв вст","Hv"+str(i),0);  // парметрами эквидистанты для расчета вставок
+
+    i=i+1;
+    goto LoopS2;
+  }
+  err=AddScratch(ScrMod,"ТеорЛинии","Колво",0); 	//-- Количество теоретических линий(осей) делительных профилей по умолчанию
+  i=1;
+  LoopS3:
+  if (i<=maxlin)
+  {
+    err=AddScratch(ScrMod,"Xl начала","Xln"+str(i),0); // начальных точек теоретических линий(осей) в створке
+    err=AddScratch(ScrMod,"Zl начала","Zln"+str(i),0); // начальных точек теоретических линий(осей) в створке
+    err=AddScratch(ScrMod,"Xl конца","Xlk"+str(i),0);  // конечных точек теоретических линий(осей) в створке
+    err=AddScratch(ScrMod,"Zl конца","Zlk"+str(i),0);  // конечных точек теоретических линий(осей) в створке
+    err=AddScratch(ScrMod,"Экв проф","Hlm"+str(i),0);   // Иначе  пустая строка
+    err=AddScratch(ScrMod,"Экв вст","Hlv"+str(i),0);
+
+    i=i+1;
+    goto LoopS3;
+  }
+}
+
+//putmsg("g_CLMid="+str(g_CLMid),0);
+
+// Считываем парметры из скрейча
+SubstName="";
+Kpar1=CntVarScr(ScrMod,"X начала");         //возвращает  количество  параметров  в  группе  набора
+Kpar2=CntVarScr(ScrMod,"ВставкаМ");         //или подстановке с номером ScrMod  и именем X начала
+Kpar3=CntVarScr(ScrMod,"Xt начала");
+Kpar4=CntVarScr(ScrMod,"Xl начала");
+
+  NameParG="ID профиля ";
+  NameParS="IDmidG";
+  gosub revScr;
+  err=iif(ValParS!=0,GetScratch(ScrMod,"ID профиля ","IDmidG",g_CLMid,SubstName),0);
+   // Может быть несколько слоев вставок и при этом для каждого слоя будут свои  параметры для построения графов
+if (IsNull==0)
+{
+  gsf_KFL=0
+  gsf_KMpr=0
+  gs_NProf=0
+  gsf_NTLin=0
+  gsf_YSl=0
+  //g_CLMid=268
+}
+else
+{
+  NameParG="Профиль";
+  NameParS="Колво";
+  gosub revScr;
+  err=iif(ValParS!=0,GetScratch(ScrMod,"Профиль","Колво",gsf_KMpr,SubstName),0);
+  err=GetScratch(ScrMod,"Вставка","Колво",gsf_KFL,SubstName);
+  err=GetScratch(ScrMod,"Вставка","Сдвиг_Y",gsf_YSl,SubstName); //-- Сдвиг лицевой вставки по глубине
+  //err=GetScratch(ScrMod,"Т-Пофиль","Колво",gs_NProf,SubstName);
+  err=GetScratch(ScrMod,"ТеорЛинии","Колво",gsf_NTLin,SubstName);
+}
+//putmsg("gsf_Kmpr="+str(gsf_Kmpr),1);
+//putmsg("IsNull="+str(IsNull),1);
+if (Kpar1<1)
+{ 
+  goto ENDM; 
+}
+// профили
+
+i=0;
+Loop1:
+i=i+1;
+if (i<=Kpar1)
+{
+  ValPar1=0;  ValPar2=0; ValPar3=0;  ValPar4=0;
+  ValPar5=0;  ValPar6=0; ValPar7=0;  ValPar8=0;
+  err1=GetScratch(ScrMod,"X начала","Xn"+str(i),ValPar1,SubstName);  // получить  значение  параметра  из  набора  с  индексом ScrMod
+  err2=GetScratch(ScrMod,"Z начала","Zn"+str(i),ValPar2,SubstName);  // и именем  "X начала" "Xn"+str(i) содержит строку с именем параметра
+  err3=GetScratch(ScrMod,"X конца","Xk"+str(i),ValPar3,SubstName);   // ValPar1   получает значение извлеченного параметра
+  err4=GetScratch(ScrMod,"Z конца","Zk"+str(i),ValPar4,SubstName);   // Если набор является  подстановкой,  то  в SubstName заносится  имя  подстановки.
+  err5=GetScratch(ScrMod,"Угол начала","An"+str(i),ValPar5,SubstName);   // Иначе  пустая строка
+  err6=GetScratch(ScrMod,"Угол конца","Ak"+str(i),ValPar6,SubstName);
+  NameParG="ID профиля ";
+  NameParS="IDmid"+str(i);
+  gosub revScr;
+  err7=iif(ValParS!=0,GetScratch(ScrMod,"ID профиля ","IDmid"+str(i),ValPar7,SubstName),0);
+  if (err1==0)
+  { 
+    gsf_XmidS[i]=0
+  }
+  gsf_XmidS[i]=ValPar1;
+  
+  if (err2==0)
+  {
+    gsf_ZmidS[i]=0
+  }
+  gsf_ZmidS[i]=ValPar2;
+
+  if (err3==0)
+  {
+    gsf_XmidS[i]=0
+  }
+  gsf_XmidE[i]=ValPar3;
+
+  if (err4==0)
+  {
+    gsf_ZmidE[i]=0
+  }
+  gsf_ZmidE[i]=ValPar4;
+
+  if (err5==0)
+  {
+    gsf_AngS[i]=0
+  }
+  gsf_AngS[i]=ValPar5;
+
+  if (err6==0)
+  {
+    gsf_AngE[i]=0
+  }
+  gsf_AngE[i]=ValPar6;
+  
+  if (err7==0)
+  {
+    gsf_IdMid[i]=0
+  }
+  gsf_IdMid[i]=ValPar7;
+  
+  g_CLMid=iif(g_CLMid!=0,g_CLMid,268);
+  goto Loop1;
+}
+ENDM:
+// Вставки
+if (Kpar2<1)
+{
+  goto ENDM2;
+}
+i=0;
+iotd=0;
+Loop2:
+i=i+1;
+if (i<=Kpar2)
+{
+  ValPar1=0;  ValPar2=90;
+  err1=GetScratch(ScrMod,"ВставкаМ","Материал"+str(i),ValPar1,SubstName);
+  err2=GetScratch(ScrMod,"Текстура","Направ"+str(i),ValPar2,SubstName);
+  //putmsg("300ValPar1 ( "+str(i)+" ) = "+str(ValPar1),0);
+  if (err1==0)
+  {
+    gsf_FlMater[i]=0
+  }
+  gsf_FlMater[i]=ValPar1;
+
+  if (err2==0)
+  {
+    gsf_FlNshp[i]=0;
+  }
+  gsf_FlNshp[i]=ValPar2;
+  // Putmsg("gsf_FlNshp[i]="+str(gsf_FlNshp[i]),0);
+  err=GetScratch(ScrMod,"ОтделкаВс","КлвОтдел"+str(i),gsf_FlOtdelN[i],SubstName); //
+  Notd=gsf_FlOtdelN[i];
+  //Putmsg("Notd = "+str(Notd),0);
+  j=0
+  lOtd2:
+  if (j<Notd)
+  {
+        ValParo1=0;
+        j=j+1;
+
+        erro1=GetScratch(ScrMod,"ОтделкаМ","Отд_"+str(i)+"_"+str(j),ValParo1,SubstName);
+        //Putmsg("ОтделкаМ324 Отд_"+str(i)+"_"+str(j),0);
+        //Putmsg("erro1 = "+str(erro1),0);
+
+        if (erro1==0)
+        {
+           //gsf_FlOtdel[iotd]=0
+        }
+        else
+        {
+        iotd=iotd+1;
+        gsf_FlOtdel[iotd]=ValParo1;
+        //Putmsg("335gsf_FlOtdel["+str(iotd)+"]= "+str(gsf_FlOtdel[iotd]),0);
+        }
+        goto lOtd2;
+  }
+  goto Loop2;
+}
+else
+{
+ if i<91
+ {
+  Notd=GetScratch(ScrMod,"ОтделкаВс","КлвОтдел"+str(i),gsf_FlOtdelN[i],SubstName); // кол-во отд и-й вставки
+  //Putmsg("Notd = "+str(Notd),0);
+  j=0
+  lOtd3:
+  if (j<Notd)
+  {
+        ValParo1=0;
+        j=j+1;
+
+        erro1=GetScratch(ScrMod,"ОтделкаМ","Отд_"+str(i)+"_"+str(j),ValParo1,SubstName);
+        //Putmsg("erro1348 = "+str(erro1),0);
+        if (erro1==0)
+        {
+           //gsf_FlOtdel[iotd]=0
+        }
+        else
+        {
+        iotd=iotd+1;
+        gsf_FlOtdel[iotd]=ValParo1;
+        }
+        goto lOtd3;
+  }
+ }
+}
+ENDM2:
+//Толстые профили
+
+if (Kpar3<1)
+{
+  goto ENDM3;
+}
+i=0;
+Loop3:
+i=i+1;
+if (i<=Kpar3)
+{
+  ValPar1=0;  ValPar2=0; ValPar3=0;  ValPar4=0;
+  ValPar5=0;  ValPar6=0; ValPar7=0;  ValPar8=0;
+  err5=GetScratch(ScrMod,"Экв проф","Hm"+str(i),ValPar5,SubstName);   // Иначе  пустая строка
+  err6=GetScratch(ScrMod,"Экв вст","Hv"+str(i),ValPar6,SubstName);
+
+  if (err5==0)
+  {
+    gsf_ProfHM[i]=0
+  }
+  gsf_ProfHM[i]=ValPar5;
+
+  if (err6==0)
+  {
+    gsf_ProfHV[i]=0
+  }
+  gsf_ProfHV[i]=ValPar6;
+
+ goto Loop3;
+}
+ENDM3:
+
+//теоретические линии(оси)
+if (Kpar4<1)
+{
+  goto ENDM4;
+}
+i=0;
+Loop4:
+i=i+1;
+if (i<=Kpar4)
+{
+  ValPar1=0;  ValPar2=0; ValPar3=0;  ValPar4=0;
+  ValPar5=0;  ValPar6=0; ValPar7=0;  ValPar8=0;
+  err1=GetScratch(ScrMod,"Xl начала","Xln"+str(i),ValPar1,SubstName);  // получить  значение  параметра  из  набора  с  индексом ScrMod
+  err2=GetScratch(ScrMod,"Zl начала","Zln"+str(i),ValPar2,SubstName);  // и именем  "X начала" "Xn"+str(i) содержит строку с именем параметра
+  err3=GetScratch(ScrMod,"Xl конца","Xlk"+str(i),ValPar3,SubstName);   // ValPar1   получает значение извлеченного параметра
+  err4=GetScratch(ScrMod,"Zl конца","Zlk"+str(i),ValPar4,SubstName);   // Если набор является  подстановкой,  то  в SubstName заносится  имя  подстановки.
+  err5=GetScratch(ScrMod,"Экв проф","Hlm"+str(i),ValPar5,SubstName);   // Иначе  пустая строка
+  err6=GetScratch(ScrMod,"Экв вст","Hlv"+str(i),ValPar6,SubstName);
+  if (err1==0)
+  {
+    gsf_TLinX1[i]=0
+  }
+  gsf_TLinX1[i]=ValPar1;
+
+  if (err2==0)
+  {
+    gsf_TLinZ1[i]=0
+  }
+  gsf_TLinZ1[i]=ValPar2;
+
+  if (err3==0)
+  {
+    gsf_TLinX2[i]=0
+  }
+  gsf_TLinX2[i]=ValPar3;
+
+  if (err4==0)
+  {
+    gsf_TLinZ2[i]=0
+  }
+  gsf_TLinZ2[i]=ValPar4;
+  
+    if (err5==0)
+  {
+    gsf_TLinHM[i]=0
+  }
+  gsf_TLinHM[i]=ValPar5;
+
+  if (err6==0)
+  {
+    gsf_TLinHV[i]=0
+  }
+  gsf_TLinHV[i]=ValPar6;
+  //----------------------------------
+
+  //----------------------------------
+ goto Loop4;
+}
+ENDM4:
+if (!isattrdef(Namescr))
+{ 
+  Attribute Create Namescr "Параметры лицевых вставок 63" text 30 80 ;
+}
+writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+//putmsg("g_CLMid="+str(g_CLMid),0);
+exit;
+//--------------------
+revScr:
+
+        ValParS=0;
+           Nsub=CntVarScr(ScrMod,NameParG);
+           if Nsub<1 { goto endrs; }
+           Nsub=NameVarScr(ScrMod,NameParG,Namesub);
+           isub=0;
+           labrev1:
+           if isub<Nsub
+           {
+              isub=isub+1;
+              ValParS=iif(NameParS==Namesub[isub],1,0);
+              if ValParS==1 { goto endrs; }
+              goto labrev1;
+           }
+
+        endrS:
+return;

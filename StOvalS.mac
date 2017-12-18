@@ -1,0 +1,67 @@
+//-- Создание контура овальной столешницы
+//-- Входные параметры:
+//-- x - Длина
+//-- y - Ширина
+//-- r - Радиус скругления
+
+defarr arr[6];
+NULLOUT=initarray(arr,0);
+
+getpar x,y,r;
+
+if (y>=x)
+{
+  putmsg("Ширина столешницы не должна превышатьее глубину",0);
+  cancel;
+}
+if (r>y/2)
+{
+  putmsg("Радиус углов не должен превышать половины ширины столешницы",0);
+  cancel;
+}
+
+//-- Если радиус равен половине ширины
+if (y/2==r)
+{
+  arc x/2-r,-y/2,0 x/2-r,y/2,0 x/2,0,0;
+  line x/2-r,y/2,0 -x/2+r,y/2,0 done;
+  arc -x/2+r,y/2,0 -x/2+r,-y/2,0 -x/2,0,0;
+  line -x/2+r,-y/2,0 x/2-r,-y/2,0 done;
+}
+else
+{
+  arr[1]=x/2-r;
+  arr[2]=0;
+  arr[3]=r;
+  arr[4]=1;
+  u1=addunobj2d(3,0,arr);
+  arr[1]=-x/2+r;
+  arr[2]=0;
+  arr[3]=r;
+  arr[4]=1;
+  u2=addunobj2d(3,0,arr);
+  arr[1]=-x/2+r;
+  arr[2]=0;
+  arr[3]=x/2-r;
+  arr[4]=0;
+  arr[5]=0;
+  arr[6]=-y/2+r;
+  u3=addunobj2d(2,0,arr);
+  NULLOUT=GetACUnObj2D(u3,arr);
+  u4=ArcTTUnObj2D(u1,u2,(arr[3]+r),arr[1],arr[2]);
+  NULLOUT=getunobj2d(u4,t,arr);
+  NULLOUT=freeunobj2d(u1);
+  NULLOUT=freeunobj2d(u2);
+  NULLOUT=freeunobj2d(u3);
+  NULLOUT=freeunobj2d(u4);
+
+  arc arr[1],arr[2],0 arr[3],arr[4],0 0,-y/2,0;
+  arc arr[3],arr[4],0 arr[3],-arr[4],0 -x/2,0,0 ;
+  arc arr[3],-arr[4],0 arr[1],-arr[2],0 0,y/2,0;
+  arc arr[1],-arr[2],0 arr[1],arr[2],0 x/2,0,0 ;
+}
+#pa path select last 4 done last 1 done;
+#paa pline path pa;
+delete pa done;
+objident paa pa;
+exit;

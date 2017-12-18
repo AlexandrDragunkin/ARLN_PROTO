@@ -1,0 +1,343 @@
+
+//============================================
+//============================================
+//Re_num5.mac
+//
+//
+//Нумерация объектов
+//
+//============================================
+//============================================
+// (c) Драгункин Александр г.Дубна 2003-2014 гг.
+// -----
+global
+CBDpath
+TMPpath
+ProtoPath
+setsbKEY
+U_layer
+finalcbd
+FTmpName
+g_DrawCod             //Способ обозначения чертежа 0-относительный по первому вхождению 1-абстрагированный код
+Pl_obozn
+ProtoPath
+DRWZPath
+;
+global L_SUPPORT                        //Устанавливаем статус вывода сообщений в зависимости от значения параметра
+       g_colselect;                   //ЦВЕТ ВЫБИРАЕМОГО ОБЪЕКТА
+defarr Dbm[20] PorN[1000]  info[9] ;
+
+getpar Ltype ;
+
+//vimage off ;
+
+
+SysArr(41,info) ;
+object_name=sysvar(2) ;
+
+   if (!IsAttrdef("PorNumber"))
+      { Attribute Create "PorNumber" "PorNumber" Real 5 0  ; }
+   if (!IsAttrdef("PozNumber"))
+      { Attribute Create "PozNumber" "PozNumber" Real 5 0  ; }
+nomber=0;
+object_2=sysvar(60);
+jj1=0
+jj2=0
+jj3=0
+jj4=0
+jj5=0
+i=0
+lab_3:
+i=i+1
+pnt=getobjnum(i);
+ if IsAssign("PorNumber",pnt)    { jj5=1 ; }
+ if GetAttr(pnt,"Sys_SB",-1)==1  { jj1=1 ; }
+ if GetAttr(pnt,"Sys_SB",-1)==2  { jj2=1 ; }
+ if GetAttr(pnt,"posit",-1)==22  { jj3=1 ; }
+ if GetAttr(pnt,"ConnectT",-1)>0 { jj4=1 ; }
+if  i<object_2 { goto lab_3 ; }
+if (jj5==1)  {
+attrobj delete group attribute "PorNumber" done "PorNumber"  ;
+}
+//==
+sb1=0
+sb2=0
+sb3=0
+sb4=0
+j=0
+lab_2:
+j=j+1
+object_s=0
+if (j==1)&&(jj1==1) { select attribute "Sys_SB==1"  ;
+object_S=SysVar(61) ;
+sb2=SysVar(61);
+sb2=Int((sb2+10)/10) }
+//else { j=j+1 }
+if (j==2)&&(jj2==1) { select attribute "Sys_SB==2"  ;
+object_S=SysVar(61) ;
+sb1=SysVar(61);
+sb1=Int((sb1+10)/10) }
+//else { j=j+1 }
+
+if (j==3)&&(jj3==1) { select   attribute "posit==22"  ;
+object_S=SysVar(61) ;
+sb3=SysVar(61);
+sb3=Int((sb3+10)/10)  }
+//else { j=j+1 }
+//object_S=SysVar(61) ;
+if (j==4)&&(jj4==1) { select  attribute "ConnectT>0"   ;
+object_S=SysVar(61) ;
+sb4=SysVar(61);
+sb4=Int((sb4+10)/10)  }
+
+
+
+i=0
+lab_1:
+If (i<object_S) {
+i=i+1
+  OBJ1=getselnum(i);
+  if j==1 {
+  //chprop color obj1 done 14 ;
+      nomber=nomber+1;
+      Attrobj Attach "PorNumber" Done  OBJ1 nomber;
+  }
+  If j==2 {
+      nomber=nomber+1;
+      Attrobj Attach "PorNumber" Done  OBJ1 nomber;//
+
+  }
+  If j==3 {
+
+      nomber=nomber+1;
+      Attrobj Attach "PorNumber" Done  OBJ1 nomber ; //+sb1+sb2;
+
+  }
+  If j==4 {
+      nomber=nomber+1;
+      Attrobj Attach "PorNumber" Done  OBJ1 nomber ; //+sb2+sb1+sb3;
+
+  }
+
+  goto lab_1;
+}
+if j<4 { goto lab_2 ; }
+//CHPROP COLOR attribute  "SYS_SB!=0" DONE 15 ;
+
+//fnk=TMPpath+"TmpDet.dbf"
+TMPname="TmpDetL"+str(Ltype)+".dbf"
+fnk=TMPpath+TMPname
+DbOpen rcdkml,fnk;
+
+select attribute  "(SYS_SB!=0)&&(SYS_SB!=5)" DONE ;
+object_2=sysvar(61);
+
+
+i=0
+lab_k0:
+
+
+err=0
+If (i<object_2) {
+i=i+1
+  point=getSELnum(i);
+  attrobj copy  point all record ;
+  //name=getattr(point,"Posit",-1);
+  //If (name==-1) { CHPROP COLOR POINT DONE 13 ;
+  //goto lab_k0 }
+  CN1=0;
+  MIH_X=GetAttr(point,"MIH_X",-99);
+  MIH_Y=GetAttr(point,"MIH_Y",-99);
+  MIH_Z=GetAttr(point,"MIH_Z",-99);
+  MIH_S=GetAttr(point,"MIH_S",-99);
+  MIH_V=GetAttr(point,"MIH_V",-99);
+  MIH_M=GetAttr(point,"MIH_M",-99);
+  MIH_P=GetAttr(point,"MIH_P",-99);
+  MIH_Sxy=GetAttr(point,"MIH_Sxy",-99);
+  MIH_Syz=GetAttr(point,"MIH_Syz",-99);
+  MIH_Szx=GetAttr(point,"MIH_Szx",-99);
+  SB=GetAttr(point,"SYS_SB",-99);
+  PN=GetAttr(point,"PORNUMBER",-99);
+  CN=GetAttr(point,"ConnectT",-99);
+  LNCOD=GetAttr(point,"LNCOD","*");
+  
+  LNNAME=GetAttr(point,"LNNAME","*");
+  LNMAT=GetAttr(point,"LNMAT","*");
+  LNPRIM=GetAttr(point,"LNPRIM","*");
+  err=GetProtoVal(point,"complect",CN1);  // Тип соединения (деталь)
+ //=err
+  if err==1 { CN=CN1 } //если анализируемый объект комплектующее
+
+  DbAddNew rcdkml;
+  DbSetValue rcdkml,0,MIH_X;
+  DbSetValue rcdkml,1,MIH_Y;
+  DbSetValue rcdkml,2,MIH_Z;
+  DbSetValue rcdkml,3,MIH_S;
+  DbSetValue rcdkml,4,MIH_V;
+  DbSetValue rcdkml,5,MIH_M;
+  DbSetValue rcdkml,6,MIH_P;
+  DbSetValue rcdkml,7,MIH_Sxy;
+  DbSetValue rcdkml,8,MIH_Syz;
+  DbSetValue rcdkml,9,MIH_Szx;
+  DbSetValue rcdkml,10,SB;
+  DbSetValue rcdkml,11,PN;
+  DbSetValue rcdkml,12,0;
+  DbSetValue rcdkml,13,CN;
+  DbSetValue rcdkml,17,0;
+  DbSetValue rcdkml,"FASER",-1 ;         //20 ФОРМАТ ВЫВОДА НА ПЕЧАТЬ
+  DbSetValue rcdkml,"LNCOD",LNCOD;
+  if g_DrawCod!=0 {
+     DbSetValue rcdkml,"DESCR",LNCOD;
+  }
+
+  DbSetValue rcdkml,"NAME",LNNAME;
+  DbSetValue rcdkml,"LNMAT",LNMAT;
+  DbSetValue rcdkml,"LNPRIM",LNPRIM;
+  DbUpdate rcdkml ;
+  goto lab_k0
+}
+DbClose rcdkml ;
+
+//Теперь надо определить   сходные детали
+PozCurent=0         //счетчик текущего номера позиции
+ParI=1;
+PUST="";
+DbOpen rcdkml,fnk;
+MetSB2:
+DbFilter rcdkml, "(SYSSB==ParI)&&(POZ==0)" ; //&&(FASER==U_layer)"; // Выбрали
+total_s=DbRecCount(rcdkml);
+ if (total_s==0) {  goto nextmet ; }  // Не нашли
+ DbMoveFirst rcdkml;                  // Встали на первую запись
+ I=0
+met1:
+     if i<14 {
+        i=i+1
+        dbm[i]=DbGetValue(rcdkml,i-1); //записали в массив первые девять элементов из массинерионных характеристик
+=dbm[i]
+        goto met1 ;
+        }
+ // Выбрали
+If ParI<3 {
+            //очень интересный случай. Требуется найти детали повернутые в пространстве .
+            //Скажем верхнее и нижнее основание, МИХ будут разные а детали то одни и теже.
+            //делается просто, Сравниваем по АВСу статические моменты инерции. если они отличаются только знаком,
+            //а значения совпадают значит деталь та же самая или зеркальная.
+            //отличаются они так если центр масс лежит на нуле одной из осей образующих плоскость симметрии зачит
+            //деталь повернута
+            DbFilter rcdkml, "(SYSSB==ParI)&&(POZ==0)&&(abs(abs(MIHSXY)-abs(dbm[8]))<0.0000001)&&(abs(abs(MIHSYZ)-abs(dbm[9]))<0.0000001)&&(abs(abs(MIHSZX)-abs(dbm[10]))<0.0000001)&&(dbm[5]==MIHV)";
+
+            if DbRecCount(rcdkml)<1 { 
+			//vimage on ; 
+			//redraw all ; exit 
+			}
+
+
+            DbMoveFirst rcdkml;
+            CMass_X=DbGetValue(rcdkml,0);
+            CMass_Z=DbGetValue(rcdkml,2);
+           //=CMass_X   =CMass_z   =DbRecCount(rcdkml) ;
+
+            if abs(CMass_X)==0||abs(CMass_Z)==0 {
+            //эти палки родственники
+
+            }
+            else { DbFilter rcdkml, "(SYSSB==ParI)&&(POZ==0)&&(MIHSXY==dbm[8])&&(MIHSYZ==dbm[9])&&(MIHSZX==dbm[10])"; }
+
+
+
+            }
+else      { DbFilter rcdkml, "(SYSSB==ParI)&&(KDATA==dbm[14])"; }
+total_s1=DbRecCount(rcdkml);
+=dbm[14]
+=total_s1
+
+PozCurent=PozCurent+1 ;
+//If DbRecCount(id)==0 { Goto metend; } //Набор пуст, закрываем и выходим
+// Просмотр набора вниз
+DbMoveFirst rcdkml;                  // Встали на первую запись
+bm=0; i=1;
+met2:
+If !DbEOF(rcdkml) {                  // Пока не прошли все записи
+DbSetValue rcdkml,12,PozCurent;
+  if g_DrawCod!=1 {
+       OKOD=Pl_obozn+"."+"0"+Str(Ltype+1)+".0"+str(PozCurent)
+       DbSetValue rcdkml,"DESCR",OKOD;
+  }
+PorNCUR=DbGetValue(rcdkml,11);       //одновременно заполняем массив PorN
+=PorNCUR
+=PozCurent
+PorN[PorNCUR]=PozCurent ;
+//DbSetValue rcdkml,11,PozCurent;
+DbUpdate rcdkml;
+  DbMoveNext rcdkml;                 // Переход на следующую вниз
+  i=i+1;
+  Goto met2;
+}
+goto metSB2 ;
+
+NEXTMET:
+If parI<4 { ParI=ParI+1 ;  PozCurent=(Int(PozCurent/10)+1)*10-1; goto metSB2 ;  }
+
+ //
+DbClose rcdkml ;
+
+//Теперь у элементов сцены меняем атрибут PORNUMBER
+
+
+i=0
+=nomber
+met3:
+if i<nomber {
+   i=i+1
+   if PorN[i]>0 {
+   select attribute "PorNumber=="+str(i) done;
+   obj1=getselnum(1) ;
+   Attrobj Attach "PozNumber" Done  OBJ1  PorN[i]; }
+   goto  met3 ;
+   }
+   
+   
+//присваиваем PorNumber реальные значения
+select attribute "PorNumber" done ;
+Nsel=sysvar(61);
+
+
+defarr PorColor[1000] ;
+i=0
+start1:
+//if i<Nsel { i=i+1 ; PorColor[i]=0 ; goto start1 ; }
+i=0
+k=0
+met4:
+if i<Nsel {
+   i=i+1
+   pnt=getselnum(i) ;
+   prnumi=getattr(pnt,"PozNumber",-1);
+  //=prnumi
+   if prnumi>0 {
+   //раскрашиваем детали с одинаковыми характеристиками в одинаковые цвета
+      k=k+1;
+      if PorColor[prnumi]==0 { PorColor[prnumi]=k;          }
+         }
+   attrobj edit pnt "PorNumber"  done  prnumi ;
+   goto met4 ; }
+i=0
+k=0
+met5:
+if i<Nsel {
+   i=i+1
+
+
+   if PorColor[i]!=0 {
+      if k==info[1] { k=k+1 }
+      //if k==16 { k=0 }
+     //=k
+      //CHPROP COLOR attribute "PorNumber==i" DONE k  ;
+      k=k+1   }
+
+    
+    goto met5 ;
+ }
+
+exit  ;
+

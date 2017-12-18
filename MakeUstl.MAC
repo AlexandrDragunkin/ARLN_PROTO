@@ -1,0 +1,102 @@
+//-- Создание углового покрытия
+
+defarr UsRU[6]; //-- Углы углового покрытия
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами 
+NULLOUT=getvarinst(2,"MacroSw",MacroSw,0);
+
+getpar
+x y z		//-- Правый нижний дальний угол
+w s; 	  //-- Hазмер по длине и ширине
+
+//---------------------------------------------------------------
+position=84;  //-- Номер прототипа углового покрытия
+Namescr="ProtoParams";
+FurnType="011000";
+NULLOUT=pushinst(1);
+NULLOUT=getsnap();
+NULLOUT=getvarinst(1,"ElemName",ElemName," ");    //-- Имя элемента 
+NULLOUT=getvarinst(1,"PanMater",PanMater,0);      //-- Материал 
+NULLOUT=getvarinst(1,"g_BandPan",BandPan,0,1);    //-- Тип кромки 
+NULLOUT=getvarinst(1,"g_CBandPan",PanCKro,0,1);   //-- Цвет кромки 
+NULLOUT=getarrinst(1,"UsRU",UsRU);                //-- Углы углового покрытия
+NULLOUT=getvarinst(1,"UsSLK",UsSLK,300);          //-- Ширина левого крыла
+NULLOUT=getvarinst(1,"UsSRK",UsSRK,300);          //-- Ширина правого крыла
+NULLOUT=getvarinst(1,"UsVAR",UsVAR,0);            //-- Вариант стыковки крыльев
+NULLOUT=getvarinst(1,"UsSLF",UsSLF,50);           //-- Фаска слева
+NULLOUT=getvarinst(1,"UsSRF",UsSRF,50);           //-- Фаска справа
+
+NULLOUT=setvarinst(1,"FurnType",FurnType);    //-- FurnType
+
+if (ElemName==""||ElemName==" ")
+{
+  ElemName="Угловое покрытие";
+}
+D=priceinfo(PanMater,"Thickness",16); //-- Толщина углового покрытия
+//---------------------------------------------------------------------
+if (MacroSw==0)
+{
+  gosub SimpleUstl;
+}
+else
+{
+  protoobj create "Shkaf.ptl" 84
+    "PrMater" PanMater
+    "Band" BandPan
+    "LLK" w
+    "LRK" s
+    "SLK" UsSLK
+    "SRK" UsSRK
+    "VAR" UsVAR
+    "SLF" UsSLF
+    "SRF" UsSRF
+    "RU1" UsRU[1]
+    "RU2" UsRU[2]
+    "RU3" UsRU[3]
+    "RU4" UsRU[4]
+    "RU5" UsRU[5]
+    "RVU" UsRU[6]
+    "Face_col" PanCKro
+    done
+    x y z ;
+  NULLOUT=setvarinst(2,"MacroSw",MacroSw);          //-- Текущий способ построения
+  objident last 1 Pan;
+}
+NULLOUT=resnap();
+NULLOUT=popinst(1);
+exit;
+//--------------------------------------------------------------
+SimpleUstl:
+macro ProtoPath+"SetEnam.mac" "";
+object_1=sysvar(60);
+macro ProtoPath+"UstlForm.mac" w,	s, UsSLK,	UsSRK, UsVAR,	UsSLF, UsSRF, UsRU[1],
+UsRU[2], UsRU[3], UsRU[4],	UsRU[5], UsRU[6],	PanMater, PanCKro BandPan;
+object_2=sysvar(60)-object_1;
+move last object_2 done x y z nocopy;
+setucs move x y z;
+#ustl group last object_2 done;
+
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"PrMater",PanMater);
+err=AddScratch(ScrMod,FurnType,"Band",BandPan);
+err=AddScratch(ScrMod,FurnType,"LLK",w);
+err=AddScratch(ScrMod,FurnType,"LRK",s);
+err=AddScratch(ScrMod,FurnType,"SLK",UsSLK);
+err=AddScratch(ScrMod,FurnType,"SRK",UsSRK);
+err=AddScratch(ScrMod,FurnType,"VAR",UsVAR);
+err=AddScratch(ScrMod,FurnType,"SLF",UsSLF);
+err=AddScratch(ScrMod,FurnType,"SRF",UsSRF);
+err=AddScratch(ScrMod,FurnType,"RU1",UsRU[1]);
+err=AddScratch(ScrMod,FurnType,"RU2",UsRU[2]);
+err=AddScratch(ScrMod,FurnType,"RU3",UsRU[3]);
+err=AddScratch(ScrMod,FurnType,"RU4",UsRU[4]);
+err=AddScratch(ScrMod,FurnType,"RU5",UsRU[5]);
+err=AddScratch(ScrMod,FurnType,"RVU",UsRU[5]);
+err=AddScratch(ScrMod,FurnType,"Face_col",PanCKro);
+NULLOUT=writescratch(ScrMod,Namescr,ustl);
+NULLOUT=TermScratch(ScrMod);
+NULLOUT=addattrpi(ustl,1,position);
+macro ProtoPath+"SetEnam.mac" ElemName;
+//-- Присваиваем атрибуты
+macro ProtoPath+"EndPanel.mac" ustl position w s D PanMater "";
+return;

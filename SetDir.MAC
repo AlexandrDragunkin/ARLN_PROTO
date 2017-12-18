@@ -1,0 +1,17 @@
+//-- ”становить текущее направление текстуры дл€ панели
+global PanDir;	//-- Ќаправление текстуры 1=D 2=B 0-игнорируетс€
+getpar P1;
+PanDir=P1;
+if (P1==1)
+{
+  NULLOUT=setvarinst(1,"PanDir",0);
+}
+if (P1==2)
+{
+  NULLOUT=setvarinst(1,"PanDir",90);
+}
+if (P1==0)
+{
+  NULLOUT=setvarinst(1,"PanDir",-1);
+}
+exit;

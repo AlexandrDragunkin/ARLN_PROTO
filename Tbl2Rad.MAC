@@ -1,0 +1,34 @@
+//-- Создание объекта - фигурная столешница
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами
+
+PrMater=DbVar("PrMater",0); 		//-- Материал панели
+Rad1=DbVar("Rad1",300); 		    //-- Радиус 1
+Rad2=DbVar("Rad2",300); 		    //-- Радиус 2
+Length=DbVar("Length",1000);	  //-- Длина
+Width=DbVar("Width",600);		    //-- Ширина
+LeftFlag=DbVar("LeftFlag",0);	  //-- Левая ориентация
+Angle=DbVar("Angle",45);	      //-- Угол стыковки радиусов
+Band=DbVar("Band",0); 			    //-- Материал кромки
+Face_col=DbVar("Face_col",0);   //-- Цвет кромки
+//--------------------------------------------------------------------------
+FurnType="011000";
+Namescr="ProtoParams";
+NULLOUT=setvarinst(1,"FurnType",FurnType);
+//--------------------------------------------------------------------------
+
+macro ProtoPath+"Tbl2RadForm.mac" PrMater, Rad1, Rad2, Length, Width, LeftFlag, Angle, Band, Face_col
+
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"Rad1",Rad1);
+err=AddScratch(ScrMod,FurnType,"Rad2",Rad2);
+err=AddScratch(ScrMod,FurnType,"Length",Length);
+err=AddScratch(ScrMod,FurnType,"Width",Width);
+err=AddScratch(ScrMod,FurnType,"LeftFlag",LeftFlag);
+err=AddScratch(ScrMod,FurnType,"Angle",Angle);
+err=AddScratch(ScrMod,FurnType,"PrMater",PrMater);
+err=AddScratch(ScrMod,FurnType,"Band",Band);
+err=AddScratch(ScrMod,FurnType,"Face_col",Face_col);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+exit;

@@ -1,0 +1,14 @@
+global ProtoPath DRWZPath L_SUPPORT;
+defarr arr[14];
+L_support=iif(isvardef("L_SUPPORT")==0,"\\Support.zk3|",L_support);
+DRWZPath=iif(isvardef("DRWZPath")==0,GetProtoMac("Shkaf.ptl")+"DrwZip.zk3|",DRWZPath);
+NULLOUT=getsnap();
+NULL=sysarr(43,arr);
+CurGrk=arr[3];
+if (CurGrk<6)
+{
+  grfcoeff 6;
+}
+macro L_Support+"qDim5m.mac" 0 done;
+NULLOUT=resnap();
+exit;

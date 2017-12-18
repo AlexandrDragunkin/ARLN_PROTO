@@ -1,0 +1,41 @@
+//-- Формирование комплектов списания
+
+global ProtoPath;
+
+tab_place="c:\\PKMProjects73\\90\\BaseAR.mdb";
+szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+tab_place
+MyConn=adbcon(szSrc);
+con=adbCon(2);	// Главная база
+
+zp1="SELECT * FROM NNomenclature WHERE UnitsID="+str(10);
+rcd=adbOpen(con,zp1);
+total_s1=aDbRecCount(rcd);
+if total_s1>0
+{
+	defarr ArrCompl[total_s1], ArrCName[total_s1];
+	err=aDbMoveFirst(rcd);
+	i=0;
+	nexti:
+	i=i+1;
+	if i<=total_s1
+	{
+		ArrCompl[i]=adbGetValue(rcd,"ID",0);
+		ArrCName[i]=adbGetValue(rcd,"Name",0);
+		err=aDbMoveNext(rcd);
+		goto nexti;
+	}
+}
+// ArrCompl - ID заглавных ID комплектов
+putmsg(ArrCompl)
+
+i=0;
+nextii:
+i=i+1;
+if i<=total_s1
+{
+
+	
+	goto nextii;
+}
+
+exit

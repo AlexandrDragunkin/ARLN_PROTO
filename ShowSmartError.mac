@@ -1,0 +1,32 @@
+//-- Вывод окна сообщения об ошибке
+//-- с возвратом кода ошибки в вызывающую программу
+//-- Входные параметры:
+//-- errname - название ошибки
+//-- nErrStr - число строк с описанием ошибки
+//-- error[] - массив строк для вывода или просто строка. В этом случае nErrStr=1
+
+getpar errname,nErrStr,error;
+if (nErrStr<1)
+{
+  exit;
+}
+vTyp=isvardef("error");
+nErrStr=iif(vTyp==3,nErrStr,1);
+#ok_flag
+alternative "Ошибка!"
+msgbox picture 1 beep 1 text left
+errname
+" "
+let i=0
+loop:
+let i=i+1
+if vTyp==3 { error[i] }
+else { error }
+if (i<nErrStr)
+{
+  goto loop
+}
+done
+"  OK  "
+done;
+exit;

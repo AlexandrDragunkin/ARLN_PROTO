@@ -1,0 +1,182 @@
+//-- Макропрограмма формирования Scratch параметров фасада  для версии 7.1
+global ProtoPath;
+defarr yarr[1];
+global gs_Nfasad;     //-- Счетчик фасадов в объекте
+
+// putmsg("scrFasCr");
+
+getpar FasType, scr;
+// putmsg(FasType)
+FasMac=GetFileTitle(PriceInfo(FasType,"MacroFile",".mac",2))
+if FasMac=="fasad_autoselect.mac"
+{
+	macro ProtoPath+"fasad_autoselect.mac" 0,0,0,0,0;
+	nullout=getvarinst(1,"MacroFileFas",FasCode,"");
+	nullout=setvarinst(1,"MacroFileFas","");
+	
+	// putmsg("autoselect_ScrFasCr="+str(FasCode));
+}
+else
+{
+	FasCode=FasMac;
+}
+FasCode=FasCode-4; // Уберем расширение
+
+DfDec=0;
+DfDecPan=0;
+  subst=getyadsubst(6);          // Группа Типы отделки профиля
+  kol1=npgetbywhere(1,"","yarr",subst);
+  if (kol1>0) {
+    DfDec=yarr[1];               // В качестве умолчания берем первый из подстановки
+  }
+  subst=getyadsubst(3);          // Группа Типы отделки панелей
+  kol1=npgetbywhere(1,"","yarr",subst);
+  if (kol1>0) {
+    DfDecPan=yarr[1];            // В качестве умолчания берем первый из подстановки
+  }
+//-------------------------------------------------------------------------------
+
+Suname=""; Nfastmp="";
+err=getscratch(Scr,FasCode,"Nfas",Nfastmp,Suname);
+// putmsg(Nfastmp)
+if !err { err=addscratch(Scr,FasCode,"Nfas",0); }	//-- Число фасадов
+err=AddScratch(scr,FasCode,"FasType",FasType);
+
+// putmsg("ScrFasCr_GO->ScrFasCheck.mac");
+// macro ProtoPath+"ScrFasCheck.mac" FasCode Scr;
+
+// // Заполнение отделок из польз.умолчаний в стэк
+// macro protopath+"setesol.py";
+// v=0;
+
+// ilbf=1;
+
+// // Запись общих для всех фасадов скрэйтчей
+// err=addscratch(Scr,FasCode,"АГрпОтд1"+str(ilbf),335);	//-- группа отделки ЭМАЛЬ
+// nullout=getvarinst(1,"u69_FoilBMA",v,0)
+// err=addscratch(Scr,FasCode,"АМатОтд1"+str(ilbf),v);	//-- материал отделки 
+
+// err=addscratch(Scr,FasCode,"АГрпОтд2"+str(ilbf),338);	//-- ЛАК
+// nullout=getvarinst(1,"u69_FoilEFA",v,0)
+// err=addscratch(Scr,FasCode,"АМатОтд2"+str(ilbf),v);	//-- материал отделки
+
+// err=addscratch(Scr,FasCode,"АГрпОтд3"+str(ilbf),337);	//-- Тонировка
+// nullout=getvarinst(1,"u69_FoilBLA",v,0)
+// err=addscratch(Scr,FasCode,"АМатОтд3"+str(ilbf),v);	//-- материал отделки 
+
+// err=addscratch(Scr,FasCode,"АГрпОтд4"+str(ilbf),340);	//-- Фрезеровка
+// nullout=getvarinst(1,"u69_FoilORA",v,0)
+// err=addscratch(Scr,FasCode,"АМатОтд4"+str(ilbf),v);	//-- материал отделки	
+
+// err=addscratch(Scr,FasCode,"АГрпОтд5"+str(ilbf),341);	//-- Патина
+// nullout=getvarinst(1,"u69_FoilPTA",v,0)
+// err=addscratch(Scr,FasCode,"АМатОтд5"+str(ilbf),v);	//-- материал отделки	
+
+// err=addscratch(Scr,FasCode,"АГрпОтд6"+str(ilbf),336);	//-- Фотопечать
+// nullout=getvarinst(1,"u69_FoilFPA",v,0)
+// err=addscratch(Scr,FasCode,"АМатОтд6"+str(ilbf),v);	//-- материал отделки
+
+// err=addscratch(Scr,FasCode,"АГрпОтд7"+str(ilbf),339);	//-- Трафаретная печать
+// nullout=getvarinst(1,"u69_FoilTPA",v,0)
+// err=addscratch(Scr,FasCode,"АМатОтд7"+str(ilbf),v);	//-- материал отделки
+
+// err=addscratch(Scr,FasCode,"АГрпОтд8"+str(ilbf),346);	//-- Пленки
+// nullout=getvarinst(1,"u69_FoilFMA",v,0)
+// err=addscratch(Scr,FasCode,"АМатОтд8"+str(ilbf),v);	//-- материал отделки
+
+// err=addscratch(Scr,FasCode,"АГрпОтд9"+str(ilbf),347);	//-- Кожа
+// nullout=getvarinst(1,"u69_FoilSKA",v,0)
+// err=addscratch(Scr,FasCode,"АМатОтд9"+str(ilbf),v);	//-- материал отделки
+
+// //По пласти F
+// err=addscratch(Scr,FasCode,"FГрпОтд1"+str(ilbf),335);	//-- группа отделки Бейтс_Эмаль Малярка
+// nullout=getvarinst(1,"u69_FoilBMF",v,0)
+// err=addscratch(Scr,FasCode,"FМатОтд1"+str(ilbf),v);	//-- материал отделки 
+
+// err=addscratch(Scr,FasCode,"FГрпОтд2"+str(ilbf),338);	//-- группа отделки Эффект Малярка
+// nullout=getvarinst(1,"u69_FoilEFF",v,0)
+// err=addscratch(Scr,FasCode,"FМатОтд2"+str(ilbf),v);	//-- материал отделки
+
+// err=addscratch(Scr,FasCode,"FГрпОтд3"+str(ilbf),337);	//-- группа отделки Блеск Малярка
+// nullout=getvarinst(1,"u69_FoilBLF",v,0)
+// err=addscratch(Scr,FasCode,"FМатОтд3"+str(ilbf),v);	//-- материал отделки 
+
+// err=addscratch(Scr,FasCode,"FГрпОтд4"+str(ilbf),340);	//-- группа отделки Обработка Малярка
+// nullout=getvarinst(1,"u69_FoilORF",v,0)
+// err=addscratch(Scr,FasCode,"FМатОтд4"+str(ilbf),v);	//-- материал отделки	
+
+// err=addscratch(Scr,FasCode,"FГрпОтд5"+str(ilbf),341);	//-- группа отделки Патина Малярка
+// nullout=getvarinst(1,"u69_FoilPTF",v,0)
+// err=addscratch(Scr,FasCode,"FМатОтд5"+str(ilbf),v);	//-- материал отделки	
+
+// err=addscratch(Scr,FasCode,"FГрпОтд6"+str(ilbf),336);	//-- группа отделки Фотопечать
+// nullout=getvarinst(1,"u69_FoilFPF",v,0)
+// err=addscratch(Scr,FasCode,"FМатОтд6"+str(ilbf),v);	//-- материал отделки
+
+// err=addscratch(Scr,FasCode,"FГрпОтд7"+str(ilbf),339);	//-- группа отделки Трафаретная печать
+// nullout=getvarinst(1,"u69_FoilTPF",v,0)
+// err=addscratch(Scr,FasCode,"FМатОтд7"+str(ilbf),v);	//-- материал отделки
+
+// err=addscratch(Scr,FasCode,"FГрпОтд8"+str(ilbf),346);	//-- Пленки
+// nullout=getvarinst(1,"u69_FoilFMF",v,0)
+// err=addscratch(Scr,FasCode,"FМатОтд8"+str(ilbf),v);	//-- материал отделки
+
+// err=addscratch(Scr,FasCode,"FГрпОтд9"+str(ilbf),347);	//-- Кожа
+// nullout=getvarinst(1,"u69_FoilSKF",v,0)
+// err=addscratch(Scr,FasCode,"FМатОтд9"+str(ilbf),v);	//-- материал отделки
+
+// // Отделка на профиль фасада
+// if lower(FasCode)=="fasad_wood"||lower(FasCode)=="fasad_compact"
+// {
+	
+// }
+
+
+// if (FasCode=="fasad_compact") {
+  // RmMater=PriceInfo(FasType,"MatID",0,2);  //-- Читаем ID профиля рамки
+  // err=AddScratch(scr,"fasad_al","RmMater",RmMater);
+
+  // RmColor=PriceInfo(FasType,"DecorID",0,2); //
+  // err=AddScratch(scr,"fasad_al","RmColor",RmColor);  //-- Конкретная отделка профиля
+
+  // err=AddScratch(scr,"fasad_al","RmGroup",DfDec);    //-- Группа подстановки материалов для конкретного типа отделки профилей
+  // err=AddScratch(scr,"fasad_al","FasType",FasType);
+  // vss3=priceinfo(RmMater,"NomId2",0,1)
+  // err=AddScratch(scr,"fasad_al","Vs3",vss3);
+// }
+
+
+// WriteScratch(scr,"FasadPar",0);
+//err=ScrtchToFile(scr,ProtoPath+FileName);
+//NULLOUT=TermScratch(scr);
+exit;
+//------------------------------------------------------------------------------
+
+// setesol:
+// <?python
+// # -*- coding: cp1251 -*-
+// import wingdbstub
+// import k3
+// def g(nm):
+    // ValType=k3.Var()
+    // PrM=k3.Var()
+    // sVal=k3.Var()
+    // k3.udgetentity(nm[0],ValType,PrM,sVal)
+    // nm[2]=PrM.value
+// lbs=[
+// ("u69_FoilBMF","Бейтс_Эмаль Малярка",0),
+// ("u69_FoilORF","Обработка Малярка",0),
+// ("u69_FoilBLF","Блеск Малярка",0),
+// ("u69_FoilEFF","Эффект Малярка",0),
+// ("u69_FoilPTF","Патина Малярка",0),
+// ("u69_FoilBMA","Бейтс_Эмаль Малярка",0),
+// ("u69_FoilORA","Обработка Малярка",0),
+// ("u69_FoilBLA","Блеск Малярка",0),
+// ("u69_FoilEFA","Эффект Малярка",0),
+// ("u69_FoilPTA","Патина Малярка",0),
+// ]
+// for a in lbs:
+    // g(a)
+    // k3.setvarinst(1,a[0],a[2])
+// ?>
+// return;

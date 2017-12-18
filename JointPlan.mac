@@ -1,0 +1,84 @@
+//-- Создание стыковой планки
+global ProtoPath;
+global g_FurnType;  //-- Тип мебельного объекта
+defarr arr[20];
+
+w=DbVar("w",330);               //-- Ширина
+d=DbVar("d",330);               //-- Глубина
+h=DbVar("h",330);               //-- Высота
+h_c=DbVar("h_c",100);           //-- Высота цоколя
+PrMater=DbVar("PrMater",0);     //-- Материал корпуса
+Angle=DbVar("Angle",90);        //-- Угол стыка
+BandType=DbVar("BandType",0);   //-- Тип кромки
+FixCorp=DbVar("FixCorp",0);     //-- Тип крепежа корпуса
+//----------------------------------------------------------------
+splan=100;                      //-- Ширина планки
+h_dsp=PriceInfo(PrMater,"Thickness",16);  //-- Толщина материала корпуса
+ang=radian(90-Angle);                     //-- Угол планки в радианах
+wz=w-d*tan(ang);                          //-- Ширина планки сзади
+leng=(d-0.5*h_dsp*sin(ang))/cos(ang);     //-- Длина угловой стойки
+//----------------------------------------------------------------
+FurnType="100300";
+Namescr="ProtoParams";
+//----------------------------------------------------------------
+NULLOUT=InitArray(arr,0);
+macro ProtoPath+"SetConstrInit.mac" ;
+macro ProtoPath+"SetMat.mac" PrMater;
+//-- Боковые стойки
+macro ProtoPath+"SetFix.mac" 0 0 0 FixCorp;
+macro ProtoPath+"SetBand.mac" BandType BandType BandType BandType;
+macro ProtoPath+"MakePan.mac" wz-h_dsp,0,0 h d-h_dsp 11;
+macro ProtoPath+"SetButts.mac" 4 2 1 0.5 0 angle-90 0 0 0;
+macro ProtoPath+"MakePan.mac" 0,0,0 h,leng-h_dsp/cos(ang) 11;
+macro ProtoPath+"SetButtsNull.mac" ;
+objident last 1 pan;
+rotate pan done 2points 0,0,0 0,0,10 90-angle nocopy;
+//-- Нижние планки
+macro ProtoPath+"SetOneFilet.mac" 1 1 splan*tan(ang) splan;
+macro ProtoPath+"SetBand.mac" 0 0 BandType BandType;
+macro ProtoPath+"SetFix.mac" FixCorp FixCorp 0 0;
+macro ProtoPath+"MakePan.mac" -splan*tan(ang)+h_dsp/cos(ang),0,h_c wz-h_dsp*(1+1/cos(ang))+splan*tan(ang),splan 12;
+gosub FixAng;
+macro ProtoPath+"SetBand.mac" 0 0 BandType 0;
+macro ProtoPath+"MakePan.mac" -(leng-h_dsp/cos(ang))*sin(ang)+h_dsp*cos(ang),d-splan-h_dsp,h_c w-h_dsp*(1+tan(ang)+1/cos(ang)),splan 12;
+gosub FixAng;
+//-- Верхние планки
+macro ProtoPath+"SetBand.mac" 0 0 BandType BandType;
+macro ProtoPath+"MakePan.mac" -splan*tan(ang)+h_dsp/cos(ang),0,h-h_dsp wz-h_dsp*(1+1/cos(ang))+splan*tan(ang),splan 12;
+macro ProtoPath+"SetBand.mac" 0 0 BandType 0;
+macro ProtoPath+"MakePan.mac" -(leng-h_dsp/cos(ang))*sin(ang)+h_dsp*cos(ang),d-splan-h_dsp,h-h_dsp w-h_dsp*(1+tan(ang)+1/cos(ang)),splan 12;
+gosub FixAng;
+macro ProtoPath+"SetOneFilet.mac" 1 0 0 0;
+//-- Фасадная стенка
+macro ProtoPath+"SetFix.mac" 0 0 0 0;
+macro ProtoPath+"SetBand.mac" BandType BandType BandType BandType;
+macro ProtoPath+"SetButts.mac" 3 2 1 1 0 angle-90 0 0 0;
+macro ProtoPath+"MakePan.mac" wz-w,d-h_dsp,h_c h-h_c,w 14;
+macro ProtoPath+"SetButtsNull.mac" ;
+
+g_FurnType=FurnType;
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"w",w);
+err=AddScratch(ScrMod,FurnType,"d",d);
+err=AddScratch(ScrMod,FurnType,"h",h);
+err=AddScratch(ScrMod,FurnType,"h_c",h_c);
+err=AddScratch(ScrMod,FurnType,"PrMater",PrMater);
+err=AddScratch(ScrMod,FurnType,"Angle",Angle);
+err=AddScratch(ScrMod,FurnType,"BandType",BandType);
+err=AddScratch(ScrMod,FurnType,"FixCorp",FixCorp);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+exit;
+//-------------------------------
+FixAng:
+objident last 1 pnt1;
+arr[1]=pnt1;
+err=GetPan6Par(1,arr);
+arr[1]=1;
+arr[2]=8;               //-- Крепеж по первому углу
+err=GetPan6Par(21,arr);
+arr[3]=FixCorp;
+err=SetPan6Par(21,arr);
+#pnt1 mbpanel execute pnt1;
+err=setPan6Par(999,arr);
+return;

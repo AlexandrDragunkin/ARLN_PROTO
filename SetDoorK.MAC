@@ -1,0 +1,5 @@
+//-- Установить тип конструкции двери
+global DoorKonst; //-- Тип конструкции двери
+getpar P1;
+DoorKonst=P1;
+exit;

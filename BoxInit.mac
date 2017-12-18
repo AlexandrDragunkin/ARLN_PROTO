@@ -1,0 +1,68 @@
+//-- Макропрограмма установки параметров прототипа Группа ящиков пользовательскими умолчаниями
+
+NULLOUT=getvarinst(2,"Typ_Kro",Typ_Kro,0);          //-- Тип лицевой кромки
+
+NULLOUT=getvarinst(2,"g_BxTyp",g_BxTyp,476);        //-- Тип ящика
+NULLOUT=getvarinst(2,"BoxCorpMater",BCorMat,0);     //-- Умолчание для материалов корпуса яшика
+NULLOUT=getvarinst(2,"FasBMat",FasBMat,0);          //-- Умолчание для материалов фасада ящика
+NULLOUT=getvarinst(2,"BDMater",BDMater,0);          //-- Умолчание для материалов дна ящика
+NULLOUT=getvarinst(2,"BoxVsMater1",BoxVsMater1,0);  //-- Умолчание для материалов первой вставки фасада ящика
+NULLOUT=getvarinst(2,"BoxVsMater2",BoxVsMater2,0);  //-- Умолчание для материалов второй вставки фасада ящика
+NULLOUT=getvarinst(2,"FasBTyp",FasBTyp,0);          //-- Умолчание на тип фасада ящика
+NULLOUT=getvarinst(2,"DfHandl",DfHandl,0);          //-- Умолчание на тип ручки
+NULLOUT=getvarinst(2,"BUUp",BUUp,2);                //-- Зазор фасада утопленного ящика сверху
+NULLOUT=getvarinst(2,"BUDown",BUDown,2);            //-- Зазор фасада утопленного ящика снизу
+NULLOUT=getvarinst(2,"BULeft",BULeft,2);            //-- Зазор фасада утопленного ящика слева
+NULLOUT=getvarinst(2,"BURight",BURight,2);          //-- Зазор фасада утопленного ящика справа
+NULLOUT=getvarinst(2,"BoxBottomType",BxBType,0);    //-- Тип дна ящика
+NULLOUT=getvarinst(2,"BoxOts",BoxOts,10);           //-- Отступ врезного дна ящика
+NULLOUT=getvarinst(2,"BxHandPlace",BxHandPlace,0);  //-- Расположение ручки
+NULLOUT=getvarinst(2,"BxHandDouble",BxHandDouble,0);//-- Две ручки
+NULLOUT=getvarinst(2,"BxHandX",BxHandX,0);          //-- Сдвиг ручки
+NULLOUT=getvarinst(2,"BxHandZ",BxHandZ,0);          //-- Высота установки ручки
+NULLOUT=getvarinst(2,"BxHandAngle",BxHandAngle,0);  //-- Угол установки ручки
+NULLOUT=getvarinst(2,"B_Zdown",B_Zdown,0);         //-- Расстояние между корпусом ящика и панелью снизу
+NULLOUT=getvarinst(2,"B_Zbox",B_Zbox,4);            //-- Зазор между фасадами ящиков по вертикали
+
+B_Zdownt=B_Zdown-BUDown;
+NBox=1; // количество ящиков
+
+	dummy=DbSetVar("R_Fas",BURight);
+  dummy=DbSetVar("L_Fas",BULeft);
+  dummy=DbSetVar("U_Fas",BUUp);
+  dummy=DbSetVar("D_Fas",BUDown);
+  dummy=DbSetVar("Kbox",NBox);
+  dummy=DbSetVar("B_Zbox",B_Zbox);
+  dummy=DbSetVar("Z_Sk",B_Zdownt);
+  dummy=DbSetVar("PrMater",BCorMat);
+  dummy=DbSetVar("PrMatDv",BDMater);
+  dummy=DbSetVar("FsMater",FasBMat);
+  dummy=DbSetVar("BAND",Typ_Kro);
+  dummy=DbSetVar("BAND_F",Typ_Kro);
+  dummy=DbSetVar("Fstype",FasBTyp);
+  dummy=DbSetVar("BxType",g_BxTyp);
+  dummy=DbSetVar("HanType",DfHandl);
+  dummy=DbSetVar("Doub_r",BxHandDouble);
+  dummy=DbSetVar("Rpl_r",BxHandPlace);
+  dummy=DbSetVar("rx",BxHandX);
+  dummy=DbSetVar("rz",BxHandZ);
+  dummy=DbSetVar("ra",BxHandAngle);
+  dummy=DbSetVar("PrMatVs1",BoxVsMater1);
+  dummy=DbSetVar("PrMatVs2",BoxVsMater1);
+  dummy=DbSetVar("dnotype",BxBType);
+  dummy=DbSetVar("ots",BoxOts);
+
+if 1==0 { // а это для чего?
+	NULLOUT=setvarinst(2,"BUUp",BUUp);                //-- Зазор фасада утопленного ящика сверху
+	NULLOUT=setvarinst(2,"BUDown",BUDown);            //-- Зазор фасада утопленного ящика снизу
+	NULLOUT=setvarinst(2,"BULeft",BULeft);            //-- Зазор фасада утопленного ящика слева
+	NULLOUT=setvarinst(2,"BURight",BURight);          //-- Зазор фасада утопленного ящика справа
+	NULLOUT=setvarinst(2,"BxHandPlace",BxHandPlace);  //-- Расположение ручки
+	NULLOUT=setvarinst(2,"BxHandDouble",BxHandDouble);//-- Две ручки
+	NULLOUT=setvarinst(2,"BxHandX",BxHandX);          //-- Сдвиг ручки
+	NULLOUT=setvarinst(2,"BxHandZ",BxHandZ);          //-- Высота установки ручки
+	NULLOUT=setvarinst(2,"BxHandAngle",BxHandAngle);  //-- Угол установки ручки
+	NULLOUT=setvarinst(2,"BoxBottomType",BxBType);    //-- Тип дна ящика
+	NULLOUT=setvarinst(2,"BoxOts",BoxOts);            //-- Отступ врезного дна ящика
+}
+exit;

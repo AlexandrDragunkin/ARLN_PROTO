@@ -1,0 +1,51 @@
+//-- Сформировать узор для дверки
+global g_OutPar;  //-- Возвращаемы параметр, в данном случае ID выреза
+global ProtoPath;
+
+getpar xn,yn,zn,dx,dz
+Panel  // Объект панель
+MillID // ID фрезеровки
+;
+
+dx1=40; //-- Отступ узора по ширине
+dz1=50; //-- Отступ узора по высоте
+ShMill=5;
+
+line xn+dx1 yn zn+dz-dz1
+		 xn yn zn+dz-dz1
+		 xn yn zn
+		 xn+dx yn zn
+		 xn+dx yn zn+dz-dz1
+		 xn+dx-dx1 yn zn+dz-dz1;
+
+arc xn+dx-dx1 yn zn+dz-dz1
+		Internal xn+dx/2 yn  zn+dz
+		xn+dx1 yn zn+dz-dz1;
+#Pat path select last 6 done last 6 create;
+if (MillID>0) {
+  macro ProtoPath+"PutCutr.mac"
+    Panel,
+    Pat     //-- Объект Контур выреза
+    0       //-- Тип выреза: вырез(1), нарост(8), (0) маркировка
+    1    //-- Глубина выреза: 0, если вырез сквозной; > 0 - не сквозной со стороны пласти A; < 0 - не сквозной со стороны пласти F
+    11      //-- Секция Дополнительная 1
+  ;
+  objident last 1 Panel;
+  
+if (g_OutPar>0) {
+  macro ProtoPath+"PutMill.mac"
+    Panel,
+	g_OutPar      //-- Полилиния выреза (контур)
+	-1
+    MillID,          //-- ID профиля в базе
+    0,            //-- Сдвиг в долях толщины
+    ShMill,      //-- Сдвиг в мм
+    1
+    5            //-- Секция Дополнительная 1
+    "UsorMills"        //-- Имя фрезеровки
+  ;
+  delete Pat done;
+  }
+}
+
+exit;

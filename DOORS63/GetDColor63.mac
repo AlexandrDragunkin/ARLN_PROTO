@@ -1,0 +1,208 @@
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+//-- Программа заполняет массив Названием и ID цвета выбранных групп профилей
+//-- Входные параметры:
+//-- SQLStr - SQL строка фильтра
+//-- Массив g_DR...N - массив названий  профилей
+//-- Массив g_DR...I - массив ID
+//-- g_DR...Numb - количество записей в массиве
+//-- Данные берутся из QDS...FlapSt поля NameGroup базы данных DoorSys63.mdb              g_DRP
+
+global ProtoPath 
+// global g_MoveType;
+global g_tab_place, g_keyDS63,g_Doorscon;
+global g_CLTopN   g_CLTopI       g_CLTopNumb   g_CLTop;
+global g_CLDownN  g_CLDownI      g_CLDownNumb  g_CLDown;
+global g_CLMidN   g_CLMidI       g_CLMidNumb   g_CLMid;
+global g_CLDerN   g_CLDerI       g_CLDerNumb   g_CLDer;
+global g_CLVerN   g_CLVerI       g_CLVerNumb   g_CLVer;
+global g_TCLTopN  g_TCLTopI      g_TCLTopNumb  g_TCLTop;
+global g_TCLDownN g_TCLDownI     g_TCLDowNumb  g_TCLDown;
+global g_CLObramN g_CLObramI     g_CLObramNum g_CLObram g_CLRObramI;
+
+isvardef("g_CLTopN")==0
+{
+ defarr g_CLTopN[50]   g_CLTopI[50];
+ defarr g_CLDownN[50]  g_CLDownI[50];
+ defarr g_CLMidN[50]   g_CLMidI[50];
+ defarr g_CLDerN[50]   g_CLDerI[50];
+ defarr g_CLVerN[50]   g_CLVerI[50];
+ defarr g_TCLTopN[50]  g_TCLTopI[50];
+ defarr g_TCLDownN[50] g_TCLDownI[50];
+ defarr g_CLObramN[50] g_CLObramI[50];
+}
+
+//defarr arrN[50] arrI[50];
+defarr arrN[5000] arrI[5000];
+
+getpar sqlVer SqlTop SqlDown SqlMid SqlDer sqlTopTrack sqlDownTrack SqlObram;
+
+if g_keyDS63!=1
+{
+   macro ProtoPath+"CrtSysDoor63.mac" ;
+}
+res=adbChkMdbTbl(g_tab_place,"DSFlapProfile");
+
+if res==0
+{
+gosub errSostav;
+}
+if (res==0)
+{
+gosub StopErr;
+}
+
+nullout=getvarinst(1,"KeyFas",KeyFas,0);
+
+//============
+vObr=1
+nameTyp="Рамка";
+SysRs=adbOpen(g_Doorscon,SqlObram);
+if !KeyFas
+{ gosub getQDS; }
+else
+{ ij=1; }
+g_CLObramNum=ij;
+err=CopyArray(g_CLObramN,1,arrN,1);
+err=CopyArray(g_CLObramI,1,arrI,1);
+nullout=setvarinst(1,"g_CLObramNum",g_CLObramNum);
+nullout=setarrinst(1,"g_CLObramN",g_CLObramN);	
+nullout=setarrinst(1,"g_CLObramI",g_CLObramI);
+SysRs=adbClose(SysRs);
+vObr=0
+//============
+nameTyp="верхний";
+SysRs=adbOpen(g_Doorscon,SQLtop);
+if !KeyFas
+{ gosub getQDS; }
+else
+{ ij=1; }
+g_CLTopNumb=ij;
+err=CopyArray(g_CLTopN,1,arrN,1);
+err=CopyArray(g_CLTopI,1,arrI,1);
+nullout=setvarinst(1,"g_CLTopNumb",g_CLTopNumb);
+nullout=setarrinst(1,"g_CLTopN",g_CLTopN);	
+nullout=setarrinst(1,"g_CLTopI",g_CLTopI);
+SysRs=adbClose(SysRs);
+//============
+nameTyp="нижний";
+SysRs=adbOpen(g_Doorscon,SQLDown);
+if !KeyFas
+{ gosub getQDS; }
+else
+{ ij=1; }
+g_CLDownNumb=ij;
+err=CopyArray(g_CLDownN,1,arrN,1);
+err=CopyArray(g_CLDownI,1,arrI,1);
+nullout=setvarinst(1,"g_CLDownNumb",g_CLDownNumb);
+nullout=setarrinst(1,"g_CLDownN",g_CLDownN);	
+nullout=setarrinst(1,"g_CLDownI",g_CLDownI);
+SysRs=adbClose(SysRs);
+//============
+nameTyp="разделительный";
+SysRs=adbOpen(g_Doorscon,SQLMid);
+if !KeyFas
+{ gosub getQDS; }
+else
+{ ij=1; }
+g_CLMidNumb=ij;
+err=CopyArray(g_CLMidN,1,arrN,1);
+err=CopyArray(g_CLMidI,1,arrI,1);
+nullout=setvarinst(1,"g_CLMidNumb",g_CLMidNumb);
+nullout=setarrinst(1,"g_CLMidN",g_CLMidN);	
+nullout=setarrinst(1,"g_CLMidI",g_CLMidI);
+SysRs=adbClose(SysRs);
+//============
+//nameTyp="накладной декоративный";
+//SysRs=adbOpen(g_Doorscon,SQLDer);
+//gosub getQDS;
+//g_CLDerNumb=ij;
+//err=CopyArray(g_CLDerN,1,arrN,1);
+//err=CopyArray(g_CLDerI,1,arrI,1);
+//SysRs=adbClose(SysRs);
+//============
+nameTyp="вертикальный";
+SysRs=adbOpen(g_Doorscon,SQLVer);
+if !KeyFas
+{ gosub getQDS; }
+else
+{ ij=1; }
+g_CLVerNumb=ij;
+err=CopyArray(g_CLVerN,1,arrN,1);
+err=CopyArray(g_CLVerI,1,arrI,1);
+nullout=setvarinst(1,"g_CLVerNumb",g_CLVerNumb);
+nullout=setarrinst(1,"g_CLVerN",g_CLVerN);	
+nullout=setarrinst(1,"g_CLVerI",g_CLVerI);
+SysRs=adbClose(SysRs);
+//============
+
+//if g_MoveType==1
+//{
+ //============
+ nameTyp="верхний трек";
+ SysRs=adbOpen(g_Doorscon,SQLtopTrack);
+ gosub getQDS;
+ g_TCLTopNumb=ij;
+ err=CopyArray(g_TCLTopN,1,arrN,1);
+ err=CopyArray(g_TCLTopI,1,arrI,1);
+ SysRs=adbClose(SysRs);
+ //============
+ nameTyp="нижний трек";
+ SysRs=adbOpen(g_Doorscon,SQLDownTrack);
+ gosub getQDS;
+ g_TCLDowNumb=ij;
+ err=CopyArray(g_TCLDownN,1,arrN,1);
+ err=CopyArray(g_TCLDownI,1,arrI,1);
+ SysRs=adbClose(SysRs);
+//}
+exit;
+
+//================================ SUB==============================
+//******************************************************************
+getQDS:
+
+ij=adbRecCount(SysRs);
+=ij
+// putmsg(nameTyp)
+// putmsg(ij)
+err=initarray(arri,0);
+err=initarray(arrN,"");
+if (ij<1)
+{
+
+  PutMsg("Цвет профиля "+nameTyp+" в составе створки неопределен.",0);
+  goto endqds;
+  //SysRs=adbClose(SysRs);
+  //exit;
+}
+NULLOUT=adbMoveFirst(SysRs);
+i=1;
+LC:
+
+arrI[i]=iif(vObr!=1,adbGetValue(SysRs,"DSFlapProfile.ID"),0);     // DSFlapProfile.ID
+arrN[i]=adbGetValue(SysRs,"Name");
+
+if (i<ij)
+{
+  i=i+1;
+  NULLOUT=adbMoveNext(SysRs);
+  goto LC;
+}
+endqds:
+return;
+//=================================
+errSostav:
+       putMsg("Таблица DSFlapSostav отсутствует",0);
+return;
+//=================================
+StopErr:
+ if g_keyDS63!=0
+ {
+   macro ProtoPath+"ClosSysDoor63.mac" ;
+ }
+  exit;
+return;

@@ -1,0 +1,32 @@
+//--Макро создания стойки для гардеробных систем
+global ProtoPath;
+
+W=DbVar("W",2100);			//-- Высота
+D=DbVar("D",600);			//-- Глубина
+Ots=DbVar("D1",15);			//-- Отступ сзади до оси профиля
+Type=DbVar("Type",0);			//-- Тип стойки
+nwallspot=DbVar("nwallspot",0);	//-- Кол-во доп креплений
+dwall=DbVar("dwall",0);	//-- Отступ от стены
+nullout=setvarinst(1,"nwallspot",nwallspot);
+nullout=setvarinst(1,"dwall",dwall);
+
+//--Создаем профиль
+macro ProtoPath+"SetStWardType.mac" Type;
+macro ProtoPath+"MakeStoyWard.mac" 0 0 0 W D Ots;
+
+nullout=setvarinst(1,"nwallspot",0);
+nullout=setvarinst(1,"dwall",0);
+
+FurnType="350700";
+Namescr="ProtoParams";
+NULLOUT=setvarinst(1,"FurnType",FurnType);
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"W",W);
+err=AddScratch(ScrMod,FurnType,"D",D);
+err=AddScratch(ScrMod,FurnType,"D1",Ots);
+err=AddScratch(ScrMod,FurnType,"Type",Type);
+err=AddScratch(ScrMod,FurnType,"dwall",dwall);
+err=AddScratch(ScrMod,FurnType,"nwallspot",nwallspot);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+exit;          

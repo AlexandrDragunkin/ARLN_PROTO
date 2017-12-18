@@ -1,0 +1,47 @@
+//-- Создание отчета "Сводная спецификация"
+global ProtoPath;
+Project="Сводная спецификация";  //-- Имя отчета
+pref1="Reports\\";               //-- Имя папки внутри папки проекта для создания отчетов
+
+if (udgetentity("ReportType",ValType,ReportType,sVal)==0) //-- Тип создаваемых отчетов
+{
+  ReportType=0;
+}
+
+ProjPath=getfilepath(sysvar(2));
+ReportPath=mpathexpand("<Reports>\\");              //-- Метапуть к шаблонам отчетов
+BaseName=ProjPath+getfiletitle(sysvar(2))-3+".mdb"; //-- Имя будущей базы
+ProjPath=ProjPath+pref1;
+if (ReportType==0)  //-- Отчет Excel
+{
+  putmsg("Создается отчет. Пожалуйста, подождите.",1);
+  Params=ProtoPath+","+ProjPath+","+Project+","+BaseName;
+  NULLOUT=fmdbscript(ReportPath+"Reports71.mdb","Сводная спецификация","Start",Params);
+}
+else  //-- Отчет FastReport
+{
+  Report=ReportPath+"SvodSpec.frx";
+  BaseParam1="ADODataBase1="+BaseName;
+  BaseParam2="ADODataBase2="+ProtoPath+"RParams71.mdb";
+  BaseParam=BaseParam1+","+BaseParam2;
+  ReportParam="prmPathProject='"+ProjPath+"'";
+  Project=Project+".fpx";
+  NULLOUT=freport(Report,ProjPath+Project,BaseParam,ReportParam);
+}
+if (NULLOUT==0) //-- Если отчет не создан
+{
+  #ok_flag
+  alternative "Ошибка создания отчета"
+  msgbox picture 1 beep 1 text left
+  "В процессе создания отчета произошла ошибка"
+  "Отчет 'Сводная спецификация' не создан!"
+  done
+  "  OK  "
+  done;
+}
+else
+{
+  //-- Регистрируем отчет
+	regreport(iif(ReportType==0,1,5),0,"Сводная спецификация");
+}
+exit;

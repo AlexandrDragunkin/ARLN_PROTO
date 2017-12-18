@@ -1,0 +1,81 @@
+//-- Макрос установки длинномеров с пиктограммы
+global ProtoPath;
+PicturesPath=ProtoPath+"Pictures\\";	//-- Папка с картинками
+defarr Ptype[10], altfl[10];
+
+altfl[1]=PicturesPath+"desktop.jpg"
+altfl[2]=PicturesPath+"socle.jpg"
+altfl[3]=PicturesPath+"wall_panel.jpg"
+altfl[4]=PicturesPath+"repellent.jpg"
+altfl[5]=PicturesPath+"cornice.jpg"
+altfl[6]=PicturesPath+"top_profile.jpg"
+altfl[7]=PicturesPath+"bottom_profile.jpg"
+altfl[8]=PicturesPath+"balustrade.jpg"
+
+Ptype[1]="Столешница";
+Ptype[2]="Цоколь";
+Ptype[3]="Стеновая панель";
+Ptype[4]="Водоотбойник";
+Ptype[5]="Карниз";
+Ptype[6]="Профиль карниза";
+Ptype[7]="Нижний профиль";
+Ptype[8]="Балюстрада";
+
+
+#altnum
+  alternative
+  "Установка длинномеров"
+  picbox
+  text
+  center
+  "Укажите тип длинномера:"
+  done
+  default 1
+  Ptype[1]  altfl[1]
+  Ptype[2]  altfl[2]
+	Ptype[3]  altfl[3]
+  Ptype[4]  altfl[4]
+  Ptype[5]  altfl[5]
+  Ptype[6]  altfl[6]
+  Ptype[7]  altfl[7]
+	Ptype[8]  altfl[8]
+done;
+if altnum==0
+{
+  cancel;
+}
+NULLOUT=GetSnap();
+if (altnum==1) 
+{
+	long_length desktop auto;				//-- столешница - автоматически
+}
+if (altnum==2) 
+{
+	long_length socle auto;					//-- цоколь - автоматически
+}
+if (altnum==3) 
+{
+	long_length wall_panel : : 		//-- стеновая панель
+}
+if (altnum==4) 
+{
+	long_length repellent : :		//-- водоотбойник
+}
+if (altnum==5) 
+{
+	long_length cornice auto;					//-- карниз - автоматически
+}
+if (altnum==6) 
+{
+	long_length top_profile : :			//-- профиль карниза
+}
+if (altnum==7) 
+{
+	long_length bottom_profile : :	//-- нижний профиль
+}
+if (altnum==8) 
+{
+	long_length balustrade : :			//-- балюстрада
+}
+NULLOUT=ReSnap();
+exit;

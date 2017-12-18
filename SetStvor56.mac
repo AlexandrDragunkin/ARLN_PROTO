@@ -1,0 +1,46 @@
+// Установить тек. материалы Раздвижной двери для библиотеки стандартных объектов
+global		// Для фасадов и дверей
+RDoorMater1 , // Материал полотна двери
+RDoorMater2 , // Материал полотна двери
+RDoorMater3 , // Материал полотна двери
+RDoorMater4 , // Материал полотна двери
+RDoorMater5 , // Материал полотна двери
+RDoorMater6 , // Материал полотна двери
+RDoorBCol ,  // Материал обрамления двери
+RDoorType,   // Тип створки
+RDoorNS       // Количество секций
+RDoorH1n      //Высота 1 секции
+RDoorH1k      //Высота 1 наклона секции
+RDoorH2n      //Высота 2 секции
+RDoorH2k      //Высота 2 наклона секции
+RDoorH3n      //Высота 3 секции
+RDoorH3k      //Высота 3 наклона секции
+RDoorH4n      //Высота 4 секции
+RDoorH4k      //Высота 4 наклона секции
+RDoorH5n      //Высота 5 секции
+RDoorH5k      //Высота 5 наклона секции
+RDoorColor   // Цвет профилей  обрамление из прайса
+;
+getpar  P1 P2 P3 P4 P5 P6 P7 P8 P9 P10 P11 P12 P13 P14 P15 P16 P17 P18 P19 P20; //
+ 
+RDoorMater1=P1;
+RDoorMater2=P2;
+RDoorMater3=P3;
+RDoorMater4=P4;
+RDoorMater5=P5;
+RDoorMater6=P6;
+RDoorBCol=P7;
+RDoorType=P8;
+RDoorNS=P9;
+RDoorH1n=P10;
+RDoorH1k=P11;
+RDoorH2n=P12;
+RDoorH2k=P13;
+RDoorH3n=P14;
+RDoorH3k=P15;
+RDoorH4n=P16;
+RDoorH4k=P17;
+RDoorH5n=P18;
+RDoorH5k=P19;
+RDoorColor=P20
+exit;

@@ -1,0 +1,154 @@
+global Support Protopath L_SUPPORT OldPP;
+
+
+//Draw.mac
+//*********************************************
+//              чертежи длинномеров
+//              Драгункин А.Р.
+//              ГеоС 2007-14 г.
+//*********************************************
+
+//*********************************************
+//	Draw - чертеж длинномер
+//	LT   - тип динномера
+//	wmf	 - тип файла для записи в формате wmf
+//*********************************************
+//
+Defarr DN[8],ExtN[8];
+global g_dorab;
+
+global
+g_osn
+g_DirDrawLn           //Все файлы чертежей длинномеров размещать в отдельной папке 0-нет 1-да
+g_DrawBlank           //Чертежи на бланках 0-нет 1-да
+g_DrawSpec            //Формировать спецификацию 0-нет 1-да
+g_DrawCod             //Способ обозначения чертежа 0-относительный по первому вхождению 1-абстрагированный код
+g_DrawStamp           //Ключ запроса информации для штампа бланка из файла stamp.dbf и из файла ZAKAZ.dbf =0 только stamp.dbf =1
+g_FormStamp           //Ключ запроса формы штампа 0-не запрашивать 1-регулярно
+g_PgFileDraw          //Каждый лист чертежа в отдельном файле 0-нет 1-да
+g_PgFileSpec          //Каждый лист спецификации в отдельном файле 0-нет 1-да
+g_GroupDoc            //Формировать групповой чертеж по всем документам 0-нет 1-да
+;
+
+getpar LT wmf;
+//
+DN[1]="Столешницы"
+DN[2]="Карнизы"
+DN[3]="Стеновая панель"
+DN[4]="Водоотбойник"
+DN[5]="Профиль"
+DN[6]="Цоколь"
+DN[7]="Нижний профиль"
+DN[8]="Балюстрада"
+ExtN[1]="st"
+ExtN[2]="kr"
+ExtN[3]="pn"
+ExtN[4]="vo"
+ExtN[5]="pr"
+ExtN[6]="ck"
+ExtN[7]="np"
+ExtN[8]="Bl"
+//
+//:
+//
+//CurShm=sysvar(50)
+CurVid=sysvar(51)
+WideVid=sysvar(52)
+dimgcoeff 1 ;
+DScene_name=sysvar(2)
+//------------------------
+defarr panels[100]  addr[20] aCommPos[100] adraw[100*3] objdraw[3*100] sobjdraw[30000];
+
+
+vName="Name;Number;Customer;Address;Phone;Date;ExpDate;Firm;Salon;Acceptor;Executor;AddInfo;ToWorking;NCurrency;Discount;Rate"
+nelm=splitByDelim(vName,";",aDDr)
+i=0
+labvn:
+if i<nelm {
+	i=i+1
+    Name="O"+aDDr[i]
+	//putmsg(Name);
+    if !isattrdef(Name) {
+        attribute create  Name Name string 30 255 ;
+	}
+    vv=getorderinfo(aDDr[i]) ;
+	//putmsg(vv);
+    if len(str(vv))>0 {
+		attrobj  attach Name done record str(vv) ;
+	}
+	goto labvn;
+}
+//------------------------
+macro protopath+"\\drawprof\\Utilites_K3.py" "isorder" byref isORD  ;
+if isORD { 
+	saveOrder; //CloseOrder; //-- Записываем проект
+	Closeorder;
+	open DScene_name;
+}
+else
+{
+	save all DScene_name [ overwrite ];
+}
+//------------------------
+
+if (wmf=="") {
+	wmf=DScene_name-3+".wmf";
+	}
+
+//="Тип длинномера "+str(Lt)
+select attribute "LongsType=="+str(Lt) done
+N=sysvar(61)
+
+//if (N==0)	{
+//	#ok_flag alternative "Внимание!" msgbox text "Сцена не содержит оъектов типа "+DN[Lt+1] done "Ок" done
+//	exit
+//	}
+//
+
+if isvardef("L_SUPPORT")==0 {
+ L_SUPPORT=""
+ }
+if   isvardef("SUPPORT")==0 {
+ SUPPORT=""
+ }
+if g_osn
+{
+
+ //;macro L_support+"D_Set_DrawParLn.mac" 0;
+}
+
+
+;macro L_support+"chert7.mac" DN[Lt+1] ExtN[Lt+1] wmf 1;
+
+
+if (g_dorab==2)
+{
+	g_dorab=1;
+	Visible all ;
+	'zoom All ;
+	l_support="";
+	cancel;
+}
+//
+//Protopath=OldPP
+putmsg("Обработка завершена",1)
+
+//open [ no ] DScene_name;
+new; loadorder last;
+attrobj delete record all;
+vport CurVid
+if (WideVid) {	vport zoom,,	}
+//
+metend:
+//Protopath=OldPP
+//'redraw,,
+exit;
+//-----------------------
+//--удаляет файл с именем fName
+sDelBackF:
+if FileExist(fName)
+{
+	Nullout=RemoveFile(fName)
+}
+return;
+

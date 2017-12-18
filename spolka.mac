@@ -1,0 +1,154 @@
+//-- Макрос переделывает жёсткую полку в съёмную и наоборот
+defarr arr[20];
+
+NULLOUT=getvarinst(2,"DfFixPol",fix_hard,0);        //-- Умолчание для крепежа жестких полок\\
+NULLOUT=getvarinst(2,"FixSoftShelf",fix_mov,0);     //-- Умолчание для крепежа съемных полок
+NULLOUT=getvarinst(2,"SoftShelfGaps",cut_mov,2);    //-- Зазор для съемной полки
+NULLOUT=getvarinst(2,"Typ_Kro",krom_flag_E,0);      //-- Тип лицевой кромки
+NULLOUT=getvarinst(2,"RoughBandMater",Typ_RKro,0);  //-- Тип черновой кромки
+NULLOUT=getvarinst(2,"HardShelfColor",hcol,1);      //-- Цвет жесткой полки
+NULLOUT=getvarinst(2,"SoftShelfColor",scol,2);      //-- Цвет съёмной полки
+NULLOUT=getvarinst(2,"IsColorUse",icu,1);           //-- Использовать ли цвета
+
+krep_flag_B=0;
+krep_flag_C=0;
+krep_flag_D=0;
+
+onerror end;
+NULLOUT=pushinst(1);
+switch autosingle on;
+selbyattr "(Left(FurnType,4)==\"0101\"&&FurnType!=\"010000\")" partly
+  prompt "Укажите полку:" : ;
+switch autosingle off;
+offerror;
+if (sysvar(61)==0)
+{
+  goto end;
+}
+pnt1=getselnum(1);
+select stayblink pnt1 done;
+//------------------------------------------------------------------------------
+//--Считываем параметры полки
+NULLOUT=InitArray(arr,0);
+arr[1]=pnt1;
+err=GetPan6Par(1,arr);
+arr[1]=1;
+arr[2]=7;               //-- Крепеж по B
+err=GetPan6Par(21,arr);
+krep_flag_B=arr[3];
+arr[2]=3;               //-- Крепеж по С
+err=GetPan6Par(21,arr);
+krep_flag_C=arr[3];
+arr[2]=1;               //-- Крепеж по D
+err=GetPan6Par(21,arr);
+krep_flag_D=arr[3];
+r_cut=cut_mov;
+l_cut=cut_mov;
+//-- Делаем полку жесткой
+if (krep_flag_b==fix_mov||krep_flag_c==fix_mov) //-- Значения крепежа по умолчанию для съемной полки
+{
+  I_kro=Typ_RKro;
+  I_Fix=fix_hard;
+  Spotflag=1;            //-- Пятно контакта не сбрасываем
+  SideN=2;               //-- Угол 2
+  gosub ChKro;
+  SideN=8;               //-- Угол 1
+  gosub ChKro;
+  SideN=3;               //-- C
+  gosub ChKro;
+  gosub ChFix;
+  SideN=7;               //-- B
+  gosub ChKro;
+  gosub ChFix;
+  SideN=1;               //-- D
+  gosub ChKro;
+  NULLOUT=InitArray(arr,0);
+  err=GetPan6Par(6,arr); //-- Подрезка сторон
+  arr[2]=arr[2]-l_cut;   //-- C
+  arr[4]=arr[4]-r_cut;   //-- B
+  err=SetPan6Par(6,arr); //-- Подрезка сторон
+  n="Полка жесткая";
+  attrobj attach "ElemName" Done pnt1 n;
+  if (icu==1)
+  {
+    chprop color partly pnt1 done hcol;
+  }
+  #polka mbpanel execute pnt1;
+  err=setPan6Par(999,arr);
+	if (err==1)
+	{
+		putmsg("Тип полки изменен на 'Жесткую'")
+	}
+  goto end;
+}
+//-- Делаем полку съемной
+if (krep_flag_b==fix_hard||krep_flag_c==fix_hard) //-- Значения крепежа по умолчанию для съемной полки
+{
+  r_cut=cut_mov;
+  l_cut=cut_mov;
+  I_kro=krom_flag_E;
+  I_Fix=fix_mov;
+  Spotflag=0;            //-- Пятно контакта сбрасываем
+  SideN=2;               //-- Угол 2
+  gosub ChKro;
+  SideN=4;               //-- Угол 3
+  gosub ChKro;
+  SideN=6;               //-- Угол 4
+  gosub ChKro;
+  SideN=8;               //-- Угол 1
+  gosub ChKro;
+  SideN=3;               //-- C
+  gosub ChKro;
+  gosub ChFix;
+  SideN=7;               //-- B
+  gosub ChKro;
+  gosub ChFix;
+  SideN=1;               //-- D
+  gosub ChKro;
+  NULLOUT=InitArray(arr,0);
+  err=GetPan6Par(6,arr); //-- Подрезка сторон
+  arr[2]=arr[2]+l_cut;   //-- C
+  arr[4]=arr[4]+r_cut;   //-- B
+  err=SetPan6Par(6,arr); //-- Подрезка сторон
+  n="Полка съёмная";
+  Attrobj Attach "ElemName" Done pnt1 n;
+  if (icu==1)
+  {
+    chprop color partly pnt1 done scol;
+  }
+  #polka mbpanel execute pnt1;
+  err=setPan6Par(999,arr);
+	if (err==1)
+	{
+		putmsg("Тип полки изменен на 'Съемную'")
+	}
+}
+end:
+NULLOUT=popinst(1);
+switch autosingle off;
+select done;
+exit;
+//--------------------------------------------------------------------
+//-- Подпрограмма замены кромки в панели по стороне SideN
+ChKro:
+arr[1]=SideN;
+err=GetPan6Par(3,arr);
+arr[1]=SideN;
+arr[2]=I_kro;
+err=SetPan6Par(3,arr);
+return;
+//--------------------------------------------------------------------
+//-- Подпрограмма замены крепежа в панели по стороне SideN
+ChFix:
+arr[1]=1;
+arr[2]=SideN;
+err=GetPan6Par(21,arr);
+arr[3]=0;
+err=SetPan6Par(21,arr);
+arr[3]=I_Fix;
+if (Spotflag==0)
+{
+  arr[4]=nbitclear(arr[4],3);
+}
+err=SetPan6Par(21,arr);
+return;

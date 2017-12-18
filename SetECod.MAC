@@ -1,0 +1,6 @@
+//-- Установить код мебельных элементов
+global ElemCode; //-- Код мебельных элементов
+getpar Code;
+ElemCode=Code;
+NULLOUT=setvarinst(1,"ElemCode",ElemCode);
+exit;

@@ -1,0 +1,302 @@
+//-- Изменение глубины
+global ProtoPath;
+defarr cs[6] co[6]; //-- Массивы для габаритных координат
+defarr ObjF[100];   //-- Массив для фасадов
+defarr ObjU[100];   //-- Массив для объектов до уровня
+defarr ObjD[100];   //-- Массив для объектов после уровня
+defarr ObjO[100];   //-- Массив для опор
+defarr arr[10];
+
+defarr error[10];
+NULLOUT=initarray(error,"");
+
+NumF=0;
+NumU=0;
+NumD=0;
+NumO=0; //-- Количество объектов
+y=0;
+Gl_g=0; //-- Глубина
+i=0;
+j=0;
+k=0;
+n=0;
+//-------------------------------------------------------
+NULLOUT=GetSnap();
+Numb=SysVar(60);
+m=0;
+i=0;
+Nexti1:
+i=i+1;
+if (i<=Numb)
+{
+  O1=getobjnum(i);
+  Obj=O1;
+  gosub Gettype;
+  if (Pos==133)
+  {
+    m=m+1;
+    ObjO[m]=O1;
+    goto Nexti1;
+  }
+  if (Pos==11)
+  {
+    InitArray(arr,0);
+    arr[1]=O1;
+    err=GetPan6Par(1,arr);
+    err=GetPan6Par(11,arr);
+    y=arr[3];
+    if (y>=Gl_g)
+    {
+      Gl_g=y;
+      Stenka=O1;
+    }
+  }
+  if (Pos==33)
+  {
+    tmp=GetProtoVal(O1,"Type_pan",type);
+    if (type==11)
+    {
+      tmp=GetProtoVal(O1,"y",y);
+      if (y>=Gl_g)
+      {
+        Gl_g=y;
+        Stenka=O1;
+      }
+    }
+  }
+  goto Nexti1;
+}
+if (isvardef("Stenka")!=16)
+{
+  error[1]="В каркасе отсутствуют элементы, у которых возможно изменить глубину.";
+  error[2]=" ";
+  error[3]="Воспользуйтесь другой командой редактирования"
+  macro Protopath+"ShowSmartExclam.mac" "Ошибка изменения глубины" 3 error;
+  goto End;
+}
+tmp=objgab3(Stenka,cs);
+Obj=Stenka;
+gosub Gettype;
+PosSt=Pos;
+NumO=m;
+Param:
+#ok_fl
+SetVar
+"Изменение глубины объектов"
+""
+left
+"Введите параметры изменния глубины объектов"
+done
+real default Gl_g "Уровень изменяемой глубины:" Gl
+real default 200 "Область захвата объектов:" h
+real default 100 "Изменение глубины:" L
+done;
+if  (ok_fl==0)
+{
+  goto End;
+}
+i=0;
+Nexti2:
+i=i+1;
+if (i<=Numb)
+{
+  O1=getobjnum(i);
+  Obj=O1;
+  gosub Gettype;
+  tmp=objgab3(O1,co);
+  Vis=GetObjVisual(O1);
+  if (Vis==1)
+  {
+    if ((co[5]<=Gl+0.5*h)&&(co[2]>=Gl-0.5*h))
+    {
+      if ((Pos==14)||(Pos==13)||(Pos==17)||(Pos==52)||(Pos==121)||(Pos==20)||(Pos==132)||(Pos==136)||(Pos==37)||(Pos==38))
+      {
+        j=j+1;
+        ObjF[j]=O1;
+      }
+      if (Pos==33)
+      {
+        tmp=GetProtoVal(O1,"Type_pan",Type);
+        if (Type==14)
+        {
+          j=j+1;
+          ObjF[j]=O1;
+        }
+      }
+    }
+    if ((co[5]>=Gl-0.5*h)&&(co[5]<=Gl+10))
+    {
+      if ((Pos==11)||(Pos==12))
+      {
+        InitArray(arr,0);
+        arr[1]=O1;
+        err=GetPan6Par(1,arr);
+        err=GetPan6Par(11,arr);
+        y=arr[3];
+      }
+      if ((Pos==18)||(Pos==21)||(Pos==51)||(Pos==16)||(Pos==40)||(Pos==19))
+      {
+        tmp=GetProtoVal(O1,"y",y);
+      }
+      if (Pos==33)
+      {
+        tmp=GetProtoVal(O1,"Type_pan",Type);
+        if ((Type==11)||(Type==12))
+        {
+          tmp=GetProtoVal(O1,"y",y);
+        }
+      }
+      if (Pos==63)
+      {
+        tmp=GetProtoVal(O1,"D",y);
+      }
+      if ((y<abs(L))&&(L<0))
+      {
+        error[1]="Слишком большое изменение глубины.";
+        error[2]="Введенная величина изменения глубины изделия нарушает его конструкцию.";
+        error[3]=" ";
+        error[4]="Измените значение изменения глубины или"
+        error[5]="измените конструкцию изделия, или"
+        error[6]="воспользуйтесь другой командой редактирования"
+        macro Protopath+"ShowSmartError.mac" "Ошибка изменения глубины" 6 error;
+        goto End;
+      }
+      k=k+1;
+      ObjU[k]=O1;
+    }
+    if ((co[2]<=Gl+0.5*h)&&(co[2]>=Gl-10))
+    {
+      if ((Pos==11)||(Pos==12)||(Pos==18)||(Pos==21)||(Pos==51)||(Pos==16)||(Pos==40)||(Pos==19))
+      {
+        n=n+1;
+        ObjD[n]=O1;
+      }
+      if (Pos==33)
+      {
+        tmp=GetProtoVal(O1,"Type_pan",Type);
+        if ((Type==11)||(Type==12))
+        {
+          n=n+1;
+          ObjD[n]=O1;
+        }
+      }
+      if (Pos==63)
+      {
+        n=n+1;
+        ObjD[n]=O1;
+      }
+    }
+  }
+  goto Nexti2;
+}
+NumF=j;
+NumU=k;
+NumD=n;
+j=0;
+Nextj: j=j+1;
+if (j<=NumF)
+{
+  move ObjF[j] done 0 L 0 nocopy;
+  goto Nextj;
+}
+k=0;
+Nextk:
+k=k+1;
+if (k<=NumU)
+{
+  Obj=ObjU[k];
+  gosub Gettype;
+  if ((Pos==11)||(Pos==12))
+  {
+     InitArray(arr,0);
+     arr[1]=ObjU[k];
+     err=GetPan6Par(1,arr);
+     err=GetPan6Par(11,arr);
+     y=arr[3];
+     MBPanel item  ObjU[k] 5 y+L 0;
+  }
+  if ((Pos==18)||(Pos==21)||(Pos==51)||(Pos==16)||(Pos==19)||(Pos==40))
+  {
+    tmp=GetProtoVal(ObjU[k],"y",y);
+    protoobj edit list ObjU[k] nodc "y" y+L;
+  }
+  if (Pos==33)
+  {
+    tmp=GetProtoVal(ObjU[k],"Type_pan",Type);
+    if ((Type==12)||(Type==11))
+    {
+      tmp=GetProtoVal(ObjU[k],"y",y);
+      protoobj edit list ObjU[k] nodc "y" y+L;
+    }
+  }
+  if (Pos==63)
+  {
+    tmp=GetProtoVal(ObjU[k],"D",y);
+    protoobj edit list ObjU[k] nodc "D" y+L;
+  }
+  goto Nextk;
+}
+n=0;
+Nextn:
+n=n+1;
+if (n<=NumD)
+{
+  Obj=ObjD[n];
+  gosub Gettype;
+  if ((Pos==11)||(Pos==12))
+  {
+     InitArray(arr,0);
+     arr[1]=ObjD[n];
+     err=GetPan6Par(1,arr);
+     err=GetPan6Par(11,arr);
+     y=arr[3];
+     MBPanel item   ObjD[n]  5   y-L 0 ;
+  }
+  if ((Pos==18)||(Pos==21)||(Pos==51)||(Pos==16)||(Pos==19)||(Pos==40))
+  {
+    tmp=GetProtoVal(ObjD[n],"y",y);
+    protoobj edit list ObjD[n] nodc "y" y-L;
+  }
+  if (Pos==33)
+  {
+    tmp=GetProtoVal(ObjD[n],"Type_pan",Type);
+    if ((Type==12)||(Type==11))
+    {
+      tmp=GetProtoVal(ObjD[n],"y",y);
+      protoobj edit list ObjD[n] nodc "y" y-L;
+    }
+  }
+  if (Pos==63)
+  {
+    tmp=GetProtoVal(ObjD[n],"D",y);
+    protoobj edit list ObjD[n] nodc "D" y-L;
+  }
+  goto Nextn;
+}
+m=0;
+Nextm:
+m=m+1;
+if (m<=NumO)
+{
+  tmp=objgab3(ObjO[m],co);
+  tmpd=(cs[5]+cs[2])/2;
+  if (co[2]>tmpd)
+  {
+    move ObjO[m] done 0 L 0 nocopy;
+  }
+  goto Nextm;
+}
+End:
+NULLOUT=ReSnap();
+exit;
+//---------------------------------------------------------
+// Определить тип полки в старых терминах  или ID прототипа
+Gettype:
+Pos=GetFurnType(Obj,arr);
+if (Pos==0)
+{
+  if (arr[2]==1) { Pos=12; }
+  if (arr[2]==2) { Pos=11; }
+  if (arr[2]==3) { Pos=14; }
+}
+return;

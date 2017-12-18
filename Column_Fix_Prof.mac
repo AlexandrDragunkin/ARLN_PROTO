@@ -1,0 +1,38 @@
+//--Макро создания соединителя углового для колонной системы Komandor.
+global ProtoPath;
+nullout=getvarinst(2,"UnitCodeWard",UnitCodeWard,"8000");
+getpar GoodsID;
+//--Читаем свойства сборочной единицы
+IDFix1=PriceInfo(GoodsID,"NomID1",1,2);			//-- Соединитель угловой	..54-2044..
+NameFix1=PriceInfo(IDFix1,"MatName","",1);	
+DimX=PriceInfo(GoodsID,"toleranceX",20,2);		//-- сдвиг крепления 1
+DimZ=PriceInfo(GoodsID,"toleranceZ",20,2);		//-- сдвиг крепления 1
+IDFix2=PriceInfo(GoodsID,"NomID2",1,2);			//-- Шуруп М6х6			..59-0718..
+NameFix2=PriceInfo(IDFix2,"MatName","",1);
+obj_do=sysvar(60); 
+//-- Добавляем соединитель угловой
+macro ProtoPath+"MakeAcce.mac" IDFix1 "040000" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameFix1;
+attrobj attach "UnitCode" Done last 1 UnitCodeWard;
+rotate last 1 done 2points 0 0 0 1 0 0 180 nocopy;
+//-- Добавляем шуруп М6х6
+macro ProtoPath+"MakeAcce.mac" IDFix2 "040400" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameFix2;
+attrobj attach "UnitCode" Done last 1 UnitCodeWard;
+move last 1 done 20 0 -3 nocopy;
+//-- Добавляем шуруп М6х6
+macro ProtoPath+"MakeAcce.mac" IDFix2 "040400" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameFix2;
+attrobj attach "UnitCode" Done last 1 UnitCodeWard;
+rotate last 1 done 2points 0 0 0 0 1 0 90 nocopy;
+move last 1 done -3 0 20 nocopy;
+
+obj_posle=sysvar(60);
+kol=obj_posle-obj_do;
+move last kol done DimX 0 DimZ nocopy;
+group last kol done;
+FurnType=PriceInfo(GoodsID,"FurnType","350000",2);
+NameEl=PriceInfo(GoodsID,"Name"," ",2);
+attrobj attach "FurnType" done last 1 FurnType;
+attrobj attach "ElemName" Done last 1 NameEl;
+exit;

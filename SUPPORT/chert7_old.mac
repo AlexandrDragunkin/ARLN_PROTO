@@ -1,0 +1,244 @@
+global PKM_SP ;
+if isvardef("PKM_SP")==0 {  // Если не определен атрибут PKM суппорт
+//    macro GetProtoMac("Shkaf.ptl")+"Glob_Sp.mac" ; // Загружаем переменныые для макросов из   L_SUPPORT
+}
+CurStat=SysVar(70) ;
+=Curstat
+if CurStat==0 { CurStat=2  }
+//ErrMsg=MsgLevel(1) ;
+//Chert7.mac
+//*********************************************
+//              чертежи длинномеров
+//              Драгункин А.Р.
+//              ГеоС 2007-08 г.
+//*********************************************
+//ErrMsg=MsgLevel(4) ;
+
+global g_name DScene_name;
+global g_osn, g_dorab, g_lz, g_drawall, g_pict, g_scala ;
+global L_SUPPORT ;
+//
+global
+g_DirDrawLn           //Все файлы чертежей длинномеров размещать в отдельной папке 0-нет 1-да
+g_DrawBlank           //Чертежи на бланках 0-нет 1-да
+g_DrawSpec            //Формировать спецификацию 0-нет 1-да
+g_DrawCod             //Способ обозначения чертежа 0-относительный по первому вхождению 1-абстрагированный код
+g_DrawStamp           //Ключ запроса информации для штампа бланка из файла stamp.dbf и из файла ZAKAZ.dbf =0 только stamp.dbf =1
+g_FormStamp           //Ключ запроса формы штампа 0-не запрашивать 1-регулярно
+g_PgFileDraw          //Каждый лист чертежа в отдельном файле 0-нет 1-да
+g_PgFileSpec          //Каждый лист спецификации в отдельном файле 0-нет 1-да
+g_GroupDoc            //Формировать групповой чертеж по всем документам 0-нет 1-да
+g_DrawTaile           //формировать деталировку 0-нет 1-да
+g_keyTile
+;
+Defarr Obj[128];
+Defarr Cut[4];
+Defarr Rez1[5];
+Defarr Rez2[5];
+Defarr Rez3[5];
+Defarr Rez4[5];
+Defarr G[16];
+Defarr V[6];
+Defarr p[6];
+Defarr Cave[4];
+Defarr GP[16];
+Defarr NumUgl[40];
+defarr pobj[6];					//	геометрические параметры объекта
+defarr pge[2];					//	прогиб по сторне Е (передняя)
+defarr pgd[2];					//	прогиб по сторне d (задняя)
+defarr pgc[2];					//	прогиб по сторне c (левая)
+defarr pgb[2];					//	прогиб по сторне b (правая)
+
+defarr deck[2,2];				//	шахматка рабочего поля
+////////////////////////////////////////////////
+g_keyTile=iif(isvardef("g_DrawTaile")==0,0,g_DrawTaile) ;
+g_DrawTaile=0;
+Sdvig=100;
+Epsilon=0.1
+KGT=6
+HTXT=8
+
+MinRazmer=3	//		минимальный проставляемый размер
+UVR=1 		//	 	при образмеривании среза какой размер строить 
+			//		0	срез
+			//		1	панель
+VFAS=3		//		вариант образмеривания фаски
+			//		0 - размер не ставится
+			//		1 - размер по фаске
+			//		2 - два размера по граням длинномера
+			//		3 - образмеривание дополнительных линий
+fMSG=1		//		маркировать срезанную фабричную грань знаком "C"
+			//		0 - нет
+			//		1 - да
+MPN=1		//		маркировать панели номерами
+			//		0 - нет
+			//		1 - да
+fMPN=1		//		выностной штамп
+			//		0 - нет
+			//		1 - да
+FVIZ=1		//		флаг видимости дополнительных (построенных) объектов
+			//		0 - не видимы
+			//		1 - видимы
+FSHIV=1		//		флаг обозначения сшивки столешниц
+			//		0 - не обозначать
+			//		1 - обозначать
+SHSDM=1		//		флаг проставления размеров  на стяжки
+			//		0 - не проставлять
+			//		1 - проставлять
+SHSDV=100	//		сдвиг сшивки от задней стенки
+SHSTP=240	//		шаг сшивки
+FATL=1		//		строить жирные линии
+			//		1 - жирные
+			//		0 - обычные
+FNEG=1		//		допускаются отрицательные размеры вдоль задней стенки
+			//		0 - нет
+			//		1 - да
+FPAU=0		//		пауза после обработки длинномера
+			//		1 - да
+			//		0 - нет
+FUST=1		//		установочный чертеж
+			//		1 - да
+			//		0 - нет
+FSIM=0		//		проставлять ось симметрии
+			//		1 - да
+			//		0 - нет
+FMUS=1		//		маркировать угловые  столешницы габаритом
+			//		1 - да
+			//		0 - нет
+flVrez=0	//		образмеривать врезки
+			//		1 - да
+			//		0 - нет
+fKROM=1		//		D-маркер на D грани без кромки
+			//		1 - да
+			//		0 - нет
+fKROT=1			//	наименование кромки
+			//		1 - да
+			//		0 - нет
+fTestV=1	//		проверять вертикльное расположение длинномера
+			//		1 - да
+			//		0 - нет
+fProt=0		//		искать прототипы угловых покрытий
+			//		1 - да
+			//		0 - нет
+idPro="144" //		id прототипа угловой столешницы
+fSUS=1		//		упрощенное образмеривание углового покрытия
+			//		1 - да
+			//		0 - нет
+fDKT=1		//		динамически изменять коэф.маштабирования текса
+			//		1 - да
+			//		0 - нет
+flBaseLine=1;
+
+////////////////////////////////////////////////
+Debug=0
+////////////////////////////////////////////////
+
+getpar DlName DlExt Wmf Talk;
+setucs gcs ;
+if g_FormStamp!=1 {           //Ключ запроса формы штампа 0-не запрашивать 1-регулярно
+   macro L_SUPPORT+"SetPlProject.mac" ;
+}
+if DlExt=="st"  {  //  "Столешницы"   0
+   ltype=0
+   gosub gname ;
+   if g_FormStamp!=0 {           //Ключ запроса формы штампа 0-не запрашивать 1-регулярно
+      macro L_SUPPORT+"SetPlProject.mac" ;
+   }
+   DrwTile:
+   macro L_SUPPORT+"StdrawAll2.mac" 0 ;
+}
+if DlExt=="kr"  {  //  "Карнизы"     1
+   ltype=1
+   gosub gname ;
+   if g_FormStamp!=0 {           //Ключ запроса формы штампа 0-не запрашивать 1-регулярно
+      macro L_SUPPORT+"SetPlProject.mac" ;
+   }
+   macro L_SUPPORT+"StdrawAll2.mac" 1 ;
+}
+
+if DlExt=="pn"  {  //  "Стеновая панель"   2
+   ltype=2
+   gosub gname ;
+   if g_FormStamp!=0 {           //Ключ запроса формы штампа 0-не запрашивать 1-регулярно
+      macro L_SUPPORT+"SetPlProject.mac" ;
+   }
+   FlagGDT=0
+   if (g_DrawTaile!=1) {
+      g_DrawTaile=1
+      FlagGDT=1
+   }
+   macro L_SUPPORT+"StdrawAll2.mac" 2 ;
+   if FlagGDT!=0 {
+   FlagGDT=0
+   g_DrawTaile=0
+   }
+}
+if DlExt=="vo"  {  //  "Водоотбойник"     3
+   ltype=3
+   gosub gname ;
+   if g_FormStamp!=0 {           //Ключ запроса формы штампа 0-не запрашивать 1-регулярно
+      macro L_SUPPORT+"SetPlProject.mac" ;
+   }
+
+   macro L_SUPPORT+"DrwPrAll.mac" 3 ;
+}
+if DlExt=="pr"  {  //  "Профиль"          4
+   ltype=4
+   gosub gname ;
+   if g_FormStamp!=0 {           //Ключ запроса формы штампа 0-не запрашивать 1-регулярно
+      macro L_SUPPORT+"SetPlProject.mac" ;
+   }
+   macro L_SUPPORT+"DrwPrAll.mac" 4 ;
+}
+if DlExt=="ck"  {  //  "Цоколь"           5
+   ltype=5
+   gosub gname ;
+   if g_FormStamp!=0 {           //Ключ запроса формы штампа 0-не запрашивать 1-регулярно
+      macro L_SUPPORT+"SetPlProject.mac" ;
+   }
+   macro L_SUPPORT+"DrwPrAll.mac" 5 ;
+}
+if DlExt=="np"  {  //  "Нижний профиль"   6
+   ltype=6
+   gosub gname ;
+   if g_FormStamp!=0 {           //Ключ запроса формы штампа 0-не запрашивать 1-регулярно
+      macro L_SUPPORT+"SetPlProject.mac" ;
+   }
+   macro L_SUPPORT+"DrwPrAll.mac" 6 ;
+}
+zoom all
+if (1==FPAU)
+{
+ Putmsg("Обработка закончена",1)
+}
+
+gosub dsave;
+////////////////////////////////////////////////
+   if g_keyTile!=0
+   {
+      g_DrawTaile=g_keyTile;
+      g_keyTile=0;
+      g_DrawSpec=0;
+      open [ no ] DScene_name;
+      goto DrwTile;
+   }
+zoom all
+metend:
+//ErrMsg=MsgLevel(CurStat) ;
+'redraw,,
+exit ;
+//******************************************************************************************************
+
+
+//		Сохраняем чертеж
+DSave:
+Pict 3 Yes
+//g_dorab=1;
+g_pict=3;
+
+macro GetProtoMac("shkaf.ptl")+"drawsaveL.mac" ltype ;
+return;
+//
+gname:
+g_name=Left(DlExt,2);
+return ;

@@ -1,0 +1,50 @@
+//-- Программа перебирает изделия и ищет среди них стандартное
+//-- Если таковые находит, то присваивает им названия и артикулы из стандартного каталога
+//-- Подбор артикулов
+
+if (udgetentity("FindArticle",ValType,IsFind,sVal)==0) //-- Нужно ли осуществлять подбор артикулов
+{
+  IsFind=0;
+}
+if (IsFind!=2)  //-- Подбор артикулов только перед выгрузкой
+{
+  exit;
+}
+#ok_flag
+alternative "Поиск стандартных изделий"
+msgbox picture 3 beep 3 text "В заказе не осуществлен поиск стандартных изделий."
+"Отчеты и чертежи будут содержать неверные данные."
+""
+"Осуществить поиск стандартных изделий?"
+done
+"  Да " " Нет " "Отмена"
+done;
+if (ok_flag==3)
+{
+  cancel;
+}
+if (ok_flag==2)
+{
+  exit;
+}
+obj=sysvar(60);
+if (obj==0)
+{
+  exit;
+}
+i=0;
+loop:
+i=i+1;
+ob=getobjnum(i);
+Art="";
+UnitName=""
+if (FindArticle(ob,Art,UnitName))
+{
+  attrobj attach "Article" done ob Art;
+  attrobj attach "UnitName" done ob UnitName;
+}
+if (i<obj)
+{
+  goto loop;
+}
+exit;

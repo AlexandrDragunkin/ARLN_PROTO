@@ -1,0 +1,152 @@
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+//-- Программа заполняет массив именами производителя систем дверей в соответствии со строкой фильтра
+//-- Входные параметры:
+//-- SQLStr - SQL строка фильтра
+//-- Массив g_DRSysN - массив названий производителей систем дверей
+//-- Массив g_DRSysI - массив ID производителей систем дверей
+//-- g_DRNumb - количество записей в массиве
+//-- Данные берутся из таблицы DSNameSystem поля NAME базы данных DoorSys63.mdb
+
+nullout=getvarinst(2,"Doors63",Doors63,"Doors63.zmc|");
+global ProtoPath, g_keyDS63, g_Doorscon;
+
+global g_DRSysN,g_DRSysI,g_DRNumb;
+global g_DRVarN,g_DRVarI,g_DRVarNb;
+
+defarr arr[2];
+
+nullout=getvarinst(1,"g_tab_place",g_tab_place,ProtoPath+"DoorSys63.mdb");
+
+isvardef("g_DRSysN")==0
+{
+	defarr g_DRSysN[200],g_DRSysI[200],g_DRVarN[10],g_DRVarI[10];
+}
+else
+{
+	// putmsg("initarray")
+	initarray(g_DRSysN,"");
+	initarray(g_DRSysI,0);
+	initarray(g_DRVarN,"");
+	initarray(g_DRVarI,0);
+}
+
+getpar SQLStr;
+
+if g_keyDS63!=1
+{
+   macro ProtoPath+Doors63+"CrtSysDoor63.mac" ;
+}
+res=adbChkMdbTbl(g_tab_place,"DSNameSystem");
+if (res==0)
+{
+ if g_keyDS63!=0
+ {
+   macro ProtoPath+Doors63+"ClosSysDoor63.mac" ;
+ }
+  exit;
+}
+SysRs=adbOpen(g_Doorscon,SQLStr);
+ij=adbRecCount(SysRs);
+if (ij<1)
+{
+  SysRs=adbClose(SysRs);
+
+  exit;
+}
+NULLOUT=adbMoveFirst(SysRs);
+
+i=1;
+LC:
+g_DRSysI[i]=adbGetValue(SysRs,"ID");
+g_DRSysN[i]=adbGetValue(SysRs,"Name");
+if (i<ij)
+{
+  i=i+1;
+  NULLOUT=adbMoveNext(SysRs);
+  goto LC;
+}
+
+g_DRNumb=ij;
+SysRs=adbClose(SysRs);
+
+g_DRS=iif(IsVarDef("g_DRS")==0,g_DRSysI[1],g_DRS); // Обработка первого вхождения
+nullout=setvarinst(1,"g_DRS",g_DRS);
+res=adbChkMdbTbl(g_tab_place,"DSTypeFlap");
+if (res==0)
+{
+ if g_keyDS63!=0
+ {
+   macro ProtoPath+Doors63+"ClosSysDoor63.mac" ;
+ }
+  exit;
+}
+// Для запроса g_DRS - ID системы(число)
+arr[1]="SELECT DSTypeFlap.ID, DSTypeFlap.NameFlap FROM DSTypeFlap INNER JOIN DSSystemFlap ON DSTypeFlap.ID = DSSystemFlap.TypeFlap"
+arr[2]=" WHERE (((DSSystemFlap.NAME)="+str(g_DRS)+")) GROUP BY DSTypeFlap.ID, DSTypeFlap.NameFlap;"
+SysRs=adbOpen(g_Doorscon,arr,2);
+ij=adbRecCount(SysRs);
+if (ij<1)
+{
+  SysRs=adbClose(SysRs);
+  exit;
+}
+NULLOUT=adbMoveFirst(SysRs);
+
+i=1;
+LC1:
+g_DRVarI[i]=adbGetValue(SysRs,"ID");
+g_DRVarN[i]=adbGetValue(SysRs,"NameFlap");
+if (i<ij)
+{
+  i=i+1;
+  NULLOUT=adbMoveNext(SysRs);
+  goto LC1;
+}
+g_DRVarNb=ij;
+
+// SysRs=adbOpen(g_Doorscon,"SELECT  * FROM DSTypeFlap INNER JOIN DSSystemFlap ON DSTypeFlap.ID = DSSystemFlap.TypeFlap WHERE (((DSSystemFlap.NAME)="+str(g_DRS)+"))ORDER BY DSTypeFlap.ID;");
+// ij=adbRecCount(SysRs);
+// putmsg(ij)
+// if (ij<1)
+// {
+  // SysRs=adbClose(SysRs);
+  // exit;
+// }
+// NULLOUT=adbMoveFirst(SysRs);
+
+// i=1;
+// err=initarray(g_DRVarI,-99);
+// if ij>0
+// {
+	// g_DRVarI[i]=adbGetValue(SysRs,"DSTypeFlap.ID");
+	// g_DRVarN[i]=adbGetValue(SysRs,"NameFlap");
+	// NULLOUT=adbMoveNext(SysRs);
+	// i=i+1;
+// }
+// nzap=i;
+// LC1:
+// if (nzap<ij)
+// {
+  // IdTypFlap=adbGetValue(SysRs,"DSTypeFlap.ID");
+  // if IdTypFlap!=g_DRVarI[i-1]
+  // {
+    // g_DRVarI[i]=IdTypFlap;
+    // g_DRVarN[i]=adbGetValue(SysRs,"NameFlap");
+    // i=i+1;
+  // }
+  // nzap=nzap+1
+  // NULLOUT=adbMoveNext(SysRs);
+  // goto LC1;
+// }
+// g_DRVarNb=i;
+// // g_DRVarNb=ij;
+// putmsg(g_DRVarNb)
+SysRs=adbClose(SysRs);
+
+//Doorscon=adbDisCon(Doorscon);
+exit;

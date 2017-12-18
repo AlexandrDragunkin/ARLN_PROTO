@@ -1,0 +1,7 @@
+//-- Программа установки сдвига петель
+
+getpar Sh1, Sh2;
+
+nullout=setvarinst(1,"ShDR",Sh1);
+nullout=setvarinst(1,"ShLU",Sh2);
+exit;

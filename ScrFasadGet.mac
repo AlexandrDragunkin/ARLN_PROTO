@@ -1,0 +1,62 @@
+//-- Программа чтения из записи или создания Scratch параметров фасада
+global ProtoPath;
+global gs_Nfasad;     //-- Счетчик фасадов в объекте
+global DOUD, FasVaria;
+
+getpar  FasType Scratch;
+// putmsg("ScrFasadGet")
+
+Namescr="FasadPar";
+err=0;
+Scratch=0;
+if ((DOUD==1&&FasVaria==1)||(DOUD==0))
+{
+  gs_Nfasad=gs_Nfasad+1;
+}
+if (isassign(Namescr,0))
+{
+  Scratch=readscratch(Namescr,0);
+  err=1;
+}
+
+FasMac=GetFileTitle(PriceInfo(FasType,"MacroFile",".mac",2));
+if FasMac=="fasad_autoselect.mac"
+{
+	macro ProtoPath+"fasad_autoselect.mac" 0,0,0,0,0;
+	nullout=getvarinst(1,"MacroFileFas",FasCode,"");
+	nullout=setvarinst(1,"MacroFileFas","");
+	nullout=getvarinst(1,"DefGood",FasType,0);
+	nullout=setvarinst(1,"DefGood",0);
+	// putmsg("autoselect_ScrFasasGet="+str(FasCode));
+}
+else
+{
+	FasCode=FasMac;
+}
+FasCode=FasCode-4; // Уберем расширение
+
+if (Scratch==0)
+{
+	Scratch=InitScratch();
+	// putmsg("ScrFasadGet_GO->scrFasCr.mac");
+	macro ProtoPath+"ScrFasCr.mac" FasType Scratch ;
+}
+err=addscratch(Scratch,"ТипФас","ТипФас"+str(gs_Nfasad),FasType); 	//-- Тип фасада
+err=addscratch(Scratch,FasCode,"Nfas",gs_Nfasad);	//-- Число фасадов
+
+// putmsg("ScrFasadGet_GO->ScrFasCheck.mac");
+macro ProtoPath+"ScrFasCheck.mac" FasCode Scratch;
+
+// if lower(FasCode)=="doorspl1-v"||lower(FasCode)=="doorspl1"||lower(FasCode)=="rs_neoclassic"||lower(FasCode)=="faskapry" {
+	// err=addscratch(Scratch,FasCode,"Nfas",gs_Nfasad);	//-- Число фасадов
+// }
+// // Чтобы не листать в бок
+// if lower(FasCode)=="fasad_wood"||lower(FasCode)=="fasad_compact" {
+	// // putmsg(FasCode)
+	// // putmsg("scrFasadGet_AddNfas_gs_Nfasad="+str(gs_Nfasad))
+	// err=addscratch(Scratch,FasCode,"Nfas",gs_Nfasad);	//-- Число фасадов
+	// // putmsg(err)
+// }
+
+writescratch(Scratch,Namescr,0);
+exit;

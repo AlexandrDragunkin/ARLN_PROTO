@@ -1,0 +1,6 @@
+//-- Обнулить торцевые обработки
+global g_TorcPaz;
+defarr g_TorcPaz[32];
+NULLOUT=initarray(g_TorcPaz,0);
+NULLOUT=setarrinst(1,"g_Butt",g_TorcPaz);
+exit;

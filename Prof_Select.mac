@@ -1,0 +1,64 @@
+//-- Макрос установки профильных элементов
+global ProtoPath;
+PicturesPath=ProtoPath+"Pictures\\"; //-- Папка с картинками
+defarr Ptype[10], altfl[10];
+
+altfl[1]=PicturesPath+"WardProfType.jpg"
+altfl[2]=PicturesPath+"WardProf.jpg"
+altfl[3]=PicturesPath+"WardStoy.jpg"
+altfl[4]=PicturesPath+"WardPan.jpg"
+altfl[5]=PicturesPath+"gardbox.jpg"
+
+Ptype[1]="Одиночный профиль";
+Ptype[2]="Профиль с креплением";
+Ptype[3]="Стойка гардеробная";
+Ptype[4]="Полка гардеробная";
+Ptype[5]="Заполнение гардеробной ниши";
+
+#altnum
+  alternative
+  "Установка профильных конструкций"
+  picbox
+  text
+  center
+  "Установить:"
+  done
+  default 1
+  Ptype[1]  altfl[1]
+  Ptype[2]  altfl[2]
+	Ptype[3]  altfl[3]
+  Ptype[4]  altfl[4]
+	Ptype[5]  altfl[5]
+done;
+if altnum==0
+{
+  cancel;
+}
+onerror NEXT;
+NULLOUT=GetSnap();
+Set0:
+if (altnum==1) 
+{
+	macro ProtoPath+"ProfSetDialog.mac" ;		//-- установка профиля
+}
+if (altnum==2) 
+{
+	macro ProtoPath+"FixProfSetDialog.mac" ;	//-- установка профиля с креплением
+}
+if (altnum==3) 
+{
+	macro ProtoPath+"STOYKA_Ward.mac" ;			//-- установка гардеробной стойки
+}
+if (altnum==4) 
+{
+	macro ProtoPath+"POLKA_Ward.mac" ;			//-- установка гардеробной полки
+}
+if (altnum==5) 
+{
+	macro ProtoPath+"NICH_Ward.mac" ;				//-- заполнение ниши
+}
+goto Set0;
+NEXT:
+offerror;
+NULLOUT=ReSnap();
+exit;

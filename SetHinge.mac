@@ -1,0 +1,17 @@
+//-- Программа установки количества петель
+//-- Входны параметры:
+//-- P1 - количество петель (0 - автоматическая простановка)
+//-- Выходные параметры:
+//-- g_NHinges - количество петель
+
+//-- Нужен для MakeDoor.mac
+
+// global g_NHinges;
+getpar P1;
+g_NHinges=P1;
+if (g_NHinges<0)
+{
+  g_NHinges=0;
+}
+nullout=setvarinst(1,"g_NHinges",g_NHinges);
+exit;

@@ -1,0 +1,43 @@
+// Очистить массив AriB от элементов встречающихся в AriC с точностью TLS число элементов ib;
+// Ari10 массив координат по второй оси
+getpar Ari1 Ari10 Ari2 ainf;
+
+ib=ainf[1];
+TLS=ainf[2];
+ic=ainf[3];
+if ib==0
+{
+	goto metEND;
+}
+defarr aTMP1[ib] aTMP2[ib];
+i=0;
+k=0;
+lab1:
+if i<ib
+{
+	i=i+1;
+	j=0;
+	lab2:
+	if j<ic
+	{
+		j=j+1;
+
+		if abs(Ari1[i]-Ari2[j])<TLS
+		{
+			goto lab1;
+		}
+		goto lab2;
+	}
+	k=k+1;
+	aTMP1[k]=Ari1[i];
+	aTMP2[k]=Ari10[i];
+
+	goto lab1;
+}
+nulout=initarray(Ari1,0);         // обнуляем AriB
+nulout=initarray(Ari10,0);         // обнуляем AriB2
+nulout=CopyArray(Ari1,1,aTMP1,1); // копируем в Ari1 массив Ari2
+nulout=CopyArray(Ari10,1,aTMP2,1); // копируем в Ari1 массив Ari2
+ainf[1]=k;
+metEND:
+exit;

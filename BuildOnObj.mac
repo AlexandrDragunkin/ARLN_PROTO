@@ -1,0 +1,65 @@
+//-- Программа собирает одно изделие
+//-- Входные параметры:
+//-- obj - изделие
+
+global ProtoPath;
+KarkasNumb=getcarcnumb()
+global g_result;
+defarr xm[6];
+defarr error[10];
+NULLOUT=initarray(error,"");
+getpar obj;
+//-----------------------------------------------------------------------------
+NULLOUT=getsnap();
+setucs lcs obj;
+macro ProtoPath+"TypeCont.mac" obj;
+ContType=g_result;
+NULLOUT=objgab3(obj,xm);
+X=xm[4];
+Y=xm[5];
+Z=xm[6];
+Top=getattr(obj,"PlaceType",0);
+if (Top!=1)
+{
+	Top=0;
+}
+mbcarcase current obj;
+select wholly attribute "KarkasNumb=="+str(KarkasNumb)+"&&Posit==10"  done;
+ob_2=sysvar(61);
+if (ob_2!=1)
+{
+  error[1]="Объект либо не содержит каркаса, либо их там несколько.";
+  error[2]="Изделие собрано не будет.";
+  error[3]=" ";
+  error[4]="Проверьте наличие каркаса в объекте"
+  error[5]="Убедитесь, что проект корректный.";
+  error[6]="При необходимости, скорректируйте изделие вручную.";
+  macro Protopath+"ShowSmartError.mac" "Ошибка при работе с каркасами."
+  6 error;
+  goto final;
+}
+karkas=getselnum(1);
+attrobj copy karkas "ObjType", "AngleType", "PlaceType", "Article", "CutType", "Position", "GapValue" "FurnType" done record done;
+attrobj copy karkas "ObjType", "AngleType", "PlaceType", "Article", "CutType", "Position", "GapValue" "FurnType" done record done;
+HoldName=getattr(karkas,"UnitName"," ");
+if (len(HoldName)<1)
+{
+  HoldName=" ";
+}
+attrobj copy karkas "ProtoInfo" "PseudoPosit" done record done;
+delete karkas done;
+// visible attribute "KarkasNumb=="+str(KarkasNumb)+"&&IsAssign(\"Contact\")";
+// delete attribute "KarkasNumb=="+str(KarkasNumb)+"&&IsAssign(\"Contact\")" done;
+macro ProtoPath+"CreatePI.mac" 1 ;
+macro ProtoPath+"aContLine.mac" xm[4]-xm[1],xm[5]-xm[2],xm[5]-xm[2],xm[6]-xm[3],0,ContType,Top;
+macro ProtoPath+"aDimLine.mac" xm[4]-xm[1],xm[5]-xm[2],xm[6]-xm[3],ContType,Top;
+select attribute "KarkasNumb=="+str(KarkasNumb) attribute "IsAssign(\"Contact\")" done;
+group previous done; //-- Группируем все объекты одного каркаса
+objident last 1 objj;
+attrobj attach "UnitName" done objj HoldName;
+attrobj copy record "ObjType", "AngleType", "PlaceType", "Article", "CutType", "Position", "GapValue" "$ProtoInfo" "FurnType" "Posit" done objj done;
+attrobj delete record "ObjType", "AngleType", "PlaceType", "Article", "CutType", "KarkasNumb", "Position", "GapValue" "$ProtoInfo" "FurnType" "Posit" done;
+#objj smart putpos objj;
+final:
+NULLOUT=resnap();
+exit;

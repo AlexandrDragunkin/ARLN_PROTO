@@ -1,0 +1,163 @@
+//-- Программа создания диалоговой карточки запроса информации по основной надписи
+//-- Выходные параметры:
+//-- g_h, g_w - высота и ширина формата
+//-- g_autosc==1 - масштаб автоматически
+//-- g_doc - тип документа
+//-- g_autoosn==1 - заполнять основную надпись автоматически
+//-- g_outfr==1 - рисовать внешнюю рамку
+// Рамка нужного формата
+
+global ProtoPath, g_h, g_w, g_autosc, g_autoosn, g_doc, g_outfr, g_DrawType;
+g_DrawType=iif(isvardef("g_DrawType")==0,"A",g_DrawType);
+g_outfr=0;
+orient="Ландшафт";
+orient="Портрет";
+
+razm="A3";
+razm="A4";
+form=1;
+// #form setvar
+// "Формат"
+// ""
+// left "Выберите формат"
+// done
+   // str listonly
+   // current "A4"
+   // "A3"
+   // "A2"
+   // "A1"
+   // "A0"
+   // "Другой"
+   // done "Размер" razm
+   // str listonly
+   // current "Портрет"
+   // "Ландшафт"
+   // done "Положение" orient
+   // logical default 0 "Внешняя рамка" g_outfr
+// done
+
+if (form==0)
+{
+    new; loadorder last;
+	cancel;
+}
+if (razm=="Другой")
+{
+    #ok_flag
+       setvar
+       "Нестандартный формат"
+       ""
+       left
+       "Задайте размеры формата"
+       done
+       real default 210 "Ширина:" w
+       real default 297 "Высота:" h
+    done;
+    if (ok_flag==0)
+    {
+      new; loadorder last;
+	  cancel;
+    }
+    goto drw;
+}
+if (razm=="A4")
+{
+    h=297;
+    w=210;
+    orient="Портрет";
+    goto drw;
+}
+if (razm=="A3")
+{
+    h=420;
+    w=297;
+    goto drw;
+}
+if (razm=="A2")
+{
+    h=594;
+    w=420;
+    goto drw;
+}
+if (razm=="A1")
+{
+    h=840;
+    w=594;
+    goto drw;
+}
+if (razm=="A0")
+{
+    h=1188;
+    w=840;
+    goto drw;
+}
+//-------------------------------------------------------------------------
+drw:
+if (orient=="Ландшафт")
+{
+    temp=h;
+    h=w;
+    w=temp;
+}
+//-------------------------------------------------------------------------
+ok_flag=1
+autosc=1;
+autoosn=1
+// #ok_flag
+// setvar
+// "Параметры построения"
+// ""
+// left
+// "Автоматизация построений"
+// done
+//str  listonly
+//   current "A"
+//           "F"
+//           "Обе"
+// done
+//                       "Вид на панель со стороны:" g_DrawType
+// logical default 1 "Считать масштаб автоматически" autosc
+// logical default 1 "Заполнять штамп автоматически" autoosn
+// done;
+if (ok_flag==0)
+{
+    new; loadorder last;
+	cancel;
+}
+//---------------------------------------------------------------------
+if (h==297&&w==210)
+{
+   ok_flag=1;
+   doc="Чертеж";
+   // #ok_flag
+      // setvar
+      // "Тип документа"
+      // ""
+      // left
+      // "Выберите тип документа"
+      // done
+      // str listonly
+      // "Чертеж"
+      // "Текстовый документ (1 стр.)"
+      // "Текстовый документ (2 и т.д. стр.)"
+      // done
+      // "Документ" doc
+   // done;
+   if (ok_flag==0)
+   {
+        new; loadorder last;
+		cancel;
+    }
+}
+else
+{
+    doc="Чертеж";
+
+}
+
+g_h=h;
+g_w=w;
+g_autosc=autosc;
+g_autoosn=autoosn;
+g_doc=doc;
+exit;

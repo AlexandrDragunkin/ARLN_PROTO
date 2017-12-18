@@ -1,0 +1,39 @@
+global ProtoPath ;
+//*********************************************
+// присвоение атрибута Синема объектам с objDo до objPosle
+// В зависимости от указанного Furntype
+//              МСВ
+//              ГеоС 2014 г.
+//*********************************************
+getpar
+objDo		//К-во старых объектов
+objPosle	//Общее
+scr		// Скретч атрибута
+Furntype	// 4 символа Furntype, у объектов, которым нужно присвоить атрибут
+//Mastr		// Тип (12 - хозяин, 10 - Независимый)
+;
+i=objDo;
+lab_0:
+i=i+1
+If (i<=objPosle) 
+{
+  OBJ1=getobjnum(i);
+  if (Furntype=="0000") {  // присвоим всем
+  WriteScratch(scr,"$CinemaScr",OBJ1);
+
+//    attrobj attach "$Cinema" done OBJ1 str(Mastr)+", "+Cinema ;  
+  }
+  else {
+//	putmsg(str(Mastr)+", "+cinema);
+    n=getattr(OBJ1,"Furntype","000000");
+	// putmsg(n)
+    if ((n-2)==Furntype) // присвоим только с Furntype
+    {
+		// putmsg(Furntype)
+      WriteScratch(scr,"$CinemaScr",OBJ1);
+//      attrobj attach "$Cinema" done OBJ1 str(Mastr)+", "+Cinema ; 
+    }
+  }
+  goto lab_0;
+}
+exit;

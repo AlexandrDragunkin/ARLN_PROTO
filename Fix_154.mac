@@ -1,0 +1,209 @@
+// Минификс
+
+global NumFixMac;   // Для передачи количества из пользовательского макро
+global NumComm;
+NumFixMac=0;        // надо расчитать здесь
+
+getpar
+Lengh   // Длина стороны 
+IDHol   //  ID отверстия
+XHol    //  положение вдоль длины от начала
+YHol    //  положение поперек длины
+ZHol    //  положение внутрь панели ? может и не надо
+;
+Tip1=1113; // Конфирмат
+Tip2=1601; // Шкант
+Lengh=round(Lengh,0.1);
+
+sh=32;
+Dx=20;
+if Lengh>512 { Dx=32; }
+
+if (Lengh<84)
+{
+	exit;
+}
+
+if Lengh<96
+{
+	i=1;
+	IDHol[i]=Tip1
+	XHol[i]=Lengh/2
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1;
+	IDHol[i]=Tip2
+	XHol[i]=Dx
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1;
+	IDHol[i]=Tip2
+	XHol[i]=Lengh-Dx
+	YHol[i]=0
+	zHol[i]=0
+	
+	NumFixMac=i;
+	NumComm=1;
+	exit;
+}
+
+i=1;
+IDHol[i]=Tip2
+XHol[i]=Lengh-Dx
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip1
+XHol[i]=Lengh-Dx-sh
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip2
+XHol[i]=Dx
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip1
+XHol[i]=Dx+sh
+YHol[i]=0
+zHol[i]=0
+NumComm=2;
+
+if Lengh>512&&Lengh<=1024
+{
+	i=i+1;
+	IDHol[i]=Tip1
+	XHol[i]=Lengh/2
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1;
+	IDHol[i]=Tip2
+	XHol[i]=(Lengh/2)-sh
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1;
+	IDHol[i]=Tip2
+	XHol[i]=(Lengh/2)+sh
+	YHol[i]=0
+	zHol[i]=0
+	
+	NumFixMac=i;
+	NumComm=NumComm+1;
+	exit
+}
+
+len=Lengh-2*Dx-2*sh;
+
+if Lengh>1024&&Lengh<=1472
+{
+	i=i+1;
+	IDHol[i]=Tip1
+	XHol[i]=Dx+sh+len/3
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1;
+	IDHol[i]=Tip2
+	XHol[i]=Dx+sh+len/3-sh
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1;
+	IDHol[i]=Tip2
+	XHol[i]=Dx+sh+len/3+sh
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1;
+	IDHol[i]=Tip1
+	XHol[i]=Dx+sh+2*len/3
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1;
+	IDHol[i]=Tip2
+	XHol[i]=Dx+sh+2*len/3-sh
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1;
+	IDHol[i]=Tip2
+	XHol[i]=Dx+sh+2*len/3+sh
+	YHol[i]=0
+	zHol[i]=0
+	
+	NumFixMac=i;
+	NumComm=NumComm+2;
+	exit
+}
+
+if Lengh>1472
+{
+	i=i+1;
+	IDHol[i]=Tip1
+	XHol[i]=Dx+sh+len/4
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1;
+	IDHol[i]=Tip2
+	XHol[i]=Dx+sh+len/4-sh
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1;
+	IDHol[i]=Tip2
+	XHol[i]=Dx+sh+len/4+sh
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1;
+	IDHol[i]=Tip1
+	XHol[i]=Dx+sh+2*len/4
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1;
+	IDHol[i]=Tip2
+	XHol[i]=Dx+sh+2*len/4-sh
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1;
+	IDHol[i]=Tip2
+	XHol[i]=Dx+sh+2*len/4+sh
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1;
+	IDHol[i]=Tip1
+	XHol[i]=Dx+sh+3*len/4
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1;
+	IDHol[i]=Tip2
+	XHol[i]=Dx+sh+3*len/4-sh
+	YHol[i]=0
+	zHol[i]=0
+	
+	i=i+1;
+	IDHol[i]=Tip2
+	XHol[i]=Dx+sh+3*len/4+sh
+	YHol[i]=0
+	zHol[i]=0
+	
+	NumFixMac=i;
+	NumComm=NumComm+3;
+	exit
+}
+
+NumFixMac=i;
+exit;

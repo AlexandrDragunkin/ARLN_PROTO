@@ -1,0 +1,402 @@
+//-- Создание контура столешницы Amik
+//-- Входные параметры
+//-- d - Длина
+//-- Bl - Левая сторона
+//-- Br - Правая сторона
+//-- Al - Угол скоса слева
+//-- Ar - Угол скоса справа
+//-- hh - Прогиб сзади
+//-- hs - Прогиб спереди
+//-- rc1 - Первый радиус скругления
+//-- rc2 - Второй радиус скругления
+//-- rc3 - Третий радиус скругления
+//-- rc4 - Четвёртый радиус скругления
+
+getpar d,Bl,Br,Al,Ar,hh,hs,rc1,rc2,rc3,rc4;
+
+//-- Массив для координат пересечения
+defarr Cr[6];
+defarr Kx[8];
+defarr Ky[8];
+
+Num=4;  //-- Количество объектов
+
+//---------------------------------------------------------------
+NULLOUT=getsnap();
+setucs gcs;
+hh=-hh;
+d=d/2;
+Al=radian(Al);
+Ar=radian(Ar);
+//---------Координаты точки на малой дуге-------------------------
+
+x1=Br*Cos(Ar);
+y1=Br*Sin(Ar);
+x2=2*d-Bl*Cos(Al);
+y2=Bl*Sin(Al);
+
+xс=(x1+x2)/2;
+yс=(y1+y2)/2;
+
+if (y1!=y2)
+{
+  k=(x1-x2)/(y2-y1);
+}
+else
+{
+  k=0;
+}
+
+if (y1>y2)
+{
+  x=xс+hs/Sqrt(1+k*k);
+  y=yс+k*hs/Sqrt(1+k*k);
+}
+else
+{
+  if (y1==y2)
+  {
+    x=d;
+    y=y1+hs;
+  }
+  else
+  {
+    x=xс-hs/Sqrt(1+k*k);
+    y=yс-k*hs/Sqrt(1+k*k);
+  }
+}
+//-------Радиусы и центры окружностей---------------------------------
+if (hh!=0)
+{
+  x0h=d;
+  y0h=(hh*hh-d*d)/(2*hh);
+  Rh=Sqrt(x0h*x0h+y0h*y0h);
+}
+
+if (hs!=0)
+{
+  if (y1!=y2)
+  {
+    t0=4*((x2-x1)*(y-y2)-(y2-y1)*(x-x2));
+    t1=2*((y-y2)*(y2*y2-y1*y1+x2*x2-x1*x1)-(y2-y1)*(y*y-y2*y2+x*x-x2*x2));
+    t2=2*((x2-x1)*(y*y-y2*y2+x*x-x2*x2)-(x-x2)*(y2*y2-y1*y1+x2*x2-x1*x1));
+    x0s=t1/t0; y0s=t2/t0;
+  }
+  else
+  {
+    x0s=d;
+    y0s=0.5*(x*x-x2*x2+y*y-y2*y2+2*d*(x2-x))/(y-y2);
+  }
+  Rs=Sqrt((x-x0s)*(x-x0s)+(y-y0s)*(y-y0s));
+}
+//-------Центры скругляющих окружностей (отрезок-отрезок)--------------
+xl1=rc1*(1+Cos(Ar))/Sin(Ar);
+yl1=rc1;
+xl2=2*d-rc2*(1+Cos(Al))/Sin(Al);
+yl2=rc2;
+
+if (y1!=y2)
+{
+  Gm=Atan((y2-y1)/(x2-x1));
+  by=Br*(Sin(Ar)-Tan(Gm)*Cos(Ar));
+}
+else
+{
+  Gm=0;
+  by=y1;
+}
+if (Al!=pi()/2)
+{
+  xl3=(2*d*Tan(Al)-by+rc3*(1/Cos(Gm)-1/Cos(Al)))/(Tan(Gm)+Tan(Al));
+}
+else
+{
+  xl3=2*d-rc3;
+}
+yl3=Tan(Gm)*xl3+by-rc3/Cos(Gm);
+
+if (Ar!=pi()/2)
+{
+  xl4=(rc4*(1/Cos(Gm)-1/Cos(Ar))-by)/(Tan(Gm)-Tan(Ar));
+}
+else
+{
+  xl4=rc4;
+}
+yl4=Tan(Gm)*xl4+by-rc4/Cos(Gm);
+
+//-------Центры скругляющих окружностей (отрезок-дуга)-----------------
+if (hh!=0)
+{
+  if (hh>0)
+  {
+    Rv=Rh+rc1;
+  }
+  else
+  {
+    Rv=Rh-rc1;
+  }
+  #Avh1 circle x0h y0h 0  normal 0 0 1 Rv;
+  #Lt line 0 0 0 x1 y1 0;
+  setucs lcs Lt;
+  move Lt done 0 -rc1 0 nocopy;
+  objident last 1 Lvr;
+  setucs gcs;
+  int=intpoint(Avh1,Lvr,Cr);
+  xc1=Cr[1];
+  yc1=Cr[2];
+  if (hh>0)
+  {
+    Rv=Rh+rc2;
+  }
+  else
+  {
+    Rv=Rh-rc2;
+  }
+  #Avh2 circle x0h y0h 0  normal 0 0 1 Rv;
+  #Lt line  2*d 0 0  x2 y2 0;
+  setucs lcs Lt;
+  move Lt done 0 rc2 0 nocopy;
+  objident last 1 Lvl;
+  setucs gcs;
+  int=intpoint(Avh2,Lvl,Cr);
+  xc2=Cr[1];  yc2=Cr[2];
+  delete Avh1 Avh2 Lvr Lvl done;
+}
+
+if (hs!=0)
+{
+  if (hs>0)
+  {
+    Rv=Rs-rc3;
+  }
+  else
+  {
+    Rv=Rs+rc3;
+  }
+
+  #Avs1 circle x0s y0s 0  normal 0 0 1 Rv;
+  #Lt line  2*d 0 0   x2 y2 0;
+  setucs lcs Lt;
+  move Lt done 0 rc3 0 nocopy;
+  objident last 1 Lvl;
+  setucs gcs;
+  int=intpoint(Avs1,Lvl,Cr);
+  xc3=Cr[1];  yc3=Cr[2];
+
+  if (hs>0)
+  {
+    Rv=Rs-rc4;
+  }
+  else
+  {
+    Rv=Rs+rc4;
+  }
+  #Avs2 circle x0s y0s 0  normal 0 0 1   Rv;
+  #Lt line  0 0 0  x1 y1 0;
+  setucs lcs Lt;
+  move Lt done 0 -rc4 0 nocopy;
+  objident last 1 Lvr;
+  setucs gcs;
+  int=intpoint(Avs2,Lvr,Cr);
+  xc4=Cr[1];  yc4=Cr[2];
+  delete Avs1 Avs2 Lvr Lvl done;
+}
+
+//------------Построение--------------------------------------------------
+
+#Lr line 0 0 0      Br*Cos(Ar) Br*Sin(Ar) 0;
+#Ll line 2*d 0 0    2*d-Bl*Cos(Al) Bl*Sin(Al) 0;
+if (hh==0)
+{
+  #Lh line 0 0 0   2*d 0 0;
+  if (rc1>0)
+  {
+    #Ac1 circle xl1 yl1 0  normal 0 0 1  rc1;
+    int=intpoint(Lr,Ac1,Cr);
+    Kx[1]=Cr[1];
+    Ky[1]=Cr[2];
+    int=intpoint(Lh,Ac1,Cr);
+    Kx[2]=Cr[1];
+    Ky[2]=Cr[2];
+    #Dc1 arc Kx[1] Ky[1] 0   Kx[2] Ky[2] 0   center xl1 yl1 0;
+    delete Ac1 done;
+    Num=Num+1;
+  }
+  else
+  {
+    Kx[1]=0;
+    Ky[1]=0;
+    Kx[2]=0;
+    Ky[2]=0;
+  }
+  if (rc2>0)
+  {
+    #Ac2 circle xl2 yl2 0  normal 0 0 1  rc2;
+    int=intpoint(Lh,Ac2,Cr);
+    Kx[3]=Cr[1];
+    Ky[3]=Cr[2];
+    int=intpoint(Ll,Ac2,Cr);
+    Kx[4]=Cr[1];
+    Ky[4]=Cr[2];
+    #Dc2 arc Kx[3] Ky[3] 0   Kx[4] Ky[4] 0   center xl2 yl2 0;
+    delete Ac2 done;
+    Num=Num+1;
+  }
+  else
+  {
+    Kx[3]=2*d;
+    Ky[3]=0;
+    Kx[4]=2*d;
+    Ky[4]=0;
+  }
+  #Lhnew line Kx[2] Ky[2] 0   Kx[3] Ky[3] 0;
+  delete Lh done;
+}
+else
+{
+  #Ah arc 0 0 0    2*d 0 0    (d) hh 0;
+  if (rc1>0)
+  {
+    #Ac1 circle xc1 yc1 0  normal 0 0 1   rc1;
+    int=intpoint(Lr,Ac1,Cr);
+    Kx[1]=Cr[1];  Ky[1]=Cr[2];
+    int=intpoint(Ah,Ac1,Cr);
+    Kx[2]=Cr[1];
+    Ky[2]=Cr[2];
+    #Dc1 arc Kx[1] Ky[1] 0   Kx[2] Ky[2] 0   center xc1 yc1 0;
+    delete Ac1 done;
+    Num=Num+1;
+  }
+  else
+  {
+    Kx[1]=0;
+    Ky[1]=0;
+    Kx[2]=0;
+    Ky[2]=0;
+  }
+  if (rc2>0)
+  {
+    #Ac2 circle xc2 yc2 0  normal 0 0 1   rc2;
+    int=intpoint(Ah,Ac2,Cr);
+    Kx[3]=Cr[1];
+    Ky[3]=Cr[2];
+    int=intpoint(Ll,Ac2,Cr);
+    Kx[4]=Cr[1];
+    Ky[4]=Cr[2];
+    #Dc2 arc Kx[3] Ky[3] 0   Kx[4] Ky[4] 0   center xc2 yc2 0;
+    delete Ac2 done;
+    Num=Num+1;
+  }
+  else
+  {
+    Kx[3]=2*d;
+    Ky[3]=0;
+    Kx[4]=2*d;
+    Ky[4]=0;
+  }
+  #Ahnew arc Kx[2] Ky[2] 0  Kx[3] Ky[3] 0  (d) hh 0;
+  delete Ah done;
+}
+
+if (hs==0)
+{
+  #Ls line  x1 y1 0   x2 y2 0;
+  if (rc3>0)
+  {
+    #Ac3 circle xl3 yl3 0  normal 0 0 1  rc3;
+    int=intpoint(Ll,Ac3,Cr);
+    Kx[5]=Cr[1];
+    Ky[5]=Cr[2];
+    int=intpoint(Ls,Ac3,Cr);
+    Kx[6]=Cr[1];
+    Ky[6]=Cr[2];
+    #Dc3 arc Kx[5] Ky[5] 0   Kx[6] Ky[6] 0   center xl3 yl3 0;
+    delete Ac3 done;
+    Num=Num+1;
+  }
+  else
+  {
+    Kx[5]=x2;
+    Ky[5]=y2;
+    Kx[6]=x2;
+    Ky[6]=y2;
+  }
+  if (rc4>0)
+  {
+    #Ac4 circle xl4 yl4 0  normal 0 0 1   rc4;
+    int=intpoint(Ls,Ac4,Cr);
+    Kx[7]=Cr[1];
+    Ky[7]=Cr[2];
+    int=intpoint(Lr,Ac4,Cr);
+    Kx[8]=Cr[1];
+    Ky[8]=Cr[2];
+    #Dc4 arc Kx[7] Ky[7] 0   Kx[8] Ky[8] 0   center xl4 yl4 0;
+    delete Ac4 done;
+    Num=Num+1
+  }
+  else
+  {
+    Kx[7]=x1;
+    Ky[7]=y1;
+    Kx[8]=x1;
+    Ky[8]=y1;
+  }
+  #Lsnew line Kx[7] Ky[7] 0  Kx[6] Ky[6] 0;
+  delete Ls done;
+}
+else
+{
+  #As arc  x1 y1 0  x2 y2 0   x y 0;
+  if (rc3>0)
+  {
+    #Ac3 circle xc3 yc3 0  normal 0 0 1   rc3;
+    int=intpoint(Ll,Ac3,Cr);
+    Kx[5]=Cr[1];
+    Ky[5]=Cr[2];
+    int=intpoint(As,Ac3,Cr);
+    Kx[6]=Cr[1];
+    Ky[6]=Cr[2];
+    #Dc3 arc Kx[5] Ky[5] 0   Kx[6] Ky[6] 0   center xc3 yc3 0;
+    delete Ac3 done;
+    Num=Num+1
+  }
+  else
+  {
+    Kx[5]=x2;
+    Ky[5]=y2;
+    Kx[6]=x2;
+    Ky[6]=y2;
+  }
+  if (rc4>0)
+  {
+    #Ac4 circle xc4 yc4 0  normal 0 0 1   rc4;
+    int=intpoint(As,Ac4,Cr);
+    Kx[7]=Cr[1];
+    Ky[7]=Cr[2];
+    int=intpoint(Lr,Ac4,Cr);
+    Kx[8]=Cr[1];
+    Ky[8]=Cr[2];
+    #Dc4 arc Kx[7] Ky[7] 0   Kx[8] Ky[8] 0   center xc4 yc4 0;
+    delete Ac4 done;
+    Num=Num+1
+  }
+  else
+  {
+    Kx[7]=x1;
+    Ky[7]=y1;
+    Kx[8]=x1;
+    Ky[8]=y1;
+  }
+  #Asnew arc Kx[6] Ky[6] 0   Kx[7] Ky[7] 0   x y 0;
+  delete As done;
+}
+#Lrnew line Kx[1] Ky[1] 0   Kx[8] Ky[8] 0;
+#Llnew line Kx[4] Ky[4] 0   Kx[5] Ky[5] 0;
+delete Ll Lr done;
+NULLOUT=resnap();
+#pa path select last Num done last 1 done;
+#paa pline path pa;
+delete pa done;
+objident paa pa;
+exit;

@@ -1,0 +1,74 @@
+//-- Создание столешницы-сектора
+
+defarr xm[6];
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами 
+NULLOUT=GetVarInst(2,"MacroSw",MacroSw,0); //-- Способ построения 
+
+getpar
+x y z		              //-- Центр столешницы
+Rad, BegAngle, Angle; //-- Радиус, начальный угол и угол раствора столешницы
+
+//---------------------------------------------------------------
+position=116;  //-- Номер прототипа столешницы-сектора
+Namescr="ProtoParams";
+FurnType="011000";
+NULLOUT=pushinst(1);
+NULLOUT=getsnap();
+NULLOUT=getvarinst(1,"ElemName",ElemName," ");    //-- Имя элемента 
+NULLOUT=getvarinst(1,"PanMater",PanMater,0);      //-- Материал 
+NULLOUT=getvarinst(1,"g_BandPan",BandPan,0,1);    //-- Тип кромки 
+NULLOUT=getvarinst(1,"g_CBandPan",PanCKro,0,1);   //-- Цвет кромки 
+
+NULLOUT=setvarinst(1,"FurnType",FurnType);    //-- FurnType
+
+if (ElemName==""||ElemName==" ")
+{
+  ElemName="Столешница-сектор";
+}
+D=priceinfo(PanMater,"Thickness",16); //-- Толщина столешницы-капли
+//---------------------------------------------------------------------
+if (MacroSw==0)
+{
+  gosub SimpleStol;
+}
+else
+{
+  protoobj create "Shkaf.ptl" 116
+    "PrMater" PanMater
+    "Band" BandPan
+    "Face_col" PanCKro
+    "Rad" Rad
+    "Angle" Angle
+    done
+    x y z ;
+  NULLOUT=setvarinst(2,"MacroSw",MacroSw);          //-- Текущий способ построения
+  objident last 1 Pan;
+}
+NULLOUT=resnap();
+NULLOUT=popinst(1);
+exit;
+//--------------------------------------------------------------
+SimpleStol:
+macro ProtoPath+"SetEnam.mac" "";
+object_1=sysvar(60);
+macro ProtoPath+"SectorForm.mac" Rad, BegAngle, Angle, PanMater, BandPan, PanCKro;
+object_2=sysvar(60)-object_1;
+move last object_2 done x y z nocopy;
+setucs move x y z;
+#stl group last object_2 done;
+NULLOUT=objgab3(stl,xm);
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"PrMater",PanMater);
+err=AddScratch(ScrMod,FurnType,"Rad",Rad);
+err=AddScratch(ScrMod,FurnType,"BegAngle",BegAngle);
+err=AddScratch(ScrMod,FurnType,"Angle",Angle);
+err=AddScratch(ScrMod,FurnType,"Band",BandPan);
+err=AddScratch(ScrMod,FurnType,"Face_col",PanCKro);
+NULLOUT=writescratch(ScrMod,Namescr,stl);
+NULLOUT=TermScratch(ScrMod);
+NULLOUT=addattrpi(stl,1,position);
+macro ProtoPath+"SetEnam.mac" ElemName;
+//-- Присваиваем атрибуты
+macro ProtoPath+"EndPanel.mac" stl position xm[4]-xm[1] xm[5]-xm[2] D PanMater "";
+return;

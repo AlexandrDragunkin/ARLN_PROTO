@@ -1,0 +1,115 @@
+// создание нематериального профиля   по заданному пути
+// Имя файла (или объекта) профиля, цвет К3Look и параметры  описаны в глобальных переменных
+// Если  длина имени профиля = 0, то  берем Объект профиль контура
+global ProtoPath ;
+
+global g_PrfColor  g_PrProf;
+global  g_PrCont;   // Объект профиль контура
+
+global 
+PrfMater // Материал профиля
+PrfP_1   // Подрез начальной точки
+PrfP_2   // Подрез конечной точки
+PrfSd_X  // Сдвиг по Х ЛСК
+PrfSd_Y  // Сдвиг по У ЛСК
+PrfAngle // Угол поворота вокруг оси (град)
+PrfAng_1 // Угол подрезки 1 стороны
+PrfAng_2 // Угол подрезки 2 стороны
+PrfColor // Цвет профиля из прайса
+;
+defarr xm[6];
+
+getpar 
+xn yn zn		// точка установки
+flagPer                 // Флаг переориентации
+Path                    // Контур направляющей профиля
+Transp                  // Флаг прозрачности
+;
+
+defarr arcd[9], pt0[3], pt1[3];
+
+Angle=PrfAngle
+Sd_X=PrfSd_X
+Sd_Y=PrfSd_Y
+
+Col_Prof=g_PrfColor;
+FileName=g_PrProf;
+
+if (len(FileName)==0)
+{
+  if (GetObjType(g_PrCont)<=5)
+  {
+    Kont=g_PrCont;
+  }
+  else
+  {
+     line
+       -10 -10 0
+       -10 10 0
+       10 10 0
+       10 -10 0
+       close ;
+     #Kont path last 1 done ;
+  }
+}
+else
+{
+    macro ProtoPath+"AppendK3.mac" "\\Профили\\" FileName 0 0 0;
+    objident last 1 Kont ;
+}
+rotate Kont done 2points 0  0 0 0 0 1 Angle nocopy ;
+rr=objgab3(Kont,xm);
+P1=Path;
+
+#prof pipe P1 Kont done 0 0 0 if (flagPer==1) { pereor } 0  yes ;
+Attrobj Attach "$Material" "$TSmooth" "$TMix" Done Prof Col_Prof 1 1;
+delete  Kont done ;
+
+Ang1=PrfAng_1;
+Ang2=PrfAng_2;
+L=getpathpoint(P1,0.,pt0);
+L=getpathpoint(P1,0.01,pt1);
+setucs pt0[1] pt0[2] pt0[3]  pt1[1] pt1[2] pt1[3] ;
+if (ang1!=0)
+{
+  #b1 box 0 -231.21 -231.21 -231.21 231.21 231.21 ;
+  if (ang1>0)
+  {
+    rotate b1 done 2points 0 0 0 0 -1 0 ang1 nocopy ;
+    move b1 done 0 0 xm[5] nocopy;
+  }
+  else
+  {
+    rotate b1 done 2points 0 0 0 0 -1  0 ang1 nocopy ;
+    move b1 done 0 0 xm[2] nocopy;
+  }
+  #prof  bool sub prof b1 done ;
+}
+setucs gcs ;
+
+  L=getpathpoint(P1,1.,pt0);
+  L=getpathpoint(P1,0.99,pt1);
+setucs pt0[1] pt0[2] pt0[3]  pt1[1] pt1[2] pt1[3] ;
+
+if (ang2!=0)
+{
+  #b1 box 0 -231.21 -231.21 -231.21 231.21 231.21 ;
+  if (ang2>0)
+  {
+    rotate b1 done 2points 0 0 0 0 -1 0 ang2 nocopy ;
+    move b1 done 0 0 xm[5] nocopy;
+  }
+  else
+  {
+    rotate b1 done 2points 0 0 0 0 -1 0 ang2 nocopy ;
+    move b1 done 0 0 xm[2] nocopy;
+  }
+  #prof  bool sub prof b1 done ;
+}
+setucs gcs ;
+move prof done xn yn zn nocopy;
+if (Transp==1)
+{
+  chprop frame prof ;
+}
+exit;

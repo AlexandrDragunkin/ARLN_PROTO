@@ -1,0 +1,41 @@
+//-- ћакропрограмма установки полочки-выноски в текущей видовой плоскости
+//-- ¬ходные параметры:
+//-- Arrowtype - тип стрелки
+//-- x1, y1, z1 - координаты начала (стрелки) полочки-выноси
+//-- x2, y2, z2 - координаты конца полочки-выноски
+//-- txt - текст дл€ надписи
+
+NULLOUT=GetSnap();
+getpar Arrowtype,x1,y1,z1,x2,y2,z2,txt;
+
+ptranscs(0,1,x1,y1,z1,x1,y1,z1);
+ptranscs(0,1,x2,y2,z2,x2,y2,z2);
+setucs vcs;
+if (y1==y2) //-- „тобы корректно работало при горизонтальных лини€х
+{
+  y2=y1+1;
+}
+#disL distance x1,y1,z2 x2,y2,z2;
+//-- ”станавливаем типы стрелок
+if  (x2<x1)
+{
+  ArowL=0;
+  ArowR=Arrowtype;
+}
+else
+{
+  ArowL=Arrowtype;
+  ArowR=0;
+}
+//-------------------------------------------------------------------------
+//-- –азмещение полочки-выноски и текстатекста
+dimarrows ArowL ArowR; //-- —трелки
+dimlnflags 6;
+dimtext 0 str(txt) done;
+ldim 3ddim x1,y1,z2 x2,y2,z2 angle vcs @ (-disl)/20000*ArowR+disl/10000 0 0;
+ldim edit place leader 1 x2,y2,z2 @ (-disl)/20000*ArowR+disl/10000 0 0 done;
+dimarrows auto;
+dimlnflags 0;
+dimtext 0 "<>" done;
+NULLOUT=ReSnap();
+exit;

@@ -1,0 +1,16 @@
+//-- Сотовая полка (стандартный образец)
+//-- Входные параметры:
+//-- x - Ширина секции
+//-- y, z - Координты нижнего дальнего угла сотовой полки
+//-- SShelf - ID сетчатого материала в номенклатурном справочнике
+//-- N_clypse - Количество клипс
+
+global ProtoPath;
+getpar x,y,z,SShelf,N_clypse;
+//-----------------------------------------
+xbase=0;  //-- Координата сотовой полки по оси x
+SShelfMat=priceinfo(SShelf,"AccessID",50,2);  //-- ID прута сетки
+//-----------------------------------------
+macro ProtoPath+"base2.mac" xbase,x,y,z,SShelfMat;
+macro ProtoPath+"clypse2.mac" xbase,x,y,z,SShelfMat,N_clypse;
+exit;

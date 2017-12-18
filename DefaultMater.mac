@@ -1,0 +1,256 @@
+//-- Вывод диалога с умолчаниями
+//-- До и после вывода можно добавить свои действия
+//defarr ArrIDName[250], ArrSubstName[250];
+//udbranch("Defaults");
+
+defarr arr[2];
+global ProtoPath;
+NULLOUT=getvarinst(2,"DefAllMat",DefAllMat,1); // Логическая пер. умолчания материала на все элементы
+NULLOUT=getvarinst(2,"PrMater",PrMater,281); //-- Умолчание материала
+NULLOUT=getvarinst(2,"Typ_Kro",Typ_Kro,400); //-- Кромка
+//NULLOUT=GetVarInst(2,"RoughBandMater",RoughBandMat,0); //-- Умолчание для черновой кромки , пока дубль лицевой
+NULLOUT=getvarinst(2,"FasDMat",FasDMat,281); //-- Умолчание фасада
+NULLOUT=getvarinst(2,"FasBMat",FasBMat,281); //-- Умолчание для материалов фасада ящика
+NULLOUT=GetVarInst(2,"BoxCorpMater",BoxCorpMater,281);  //-- Умолчание для материалов корпуса ящика
+NULLOUT=GetVarInst(2,"BDMater",BDMater,281); //-- Умолчание для материалов дна ящика
+NULLOUT=GetVarInst(2,"BPMater",BPMater,281); //-- Умолчание для материалов накл. стенок
+NULLOUT=GetVarInst(2,"BUMater",BUMater,281); //-- Умолчание для материала утопленных стенок
+
+dopform=0;
+// putmsg("FasBMat_s="+str(FasBMat))
+// putmsg("FasDMat_s="+str(FasDMat))
+// putmsg("BoxCorpMater_s="+str(BoxCorpMater))
+
+kart:
+def=DefAllMat;
+#ok_flag
+setvar
+"Умолчания"
+//PicturesPath+"boxes.wmf"
+""
+left
+"Введите значения параметров"
+done
+
+string button 6 auto default "17#"+str(PrMater) 
+"Материал панелей:" PrMater
+
+logical default def "Материал на всё" def
+
+if def==0
+{
+let dopform=1
+button " " var
+string button 6 auto default "18#"+str(Typ_Kro) 
+"Материал кромки:" Typ_Kro
+
+string button 6 auto default "38#"+str(FasDMat) 
+"Материал фасада дверей:" FasDMat
+
+string button 6 auto default "37#"+str(FasBMat) 
+"Материал фасада ящиков:" FasBMat
+
+string button 6 auto default "37#"+str(BoxCorpMater) 
+"Материал фасада корпуса ящиков:" BoxCorpMater
+
+string button 6 auto default "39#"+str(BDMater) 
+"Материал дна ящиков:" BDMater
+
+string button 6 auto default "17#"+str(BPMater) 
+"Материал накладной стенки:" BPMater
+
+string button 6 auto default "17#"+str(BUMater) 
+"Материал утопленной стенки:" BUMater
+}
+done;
+if (ok_flag==0)
+{
+  exit;
+}
+
+splitbydelim(PrMater,"#",Arr);
+PrMater=Arr[2];
+
+if def!=DefAllMat
+{
+	DefAllMat=def;
+	NULLOUT=setvarinst(2,"DefAllMat",DefAllMat);
+	if DefAllMat==0
+	{
+		goto kart;
+	}
+}
+
+if def==1
+{
+	// Кромка
+	manual=0;
+	Typ_Kro=priceinfo(PrMater,"BandMater",0);
+	if Typ_Kro==0
+	{
+		Putmsg("Для материала "+str(priceinfo(PrMater,"MatName",""))+" не задано свойство BandMater",0)
+		//splitbydelim(Typ_Kro,"#",Arr);
+		//Typ_Kro=Arr[2];
+	}
+	
+	// BcMater=6448; // 10-ДСП А
+	// ValType=0
+	// sVal=""
+	// NULLOUT=udGetEntity("BDMater",ValType,BcMater,sVal)
+	// res=NPGetByWhere(1,"[ARTICLE]=\""+PriceInfo(PrMater,"ARTICLE","А-УСЛОВНЫЙ")+"\" AND [Thickness]=10","abm",getyadsubst(2));
+	// if res {
+			// BcMater=abm[1];
+	// }
+	// else {
+		// PutMSg("У материала "+PriceInfo(PrMater,"MATNAME","Нет")+" не определено свойство ARTICLE, совпадающее с 10-ДСП. Будет применен материал \"10-ДСП А\"",0)
+	// }
+	
+	// Ящики
+	NPGetByWhere(1,"ID>0","ArrIDName",37);
+	res=findinarray(ArrIDName,PrMater);
+	if res>=1
+	{
+		FasBMat=PrMater;
+		BoxCorpMater=PrMater;
+	}
+	else
+	{
+		Putmsg("Материал корпуса ящиков не может быть из "+str(priceinfo(PrMater,"MatName",""))+". Задайте вручную",0)
+		Putmsg("Материал фасада ящиков не может быть из "+str(priceinfo(PrMater,"MatName",""))+". Задайте вручную",0)
+		
+		if dopform==1
+		{
+			splitbydelim(FasBMat,"#",Arr);
+			FasBMat=Arr[2];
+		}
+		if dopform==1
+		{
+			nzap=splitbydelim(BoxCorpMater,"#",Arr);
+			if nzap>1 {	BoxCorpMater=Arr[2]; }
+		}
+		manual=1;
+	}
+	// Дно ящиков
+	res=NPGetByWhere(1,"[ARTICLE]=\""+PriceInfo(PrMater,"ARTICLE","А-УСЛОВНЫЙ")+"\" AND [Thickness]=10","abm",getyadsubst(2));
+	// putmsg(PriceInfo(PrMater,"ARTICLE","А-УСЛОВНЫЙ"))
+	// putmsg(res)
+	if res
+	{
+		BDMater=abm[1];
+		// putmsg(BDMater)
+		goto findno;
+	}
+	else
+	{
+		Putmsg("Подбор дна ящика. Отсутствует материал с толщиной 10 мм",0)
+		TempMater=PrMater;
+	}
+	
+	res=findinarray(ArrIDName,TempMater);
+	
+	if res>=1
+	{
+		BDMater=TempMater;
+	}
+	else
+	{
+		
+		NPGetByWhere(1,"ID>0","ArrIDName",39);
+		res=findinarray(ArrIDName,PrMater);
+		if res>=1
+		{
+			BDMater=PrMater;
+		}
+		else
+		{
+			Putmsg("Материал дна ящиков не может быть из "+str(priceinfo(PrMater,"MatName",""))+". Задайте вручную",0)
+			if dopform==1
+			{
+				nzap=splitbydelim(BDMater,"#",Arr);
+				if nzap>1 {	BDMater=Arr[2]; }
+			}
+			manual=1;
+		}
+	}
+	findno:
+	// Фасады
+	NPGetByWhere(1,"ID>0","ArrIDName",38);
+	res=findinarray(ArrIDName,PrMater);
+	if res>=1
+	{
+		FasDMat=PrMater;
+	}
+	else
+	{
+		Putmsg("Материал фасада дверей не может быть из "+str(priceinfo(PrMater,"MatName",""))+". Задайте вручную",0)
+		if dopform==1
+		{
+			nzap=splitbydelim(FasDMat,"#",Arr);
+			if nzap>1 {	FasDMat=Arr[2]; }
+		}
+		manual=1;
+	}
+	
+	BUMater=PrMater;
+	BPMater=PrMater;
+	
+	if manual==1
+	{
+		DefAllMat=0;
+		goto kart;
+	}
+}
+else
+{
+	nullout=splitbydelim(Typ_Kro,"#",Arr);
+	Typ_Kro=Arr[2];
+	
+	nullout=splitbydelim(FasDMat,"#",Arr);
+	FasDMat=Arr[2];
+	
+	nullout=splitbydelim(FasBMat,"#",Arr);
+	FasBMat=Arr[2];
+	
+	nullout=splitbydelim(BoxCorpMater,"#",Arr);
+	BoxCorpMater=Arr[2];
+	
+	nullout=splitbydelim(BDMater,"#",Arr);
+	BDMater=Arr[2];
+
+	nullout=splitbydelim(BPMater,"#",Arr);
+	BPMater=Arr[2];
+	
+	nullout=splitbydelim(BUMater,"#",Arr);
+	BUMater=Arr[2];
+}
+// putmsg("FasBMat_f="+str(FasBMat))
+// putmsg("FasDMat_f="+str(FasDMat))
+// putmsg("BoxCorpMater_f="+str(BoxCorpMater))
+pos1=udGetPos("Materials")
+pos2=udGetPos("Defaults")
+nullout=setvarinst(2,"PrMater",PrMater);
+nullout=udSetEntity("PrMater",PrMater);
+nullout=setvarinst(2,"Typ_Kro",Typ_Kro);
+nullout=udSetEntity("Typ_Kro",Typ_Kro);
+nullout=setvarinst(2,"Band_F",Typ_Kro);
+nullout=udSetEntity("Band_F",Typ_Kro);
+nullout=setvarinst(2,"RoughBandMater",Typ_Kro);
+nullout=udSetEntity("RoughBandMater",Typ_Kro);
+nullout=setvarinst(2,"FasDMat",FasDMat);
+nullout=udSetEntity("FasDMat",FasDMat);
+nullout=setvarinst(2,"FasBMat",FasBMat);
+nullout=udSetEntity("FasBMat",FasBMat);
+nullout=setvarinst(2,"BoxCorpMater",BoxCorpMater);
+nullout=udSetEntity("BoxCorpMater",BoxCorpMater);
+nullout=setvarinst(2,"BDMater",BDMater);
+nullout=udSetEntity("BDMater",BDMater);
+nullout=setvarinst(2,"BPMater",BPMater);
+nullout=udSetEntity("BPMater",BPMater);
+nullout=setvarinst(2,"BUMater",BUMater);
+nullout=udSetEntity("BUMater",BUMater);
+nullout=setvarinst(2,"CSMat",PrMater);
+nullout=udSetEntity("CSMat",PrMater);
+nullout=pushinst(2);
+nullout=udLoadSave(1);
+//udbranch("Defaults");
+exit;

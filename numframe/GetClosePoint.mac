@@ -1,0 +1,111 @@
+//-- Макропрограмма находит ближайшую точку на плоскости по углу между векторами или по расттоянию между точками
+global ProtoPath;
+getpar
+Xp					//-- координата X точки от которой идет отсчет
+Yp					//-- координата Y точки от которой идет отсчет
+vecX				//-- Х координата вектора отсчета (для поиска по углу)
+vecY				//-- Y координата вектора отсчета (для поиска по углу)
+arrX				//-- массив Х координат точек области
+arrY				//-- массив Y координат точек области
+arrS				//-- массив с признаком, какие точки можно использовать
+n						//-- количество точек области		(если -1, то берется размерность одного из массивов)
+resX				//-- возвращаемое значение, X координата ближайшей точки
+resY				//-- возвращаемое значение, Y координата ближайшей точки
+resn				//-- порядковый номер точки в массиве
+typescan		//-- 0- искать точку по углу, 1- искать точку по расстоянию
+;		
+NULLOUT=getvarinst(1,"Debug",Debug,0);
+defarr Av[3];
+defarr Bv[3];
+ugOld=361;
+radOld=9999999;
+resX=-1;
+resY=-1;
+resN=-1;
+
+if (n==-1)
+{
+	n=getdimarray(arrX);
+}
+i=0;
+LOOP:
+i=i+1;
+if (arrS[i]==1)
+{
+	if (typescan==0)
+	{
+		//-- Поиск по минимальному углу между векторами
+		Av[1]=vecX-Xp;
+		Av[2]=vecY-Yp;
+		Av[3]=0;
+		Bv[1]=arrX[i]-Xp;
+		Bv[2]=arrY[i]-Yp;
+		Bv[3]=0;
+//		if (Debug==1)
+//		{		
+//			xxxxx=arrX[i];
+//			yyyyy=arrY[i];
+//			point arrX[i] arrY[i] 0;
+//			putmsg("Линия X="+str(xxxxx)+"; Y="+str(yyyyy)+"")
+//			line Xp Yp 0 arrX[i] arrY[i] 0;
+//		}
+		//-- Сколярное произведение 
+		ab=Scalarv(Av,Bv);
+		//-- Модули векторов
+		am=abs(Sqrt(Av[1]*Av[1]+Av[2]*Av[2]));
+		bm=abs(Sqrt(Bv[1]*Bv[1]+Bv[2]*Bv[2]));
+		ambm=am*bm;
+		//-- Величина угла
+		ugNew=grad(acos(ab/ambm));
+		if (ugOld==361)
+		{
+			resX=arrX[i];
+			resY=arrY[i];
+			resN=i;
+			ugOld=ugNew;
+		}
+		else
+		{
+			if (ugNew<ugOld)						//-- если угол этой точки, меньше угла предыдущей
+			{
+				resX=arrX[i];
+				resY=arrY[i];
+				resN=i;
+				ugOld=ugNew;
+			}		  
+		}
+	}
+	if (typescan==1)
+	{
+		Av[1]=Xp;
+		Av[2]=Yp;
+		Av[3]=0;
+		Bv[1]=arrX[i];
+		Bv[2]=arrY[i];
+		Bv[3]=0;
+		radNew=Pntdist(Av,Bv);
+		if (radOld=9999999)
+		{
+			resX=arrX[i];
+			resY=arrY[i];
+			resN=i;
+			radOld=radNew;
+		}
+		else
+		{
+			if (radNew<radOld)
+			{
+				resX=arrX[i];
+				resY=arrY[i];
+				resN=i;
+				radOld=radNew;
+			}
+		}
+	}
+}
+if (i<n)
+{
+	goto LOOP;
+}
+NULLOUT=setvarinst(1,"Debug",0);
+exit;

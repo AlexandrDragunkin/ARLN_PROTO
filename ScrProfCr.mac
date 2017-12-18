@@ -1,0 +1,66 @@
+global ProtoPath ;
+ProtoPath=getprotomac("Shkaf,ptl");
+FileName="ProfilePar.scr"
+scr=InitScratch();
+
+err=AddScratch(scr,"RamF1_al.k3","wr",19);	  //-- ширина профиля рамки	
+err=AddScratch(scr,"RamF1_al.k3","dr",12.5);  //-- сдвиг вставки по оси Y от заднего края профиля рамки
+err=AddScratch(scr,"RamF1_al.k3","hr",1);     //-- подрезка вставки по профилю рамки
+err=AddScratch(scr,"RamF1_al.k3","wt",7);     //-- ширина уплотнительного профиля
+err=AddScratch(scr,"RamF1_al.k3","dt",1.5);   //-- сдвиг вставки по оси Y от заднего края уплотнительного профиля
+err=AddScratch(scr,"RamF1_al.k3","zt",1);     //-- подрезка вставки по уплотнительному профилю
+err=AddScratch(scr,"RamF1_al.k3","StMater",1140);// "Профиль" " уплотнительный для ал. фасада" "S3" "ramf0_al.k3";
+err=AddScratch(scr,"RamF1_al.k3","AcMater",1149);//  "Комлектующие" "Крепление для ал. профиля узкого" "S3" "ramfk1.k3";
+
+err=AddScratch(scr,"RamF2_al.k3","wr",19);	  //-- ширина профиля рамки	
+err=AddScratch(scr,"RamF2_al.k3","dr",11.5);  //-- сдвиг вставки по оси Y от заднего края профиля рамки
+err=AddScratch(scr,"RamF2_al.k3","hr",13);     //-- подрезка вставки по профилю рамки
+err=AddScratch(scr,"RamF2_al.k3","wt",7);     //-- ширина уплотнительного профиля
+err=AddScratch(scr,"RamF2_al.k3","dt",1.5);   //-- сдвиг вставки по оси Y от заднего края уплотнительного профиля
+err=AddScratch(scr,"RamF2_al.k3","zt",1);     //-- подрезка вставки по уплотнительному профилю
+err=AddScratch(scr,"RamF2_al.k3","StMater",1140);// "Профиль" " уплотнительный для ал. фасада" "S3" "ramf0_al.k3";
+err=AddScratch(scr,"RamF2_al.k3","AcMater",1149);//  "Комлектующие" "Крепление для ал. профиля узкого" "S3" "ramfk1.k3";
+
+err=AddScratch(scr,"RamF3_al.k3","wr",45);	  //-- ширина профиля рамки	
+err=AddScratch(scr,"RamF3_al.k3","dr",11.5);  //-- сдвиг вставки по оси Y от заднего края профиля рамки
+err=AddScratch(scr,"RamF3_al.k3","hr",13);     //-- подрезка вставки по профилю рамки
+err=AddScratch(scr,"RamF3_al.k3","wt",7);     //-- ширина уплотнительного профиля
+err=AddScratch(scr,"RamF3_al.k3","dt",1.5);   //-- сдвиг вставки по оси Y от заднего края уплотнительного профиля
+err=AddScratch(scr,"RamF3_al.k3","zt",1);     //-- подрезка вставки по уплотнительному профилю
+err=AddScratch(scr,"RamF3_al.k3","StMater",1140);// "Профиль" " уплотнительный для ал. фасада" "S3" "ramf0_al.k3";
+err=AddScratch(scr,"RamF3_al.k3","AcMater",1150);//  "Комлектующие" "Крепление для ал. профиля узкого" "S3" "ramfk1.k3";
+
+err=AddScratch(scr,"RamF4_al.k3","wr",45);	  //-- ширина профиля рамки	
+err=AddScratch(scr,"RamF4_al.k3","dr",12.5);  //-- сдвиг вставки по оси Y от заднего края профиля рамки
+err=AddScratch(scr,"RamF4_al.k3","hr",1.5);     //-- подрезка вставки по профилю рамки
+err=AddScratch(scr,"RamF4_al.k3","wt",7);     //-- ширина уплотнительного профиля
+err=AddScratch(scr,"RamF4_al.k3","dt",1.5);   //-- сдвиг вставки по оси Y от заднего края уплотнительного профиля
+err=AddScratch(scr,"RamF4_al.k3","zt",1);     //-- подрезка вставки по уплотнительному профилю
+err=AddScratch(scr,"RamF4_al.k3","StMater",1140);// "Профиль" " уплотнительный для ал. фасада" "S3" "ramf0_al.k3";
+err=AddScratch(scr,"RamF4_al.k3","AcMater",1150);//  "Комлектующие" "Крепление для ал. профиля узкого" "S3" "ramfk1.k3";
+
+err=AddScratch(scr,"Prdoor.k3","wr",50);	  //-- ширина профиля рамки	
+err=AddScratch(scr,"Prdoor.k3","df",14);    //-- сдвиг вставки по оси Y от заднего края профиля рамки
+err=AddScratch(scr,"Prdoor.k3","dp",33);     //-- подрезка вставки по профилю рамки
+
+err=AddScratch(scr,"Prdoor1.k3","wr",50);	  //-- ширина профиля рамки	
+err=AddScratch(scr,"Prdoor1.k3","dr",5);    //-- сдвиг вставки по оси Y от заднего края профиля рамки
+err=AddScratch(scr,"Prdoor1.k3","hr",44);     //-- подрезка вставки по профилю рамки
+err=AddScratch(scr,"Prdoor1.k3","wt",7);     //-- ширина уплотнительного профиля
+err=AddScratch(scr,"Prdoor1.k3","dt",1.5);   //-- сдвиг вставки по оси Y от заднего края уплотнительного профиля
+err=AddScratch(scr,"Prdoor1.k3","zt",1);     //-- подрезка вставки по уплотнительному профилю
+err=AddScratch(scr,"Prdoor1.k3","StMater",1140);// "Профиль" " уплотнительный для ал. фасада" "S3" "ramf0_al.k3";
+err=AddScratch(scr,"Prdoor1.k3","AcMater",1150);//  "Комлектующие" "Крепление для ал. профиля узкого" "S3" "ramfk1.k3";
+
+err=AddScratch(scr,"Prdoor2.k3","wr",50);	  //-- ширина профиля рамки	
+err=AddScratch(scr,"Prdoor2.k3","dr",5);    //-- сдвиг вставки по оси Y от заднего края профиля рамки
+err=AddScratch(scr,"Prdoor2.k3","hr",44);     //-- подрезка вставки по профилю рамки
+err=AddScratch(scr,"Prdoor2.k3","wt",7);     //-- ширина уплотнительного профиля
+err=AddScratch(scr,"Prdoor2.k3","dt",1.5);   //-- сдвиг вставки по оси Y от заднего края уплотнительного профиля
+err=AddScratch(scr,"Prdoor2.k3","zt",1);     //-- подрезка вставки по уплотнительному профилю
+err=AddScratch(scr,"Prdoor2.k3","StMater",1140);// "Профиль" " уплотнительный для ал. фасада" "S3" "ramf0_al.k3";
+err=AddScratch(scr,"Prdoor2.k3","AcMater",1150);//  "Комлектующие" "Крепление для ал. профиля узкого" "S3" "ramfk1.k3";
+
+err=ScrtchToFile(scr,ProtoPath+FileName);
+TermScratch(scr);
+exit;

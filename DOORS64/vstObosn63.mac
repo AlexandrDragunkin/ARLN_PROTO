@@ -1,0 +1,201 @@
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+//-- Подпрограмма создания надписи на вставке или профиле
+global MacroSw, DRWZPath, ProtoPath; //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+getpar
+      NameAt
+      vst      // указатель на вставку
+      IdFl  // порядковый номер вставки в этой створке
+      NameMat
+      hdsp
+      ;
+// putmsg(NameAt)
+// putmsg(IdFl)
+// putmsg(NameMat)
+// putmsg(hdsp)
+//========================================================== 1
+global StrArr;
+defarray StrArr[256] info[8] info1[8] arr[3] arr1[5] data[8] ;
+global
+N_str   //Число заполненных элементов
+;
+// global
+// gs_NProf
+// gd_ProfHV
+// ;
+global
+gs_FlNSHP
+;
+
+DRWZPath=iif(isvardef("DRWZPath")==0,GetProtoMac("Shkaf.ptl")+"DrwZip.zk3|",DRWZPath);
+N_str=0
+//Сохраняем текущие установки текста
+=initarray(strarr,".");
+#tx text "a" done 0 0 0
+                  normal 0 1 0
+                  1000 0 0 ;
+Result=GetTextInfo(tx,info1) ;  //Функция заполняет массив Info информацией об объекте obj типа «Текст»
+delete tx done ;
+=SysArr(43,arr) ;
+//========================================================== 1
+      
+defarr xm[6] xt[6] ;
+defarr fr[3],to[3],wh[3]; //--Массив координат для размеров
+
+//setucs save "VST";
+//setucs lcs vst ;
+=ObjGab3(vst,xm);
+GabX=Xm[4]-xm[1];
+GabZ=Xm[6]-xm[3];
+Xc=Xm[1]+(xm[4]-xm[1])/2
+Yc=Xm[2]+(xm[5]-xm[2])/2
+Zc=Xm[3]+(xm[6]-xm[3])/2
+
+// ots=60;
+
+// fr[1]=xm[1];
+// fr[2]=xm[2];
+// fr[3]=xm[6];
+// to[1]=xm[4];
+// to[2]=xm[2];
+// to[3]=xm[6];
+// wh[1]=xm[4];
+// wh[2]=xm[2];
+// wh[3]=xm[6]+ots;
+
+// LDim 3DDim fr[1],fr[2],fr[3] to[1],to[2],to[3] parallel wh[1],wh[2],wh[3];
+// attrobj attach "NoHide" done last 1 1;
+
+// fr[1]=xm[4];
+// fr[2]=xm[2];
+// fr[3]=xm[3];
+// to[1]=xm[4];
+// to[2]=xm[2];
+// to[3]=xm[6];
+// wh[1]=xm[4]+ots;
+// wh[2]=xm[2];
+// wh[3]=xm[6];
+
+// LDim 3DDim fr[1],fr[2],fr[3] to[1],to[2],to[3] parallel wh[1],wh[2],wh[3];
+// attrobj attach "NoHide" done last 1 1;
+
+// putmsg(gs_NProf);
+// putmsg(gd_ProfHV);
+
+//if MacroSw!=0
+//{
+// #tx text str(IdFl)  done Xc+10 Yc Zc
+//                        normal 0 1 0
+//                        Xc Yc Zc ;
+//                        =ObjGab3(tx,xt);
+//putmsg(NameMat,0);
+if NameMat==" "   {  goto metend; }
+
+// if (g_Rplace==1) { NameMat=NameMat+" (правая)" }
+// if (g_Rplace==2) { NameMat=NameMat+" (левая)" }
+
+if gs_FlNSHP[IdFl]==0
+{
+	gabsvar=str(round(gabz,1))+"x"+str(round(gabx,1));
+}
+else
+{
+	gabsvar=str(round(gabx,1))+"x"+str(round(gabz,1));
+}
+
+// #tx1 text NameMat+" "+gabsvar done xm[4],xm[5],(xm[6])-100 normal 0 1 0 xm[4]-1,xm[5],(xm[6])-100;
+// objident last 1 st;
+// ;macro ProtoPath+"EdStrLong.mac" st GabX*0.8 1 ;
+
+ #tx1 text NameMat+" "+gabsvar  done Xc+10 Yc Zc-(xt[6]-xt[3])*1.8
+                        normal 0 1 0
+                        Xc Yc Zc-(xt[6]-xt[3])*1.8 ;
+						
+// ;macro ProtoPath+"\\support\\EdStrLong.mac" tx1 GabX*0.9 1;
+// attrobj attach "NoHide" done tx1 1;
+
+//======================================================================2
+         //Преобразуем строку в многострочный текст с сохранением ширины
+//Текущие значения параметров Текста
+SpName=tx1;
+=GetObjProp(SPName,arr1) ;
+Result=GetTextInfo(SPName,info) ;  //Функция заполняет массив Info информацией об объекте obj типа «Текст»
+                                //1 Имя шрифта STRING
+                                //2 Высота символа DOUBLE
+                                //3 Отношение ширины к высоте (в процентах) DOUBLE
+                                //4 Угол наклона шрифта (в градусах) DOUBLE
+                                //5 Разрядка между символами по горизонтали (впроцентах)DOUBLE
+                                //6 Разрядка между символами по вертикали (впроцентах)DOUBLE
+                                //7 Количество строк в объекте типа «Текст» INT
+                                //8 Содержимое первой строки текста STRING
+=initarray(strarr,".");
+theight info[2]  ; //Команда устанавливает высоту текста равной <K>.
+tscale  info[3]  ; //Команда устанавливает отношение ширины символа к высоте (в процентах)
+tangle  info[4]  ; //Команда устанавливает угол наклона символов шрифта (в градусах) равным <K>.
+tdchar  info[5]  ; //Команда устанавливает разрядку между символами (в процентах) равную <K>.
+tdstring info[6] ; //Команда устанавливает разрядку между строками (в процентах) равную <K>.
+grfcoeff arr1[5] ;
+// putmsg(info)
+StrArr[1]=info[8] ; //Valname ;
+
+;macro DRWZPath+"ChStrTxLn.mac" GabX*4 ;  //Преобразуем строку в массив строк по заданной ширине
+theight info1[2] ; //Команда устанавливает высоту текста равной <K>.
+tscale  info1[3] ;//Команда устанавливает отношение ширины символа к высоте (в процентах)
+tangle  info1[4] ; //Команда устанавливает угол наклона символов шрифта (в градусах) равным <K>.
+tdchar  info1[5] ; //Команда устанавливает разрядку между символами (в процентах) равную <K>.
+tdstring info1[6] ; //Команда устанавливает разрядку между строками (в процентах) равную <K>.
+grfcoeff arr[3] ;
+
+=N_str
+i=0
+delete tx1 done ;
+#tx1 text
+met1:
+if i<N_str
+{
+   let i=i+1
+   strarr[i]
+   
+   goto met1;
+}
+done
+Xc+10 Yc Zc-(xt[6]-xt[3])*1.1*n_str
+normal 0 1 0
+Xc Yc Zc-(xt[6]-xt[3])*1.1*n_str ;
+
+//putmsg("N_str="+str(N_str),0);
+If (!IsAttrdef("NoHide"))
+{ Attribute Create "NoHide" "не гасить" Real 5 0 ; }
+attrobj attach "NoHide" done tx1 1;
+//======================================================================2
+ #tx group last 1 done;
+ =ObjGab3(tx,xt);
+  Xct=Xt[1]+(xt[4]-xt[1])/2
+  Yct=Xt[2]+(xt[5]-xt[2])/2
+  Zct=Xt[3]+(xt[6]-xt[3])/2
+  move tx done 2points xct yct zct xc yc+hdsp+0.5 zc nocopy ;
+  if (Xt[4]-Xt[1])/GabX>0.8
+  {
+     chprop grfcoeff tx done (GabX/(Xt[4]-Xt[1]))*0.7 ;
+     =ObjGab3(tx,xt);
+     Xct=Xt[1]+(xt[4]-xt[1])/2
+     Yct=Xt[2]+(xt[5]-xt[2])/2
+     Zct=Xt[3]+(xt[6]-xt[3])/2
+     move tx done 2points xct yct zct xc yc+hdsp+0.5 zc nocopy ;
+  }
+  explode tx done ;
+//}
+metend:
+If (!IsAttrdef(NameAt)) // NumbVstav
+{ Attribute Create NameAt "номер" Real 5 0 ; }
+Attrobj Attach NameAt Done vst IdFl;
+
+//setucs restore "VST";
+//setucs delete "VST";
+exit;
+
+

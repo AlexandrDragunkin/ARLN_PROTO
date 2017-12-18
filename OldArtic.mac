@@ -1,0 +1,31 @@
+//-- Копирование артикула изделия в атрибут "OldArticle"
+
+if (udgetentity("FindArticle",ValType,IsFind,sVal)==0) //-- Нужно ли осуществлять подбор артикулов
+{
+  IsFind=1;
+}
+if (IsFind==1)
+{
+  if (FindArticle(Art,UnitName))
+  {
+    attrobj attach "Article" done last 1 Art;
+    attrobj attach "UnitName" done last 1 UnitName;
+    exit;
+  }
+}
+//-- Иначе присваиваем старый артикул
+if (isassign("Article",0))  //-- Если стандартное изделие редактируется впервые
+{
+  Artic=getattr(0,"Article","No");
+  Artic=iif(len(Artic)==0,"No",Artic);
+  attrobj attach "OldArticle" done last 1 Artic;
+}
+else
+{
+  if (isassign("OldArticle",0)) //-- Если оно уже когда-то редактировалось
+  {
+    Artic=getattr(0,"OldArticle","No");
+    attrobj attach "OldArticle" done last 1 Artic;
+  }
+}
+exit;

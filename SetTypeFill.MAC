@@ -1,0 +1,4 @@
+//-- Установить тип заполнения ниши
+getpar TypeFill;
+NULLOUT=setvarinst(1,"TypeFill",TypeFill);
+exit;

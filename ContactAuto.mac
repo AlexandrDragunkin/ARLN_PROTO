@@ -1,0 +1,111 @@
+//Задача получить наружный абрис объекта по верхней точке
+//по абрису создать линии контакта
+//если в объекте есть контакты типа 128 их надо удалить
+//============================================
+// (c) Драгункин Александр г.Дубна 2005 г.
+//============================================
+// начиная с VER 5.5.177
+defarr xm[6] v[3] ;
+objects=sysVar(60)
+//Укажите объект (Предмет)
+objident : pnt   ;
+setucs save "UcsSt" ;
+setucs lcs pnt ;
+=objgab3(pnt,xm);
+Cut pnt  done 3points xm[1] xm[2] xm[6]-1 @1 0 0 @0 1 0 ;
+objident last 1 cutPnt ;
+if GetObjType(cutPnt)==6 { explode last 1 done } ;
+objects2=sysvar(60)-objects ;
+defarr ppnt[objects2] ptpnt[objects2] ;
+i=0
+lab1:
+if i<objects2 {
+   i=i+1
+   objident last i ppnt[i] ;
+   goto lab1
+}
+i=0
+lab2:
+if i<objects2 {
+   i=i+1
+   extrusion  ppnt[i] done vector 0 0 2  ;
+   objident last 1  ptpnt[i]  ;
+   goto lab2
+}
+i=0
+lab3:
+if i<objects2 {
+   i=i+1
+   delete ppnt[i] done ;
+   goto lab3
+}
+boolean union full last  objects2 ;
+objident  last 1  SummPnt ;
+objects2=SysVar(60);
+if (objects2-objects)>1 { LastObj=(objects2-objects) ; group last LastObj done ; objident last 1  SummPnt ; }
+=objgab3(SummPnt,xm);
+Cut SummPnt  done 3points xm[1] xm[2] xm[6]-1 @1 0 0 @0 1 0 ;
+delete SummPnt ;
+objects2=SysVar(60);
+defarr CutSummPnt[objects2] ;
+LastObj=(objects2-objects)
+   select last LastObj done ;
+   i=0
+   lab4:
+   if i<LastObj {
+      i=i+1
+      CutSummPnt[i]=GetSelNum(i)
+      goto lab4 ;
+      }
+v[1]=0 v[2]=0 v[3]=-1
+   i=0
+   lab5:
+   if i<LastObj {
+      i=i+1
+      if ContNormUCS(CutSummPnt[i],v)>0 {
+         editpath CutSummPnt[i] pereor done ;
+         objident last 1 CutSummPnt[i]
+         }
+      goto lab5 ;
+      }
+
+SetUcs Restore "UcsSt" ;
+
+//Анализируем объект и удаляем из него все линии контакта 128
+Nlist=Getcntobjga(pnt);
+defarr objGr[Nlist] ;
+Scang(pnt,objGr)
+i=0
+lab6:
+if i<Nlist {
+   i=i+1
+   err=GetAttr(objGr[i],"Contact",-99)
+   if err==128 {
+      extract pnt objGr[i] done ;
+      delete objGr[i] done
+       }
+   goto lab6
+}
+i=0
+lab7:
+   if i<LastObj {
+      i=i+1
+      explode CutSummPnt[i] done
+      
+   goto lab7   ;
+   }
+   objects2=sysvar(60)
+   LastObj=objects2-objects
+i=0
+lab8:
+if i<LastObj {
+      i=i+1
+      objident last 1 l1 ;
+      invisible l1 done ;
+      Attrobj Attach "Contact" Done L1 128 ;
+      add pnt l1 done ;
+      goto lab8
+      }
+exit ;
+
+

@@ -1,0 +1,209 @@
+//-- Создание профиля
+//-- Входные параметры:
+//-- xp1 yp1 zp1 - Первая точка профиля
+//-- xp2 yp2 zp2 - Вторая точка профиля
+global ProtoPath ;
+global ElemName  ; //-- Имена мебельных элементов
+global HoldName  ; //-- Имя хозяина
+global UnitCode  ; //-- Код изделия (текст)
+global ElemCode  ; //-- Код мебельных элементов
+KarkasNumb=getcarcnumb();     //-- Порядковый номер каркаса в сцене
+
+global
+PrfMater    //-- Материал профиля
+PrfP_1      //-- Подрез начальной точки
+PrfP_2      //-- Подрез конечной точки
+PrfSd_X     //-- Сдвиг по Х ЛСК
+PrfSd_Y     //-- Сдвиг по У ЛСК
+PrfAngle    //-- Угол поворота вокруг оси (град)
+PrfAng_1    //-- Угол подрезки 1 стороны по оси Y
+PrfAng_2    //-- Угол подрезки 2 стороны  по оси Y
+g_PrfAng_3  //-- Угол подрезки 1 стороны  по оси X
+g_PrfAng_4  //-- Угол подрезки 2 стороны  по оси X
+g_DirAng_1  //-- Направление угла подрезки  1 стороны    0- без 1 -  угол по ширине 2 - угол по высоте
+g_DirAng_2  //-- Направление угла подрезки  2 стороны    0- без 1 -  угол по ширине 2 - угол по высоте
+PrfColor    //-- Цвет профиля из прайса
+g_symx      //- Зеркальное отображение относительно оси X ЛСК
+g_symy;     //- Зеркальное отображение относительно оси Y ЛСК
+
+global
+g_BendProf     // Признак гнутости профиля
+g_ProfAng      //-- Угол   гиба
+g_ProfRad      //-- Радиус   гиба
+g_GProfL       //-- Длина по Y
+g_ProfMir      //-- Симметрия
+;
+global
+g_PrfDecGr // Группа отделки из групп параметров или 0
+g_PrfDecor // Материал отделки из прайса
+g_PrfDecVi // Видимость отделки
+;
+defarr arr[16];
+
+getpar
+xp1 yp1 zp1		//-- Первая точка профиля
+xp2 yp2 zp2		//-- Вторая точка профиля
+;
+
+NULLOUT=getvarinst(2,"g_eps",eps,0.01);
+
+KarkasNumb=getcarcnumb();    //-- Текущий номер каркаса
+dx=xp2-xp1;
+dy=yp2-yp1;
+dz=zp2-zp1;
+Dlina=sqrt(dx*dx+dy*dy+dz*dz);
+if (Dlina<1) { exit; }
+NULLOUT=getsnap();
+setucs xp1 yp1 zp1 oz xp2 yp2 zp2 done; //oy 0 1 0 ;
+
+SetProf6Par(1,arr);
+
+NULLOUT=InitArray(arr,0);
+arr[1]=PrfMater;         //-- ID материала профиля
+arr[2]=PrfColor;         //-- ID цвета профиля
+SetProf6Par(2,arr);      //-- Задание материала
+
+NULLOUT=InitArray(arr,0);
+arr[1]=0;                //-- Начало профиля
+arr[2]=PrfP_1;           //-- Подрезка профиля
+arr[3]=g_DirAng_1;     //-- Тип подрезки
+if (g_DirAng_1==2)
+{
+  if (abs(PrfAng_1)>eps)
+  {
+    arr[4]=PrfAng_1;       //-- Величина угла подрезки
+  }
+}
+if (g_DirAng_1==1)
+{
+  if (abs(g_PrfAng_3)>eps)
+  {
+    arr[4]=g_PrfAng_3;       //-- Величина угла подрезки
+  }
+}
+
+SetProf6Par(3,arr);         // Задание Подрезок по концам
+
+NULLOUT=InitArray(arr,0);
+arr[1]=1;                //-- Конец профиля
+arr[2]=PrfP_2;           //-- Подрезка
+arr[3]=g_DirAng_2;     //-- Тип подрезки
+if (g_DirAng_2==2)
+{
+  if (abs(PrfAng_2)>eps)
+  {
+    arr[4]=PrfAng_2;       //-- Величина угла подрезки
+  }
+}
+if (g_DirAng_2==1)
+{
+  if (abs(g_PrfAng_4)>eps)
+  {
+    arr[4]=g_PrfAng_4;       //-- Величина угла подрезки
+  }
+}
+SetProf6Par(3,arr);      //-- Задание подрезок конца профиля
+
+// Угол поворота для профилей используемых в дверных системах
+Angle=priceinfo(PrfMater,"Angle",0);
+if Angle!=0 { shiftX=priceinfo(PrfMater,"ProfX",0) }
+else { shiftX=0; }
+NULLOUT=InitArray(arr,0);
+arr[1]=Angle;            //-- Угол поворота образующей профиля
+arr[2]=-shiftX;           //-- Сдвиг по оси Х
+arr[3]=0;                //-- Сдвиг по оси Y
+arr[4]=g_symx;           //-- Симметрия по оси Х
+arr[5]=g_symy;           //-- Симметрия по оси Y
+SetProf6Par(4,arr);      //-- Задание положения образующей профиля
+
+NULLOUT=InitArray(arr,0);
+BendProf=0
+if (IsVardef("g_BendProf")==5)
+{
+  if (g_BendProf!=0)
+  {
+    BendProf=g_BendProf
+  }
+}
+if (BendProf==0) {
+arr[1]=0;                //-- Форма направляющей - прямая
+arr[2]=Dlina;            //-- Длина
+arr[3]=0;                //-- Прогиб
+arr[4]=0;                //-- Зарезервировано
+arr[5]=0;                //-- Зарезервировано
+SetProf6Par(5,arr);      //-- Задание формы направляющей
+}
+else
+{
+  arr[1]=BendProf;       //-- Форма направляющей - грутая
+  arr[2]=Dlina;          //-- Длина  по X
+  arr[3]=g_GProfL;       //-- Длина  по Y
+  arr[4]=g_ProfAng;      //-- Угол
+  arr[5]=g_ProfRad;      //-- Радиус
+  arr[6]=g_ProfMir;      //-- Симметрия
+  SetProf6Par(5,arr);    //-- Задание формы направляющей
+}
+// Отделка профиля
+if (isvardef("g_PrfDecor")!=0) {
+  NULLOUT=InitArray(arr,0);
+  arr[1]=g_PrfDecGr;                // Группа отделки из групп параметров или 0
+  arr[2]=g_PrfDecor;                // Материал отделки из прайса
+  arr[3]=g_PrfDecVi;                // Видимость отделки
+	arr[4]=2;
+  SetProf6Par(7,arr);    //-- Добавление отделки
+}
+#Elem MBProfile create 0 0 0 ;
+
+err=isvardef("Elem");
+if (err!=16)   //-- Объект не построили
+{
+  NULLOUT=resnap();
+  exit;
+}
+rotate Elem done 2points 0 0 0 0 0 1 PrfAngle nocopy ;
+
+move Elem done PrfSd_X PrfSd_Y 0 nocopy ;
+
+if (isassign("ElemName",0))
+{
+  attrobj copy record "ElemName" done Elem done;
+}
+else
+{
+  attrobj attach "ElemName" done Elem "Профиль";
+}
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done Elem done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done Elem KarkasNumb;
+}
+if (ElemName!=" ")
+{
+  attrobj attach "ElemName" done Elem ElemName ;
+}
+else
+{
+  attrobj attach "ElemName" Done Elem "Профиль" ;
+}
+attrobj attach "HoldName" done Elem HoldName ;
+if (len(UnitCode+ElemCode)>0)
+{
+  attrobj attach "UnitCode" done Elem ElemCode ;
+}
+else
+{
+  attrobj attach "UnitCode" done Elem "XXX" ;
+}
+
+//-- Признак криволинейного (1) или прямолинейного (0) профиля
+attrobj attach "CurvePath" done Elem BendProf;
+attrobj attach "GroupID" done Elem 41 ;       //-- 41 - Группа материалов профиля
+attrobj attach "PriceID" done Elem PrfMater ; //-- Id материала профиля
+attrobj attach "XUnit" "YUnit" "ZUnit" done Elem round(Dlina-PrfP_1-PrfP_2) 0 0 ; //-- Размеры профиля
+//attrobj attach "KID" "KBID" done Elem PrfColor 1 ; //-- Цвет профиля
+NULLOUT=resnap();
+exit;

@@ -1,0 +1,164 @@
+global L_support;
+;macro L_SUPPORT+"SaveParSp.mac" "PltLnG.xml" ;
+global PKM_SP ProtoPath;
+
+//Win_PltLnG.mac
+//*****************************************************************************
+//     Сборочный чертеж профильных длинномеров
+//              Драгункин А.Р.
+//              ГеоС 2008-2014 гг.
+//*****************************************************************************
+
+global
+Pl_Obozn
+g_DirDrawLn           //Все файлы чертежей длинномеров размещать в отдельной папке 0-нет 1-да
+g_DrawBlank           //Чертежи на бланках 0-нет 1-да
+g_DrawSpec            //Формировать спецификацию 0-нет 1-да
+g_DrawCod             //Способ обозначения чертежа 0-относительный по первому вхождению 1-абстрагированный код
+g_DrawStamp           //Ключ запроса информации для штампа бланка из файла stamp.dbf и из файла ZAKAZ.dbf =0 только stamp.dbf =1
+g_FormStamp           //Ключ запроса формы штампа 0-не запрашивать 1-регулярно
+g_PgFileDraw          //Каждый лист чертежа в отдельном файле 0-нет 1-да
+g_PgFileSpec          //Каждый лист спецификации в отдельном файле 0-нет 1-да
+g_GroupDoc            //Формировать групповой чертеж по всем документам 0-нет 1-да
+g_DrawTaile           //формировать деталировку 0-нет 1-да
+
+;
+defarr error[5];
+
+getpar
+Ltype
+;
+n=sysvar(62);
+
+
+defarr arr1[iif(n>1000,iif(n>32767,32767,n),1000)];
+if n>32767 { 
+	selbyattr "IPRLN"+str(Ltype)+">0" all done;
+	nobj=SysVar(61);
+}
+else {
+
+	macro L_support+"mselbyattr.mac" "getattr(pt,\"IPRLN"+str(Ltype)+"\",0)>0"  arr1 ByRef nobj ;
+	
+}
+SelN=nobj; 
+
+If Seln==0 { exit ; }
+Defarr Obj[SelN+25] Objs[SelN+25] xm[6] xm1[6] ;
+i=0
+met1:
+if i<Seln  //||i1==0
+{
+	i=i+1
+	if n>32767 { 
+		;selbyattr "IPRLN"+str(Ltype)+"=="+str(i) all done ;
+		if sysvar(61)>0 {
+			Obj[i]=GetSelNum(1) ;
+		}
+	}
+	else {
+		IPRLN=getattr(arr1[i],"IPRLN"+str(Ltype),0)
+		if IPRLN>0 {
+			Obj[IPRLN]=arr1[i]
+		}
+	}
+	goto met1 ;
+}
+i=0
+err=0;
+met2:
+if i<Seln {
+	i=i+1
+	DobS=""
+	tpt=Obj[i]
+	if isvardef("tpt")!=16 {
+		goto met2;
+	}
+	if !GetObjVisual(Obj[i])
+	{
+		visible Obj[i];
+	}
+	nextlb:
+   //offerror;
+	if g_DrawBlank!=0 {
+		Nlist=1
+		PlObosnOld=Pl_Obozn
+		if (g_DrawTaile!=1) 
+		{ //Если не рисуем деталировку
+			Nlist=Seln
+			if i>1 { DobS="д" }
+		}
+		met2a:
+		;macro L_SUPPORT+"Win_PltLn.mac"
+		Obj[i]        //указатель на объект вокруг которого создаем штамп
+		DobS          //Дополнительный символ для головного штампа "" для следующих "д"
+		Ltype         //Тип профильных длинномеров
+		Nlist         //Число листов
+		i             //Номер листа
+		byref
+		result
+		;
+		if !result {
+			err=err+1;
+			goto nextlbin;
+	}
+	}
+	
+	Group all done ;
+	objident last 1 objs[i] ;
+	invisible objs[i] ;
+	nextlbin:
+	goto met2 ;
+}
+setucs save "Win_pltLnG" ;
+
+
+
+i=0;
+met3:
+if i<Seln {
+	i=i+1
+	tpt=Obj[i]
+	if isvardef("tpt")!=16  { 
+		goto met3; 
+	}
+	onerror sss;
+	visible objs[i] done;
+	Nulout=objgab3(objs[i],xm) ;
+	move objs[i] done 2points 0 0 0 -xm[4] -xm[2] 0 nocopy ;
+	Nulout=objgab3(objs[i],xm) ;
+	Setucs move xm[1] xm[2] 0 ;
+	sss:
+		offerror;
+goto met3 ;
+}
+i=0
+met4:
+
+if i<Seln {
+	i=i+1
+	tpt=Obj[i]
+	if isvardef("tpt")!=16  { goto met4; }
+	onerror rrr;
+	visible objs[i] done;
+	explode objs[i] done ;
+	rrr:
+		offerror;
+	goto met4 ;
+}
+if (g_DrawSpec!=0)
+{ //Если не рисуем деталировку &&(g_DrawTaile!=1)
+   ;macro L_SUPPORT+"SpecLn.mac" Ltype Seln ;
+}
+
+setucs restore "Win_pltLnG" ;
+setucs delete  "Win_pltLnG" ;
+macro L_SUPPORT+"RestoreParSp.mac" "PltLnG.xml" 0 ;
+if err>0 {
+	error[1]="Программа встретила расстановку длинномера, которую несмогла обработать." 
+	error[2]="Возможно! На чертеже отображена не вся информация указанная в спецификации."
+	error[3]="Вероятно, что данная проблема вызвана автоматической расстановкой профильного длинномера. "
+	macro protopath+"showsmartinfo.mac" "Необрабатываемые расстановки длинномеров!" 3 error;
+	}
+//save auto overwrite ;
+exit;

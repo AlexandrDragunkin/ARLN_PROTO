@@ -1,0 +1,12 @@
+//-- Установить профиль между двумя точками
+//-- Входные параметры:
+//-- w1[] - массив с координатами первой точки
+//-- w2[] - vмасив с координатами второй точки
+global ProtoPath;
+
+NULLOUT=getvarinst(2,"DfProf",DfProf,0);   //-- ID текущего профиля
+getpar w1 w2;
+macro ProtoPath+"SetProf.mac" DfProf 0 0 0 0 0;
+macro ProtoPath+"SetProfD.mac" 0 0; // 27.07.11 Шубин ВП
+macro ProtoPath+"MakeProf.mac" w1[1] w1[2] w1[3]  w2[1] w2[2] w2[3];
+exit;

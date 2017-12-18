@@ -1,0 +1,15 @@
+//-- Установить текущий цвет кромки на конкретный торец
+global g_CBandPan;   //-- Цвет кромки по сторонам и углам в порядке D 1 C 2 E 3 B 4
+getpar IDColor Side; //-- ID цвета, наименование торца
+
+if (Side=="D") { N=1; }
+if (Side=="1") { N=2; }
+if (Side=="C") { N=3; }
+if (Side=="2") { N=4; }
+if (Side=="E") { N=5; }
+if (Side=="3") { N=6; }
+if (Side=="B") { N=7; }
+if (Side=="4") { N=8; }
+g_CBandPan[N]=IDColor;
+NULLOUT=setvarinst(1,"g_CBandPan",IDColor,N);
+exit;

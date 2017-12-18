@@ -1,0 +1,13 @@
+global protopath g_dparln g_osn  L_support DRWZPath;
+getpar LT;
+
+
+l_dialog=0;
+macro DRWZPath+"drawdial.mac" l_dialog ;
+if (g_osn==1) {
+  macro DRWZPath+"osndial.mac" done;
+}
+//macro L_Support+"D_Set_DrawParLn.mac" 0;
+macro L_Support+"SetPlProject.mac" l_dialog LT;
+g_dparln=1;
+exit;

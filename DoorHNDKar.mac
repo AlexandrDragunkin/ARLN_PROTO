@@ -1,0 +1,158 @@
+//-- Установка ручки на распашную карусельную дверь (умолчание)
+//-- Входные параметры:
+//-- dx, G, dz - базовый угол двери
+//-- dwx, dwz - ширина и высота двери соответственно
+//-- Rplace - сторона открывания двери
+//-- Handle - тип ручки из прайс-листа
+//-- ARMX, ARMZ, ARMA	- сдвиги и угол поворота ручки
+
+global ProtoPath;
+global
+//HandleType, 	//-- Тип ручки
+//HandleX,    	//-- Сдвиг ручки по x
+//HandleZ,    	//-- Сдвиг ручки по z
+//HandleA,    	//-- Поворот ручки
+HandleD,	    //-- Двойная или одиночная ручка
+HandleR,	    //-- Тип положения ручки 0-свободно 1-центр 3-сверху 4-снизу
+DoorMater,    //-- Материал фасада
+DoorKorp,     //-- Толщина материала корпуса ниши
+DoorDuble;    //-- Двойная/одинарная дверь
+
+defarr error[10];
+
+getpar dx,G,dz,   //-- Базовый угол двери
+dwx,dwz,          //-- Ширина, высота
+Rpl,              //-- Cторона открывания двери
+Handle,           //-- Тип ручки и параметры положения
+ARMX,ARMZ,ARMA;
+//-----------------------------------------------------------------------------
+HandleType=Handle;
+HandleX=ARMX ;
+HandleZ=ARMZ;
+HandleA=ARMA;
+h_fas=PriceInfo(DoorMater,"Thickness",16);
+if (HandleType==0)
+{
+  exit;
+}
+if (Rpl==0)
+{
+  Rpl=1;
+}
+if (Rpl==-1)
+{
+  Rplace=1;
+}
+else
+{
+  if (Rpl==2)
+  {
+    Rplace=2;
+  }
+  else
+  {
+    Rplace=-1;
+  }
+}
+object_1=sysvar(60);
+dRucUp=PriceInfo(HandleType,"Height",50);     //-- Габарит ручки высота
+dRucR=PriceInfo(HandleType,"Width",0);       //-- Габарит ручки толщина
+DZn=dRucUp/2;				                      //-- Смещение ручки по ширине
+DXn=dRucR/2;				                      //-- Смещение ручки по высоте
+DoorDuble=0;                              //-- Дверь одинарная
+
+//-- Вычисляем положение ручки
+//-- Расположение ручки-свободно, дверь одна
+if (HandleR==0&&DoorDuble==0)
+{
+  if (HandleA==0||HandleA==180)
+  {
+    if (HandleX>dwx-DXn)  { HandleX=dwx-DXn; }
+    if (HandleX<DXn)      { HandleX=DXn;     }
+    if (HandleZ>dwz-DZn)  { HandleZ=dwz-DZn; }
+    if (HandleZ<DZn)      { HandleZ=DZn;     }
+  }
+  if (HandleA==90||HandleA==270)
+  {
+    if (HandleX>dwx-DZn)  { HandleX=dwx-DZn; }
+    if (HandleX<DZn)      { HandleX=DZn;     }
+    if (HandleZ>dwz-DXn)  { HandleZ=dwz-DXn; }
+    if (HandleZ<DXn)      { HandleZ=DXn;     }
+  }
+  Xh=dx+HandleX;
+  Zh=dz+HandleZ;
+}
+
+//-----------------------------------------------------------------------------
+if (HandleR==0) //-- Расположение ручки - свободно
+{
+  if (Rplace==0)
+  {
+    HandleA=HandleA+90;
+    Xh=dx+HandleX+DZn;
+  }
+  goto SHAN;
+}
+if (Rplace==0) //-- Для ящиков (двери не открываются)
+{
+  Xh=dx+dwx/2;
+  HandleA=HandleA+90;
+}
+if (HandleA==90)||(HandleA==270)
+{
+  DXn=dRucUp/2;
+  DZn=dRucR/2;
+}
+
+if (HandleR==1) { Zh=dz+dwz/2;           } //-- Ручка по центру
+if (HandleR==3) { Zh=dz+dwz-HandleZ-DZn; } //-- Ручка сверху
+if (HandleR==4) { Zh=dz+HandleZ+DZn;     } //-- Ручка снизу
+
+if (Rplace==1||Rplace==-1) { Xh=dx+dwx-HandleX-DXn; } //-- Открывание слева
+if (Rplace==2||Rplace==-2) { Xh=dx+HandleX+DXn;     } //-- Открывание справа
+
+if (HandleD==1) //-- Две ручки
+{
+  if (Rplace==0)
+  {
+    Xh=dx+HandleX+DXn;
+    HandleA=HandleA;
+  }
+  if (Rplace==1||Rplace==2||Rplace==-1||Rplace==-2)
+  {
+    if (dwz<2*dRucUp+2*HandleZ)
+    {
+      //-- ShowSmartError
+      macro Protopath+"ShowError.mac" "Длина ручек превышает высоту двери","",
+        "Минимальная ширина двери: "+str(2*dRucUp+2*HandleZ)+" мм";
+    }
+    Zh=dz+HandleZ+DZn;
+  }
+}
+//-----------------------------------------------------------------------------
+//-- Установка ручки
+SHAN:
+CodRuc=PriceInfo(HandleType,"S1","Ruch")
+macro ProtoPath+"SetECod.mac" "7201";
+// macro ProtoPath+"SetKCod.mac" CodRuc ""	0;
+macro ProtoPath+"SetEnam.mac" "Ручка мебельная" ;
+macro ProtoPath+"MakeHand.mac"	HandleType 1 xh G Zh 90 HandleA -90;
+//-- Двойная ручка
+if (HandleD==1&&(Rplace==1||Rplace==2||Rplace==0||Rplace==-1||Rplace==-2))
+{
+  move last 1 done 0 0 -zh+dwz-HandleZ-dRucUp/2 copy 1;
+}
+object_2=sysvar(60)-object_1;
+if (object_2>0)
+{
+  if (Rpl==1)
+  {
+    move last object_2 done  0 -dwx+2*h_fas 0 nocopy;
+  }
+  if (Rpl==2)
+  {
+    rotate last object_2 done 2points xh G Zh xh G Zh+100 -90 nocopy;
+    move last object_2 done 9 -HandleX 0 nocopy;
+  }
+}
+exit;

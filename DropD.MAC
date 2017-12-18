@@ -1,0 +1,42 @@
+;// программа расчета столешницы в форме капли
+
+r=DbVar("Rad",600);
+h=DbVar("Horda",600);
+PrMater=DbVar("PrMater",0);
+sh=PriceInfo(PrMater,"Thickness",16)
+WMFPath=DbVar("WMFPath","");
+F2000=DbVar("F2000",0);
+d=sh;
+Big=DbVar("Big",1);
+
+macro GetProtoMac("Shkaf.ptl")+"DropS.MAC"  r h Big;
+
+if (Big!=1) {
+   
+   ldim 2ddim  0 h/2 0
+            0 -h/2 0
+          ^-100 0 0
+   rdim 2points -Sqrt(r*r-h/2*h/2) 0 0 
+                r-Sqrt(r*r-h/2*h/2) 0 0
+               ^r-Sqrt(r*r-h/2*h/2) 0 0
+
+  }
+else {
+   
+ldim 2ddim  0 h/2 0
+            0 -h/2 0
+          ^-100 0 0
+rdim 2points Sqrt(r*r-h/2*h/2) 0 0 
+             r+Sqrt(r*r-h/2*h/2) 0 0
+            ^r+Sqrt(r*r-h/2*h/2) 0 0
+
+     }
+
+
+View None Gcs 0. 0. 1.;
+
+
+If F2000 { Exp2d Wmf Yes WMFPath+"1.WMF" [ overwrite ] }
+Else     { Exp2d Wmf No WMFPath+"1.WMF" [ overwrite ] }
+
+exit;

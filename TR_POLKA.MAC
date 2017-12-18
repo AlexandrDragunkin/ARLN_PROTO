@@ -1,0 +1,134 @@
+//-- Макропрограмма устанавливает треугольную полку
+defarr arr[3];
+defarr BaseGab[5];
+defarr basep[3];
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами
+NULLOUT=getarrinst(2,"BaseGab",BaseGab);          //-- Габариты каркаса
+NULLOUT=getvarinst(2,"Typ_Kro",Typ_Kro,0);          //-- Тип лицевой кромки
+NULLOUT=getvarinst(2,"RoughBandMater",Typ_RKro,0);  //-- Тип черновой кромки
+NULLOUT=getvarinst(2,"RoughBandColor",ColRDKro,0);  //-- Цвет черновой кромки
+NULLOUT=getvarinst(2,"PrMater",PrMater,0);          //-- Умолчание для материалов корпуса
+NULLOUT=getvarinst(2,"DfFixPol",DfFixPol,0);        //-- Умолчание для крепежа жестких полок
+NULLOUT=getvarinst(2,"HardShelfColor",col,1);       //-- Цвет жесткой полки
+NULLOUT=getvarinst(2,"IsColorUse",icu,1);           //-- Использовать ли цвета
+
+Thick=priceinfo(PrMater,"Thickness",16);
+onerror final;
+NULLOUT=getsnap();
+NULLOUT=pushinst(1);
+defarr arrin[3], arrout[14];
+arrin[1]=Thick;  // Высота резиновой панели
+mbget "Укажите положение панели" shell arrin arrout :
+basep[1]=arrout[1];
+basep[2]=arrout[2];
+basep[3]=arrout[3];
+xgab=arrout[4];
+ygab=arrout[5];
+Numb=arrout[6];
+Shift=arrout[7];
+NULLOUT=sysarr(33,arr); //-- Запоминаем координаты точки
+ptranscs(3,2,arr[1],arr[2],arr[3],arr[1],arr[2],arr[3]);
+IsB=iif(arr[1]>BaseGab[1]/2,1,0); //-- По какой стороне угол
+macro ProtoPath+"SetMat.mac" PrMater ;
+macro ProtoPath+"SetKrom.mac" 0 0 0 0 Typ_Kro ;
+macro ProtoPath+"SetOneBand.mac" 1 Typ_RKro ColRDKro;
+macro ProtoPath+"SetBend.mac"  0 0 0 0 0 0 0 0 ;
+Flag=0
+// arrout[8-13] - нижняя, верхняя, задняя, передняя, правая, левая
+if (arrout[10]==1)&&(arrout[12]==1)   {
+  macro ProtoPath+"SetOneBand.mac" 2 Typ_Kro 0;
+  macro ProtoPath+"SetOneBand.mac" 3 Typ_Kro 0;
+  macro ProtoPath+"SetOneBand.mac" 4 Typ_Kro 0;
+  macro ProtoPath+"SetOneBand.mac" 6 Typ_RKro ColRDKro;
+  macro ProtoPath+"SetOneBand.mac" 7 Typ_RKro ColRDKro;
+  macro ProtoPath+"SetFix.mac"  DfFixPol 0 DfFixPol 0 ;
+  macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 1 xgab ygab 0 0 0;
+  Flag=1
+}
+else {
+  if (arrout[10]==1)&&(arrout[13]==1)   {
+  macro ProtoPath+"SetOneBand.mac" 2 Typ_RKro ColRDKro;
+  macro ProtoPath+"SetOneBand.mac" 3 Typ_RKro ColRDKro;
+  macro ProtoPath+"SetOneBand.mac" 4 Typ_Kro 0;
+  macro ProtoPath+"SetOneBand.mac" 6 Typ_Kro 0;
+  macro ProtoPath+"SetOneBand.mac" 7 Typ_Kro 0;
+  macro ProtoPath+"SetFix.mac"  0 DfFixPol DfFixPol 0 ;
+  macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 1 xgab ygab;
+  Flag=1
+}
+  else {
+    if (arrout[11]==1)&&(arrout[12]==1)   {
+          macro ProtoPath+"SetOneBand.mac" 2 Typ_RKro ColRDKro;
+          macro ProtoPath+"SetOneBand.mac" 3 Typ_RKro ColRDKro;
+          macro ProtoPath+"SetOneBand.mac" 4 Typ_Kro 0;
+          macro ProtoPath+"SetOneBand.mac" 6 Typ_Kro 0;
+          macro ProtoPath+"SetOneBand.mac" 7 Typ_Kro 0;
+          macro ProtoPath+"SetFix.mac"  DfFixPol 0 0 DfFixPol;
+          macro ProtoPath+"SetFilet.mac" 0 0 0 1 xgab ygab 0 0 0 0 0 0 ;
+  Flag=1
+    }
+    else {
+     if (arrout[11]==1)&&(arrout[13]==1)   {
+          macro ProtoPath+"SetOneBand.mac" 2 Typ_RKro ColRDKro;
+          macro ProtoPath+"SetOneBand.mac" 3 Typ_RKro ColRDKro;
+          macro ProtoPath+"SetOneBand.mac" 4 Typ_Kro 0;
+          macro ProtoPath+"SetOneBand.mac" 6 Typ_Kro 0;
+          macro ProtoPath+"SetOneBand.mac" 7 Typ_Kro 0;
+          macro ProtoPath+"SetFix.mac"  0 DfFixPol 0 DfFixPol  ;
+          macro ProtoPath+"SetFilet.mac" 1 xgab ygab 0 0 0 0 0 0 0 0 0;
+  Flag=1
+     }
+    }
+  }
+}
+if (Flag==0) {     // Если ничего не нашли, все равно ставим,
+  if (arrout[13]==1) {                                              //как с левой стойкой
+  macro ProtoPath+"SetOneBand.mac" 2 Typ_RKro ColRDKro;
+  macro ProtoPath+"SetOneBand.mac" 3 Typ_RKro ColRDKro;
+  macro ProtoPath+"SetOneBand.mac" 4 Typ_Kro 0;
+  macro ProtoPath+"SetOneBand.mac" 6 Typ_Kro 0;
+  macro ProtoPath+"SetOneBand.mac" 7 Typ_Kro 0;
+  //macro ProtoPath+"SetFix.mac"  0 DfFixPol DfFixPol 0 ;        // Но без крепежа
+  macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 1 xgab ygab;
+  }
+  else {                                                            //как с правой стойкой
+  macro ProtoPath+"SetOneBand.mac" 2 Typ_Kro 0;
+  macro ProtoPath+"SetOneBand.mac" 3 Typ_Kro 0;
+  macro ProtoPath+"SetOneBand.mac" 4 Typ_Kro 0;
+  macro ProtoPath+"SetOneBand.mac" 6 Typ_RKro ColRDKro;
+  macro ProtoPath+"SetOneBand.mac" 7 Typ_RKro ColRDKro;
+  //  macro ProtoPath+"SetFix.mac"  DfFixPol 0 DfFixPol 0 ; // Но без крепежа
+  macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 1 xgab ygab 0 0 0;
+  }
+}
+
+
+macro ProtoPath+"SetCuts.mac" 0 0 0 0;
+macro ProtoPath+"SetFixOver.mac"  0 ;
+macro ProtoPath+"SetDir.mac" 1 ;
+macro ProtoPath+"SetPropM.mac" " " " " 0 0 0 0 0;
+macro ProtoPath+"SetTrNull.mac" ;
+macro ProtoPath+"SetEnam.mac" "Полка треугольная";
+macromode undo off;
+if (icu==1)
+{
+  color col;
+}
+macro ProtoPath+"MakePan.mac" basep[1] basep[2] basep[3] xgab, ygab 12;
+objident last 1 polka;
+if (isvardef("polka")==16)
+{
+  macromode undo on "Tr_Polka.mac" polka ;
+}
+if (Numb>1)
+{
+  move multicopy Numb-1 polka done 0 0 shift;
+}
+//======================
+final:
+offerror;
+macromode undo on;
+NULLOUT=resnap();
+NULLOUT=popinst(1);
+exit;

@@ -1,0 +1,305 @@
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+// Заполнение парметров фасок дверной системы для конструирования мансардного варианта
+nullout=getvarinst(2,"Doors63",Doors63,"Doors63.zmc|");
+CurStat=SysVar(70) ;
+//if CurStat==0 { CurStat=2  }
+if CurStat<2
+{
+   =CurStat
+   //ErrMsg=MsgLevel(2) ;
+}
+global objLn NobjLn;
+
+getpar xg,yg,zg,xb,yb,zb,Fasca;
+// Укажите линии  фасок
+
+defarr
+xga[15]
+Xgm[24]
+xm1[9]
+xm2[9]
+nlin[2]
+ax1[4]
+ay1[4]
+az1[4]
+AIntAll[8] // 5 Массив точек пересечения
+AIntIn[8]  // 6 Массив явных точек пересечения
+AIntOut[8] // 7 Массив точек пересечения на продолжении объекта
+;
+
+N=iif(IsVarDef("NobjLn")>0,NobjLn,0);
+
+setucs save "_1" ;
+setucs Xb Yb Zb  Xb+Xg Yb Zb  Xb Yb Zb+zg ;
+
+i=0
+j=0
+next1:
+if i<N
+{
+ i=i+1
+ err=GetObjGeo(ObjLn[i],xga);
+ PTransCS(3,0,xga[1],xga[2],xga[3],xga[1],xga[2],xga[3]);
+ PTransCS(3,0,xga[4],xga[5],xga[6],xga[4],xga[5],xga[6]);
+ 
+ j=j+1; Xgm[j]=xga[1]
+ j=j+1; Xgm[j]=xga[2]
+ j=j+1; Xgm[j]=xga[3]
+ j=j+1; Xgm[j]=xga[4]
+ j=j+1; Xgm[j]=xga[5]
+ j=j+1; Xgm[j]=xga[6]
+
+ goto next1;
+}
+
+
+//определяем фаски
+
+gosub LinUp;
+gosub Findint;
+Aint12=Aint
+if Aint!=0
+{
+// ЗНАЧИТ ЕСТЬ ФАСКИ Сверху СЛЕВА ИЛИ СПРАВА
+ D1=nlin[1]
+ D2=nlin[Aint]
+ dx1=iif(min(AX1[nlin[Aint]],AX1[nlin[1]])>0.01,min(AX1[nlin[Aint]],AX1[nlin[1]]),max(AX1[nlin[Aint]],AX1[nlin[1]]));
+ dx2=xg-max(AX1[nlin[Aint]],AX1[nlin[1]]);
+}
+else
+{
+ dx1=0
+ dz1=0
+ dx2=0
+ dz2=0
+ d1=0
+ d2=0
+
+}
+
+gosub LinDown ;
+gosub Findint;
+Aint56=Aint
+if Aint!=0
+{
+// ЗНАЧИТ ЕСТЬ ФАСКИ снизу СЛЕВА  ИЛИ СПРАВА
+ D5=nlin[1]
+ D6=nlin[Aint]
+ dx4=iif(min(AX1[nlin[Aint]],AX1[nlin[1]])>0.01,min(AX1[nlin[Aint]],AX1[nlin[1]]),max(AX1[nlin[Aint]],AX1[nlin[1]]));
+ dx3=xg-max(AX1[nlin[Aint]],AX1[nlin[1]]);
+}
+else
+{
+ dx3=0
+ dz3=0
+ dx4=0
+ dz4=0
+ d5=0
+ d6=0
+}
+
+gosub LinRw;
+gosub Findint;
+Aint78=Aint
+if Aint!=0
+{
+// ЗНАЧИТ ЕСТЬ ФАСКИ СПРАВА снизу ИЛИ сверху
+ D7=nlin[1]
+ D8=nlin[Aint]
+ dz4=0
+ //if (((d7||d8))!=0)&&((d7||d8)==(d1||d2))    // справа сверху
+ if ((d7!=0)||(d8!=0))&&(d7==d1||d8==d1||d7==d2||d8==d2)
+ {
+    dz1=Zg-max(AY1[nlin[Aint]],AY1[nlin[1]]);
+ }
+ else
+ {
+
+    dx1=0
+    dz1=Zg-max(AY1[nlin[Aint]],AY1[nlin[1]]);
+
+ }
+ //if (((d7||d8))!=0)&&((d7||d8)==(d5||d6))     //справа снизу
+ if ((d7!=0)||(d8!=0))&&(d7==d5||d8==d5||d7==d6||d8==d6)
+ {
+    dz4=iif(min(AY1[nlin[Aint]],AY1[nlin[1]])>0.01,min(AY1[nlin[Aint]],AY1[nlin[1]]),max(AY1[nlin[Aint]],AY1[nlin[1]]));
+ }
+ else
+ {
+   dx4=0
+   dz4=0
+ }
+
+}
+else
+{
+ dx1=0
+ dz1=0
+ dx4=0
+ dz4=0
+
+}
+
+gosub LinLw;
+gosub Findint;
+Aint34=Aint
+if Aint!=0
+{
+// ЗНАЧИТ ЕСТЬ ФАСКИ СЛЕВА снизу ИЛИ сверху
+ D3=nlin[1]
+ D4=nlin[Aint]
+ dz3=0
+ //if (((d3||d4))!=0)&&((d3||d4)==(d1||d2))
+ if ((d3!=0)||(d4!=0))&&(d3==d1||d4==d1||d3==d2||d4==d2)
+ {
+    dz2=Zg-max(AY1[nlin[Aint]],AY1[nlin[1]]);
+ }
+ else
+ {
+    dx2=0
+    dz2=Zg-max(AY1[nlin[Aint]],AY1[nlin[1]]);
+ }
+ //if (((d3||d4))!=0)&&((d3||d4)==(d5||d6))
+ if ((d3!=0)||(d4!=0))&&(d3==d5||d4==d5||d3==d6||d4==d6)
+ {
+    dz3=iif(min(AY1[nlin[Aint]],AY1[nlin[1]])>0.01,min(AY1[nlin[Aint]],AY1[nlin[1]]),max(AY1[nlin[Aint]],AY1[nlin[1]]));
+ }
+ else
+ {
+   dx3=0
+   dz3=0
+ }
+}
+else
+{
+ dx2=0
+ dz2=0
+ dx3=0
+ dz3=0
+}
+
+if ((dx1==0)&&(dx2==0))&&((Dz1>0.1)||(Dz2>0.1))
+{
+  dzM1=dz1
+  dzM2=dz2
+  dx1=iif(dz1>dz2,xg,0);
+  dx2=iif(dz1>dz2,0,xg);
+  dz1=iif(dz1>dz2,dz1-dz2,dz1);
+  dz2=iif(dzM1>dzM2,dz2,dz2-dz1);
+}
+
+
+=dx1
+=dz1
+=dx2
+=dz2
+=dx3
+=dz3
+=dx4
+=dz4
+
+Fasca[1]=dx1
+Fasca[2]=dz1
+Fasca[3]=dx2
+Fasca[4]=dz2
+Fasca[5]=dx3
+Fasca[6]=dz3
+Fasca[7]=dx4
+Fasca[8]=dz4
+
+
+setucs restore "_1" ;
+setucs delete "_1" ;
+;
+
+//ErrMsg=MsgLevel(CurStat) ;
+exit;
+//==============================
+Findint:     // Ищем точку пересечения Линий фасок и габаритов ниши
+Aint=0;
+err=initarray(nlin,0);
+err=initarray(AX1,0);
+err=initarray(AY1,0);
+err=initarray(AZ1,0);
+i=0
+j=1
+
+ //#l1 line xm1[1] xm1[2] xm1[3] xm1[4] xm1[5] xm1[6] done ;
+
+
+next2:
+if i<N
+{
+  i=i+1
+  copyArray(xm2,1,Xgm,j,6);
+   //#l2 line xm2[1] xm2[2] xm2[3] xm2[4] xm2[5] xm2[6] done ;
+
+  err=initarray(AIntAll,0);
+  err=initarray(AIntIn,0);
+  err=initarray(AIntOut,0);
+
+
+  macro GetProtoMac("Shkaf.ptl")+Doors63+"IntPtLOBJ1.mac" 2 xm1 2 xm2  AIntAll AIntIn AIntOut ;
+
+  // пересечение есть
+  if AintIn[1]!=0||AintIn[2]!=0
+  {
+     Aint=Aint+1;
+     =i
+     nlin[Aint]=i;
+     AX1[i]=AIntIn[1]
+     AY1[i]=AIntIn[2]
+     AZ1[i]=AIntIn[3]
+  }
+
+  j=j+6
+
+  //delete l1 done;
+  goto next2;
+}
+
+return;
+LinUp:
+//Верхняя
+xm1[1]=0
+xm1[2]=0+zg
+xm1[3]=0
+xm1[4]=0+xg
+xm1[5]=0+zg
+xm1[6]=0
+return;
+LinDown:
+//Нижняя
+xm1[1]=0
+xm1[2]=0
+xm1[3]=0
+xm1[4]=0+xg
+xm1[5]=0
+xm1[6]=0
+return;
+LinLw:
+//Левая
+xm1[1]=0+xg
+xm1[2]=0
+xm1[3]=0
+xm1[4]=0+xg
+xm1[5]=0+zg
+xm1[6]=0
+return;
+LinRw:
+//Правая
+xm1[1]=0
+xm1[2]=0
+xm1[3]=0
+xm1[4]=0
+xm1[5]=0+zg
+xm1[6]=0
+return;
+
+
+

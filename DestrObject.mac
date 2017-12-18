@@ -1,0 +1,27 @@
+//-- Разобрать изделие
+global ProtoPath;
+extrafilter=""; //-- Сюда добавить дополнительный фильтр для неразбираемых изделий
+onerror final;
+mbcarcase groupall;
+selbyattr "IsAssign(\"FurnType\")&&IsAssign(\"$ProtoInfo\")&&!IsAssign(\"ProtoParams\")&&Posit!=10"+extrafilter
+  prompt "Укажите разбираемые изделия:" wholly : ;
+offerror;
+object_2=sysvar(61);
+if (object_2==0)
+{
+  goto final;
+}
+defarr objs[object_2];
+macro ProtoPath+"Arrobj.mac" object_2, objs;
+//-- Смотрим про способ разбора
+NULLOUT=getvarinst(2,"DestrType",DestrType,2);
+if (DestrType==1) //-- По уровням разбора
+{
+  macro ProtoPath+"DestrObjectLevel.mac" objs;
+}
+if (DestrType==2) //-- По тппам объектов
+{
+  macro ProtoPath+"DestrObjectFt.mac" objs;
+}
+final:
+exit;

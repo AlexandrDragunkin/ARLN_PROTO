@@ -1,0 +1,68 @@
+//-- Макропрограмма присвоения атрибутов стандартного изделия объекту
+global ProtoPath;
+ProtoPath=getprotomac("Shkaf.ptl");
+NULLOUT=getsnap();
+mbcarcase groupall;
+objident prompt "Укажите изделие" : obj;
+kae=getattr(obj,"KarkasNumb",0);
+macro ProtoPath+"ChangeAttr.mac" obj;
+par=0;
+select partly attribute "Posit==10&&KarkasNumb=="+str(kae) done;
+if (sysvar(61)>0)
+{
+  kark=getselnum(1);
+}
+#ok_flag
+setvar "Стандартное изделие"
+""
+left
+"Сохранить изделие в файл?"
+done
+if (isvardef("kark")==16)
+{
+  logical default 0 "Погасить каркас" par
+}
+done;
+if (ok_flag==0)
+{
+  exit;
+}
+NULLOUT=getsnap();
+if (isvardef("obj")!=16)
+{
+  objident last 1 obj;
+}
+setucs lcs obj;
+NULLOUT=getsnap();
+setucs gcs;
+place obj;
+vifilter default;
+select wholly all done;
+k=sysvar(61);
+if (k>1)
+{
+  invisible allvports all remove obj done;
+}
+if (par)
+{
+  mbcarcase off kark;
+}
+zoom all;
+hide;
+//comment "Артикул: "+getattr(obj,"Article","") ;
+comment getattr(obj,"UnitName","Артикул: "+getattr(obj,"Article","")) ;
+comment ,, ;
+onerror conti;
+save select obj done : ;
+offerror;
+conti:
+NULLOUT=resnap();
+place obj;
+NULLOUT=resnap();
+if (par)
+{
+  visible allvports partly kark done;
+}
+visible allvports all;
+zoom previous;
+exit;

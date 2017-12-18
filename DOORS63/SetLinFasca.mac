@@ -1,0 +1,48 @@
+// Инициализация массива линий фасок для системы дверей 6,3
+
+global objLn NobjLn;
+defarr
+objLn[4]
+;
+startl:
+onerror nxfl;
+err=FltrType(-2);
+select prompt "Укажите линии определяющие фаски"  stayblink  :
+nxfl:
+offerror;
+err=FltrType(0);
+N=SysVar(61);
+NobjLn=N
+ if N>4
+ {
+  PUTmsg("Ошибка выбора!  Указано число линий больше допустимого",0);
+  PUTmsg("Укажите заново. Максимальное число линий 4.",0);
+  select previous done ;
+  goto startl;
+ }
+
+ if N<1
+ {
+      PUTmsg("Ничего не выбрано",1);
+      //err=initarray(Fasca,0);
+      exit;
+ }
+
+select previous done ;
+i=0
+
+nextLin:
+if i<N
+{
+ i=i+1
+ // заносим выбранные линии в массив
+ objLn[i]=getselnum(i);
+ if GetobjType(ObjLn[i])!=2
+ {
+    PUTmsg("Ошибка выбора!  Объект не линия",0);
+    PUTmsg("Укажите заново. Максимальное число линий 4.",0);
+    goto startl;
+ }
+goto nextLin;
+}
+exit;

@@ -1,0 +1,61 @@
+// Процедура проверки и упрощения контура на сонаправленные отрезки
+defarr objpl[100] arrxm[15] aTmp[15];
+getpar pl1;
+key=0;
+nm:
+   NobjPl=Scang(pl1,ObjPl);
+   objs=sysvar(60);
+   iAdap=1
+   iElemNew=0
+   nulout=GetobjGeo(ObjPl[iAdap],arrxm);
+   ptranscs(3,0,arrxm[1],arrxm[2],arrxm[3],arrxm[1],arrxm[2],arrxm[3]);
+   ptranscs(3,0,arrxm[4],arrxm[5],arrxm[6],arrxm[4],arrxm[5],arrxm[6]);
+   lxs=arrxm[1]; lys=arrxm[2]; lzs=arrxm[3];
+   lxss=lxs; lyss=lys; lzss=lzs;
+   labRevLin:
+   if iAdap<NobjPl
+   {
+		iAdap=iAdap+1;
+		err=GetobjGeo(ObjPl[iAdap],aTmp);
+		if err!=6
+		{
+			objs=sysvar(60)-objs;
+			if objs>0
+			{
+				delete last objs done;
+				goto end;
+			}
+		}
+		ptranscs(3,0,aTmp[1],aTmp[2],aTmp[3],aTmp[1],aTmp[2],aTmp[3]);
+		ptranscs(3,0,aTmp[4],aTmp[5],aTmp[6],aTmp[4],aTmp[5],aTmp[6]);
+		#dsrev_1 dist arrxm[1] arrxm[2] arrxm[3] arrxm[4] arrxm[5] arrxm[6];
+		#dsrev_2 dist aTmp[1] aTmp[2] aTmp[3] aTmp[4] aTmp[5] aTmp[6];
+		#dsrev_3 dist arrxm[1] arrxm[2] arrxm[3] aTmp[4] aTmp[5] aTmp[6];
+		//putmsg("dsrev_1="+str(dsrev_1),1);
+		//putmsg("dsrev_2="+str(dsrev_2),1);
+		//putmsg("dsrev_3="+str(dsrev_3)+" sum="+str(dsrev_1+dsrev_2),1);
+		if abs((dsrev_1+dsrev_2)-dsrev_3)>sysvar(32)+0.1
+		{
+			iElemNew=iElemNew+1;
+			line lxs lys lzs arrxm[4] arrxm[5] arrxm[6];
+			lxs=arrxm[4] ;lys=arrxm[5] ;lzs=arrxm[6];
+		}
+		nullout=CopyArray(arrxm,1,aTmp,1)
+		goto labRevLin;
+   }
+   line lxs lys lzs lxss lyss lzss;
+   Nobjpla=iElemNew+1;
+   if Nobjpla>2
+   {
+	   ;delete pl1 done;
+	   if (Nobjpl==Nobjpla)&&(key!=1)
+	   {
+			#pl1 path select last Nobjpla done last Nobjpl-1 ;
+			key=1;
+			goto nm;
+	   }
+	   #pl1 path select last Nobjpla done last 1 ;
+	   //putmsg("Создан из ="+str(Nobjpla),1);
+   }
+   end:
+   exit;

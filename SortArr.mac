@@ -1,0 +1,30 @@
+// Добавление элемента в упорядоченный массив
+//global conductor;
+
+getpar El, Marr, N;
+
+i=1;
+
+Loop:
+
+if (i<=N) {
+  if (El<Marr[i]) {
+    // сдвиг массива
+    j=N;
+
+LoopSd:
+    if (j>=i) {
+      Marr[j+1]=Marr[j];
+      j=j-1;
+      goto LoopSd;
+    }
+    Marr[i]=El;
+    exit;
+  }
+  i=i+1;
+  goto Loop;
+}
+i=N+1;
+Marr[i]=El;
+
+exit;

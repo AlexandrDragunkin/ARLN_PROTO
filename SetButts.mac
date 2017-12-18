@@ -1,0 +1,39 @@
+//-- Установить параметры торцевых пазов
+//-- Входные параметры:
+//-- Side - сторона (1- B, 2 - C, 3 - D, 4 - E)
+//-- TypeFr - Тип торцевой обработки:
+//--     0 - нет обработки
+//--     1 - прямоугольный паз
+//--     2 - скос
+//--     3 - скругление
+//-- Map - Секция раскрашивания
+//--     1 - торец E (Y+)
+//--     2 - торец D (Y-)
+//--     3 - торец C (X+)
+//--     4 - торец B (X-)
+//--     5 - пласть верхняя (Z+)
+//--     6 - пласть нижняя (Z-)
+//--     7 - Угол 1
+//--     8 - Угол 2
+//--     9 - Угол 3
+//--     10 - Угол 4
+//--     11 - несквозной вырез на верхней пласти
+//--     12 - несквозной вырез на нижней пласти
+//-- ShiftK - Смещение от пласти А в долях толщины
+//-- Dept - Глубина паза или смещение в мм для угла
+//-- Width - Ширина паза или угол в градусах
+//-- Rz1 - Резерв
+//-- Rz2 - Резерв
+//-- Rz3 - Резерв
+getpar Side, TypeFr, Map, ShiftK, Dept, Width, Rz1, Rz2, Rz3;
+
+NULLOUT=setvarinst(1,"g_Butt",TypeFr,(Side-1)*8+1);
+NULLOUT=getvarinst(1,"g_Butt",qqq,-1);
+NULLOUT=setvarinst(1,"g_Butt",Map,(Side-1)*8+2);
+NULLOUT=setvarinst(1,"g_Butt",ShiftK,(Side-1)*8+3);
+NULLOUT=setvarinst(1,"g_Butt",Dept,(Side-1)*8+4);
+NULLOUT=setvarinst(1,"g_Butt",Width,(Side-1)*8+5);
+NULLOUT=setvarinst(1,"g_Butt",Rz1,(Side-1)*8+6);
+NULLOUT=setvarinst(1,"g_Butt",Rz2,(Side-1)*8+7);
+NULLOUT=setvarinst(1,"g_Butt",Rz3,(Side-1)*8+8);
+exit;

@@ -1,0 +1,209 @@
+//-- Одна из основных Макропрограмм построения распашной гнутой двери
+
+global D_DxU D_DzU D_DxN D_DzN D_DxD;
+global ProtoPath;
+global g_FurnType;  //-- Тип мебельного объекта
+KarkasNumb=getcarcnumb();
+global HoldName;      //-- Имя хозяина
+global MacroSw;       //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+
+global		// Для фасадов и дверей
+DoorKonst,            //-- Тип конструкции двери
+DoorPlace, // Сторона открывания
+DoorDuble, // Двойная/одинарная
+DoorOpen,  // Открытая/закрытая
+DoorType,  // Утопленная0/накладная1/Свободная2
+DoorHinge, // Петля
+DoorKorp,   // Толщина материала корпуса ниши
+DoorAngle;  // Угол установки
+
+global		// Для фасадов и дверей
+DoorMater ,  // Материал панелей двери
+DoorPict,    // тип фасада(рисунка)
+DoorBCol ,   // Цвет кромки фасада
+DoorBand ,   // Тип кромки фасада
+DoorMatVS1 , // Материал вставки 1 фасада
+DoorMatVS2 ; // Материал вставки 2 фасада
+
+global		            //-- Для ручек
+HandleType,           //-- Тип ручки
+HandleX,              //-- Сдвиг ручки по x
+HandleZ,              //-- Сдвиг ручки по z
+HandleA,              //-- Поворот ручки
+HandleD,	            //-- Двойная или одиночная ручка
+HandleR;	            //-- Тип положения ручки (0-свободно 1-по центру 3-сверху 4-снизу)
+
+global PanDir;	//-- Направление текстуры 1=D 2=B 0-игнорируется
+
+getpar
+x y z		//-- Правый нижний дальний угол
+w d h     	//-- Размер по ширине, глубине и высоте
+  R_Fas         // Изменения фасада: справа
+  L_Fas         // Слева
+  U_Fas         // Сверху
+  D_Fas         //  Снизу
+  Door_Zw       // Зазор по ширине
+;
+//-----------------------------------------------------------------
+FurnType="230300";
+
+if MacroSw==0
+{
+  NULLOUT=getsnap();
+  gosub SimpleDoor;
+  NULLOUT=resnap();
+//:
+  
+}
+else
+{
+//  NULLOUT=getsnap();
+  protoobj create "Shkaf.ptl" 232
+  "S" w
+  "G" D
+  "Hd" h
+  "R_Fas" R_Fas
+  "L_Fas" L_Fas
+  "U_Fas" U_Fas
+  "D_Fas" D_Fas
+  "Door_Zw"  Door_Zw
+  "Nshp"     PanDir
+  "PrMater"  DoorMater
+  "Face_col" DoorBCol
+  "Rplace"   DoorPlace
+  "Fasrtype" DoorPict
+  "Open"     DoorOpen
+  "rx"       HandleX
+  "rz"       HandleZ
+  "ra"       HandleA
+  "HanType"  HandleType
+  "Rpl_r"	   HandleR
+  "Doub_r"   HandleD
+  "P_Type"   DoorHinge
+  "Band" 	   DoorBand
+  "PrMatVs1" DoorMatVS1
+  "PrMatVs2" DoorMatVS2
+  done
+  x y z;
+  MacroSw=1;
+//  NULLOUT=resnap();
+}
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done last 1 done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+}
+if (isassign("HoldName",0))
+{
+  attrobj copy record "HoldName" done last 1 done;
+}
+else
+{
+  attrobj attach "HoldName" done last 1 HoldName ;
+}
+//attrobj attach "Posit" done last 1 position;
+attrobj attach "FurnType" done last 1 FurnType;
+attrobj attach "Assembly" done last 1 1;        //-- Признак сборочной единицы
+macro ProtoPath+"EndDoor.mac" x y z w h DoorKorp;
+exit;
+//=============================================================================
+SimpleDoor:
+x1=x;
+y1=y;
+z1=z;
+ALOpen=60;
+object_0=sysvar(60);
+
+
+//-- дверь только одинарная
+{
+  W1=W;
+  H1=H;
+  D1=d;
+  z1=z;
+
+  Variant=DoorPlace;
+  //-- Строим дверь
+
+    object_1=sysvar(60);
+  macro ProtoPath+"SetFasPlas.mac"
+                0 //L_Fas         // Слева
+                0 //R_Fas         // Изменения фасада: справа
+                0 //U_Fas         // Сверху
+                0 //D_Fas         //  Снизу
+;
+  macro ProtoPath+"DoorKar.mac"
+		0,0,0, //-- Положение
+		W1, D1, H1,   //-- Ширина и высота
+                R_Fas         // Изменения фасада: справа
+                L_Fas         // Слева
+                U_Fas         // Сверху
+                D_Fas         //  Снизу
+                Door_Zw       // Зазор между фасадами
+		Variant                 // вариант расположения
+    ;
+object_3=sysvar(60)-object_0;
+     object_2=sysvar(60)-object_1;
+//  gosub MakDoor;
+  if (object_2>0)
+  {
+    #Door group last  object_3 done;
+    move Door done 2points 0,0,0 x1,y1,z1 nocopy;
+    if (DoorOpen==1)
+    {
+      if (DoorPlace==1)
+      {
+	      rotate last object_3 done 2points x y 0 x y 10 ALOpen nocopy;
+      }
+      if (DoorPlace==2)
+      {
+	      rotate last object_3 done 2points x+W y-D 0 x+W y-D 10 -ALOpen nocopy;
+      }
+     //-- Если дверь не имеет стороны открывания, ее не открываем
+    }
+  }
+}
+
+
+  dn="Дверь "+priceinfo(DoorKonst,"NAME","Угловая распашная",2);
+  attrobj attach "ElemName" done last 1 dn;
+
+FurnType="230300";
+//==================================
+Namescr="ProtoParams";
+
+g_FurnType=FurnType;
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"S",w);
+err=AddScratch(ScrMod,FurnType,"Hd",H);
+err=AddScratch(ScrMod,FurnType,"G",d);
+err=AddScratch(ScrMod,FurnType,"R_Fas",R_Fas);
+err=AddScratch(ScrMod,FurnType,"L_Fas",L_Fas);
+err=AddScratch(ScrMod,FurnType,"U_Fas",U_Fas);
+err=AddScratch(ScrMod,FurnType,"D_Fas",D_Fas);
+err=AddScratch(ScrMod,FurnType,"Door_Zw",Door_Zw);
+err=AddScratch(ScrMod,FurnType,"Rplace",DoorPlace);
+err=AddScratch(ScrMod,FurnType,"Fasrtype",DoorPict);
+err=AddScratch(ScrMod,FurnType,"PrMater",DoorMater);
+err=AddScratch(ScrMod,FurnType,"Band",DoorBand);
+err=AddScratch(ScrMod,FurnType,"Face_col",DoorBCol);
+err=AddScratch(ScrMod,FurnType,"HanType",HandleType);
+err=AddScratch(ScrMod,FurnType,"Rpl_r",HandleR);
+err=AddScratch(ScrMod,FurnType,"Doub_r",HandleD);
+err=AddScratch(ScrMod,FurnType,"rx",HandleX);
+err=AddScratch(ScrMod,FurnType,"rz",HandleZ);
+err=AddScratch(ScrMod,FurnType,"ra",HandleA);
+err=AddScratch(ScrMod,FurnType,"Open",DoorOpen);
+err=AddScratch(ScrMod,FurnType,"P_Type",DoorHinge);
+err=AddScratch(ScrMod,FurnType,"PrMatVs1",DoorMatVS1);
+err=AddScratch(ScrMod,FurnType,"PrMatVs2",DoorMatVS2);
+err=AddScratch(ScrMod,FurnType,"Nshp",PanDir);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+attrobj copy record Namescr done Door done;
+NULLOUT=addattrpi(Door,1,232);
+return;

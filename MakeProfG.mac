@@ -1,0 +1,99 @@
+//-- Программа обезгеморраивания установки профилей
+//-- Нужна исключительно для обезгеморраивания
+
+global
+PrfMater, // Материал профиля
+//PrfP_1   // Подрез начальной точки
+//PrfP_2   // Подрез конечной точки
+PrfSd_X,  // Сдвиг по Х ЛСК
+PrfSd_Y  // Сдвиг по У ЛСК
+//PrfAngle // Угол поворота вокруг оси (град)
+//PrfAng_1 // Угол подрезки 1 стороны
+//PrfAng_2 // Угол подрезки 2 стороны
+PrfColor; // Цвет профиля из прайса
+
+global ProtoPath;
+//global g_ProfNumb; //-- Номер профиля в составе створки
+//global g_IntProto; //-- Построчный массив текстового атрибута интеллектуального прототипа
+
+getpar
+xp1 yp1 zp1		// 1 точка
+xp2 yp2 zp2;		// 2 точка
+
+IDP=PrfMater;
+tab_place=ProtoPath+"DoorSys.mdb";
+szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+tab_place;
+Doorscon=adbCon(szSrc);
+//-- Читаем информацию о профилях
+str_tab="SELECT * FROM Profiles WHERE ID="+str(PrfMater) ;
+ProfRs=adbOpen(DoorsCon,str_tab);
+ij=adbRecCount(ProfRs);
+if (ij!=1)
+{
+  errcode="Количество профилей с ID "+str(PrfMater)+" равно "+str(ij);
+  gosub err;
+  goto end;
+}
+NULLOUT=adbMoveFirst(ProfRs);
+
+PrfMater=adbGetValue(ProfRs,"IDProf");
+//------------------------------Подбор профиля по цвету----------------------------------------------
+ColProfName=priceinfo(PrfColor,"MatName","Нет",1);		//--Читаем название цвета профиля
+TypeProf=priceinfo(PrfMater,"ProfileType",0,1);			//--Читаем тип  профиля
+if (ColProfName!="Нет")
+{
+	ColorProf=npgetbywhere(1," [Name] LIKE '% "+str(ColProfName)+"' AND [ProfileType] = "+str(TypeProf),"ArrProf");
+	if (ColorProf!=0)
+	{
+		ArrKol=getdimarray(ArrProf);
+		if (ArrKol>0)
+		{
+			PrfMater=ArrProf[1];
+		}
+	}
+}
+//---------------------------------------------------------------------------------------------------
+
+MacroExtra=adbGetValue(ProfRs,"MacroExtra","");
+macro ProtoPath+"SetEnam.mac" "Профиль системы дверей" ;
+
+Macro ProtoPath+"MakeProf.mac" xp1,yp1,zp1 xp2,yp2,zp2;
+
+prx=PrfSd_X;
+pry=PrfSd_Y;
+
+//objident last 1 prof;
+nobj=sysvar(60);
+if (len(MacroExtra)!=0)
+{
+  macro ProtoPath+MacroExtra
+  IDP,
+  xp1,yp1,zp1,
+  xp2,yp2,zp2;
+}
+nobj=sysvar(60)-nobj;
+//if (nobj>0)
+//{
+//  move last nobj done -prx, -pry 0 nocopy;
+//}
+//#prof group last nobj done;
+
+end:
+ProfRs=adbClose(ProfRs);
+DoorsCon=adbDisCon(DoorsCon);
+exit;
+//==============================================================================
+//-- Вывод окна сообщения об ошибке
+//-- Входные параметры:
+//-- errcode - сод ошибки
+err:
+//-- ShowSmartError
+#ok_flag
+     alternative "Ошибка базы данных"
+     msgbox text "Некорректно заполнена база данных систем дверей"
+     " "
+     errcode
+     done
+     "  OK  "
+     done;
+return;

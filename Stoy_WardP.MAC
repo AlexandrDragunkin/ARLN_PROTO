@@ -1,0 +1,49 @@
+//--Макро создания стойки гардеробной
+global ProtoPath;
+// KarkasNumb=getcarcnumb();		//-- Текущий номер каркаса
+Type=dbvar("Type",0);			//-- Тип стойки
+W=DbVar("W",600);			//-- Высота
+D=DbVar("D",600);			//-- Ширина
+ProfID=priceinfo(Type,"nomID1",0,2);	//-- Тип профиля
+ProfX=priceinfo(ProfID,"ProfX",0.1,1);	//-- Ширина профиля
+NameEl=PriceInfo(Type,"Name"," ",2);
+NicheId=getprotoid("Shkaf","Стойка гардеробная","ProtoMacro","Stoy_WardP");  //-- ID прототипа
+//--Создаем стойку с крепежем
+macro ProtoPath+"Stoy_Ward.mac" ;
+group all done;
+objident last 1 obj;
+//-- Присваиваем атрибуты
+position=262;
+Namescr="ProtoParams";
+attrobj copy record Namescr done last 1 done;
+attrobj attach "Posit" done Last 1 position;
+attrobj attach "XUnit" "YUnit" "ZUnit" done last 1  ProfX W D;	//-- Размеры стойки
+attrobj attach "Assembly" done last 1 1;			//-- Добавим атрибут сборочной единицы
+attrobj attach "FurnType" done last 1 "350700";
+// attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+if (IsAssign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done last 1 done;
+}
+else
+{
+  if (getcarcnumb()>0)
+  {
+    attrobj attach "KarkasNumb" done last 1 getcarcnumb();
+  }
+}
+attrobj attach "ElemName" Done last 1 NameEl ;
+attrobj attach "GoodsID" Done last 1 Type ;
+attrobj attach "Posit" Done last 1 NicheId ;
+macro ProtoPath+"SetNichePars.mac" obj -ProfX/2 0 0 ProfX/2 D W;
+if (IsAssign("NichePars",0))
+{
+ ScrNum=readscratch("NichePars",0);
+ NULLOUT=AddScratch(ScrNum,"GabCoords","XMin",-ProfX/2);
+ NULLOUT=AddScratch(ScrNum,"GabCoords","XMax",ProfX/2);
+ NULLOUT=WriteScratch(ScrNum,"NichePars",0);
+ NULLOUT=termscratch(ScrNum);
+ attrobj copy record "NichePars" done obj done;
+}
+exit;

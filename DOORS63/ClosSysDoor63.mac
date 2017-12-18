@@ -1,0 +1,19 @@
+//ClosSysDoor63.mac
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+// --Закрываем доступ  к базе дверных систем DoorSys63.mdb
+global ProtoPath;
+global ProtoPath, g_tab_place, g_keyDS63,g_Doorscon;
+
+if g_keyDS63==0
+{
+ exit;
+}
+g_Doorscon=adbDisCon(g_Doorscon);
+g_keyDS63=0;
+
+exit;

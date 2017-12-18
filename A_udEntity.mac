@@ -1,0 +1,85 @@
+//-- Постобработка нового проекта
+//-- Пользователь может сюда добавить свои настройки старта
+defarr SQLArr[6];
+N=4;
+defarr AttrName[N], AttrRusName[N];
+// Добавление в пользовательские умолчания
+
+con=adbCon(3); // Главная база
+
+// Проверим наличие группы Арлайн
+
+KeyReLoad=0;
+
+NameGroup="ARLINE";
+NameGrVar="ARLINE";
+SQLStr="SELECT ID, Name FROM udCategory WHERE Name=\""+NameGroup+"\"";
+rcd=adbOpen(con,SQLStr);
+total_s=aDbRecCount(rcd);
+
+if total_s!=1
+{
+	initarray(SQLArr,"");
+	SQLArr[1]="INSERT into udCategory (ID, Name, Query, ParentID, Sort) ";
+	SQLArr[2]="SELECT top 1 (SELECT max(b.ID) FROM udCategory b)+1, ";
+	SQLArr[3]="\""+NameGroup+"\", \""+NameGrVar+"\", NULL, ";
+	SQLArr[4]="(SELECT max(c.Sort) from udCategory c WHERE c.ParentID is Null)+1 ";
+	SQLArr[5]="FROM udCategory a ";
+	SQLArr[6]="WHERE ParentID is Null";
+
+	MyRs=adbModify(con,SQLArr,6);
+	
+	KeyReLoad=1;
+}
+
+// Тут делаем как в SQLUpgrade. Sort для первой записи определяем 0,
+// и затем уже на следующие для группы умолчания используем запрос с счетчиком
+AttrName[1]="FullPorting"; AttrRusName[1]="Полная присадка на заказ";
+AttrName[2]="ExtraRate1"; AttrRusName[2]="Щепотка соли в смету";
+AttrName[3]="ExtraRate2"; AttrRusName[3]="Щепотка перца в смету";
+AttrName[4]="ExtraRate3"; AttrRusName[4]="Вишенка в смету";
+
+i=0;
+next:
+i=i+1;
+if i<=N
+{
+	SQLStr="SELECT Query FROM udEntity WHERE Query=\""+AttrName[i]+"\"";
+	rcd=adbOpen(con,SQLStr);
+	total_s=aDbRecCount(rcd);
+	// putmsg(total_s);
+	if total_s==1
+	{
+		// Считать переменную
+		// nullout=udGetEntity(AttrName,FullPorting,a);
+		// nullout=udGetEntity(AttrName[i],ValType,FullPorting,sVal);
+		// putmsg(FullPorting);
+		// putmsg(ValType);
+		// putmsg(sVal);
+		// putmsg(nullout);
+	}
+	else
+	{
+		if i==1 { SQLSort="0"; }
+		else { SQLSort="(SELECT max(sort) FROM udEntity e WHERE e.CategoryID = udCategory.id)+1"; }
+		
+		initarray(SQLArr,"");
+		SQLArr[1]="INSERT into udEntity (CategoryID, Name, Query, VarType, data2, dVal, sort) "
+		SQLArr[2]="SELECT ID, '"+AttrRusName[i]+"', \""+AttrName[i]+"\", 3, 0, 0, "
+		SQLArr[3]=SQLSort+" "
+		SQLArr[4]="FROM udCategory WHERE Query = \""+NameGroup+"\""
+		
+		MyRs=adbModify(con,SQLArr,4);
+	}
+	goto next;
+}
+
+// Группы Отделки сюда
+
+
+if KeyReLoad==1
+{
+	LoadOrder last;
+}
+
+exit;

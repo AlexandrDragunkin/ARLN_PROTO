@@ -1,0 +1,156 @@
+//-- Макро определения параметров для изменения толщины панели
+global ProtoPath;
+global pnt, iPNT, iPanME;
+getpar
+Pan					//-- Панель			
+ThOldMat		//-- Старый материал
+ThNewMat		//-- Новый материал панели
+R1					//-- Резервный параметр
+;
+defarr GP[6];				//-- массив габаритов панели
+defarr GOb[6];			//-- массив габаритов прилегающей панели
+defarr GKar[6];			//-- массив габаритов каркаса
+L=0;								//-- сдвиг по умолчанию
+ZazK=0;							//-- возможный зазор между "крайней" панелью и корпусов
+
+//-- Если толщины одинаковые выходим
+if (ThOldMat==ThNewMat)
+{
+	goto end;
+}
+else
+{
+  Ots=ThNewMat-ThOldMat;	//-- разница в толщинах (отступ)
+}
+//-- Номер каркаса
+KarkasNumb=GetAttr(Pan,"KarkasNumb",-1);
+if (KarkasNumb==-1)
+{
+	goto end;
+}
+aaaa=fltrparamobj(0);     //-- Выключили фильтр по мебельной панел
+//-- Габариты каркаса
+selbyattr "KarkasNumb=="+str(KarkasNumb)+"&&FurnType==\"100000\"" partly all done;
+if (sysvar(61)==0)
+{
+	putmsg("Нет каркаса");
+	goto end;
+}
+karkas=getselnum(1);
+NULLOUT=objgab3(Pan,GP);							//-- Габариты панели
+NULLOUT=objgab3(karkas,GKar);					//-- Габариты каркаса
+type_pan=GetAttr(Pan,"Furntype","");	//-- Тип панели
+//-- Округляем координаты 
+GP[1]=round(GP[1]);
+GP[2]=round(GP[2]);
+GP[3]=round(GP[3]);
+GP[4]=round(GP[4]);
+GP[5]=round(GP[5]);
+GP[6]=round(GP[6]);
+
+GKar[1]=round(GKar[1]);
+GKar[2]=round(GKar[2]);
+GKar[3]=round(GKar[3]);
+GKar[4]=round(GKar[4]);
+GKar[5]=round(GKar[5]);
+GKar[6]=round(GKar[6]);
+
+GOb[1]=0;
+GOb[2]=0;
+GOb[3]=0;
+GOb[4]=0;
+GOb[5]=0;
+GOb[6]=0;
+//-- Находим панели прилегающие вплотную
+//-- Выбираем панели такого же типа
+selbyattr "KarkasNumb=="+str(KarkasNumb)+"&&FurnType!=\"100000\"&&FurnType==\""+type_pan+"\"" wholly all done; 
+kobj=sysvar(61);
+defarr KarObj[kobj];
+macro ProtoPath+"ArrObj.mac" kobj KarObj;
+ik=0;
+LOOPK:
+ik=ik+1;
+Obj=KarObj[ik];
+NULLOUT=objgab3(Obj,GOb);
+GOb[1]=round(GOb[1],0.1);
+GOb[2]=round(GOb[2],0.1);
+GOb[3]=round(GOb[3],0.1);
+GOb[4]=round(GOb[4],0.1);
+GOb[5]=round(GOb[5],0.1);
+GOb[6]=round(GOb[6],0.1);
+
+//-- Определяем переменные для типов панелей
+//-- Если СТОЙКА
+if (left(type_pan,4)=="0102")
+{
+	L=(Ots/2);
+	Ots=Ots;
+	if ((GP[1]>=GKar[1]&&GP[1]<=GKar[1]+ZazK)||GP[1]==Gob[4])	//-- крайняя правая
+	{	
+		L=Ots;
+		Ots=0;
+		goto nextk;
+	}
+	if ((GP[4]<=GKar[4]&&GP[4]>=GKar[4]-ZazK)||GP[4]==Gob[1])	//-- крайняя левая
+	{
+		L=0;
+		Ots=ots;
+		goto nextk;
+	}
+}
+//-- Если ПОЛКА
+if (left(type_pan,4)=="0101")
+{
+	L=-(Ots/2);
+	Ots=Ots;
+	if ((GP[3]>=GKar[3]&&GP[3]<=GKar[3]+ZazK)||GP[3]==Gob[6])	//-- крайняя нижняя
+	{
+		L=0;
+		Ots=Ots;
+		goto nextk;
+	}
+	if ((GP[6]<=GKar[6]&&GP[6]>=GKar[6]-ZazK)||GP[6]==Gob[3])	//-- крайняя верхняя
+	{
+		L=-Ots;
+		Ots=0;
+		goto nextk;
+	}
+}
+//-- Если СТЕНКА
+if (left(type_pan,4)=="0103")
+{
+	L=-(Ots/2);
+	Ots=Ots;
+	if ((GP[2]>=GKar[2]&&GP[2]<=GKar[2]+ZazK)||GP[2]==Gob[5])	//-- крайняя задняя
+	{
+		L=0;
+		Ots=Ots;
+		goto nextk;
+	}
+	if ((GP[5]<=GKar[5]&&GP[5]>=GKar[5]-ZazK)||GP[5]==Gob[2])	//-- крайняя передняя
+	{
+		L=-Ots;
+		Ots=0;
+		goto nextk;
+	}
+}
+//-- Если СТЕНКА УТОПЛЕННАЯ
+if (left(type_pan,4)=="0104")
+{
+		L=-Ots;
+		goto nextk;
+}
+if (ik<kobj)
+{
+	goto LOOPK;
+}
+nextk:
+macro ProtoPath+"PanelMoveM.mac" 
+Pan										//-- перемещаемая панель
+L											//-- расстояние для перемещения
+3											//-- область захвата со стороны А
+3											//-- область захвата со стороны F
+Ots										//-- отступ (для учета изменений толщины панели)
+iif(iPanME>0,1,0);		//-- признак перезаписи объекта в массив
+end:
+exit;

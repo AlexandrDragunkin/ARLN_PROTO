@@ -1,0 +1,73 @@
+//-- Создание объекта - шкаф терминальный полукруглый
+global MacroSw; //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global ProtoPath;		//-- Путь к папке с макропрограммами общей библиотеке прототипов
+global LocalPath;		//-- Путь к папке с макропрограммами локальной библиотеке прототипов
+ProtoPath=GetProtoMac("Shkaf.ptl")
+LocalPath=GetProtoMac("Kitchen.ptl");
+MacroSw=0;
+
+PrMater=DbVar("PrMater",0);   //-- Материал экзамена
+w=DbVar("Шир",330);			      //-- Ширина
+d=DbVar("Глуб",320);          //-- Глубина
+Радиус=DbVar("Радиус",215);   //-- Радиус
+Правый=DbVar("Правый",1);     //-- Правая ориентация
+h=DbVar("Выс",822);			      //-- Высота
+РисФас=DbVar("РисФас",215);   //-- Рисунок фасада
+//----------------------------------------------
+h_dsp=PriceInfo(PrMater,"Thickness",DbVar("HDSP",16));
+h_fas=PriceInfo(РисФас,"Thickness",16,2);
+ТипКонт=1;   //-- Прямой
+Верхний=1;   //-- Верхний
+ObjTyp=0;    //-- Мебельный
+PlcTyp=1;    //-- Верхний
+BiblNum=165; //-- В библиотеке ID=165
+if (Правый==1)
+{
+  FurnType="100010";
+}
+else
+{
+  FurnType="100007";
+}
+//----------------------------------------------
+begin:
+Ширина=w-2*h_dsp;             //-- Внутренняя ширина
+if (Правый==0)                //-- Левая ориентация
+{
+  DD=Радиус;                  //-- Изменение глубины
+  dR=d;	   	                  //-- Глубина справа
+  dL=d-DD;		                //-- Глубина слева
+  if (dL<5*h_dsp)
+  {
+    d=int(Радиус+5*h_dsp);
+  }
+}
+else
+{
+  DD=Радиус;                 //-- Изменение глубины
+  dR=d-DD;	   	             //-- Глубина справа
+  dL=d;		                   //-- Глубина слева
+  if (dR<5*h_dsp)
+  {
+    d=int(Радиус+5*h_dsp);
+  }
+}
+d=max(dl,dr);               //-- Максимальная глубина
+//----------------------------------------------
+
+Macro ProtoPath+"BegUnit.mac" "" ;
+macro LocalPath+"aboadTV.mac" ;
+
+//-- Ставим размеры
+macro ProtoPath+"aDimLine.mac" w  d h  ТипКонт Верхний;
+//-- Линии контакта
+macro ProtoPath+"aContLine.mac" w dL dR h 0 ТипКонт Верхний;
+#Boad group all done;
+macro ProtoPath+"SetEnam.mac" "Шкаф терминальный полукруглый";
+macro ProtoPath+"EndUnit.mac" w d h ;
+//-- Присваиваем атрибуты
+macro ProtoPath+"FurnAttr.mac" ObjTyp PlcTyp BiblNum FurnType;
+macro ProtoPath+"aCutAtr.mac" !Правый 2 Радиус 0;
+macro ProtoPath+"OldArtic.mac" ;
+macro ProtoPath+"Scrcopatr.mac" ; //-- Запись в объект Scratch атрибута
+exit;

@@ -1,0 +1,58 @@
+//-- Создание пантографа
+global ProtoPath;
+defarr MatProp[1];
+defarr ValProp[1];
+w=DbVar("w",450);			//-- Ширина
+typeP=DbVar("typeP",0);			//-- Тип пантографа
+Wmin=priceinfo(typeP,"Width",0,2);	//-- Минимальная ширина пантографа
+FurnType=priceinfo(typeP,"FurnType","000000",2);
+position=getprotoid("Shkaf","Пантограф","ProtoMacro","PantografP");  //-- ID прототипа
+MacroPant=PriceInfo(typeP,"MacroFile","",2);
+Namescr="ProtoParams";
+
+//-- Подбор пантографа по ширине
+GoodsID=typeP;     //-- ID типа пантографа
+GoodsProp="ListMat";
+MatProp[1]="Width";
+ValProp[1]=w;
+// putmsg(GoodsID)
+// putmsg(w)
+IDpant=NPGetByProps(GoodsID,GoodsProp,MatProp,ValProp);
+// putmsg(IDpant)
+if (IDpant<=0)	//--Если пантограф больше ширины ниши
+{
+ putmsg("Указанная ширина меньше минимальной ширины выбранного пантографа",0);
+ putmsg("Заданная ширина "+str(w),0);
+ putmsg("Минимальная ширина пантографа "+str(Wmin),0);
+ goto final;
+}
+
+H_pant=priceinfo(IDpant,"Height",0);			//-- Высота пантографа
+W_pant=priceinfo(IDpant,"Width",0);			//-- Ширина пантографа
+D_pant=priceinfo(IDpant,"Dept",0);			//-- Глубина пантографа
+T_Pant=priceinfo(IDpant,"ToleranceX",0);		//-- Максимальная ширина пантографа
+textura=PriceInfo(typeP,"Texture","Lb.pkm7_1_iml.#15",2);	//-- Текстура
+texturProf="Lb.pkm7_1_iml.#54";
+
+//--Если пантограф меньше ширины ниши
+if (w>T_Pant)
+{
+ putmsg("Указанная ширина больше максимальной ширины выбранного пантографа",0);
+ putmsg("Заданная ширина "+str(w),0);
+ putmsg("Максимальная ширина пантографа "+str(T_Pant),0);
+ goto final;
+}
+
+
+objDO=sysvar(60);
+macro Protopath+MacroPant 0 0 0 w IDpant;			//-- Вызываем макрос построения пантографа.
+objPosle=sysvar(60)-objDo;
+group last objPosle done;
+objident last 1 pant;
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"w",w);
+err=AddScratch(ScrMod,FurnType,"typeP",typeP);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+final:
+exit;

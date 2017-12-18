@@ -1,0 +1,618 @@
+//--  Изменение положения стойки
+global ProtoPath;
+defarr cs[6] co[6]; //-- Массив для габаритных координат
+defarr sp[3];       //-- Новое положение стойки
+defarr ObjR[100];   //-- Массив для прилегающих объектов справа
+defarr ObjL[100];   //-- Массив для прилегающих объектов слева
+defarr ObjS[100];   //-- Массив для столешниц и т.п.
+defarr ObjO[100];   //-- Массив для опор
+defarr arr[10];
+
+defarr error[10];
+NULLOUT=initarray(error,"");
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+NULLOUT=getvarinst(2,"LL_ShowFixing",kshow,1); //Показывать крепеж
+NULLOUT=GetVarInst(2,"g_eps",g_eps,0.01); // Погрешность округления
+
+if (kshow==1) {
+  fixing hide all done;
+}
+//-- Количество примыкающих объектов
+NumR=0; NumL=0; NumS=0; NumO=0;
+//-- 1 - крайняя левая стойка, 2 - крайняя правая стойка , 0 - посерёдке
+flag=0;
+NumStR=0; //-- Кол-во стоек справа
+NumStL=0; //-- Кол-во стоек слева
+//-- Ширина
+x=0; s=0; y=0;
+n=0;
+i=0;
+j=0;
+k=0;
+m=0;
+//-------------------------------------------------------
+NULLOUT=GetSnap();
+Start:
+//-- Выбираем разрезающую стойку
+onerror End;
+switch autosingle on;
+selbyattr "(Left(FurnType,4)==\"0102\"&&FurnType!=\"010000\")||Posit==11"
+  prompt "Укажите  стойку:" wholly  : ;
+if (sysvar(61)==0)
+{
+  goto End;
+}
+Stenka=getselnum(1);
+offerror;
+select stayblink Stenka done;
+Param:
+#ok_fl
+SetVar
+"Параметры сдвига"
+PicturesPath+"StoiEdit.wmf"
+left
+"Введите параметры сдвига стойки"
+done
+real default 100 "Величина сдвига стойки:" L
+real default 3 "Величина допустимого зазора:" h
+done;
+if  (ok_fl==0)
+{
+  select Stenka done;
+  goto End;
+}
+PosSt=getattr(Stenka,"Posit",-1);
+if (h<0)
+{
+  error[1]="Введена отрицательная величина допустимого зазора.";
+  error[2]="Значение величины допустимого зазора должно быть больше нуля.";
+  error[3]=" ";
+  error[4]="Введите корректное значение величины допустимого зазора"
+  macro Protopath+"ShowSmartError.mac" "Ошибка сдвига стойки" 4 error;
+  goto End;
+}
+//---------------------------------------------------------------
+tmp=objgab3(Stenka,cs);
+Numb=SysVar(60);
+BoundR=Stenka;
+BoundL=Stenka;
+cbr=cs[1];
+cbl=cs[4];
+Nexti:
+i=i+1;
+if (i<=Numb)
+{
+  O1=getobjnum(i);
+  Pos=getattr(O1,"Posit",-1);
+  if ((Pos==-1)||(Pos==10))
+  {
+    goto Nexti;
+  }
+  tmp=objgab3(O1,co);
+  if (Pos==PosSt)
+  {
+    if (co[4]<cs[1]-g_eps)
+    {
+      NumStR=NumStR+1;
+    }
+    if (co[1]>cs[4]+g_eps)
+    {
+      NumStL=NumStL+1;
+    }
+    if (co[4]<cbr-g_eps)
+    {
+      BoundR=O1;
+      cbr=co[1];
+    }
+    if (co[1]>cbl+g_eps)
+    {
+      BoundL=O1;
+      cbl=co[4]
+    }
+    goto Nexti;
+  }
+
+  if (Pos==133)
+  {
+    m=m+1;
+    ObjO[m]=O1;
+    goto Nexti;
+  }
+  if ((co[4]+h>=cs[1])&&(co[4]<cs[4])&&(co[1]<cs[1]-0.1)&&(co[3]<cs[6])&&(co[6]>cs[3]))
+  {
+    x=abs(L)+60;
+    if ((Pos==18)||(Pos==21)||(Pos==40)||(Pos==149)||(Pos==150)||(Pos==154))
+    {
+      tmp=GetProtoVal(O1,"x",x);
+      if ((x<abs(L)+50)&&(L<0))
+      {
+        error[1]="Слишком большое значение величины сдвига.";
+        error[2]="Введенная величина сдвига стойки нарушает конструкцию изделия.";
+        error[3]=" ";
+        error[4]="Измените значение величины сдвига или"
+        error[5]="измените конструкцию изделия, или"
+        error[6]="воспользуйтесь другой командой редактирования"
+        macro Protopath+"ShowSmartError.mac" "Ошибка сдвига стойки" 6 error;
+        goto End;
+      }
+      j=j+1;
+      ObjR[j]=O1;
+    }
+    if ((Pos==12)||(Pos==14)||(Pos==13))
+    {
+      err=1;
+      InitArray(arr,0);
+      arr[1]=O1;
+      err=GetPan6Par(1,arr);
+      err=GetPan6Par(11,arr);
+      if (arr[1]==2)
+      {
+        if (Pos==12)
+        {
+          x=arr[2];
+        }
+        else
+        {
+          x=arr[3];
+        }
+        if ((x<abs(L)+50)&&(L<0))
+        {
+          error[1]="Слишком большое значение величины сдвига.";
+          error[2]="Введенная величина сдвига стойки нарушает конструкцию изделия.";
+          error[3]=" ";
+          error[4]="Измените значение величины сдвига или"
+          error[5]="измените конструкцию изделия, или"
+          error[6]="воспользуйтесь другой командой редактирования"
+          macro Protopath+"ShowSmartError.mac" "Ошибка сдвига стойки" 6 error;
+          goto End;
+        }
+        j=j+1;
+        ObjR[j]=O1;
+      }
+    }
+    if (Pos==33)
+    {
+      tmp=GetProtoVal(O1,"Type_pan",Type);
+      if (Type==12 || Type==13)
+      {
+        tmp=GetProtoVal(O1,"x",x);
+      }
+      if (Type==14)
+      {
+        tmp=GetProtoVal(O1,"y",x);
+      }
+      if ((x<abs(L)+50)&&(L<0))
+      {
+        error[1]="Слишком большое значение величины сдвига.";
+        error[2]="Введенная величина сдвига стойки нарушает конструкцию изделия.";
+        error[3]=" ";
+        error[4]="Измените значение величины сдвига или"
+        error[5]="измените конструкцию изделия, или"
+        error[6]="воспользуйтесь другой командой редактирования"
+        macro Protopath+"ShowSmartError.mac" "Ошибка сдвига стойки" 6 error;
+        goto End;
+      }
+      j=j+1;
+      ObjR[j]=O1;
+    }
+    if ((Pos==121)||(Pos==20))
+    {
+      tmp=GetProtoVal(O1,"S",x);
+      if ((x<abs(L)+50)&&(L<0))
+      {
+        error[1]="Слишком большое значение величины сдвига.";
+        error[2]="Введенная величина сдвига стойки нарушает конструкцию изделия.";
+        error[3]=" ";
+        error[4]="Измените значение величины сдвига или"
+        error[5]="измените конструкцию изделия, или"
+        error[6]="воспользуйтесь другой командой редактирования"
+        macro Protopath+"ShowSmartError.mac" "Ошибка сдвига стойки" 6 error;
+        goto End;
+     }
+     j=j+1;
+     ObjR[j]=O1;
+    }
+    if (Pos==51)
+    {
+      tmp=GetProtoVal(O1,"Wk",x);
+      if ((x<abs(L)+50)&&(L<0))
+      {
+        error[1]="Слишком большое значение величины сдвига.";
+        error[2]="Введенная величина сдвига стойки нарушает конструкцию изделия.";
+        error[3]=" ";
+        error[4]="Измените значение величины сдвига или"
+        error[5]="измените конструкцию изделия, или"
+        error[6]="воспользуйтесь другой командой редактирования"
+        macro Protopath+"ShowSmartError.mac" "Ошибка сдвига стойки" 6 error;
+        goto End;
+      }
+      j=j+1;
+      ObjR[j]=O1;
+    }
+    if (Pos==52)
+    {
+      tmp=GetProtoVal(O1,"W",x);
+      if ((x<abs(L)+50)&&(L<0))
+      {
+        error[1]="Слишком большое значение величины сдвига.";
+        error[2]="Введенная величина сдвига стойки нарушает конструкцию изделия.";
+        error[3]=" ";
+        error[4]="Измените значение величины сдвига или"
+        error[5]="измените конструкцию изделия, или"
+        error[6]="воспользуйтесь другой командой редактирования"
+        macro Protopath+"ShowSmartError.mac" "Ошибка сдвига стойки" 6 error;
+        goto End;
+      }
+      j=j+1;
+      ObjR[j]=O1;
+    }
+    if (Pos==63)
+    {
+      tmp=GetProtoVal(O1,"W",x);
+      if ((x<abs(L)+50)&&(L<0))
+      {
+        error[1]="Слишком большое значение величины сдвига.";
+        error[2]="Введенная величина сдвига стойки нарушает конструкцию изделия.";
+        error[3]=" ";
+        error[4]="Измените значение величины сдвига или"
+        error[5]="измените конструкцию изделия, или"
+        error[6]="воспользуйтесь другой командой редактирования"
+        macro Protopath+"ShowSmartError.mac" "Ошибка сдвига стойки" 6 error;
+        goto End;
+      }
+      j=j+1;
+      ObjR[j]=O1;
+    }
+  }
+  if ((co[1]-h<=cs[4])&&(co[1]>cs[1])&&(co[4]>cs[4]+0.1)&&(co[3]<cs[6])&&(co[6]>cs[3]))
+  {
+    x=abs(L)+60;
+    if ((Pos==18)||(Pos==21)||(Pos==40)||(Pos==149)||(Pos==150)||(Pos==154))
+    {
+      tmp=GetProtoVal(O1,"x",x);
+      if ((x<abs(L)+50)&&(L>0))
+      {
+        error[1]="Слишком большое значение величины сдвига.";
+        error[2]="Введенная величина сдвига стойки нарушает конструкцию изделия.";
+        error[3]=" ";
+        error[4]="Измените значение величины сдвига или"
+        error[5]="измените конструкцию изделия, или"
+        error[6]="воспользуйтесь другой командой редактирования"
+        macro Protopath+"ShowSmartError.mac" "Ошибка сдвига стойки" 6 error;
+        goto End;
+      }
+      k=k+1;
+      ObjL[k]=O1;
+    }
+    if ((Pos==12)||(Pos==14)||(Pos==13))
+    {
+      err=1;
+      InitArray(arr,0);
+      arr[1]=O1;
+      err=GetPan6Par(1,arr);
+      err=GetPan6Par(11,arr);
+      if (arr[1]==2)
+      {
+        if (Pos==12)
+        {
+          x=arr[2];
+        }
+        else
+        {
+          x=arr[3];
+        }
+        if ((x<abs(L)+50)&&(L>0))
+        {
+          error[1]="Слишком большое значение величины сдвига.";
+          error[2]="Введенная величина сдвига стойки нарушает конструкцию изделия.";
+          error[3]=" ";
+          error[4]="Измените значение величины сдвига или"
+          error[5]="измените конструкцию изделия, или"
+          error[6]="воспользуйтесь другой командой редактирования"
+          macro Protopath+"ShowSmartError.mac" "Ошибка сдвига стойки" 6 error;
+          goto End;
+        }
+        k=k+1;
+        ObjL[k]=O1;
+      }
+    }
+    if (Pos==33)
+    {
+      tmp=GetProtoVal(O1,"Type_pan",Type);
+      if (Type==13 || Type==12)
+      {
+        tmp=GetProtoVal(O1,"x",x);
+      }
+      if (Type==14)
+      {
+        tmp=GetProtoVal(O1,"y",x);
+      }
+    	if ((x<abs(L)+50)&&(L>0))
+      {
+        error[1]="Слишком большое значение величины сдвига.";
+        error[2]="Введенная величина сдвига стойки нарушает конструкцию изделия.";
+        error[3]=" ";
+        error[4]="Измените значение величины сдвига или"
+        error[5]="измените конструкцию изделия, или"
+        error[6]="воспользуйтесь другой командой редактирования"
+        macro Protopath+"ShowSmartError.mac" "Ошибка сдвига стойки" 6 error;
+        goto End;
+      }
+      k=k+1;
+      ObjL[k]=O1;
+    }
+    if ((Pos==121)||(Pos==20))
+    {
+      tmp=GetProtoVal(O1,"S",x);
+      if ((x<abs(L)+50)&&(L>0))
+      {
+        error[1]="Слишком большое значение величины сдвига.";
+        error[2]="Введенная величина сдвига стойки нарушает конструкцию изделия.";
+        error[3]=" ";
+        error[4]="Измените значение величины сдвига или"
+        error[5]="измените конструкцию изделия, или"
+        error[6]="воспользуйтесь другой командой редактирования"
+        macro Protopath+"ShowSmartError.mac" "Ошибка сдвига стойки" 6 error;
+        goto End;
+      }
+      k=k+1;
+      ObjL[k]=O1;
+    }
+    if (Pos==51)
+    {
+      tmp=GetProtoVal(O1,"Wk",x);
+      if ((x<abs(L)+50)&&(L>0))
+      {
+        error[1]="Слишком большое значение величины сдвига.";
+        error[2]="Введенная величина сдвига стойки нарушает конструкцию изделия.";
+        error[3]=" ";
+        error[4]="Измените значение величины сдвига или"
+        error[5]="измените конструкцию изделия, или"
+        error[6]="воспользуйтесь другой командой редактирования"
+        macro Protopath+"ShowSmartError.mac" "Ошибка сдвига стойки" 6 error;
+        goto End;
+      }
+      k=k+1;
+      ObjL[k]=O1;
+    }
+    if (Pos==52)
+    {
+      tmp=GetProtoVal(O1,"W",x);
+      if ((x<abs(L)+50)&&(L>0))
+      {
+        error[1]="Слишком большое значение величины сдвига.";
+        error[2]="Введенная величина сдвига стойки нарушает конструкцию изделия.";
+        error[3]=" ";
+        error[4]="Измените значение величины сдвига или"
+        error[5]="измените конструкцию изделия, или"
+        error[6]="воспользуйтесь другой командой редактирования"
+        macro Protopath+"ShowSmartError.mac" "Ошибка сдвига стойки" 6 error;
+        goto End;
+      }
+      k=k+1;
+      ObjL[k]=O1;
+    }
+    if (Pos==63)
+    {
+      tmp=GetProtoVal(O1,"W",x);
+      if ((x<abs(L)+50)&&(L>0))
+      {
+        error[1]="Слишком большое значение величины сдвига.";
+        error[2]="Введенная величина сдвига стойки нарушает конструкцию изделия.";
+        error[3]=" ";
+        error[4]="Измените значение величины сдвига или"
+        error[5]="измените конструкцию изделия, или"
+        error[6]="воспользуйтесь другой командой редактирования"
+        macro Protopath+"ShowSmartError.mac" "Ошибка сдвига стойки" 6 error;
+        goto End;
+      }
+      k=k+1;
+      ObjL[k]=O1;
+    }
+  }
+  goto Nexti;
+}
+//=====================================================Делаем
+NumR=j;
+NumL=k;
+NumO=m;
+if (NumStL==0)
+{
+  flag=1;
+}
+if (NumStR==0)
+{
+  flag=2;
+}
+j=0;
+Nextj: j=j+1;
+if (j<=NumR)
+{
+  Pos=getattr(ObjR[j],"Posit",-1);
+  if ((Pos==18)||(Pos==21)||(Pos==40)||(Pos==37)||(Pos==149)||(Pos==150)||(Pos==154))
+  {
+    tmp=GetProtoVal(ObjR[j],"x",x);
+    protoobj edit list ObjR[j] nodc "x" x+L;
+  }
+  if ((Pos==12)||(Pos==14)||(Pos==13))
+  {
+    err=1;
+    InitArray(arr,0);
+    arr[1]=ObjR[j];
+    err=GetPan6Par(1,arr);
+    err=GetPan6Par(11,arr);
+    if (arr[1]==2)
+    {
+      if (Pos==12)
+      {
+        x=arr[2];
+        MBPanel item ObjR[j] 4 x+L 0 ;
+      }
+      else
+      {
+        x=arr[3];
+        MBPanel item  ObjR[j]  5  x+L 0 ;
+      }
+    }
+  }
+  if (Pos==33)
+  {
+    tmp=GetProtoVal(ObjR[j],"Type_pan",Type);
+    if (Type==14)
+    {
+      tmp=GetProtoVal(ObjR[j],"y",x);
+      protoobj edit list ObjR[j] nodc "y" x+L;
+    }
+    else
+    {
+      tmp=GetProtoVal(ObjR[j],"x",x);
+      protoobj edit list ObjR[j] nodc "x" x+L;
+    }
+  }
+  if (Pos==51)
+  {
+    tmp1=GetProtoVal(ObjR[j],"Wk",x);
+    tmp2=GetProtoVal(ObjR[j],"X_Fas",s)
+    protoobj edit list ObjL[k] nodc "Wk" x-L "X_Fas" s-L;
+  }
+  if (Pos==52)
+  {
+    tmp1=GetProtoVal(ObjR[j],"W",x);
+    protoobj edit list ObjR[j] nodc "W" x+L;
+  }
+  if (Pos==63)
+  {
+    tmp=GetProtoVal(ObjR[j],"W",x)
+    protoobj edit list ObjR[j] nodc "W" x+L;
+  }
+  if ((Pos==121)||(Pos==20))
+  {
+    tmp=GetProtoVal(ObjR[j],"S",x)
+    protoobj edit list ObjR[j] nodc "S" x+L;
+  }
+  if (Pos==118)
+  {
+    tmp=GetProtoVal(ObjR[j],"Length",x)
+    protoobj edit list ObjR[j] nodc "Length" x+L;
+  }
+  if (Pos==84)
+  {
+    tmp=GetProtoVal(ObjR[j],"LLK",x)
+    protoobj edit list ObjR[j] nodc "LLK" x+L;
+  }
+  goto Nextj;
+}
+k=0;
+Nextk:
+k=k+1;
+if (k<=NumL)
+{
+  move ObjL[k] done L 0 0  nocopy;
+  Pos=getattr(ObjL[k],"Posit",-1);
+  if ((Pos==18)||(Pos==21)||(Pos==40)||(Pos==37)||(Pos==149)||(Pos==150)||(Pos==154))
+  {
+    tmp=GetProtoVal(ObjL[k],"x",x)
+    protoobj edit list ObjL[k] nodc "x" x-L;
+  }
+   if ((Pos==12)||(Pos==14)||(Pos==13))
+  {
+    err=1;
+    InitArray(arr,0);
+    arr[1]=ObjL[k];
+    err=GetPan6Par(1,arr);
+    err=GetPan6Par(11,arr);
+    if (arr[1]==2)
+    {
+      if (Pos==12)
+      {
+        x=arr[2];
+        MBPanel item ObjL[k] 4 x-L 0;
+      }
+      else
+      {
+        x=arr[3];
+        MBPanel item ObjL[k] 5 x-L 0 ;
+      }
+    }
+  }
+  if (Pos==33)
+  {
+    tmp=GetProtoVal(ObjL[k],"Type_pan",Type);
+    if (Type==14)
+    {
+      tmp=GetProtoVal(ObjL[k],"y",x);
+      protoobj edit list ObjL[k] nodc "y" x-L;
+    }
+    else
+    {
+      tmp=GetProtoVal(ObjL[k],"x",x);
+      protoobj edit list ObjL[k] nodc "x" x-L;
+    }
+  }
+  if (Pos==51)
+  {
+    tmp1=GetProtoVal(ObjL[k],"Wk",x);
+    tmp2=GetProtoVal(ObjL[k],"X_Fas",s)
+    protoobj edit list ObjL[k] nodc "Wk" x-L "X_Fas" s-L;
+  }
+  if (Pos==52)
+  {
+    tmp1=GetProtoVal(ObjL[k],"W",x);
+    protoobj edit list ObjL[k] nodc "W" x-L;
+  }
+  if (Pos==63)
+  {
+    tmp=GetProtoVal(ObjL[k],"W",x)
+    protoobj edit list ObjL[k] nodc "W" x-L;
+  }
+  if ((Pos==121)||(Pos==20))
+  {
+    tmp=GetProtoVal(ObjL[k],"S",x)
+    protoobj edit list ObjL[k] nodc "S" x-L;
+  }
+  if (Pos==118)
+  {
+    tmp=GetProtoVal(ObjL[k],"Length",x)
+    protoobj edit list ObjL[k] nodc "Length" x-L;
+  }
+  if (Pos==84)
+  {
+    tmp=GetProtoVal(ObjL[k],"LRK",x)
+    protoobj edit list ObjL[k] nodc "LRK" x-L;
+  }
+  goto Nextk;
+}
+m=0;
+Nextm: m=m+1;
+if (m<=NumO)
+{
+  tmpd=(cbl+cbr)/2;
+  tmp=objgab3(ObjO[m],co);
+  if (flag==1)
+  {
+    if (co[1]>tmpd)
+    {
+      move ObjO[m] done L 0 0 nocopy;
+    }
+  }
+  if (flag==2)
+  {
+    if (co[4]<tmpd)
+    {
+      move ObjO[m] done L 0 0 nocopy;
+    }
+  }
+  goto Nextm;
+}
+move Stenka done L 0 0 nocopy;
+End:
+if IsVarDef("Stenka")==16
+{
+	select Stenka done;
+}
+switch autosingle off;
+if (kshow==1) {
+  fixing create all done;
+}
+NULLOUT=ReSnap();
+exit;

@@ -1,0 +1,99 @@
+//-- Создание фасада сплошного без узора
+//-- Входные параметры:
+//-- xn,yn,zn - координаты правого нижнего дальнего угла фасада
+//-- dx,dz - размеры фасада по ширине и высоте
+//-- Глобальные переменные:
+//-- FsMater - материал фасада
+//-- DoorBCol - цвет кромки фасада
+//-- DoorBand - тип кромки фасада
+//-- DoorMatVS1 - материал первой вставки фасада
+//-- DoorMatVS2 - материал второй вставки фасада
+global ProtoPath;
+global FsMater;
+global DoorBCol,DoorBand;
+global g_FurnType;    //-- Тип мебельного объекта
+global DoorMatVS1, DoorMatVS2;
+global DoorPict;   //-- Рисунок фасада
+global DrwzPath;
+getpar xn,yn,zn,dx,dz;
+
+defarr xm[6];
+nmfdeco="(";
+nmadeco="(";
+// putmsg("DoorSpl1_GO->scrFasAr.mac");
+macro ProtoPath+"ScrFasAr.mac" DoorPict ByRef nmfdeco ByRef nmadeco "Doorspl1";
+// putmsg(nmfdeco)
+// NULLOUT=getvarinst(2,"IsBandCut",bmc,1);                //-- Кромку можно резать
+// if (udgetentity("IsFasBandInside",ValType,bip,sVal)==0)
+// {
+  // bip=1;
+// }
+FsMater=PriceInfo(DoorPict,"matid",FsMater,2);
+macro ProtoPath+"SetMat.mac" FsMater ;
+macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+macro ProtoPath+"SetFix.mac" 0 0 0 0;
+// macro ProtoPath+"SetBandMask.mac" bip+bmc*8;
+// DBand=priceinfo(FsMater,"BandMater",DoorBand);
+DBand=DoorBand;
+DBand=priceinfo(DoorPict,"BandMaterFas",DBand,2);
+
+DoorBand=iif(DBand<=0,0,DBand);
+macro ProtoPath+"SetKrom.mac" DoorBCol DoorBand DoorBand DoorBand DoorBand ;
+macro ProtoPath+"SetECod.mac" "2101" ;
+// macro ProtoPath+"SetKCod.mac" "ПЛДВ" dz dx ;
+macro ProtoPath+"SetEnam.mac" "Полотно фасада" ;
+macro ProtoPath+"SetGrPan.mac" 38 ;
+macro ProtoPath+"MakePan.mac" xn yn zn dz dx 14 ;
+objident last 1 pfas;
+
+nullout=getvarinst(1,"PrimMFas",PrimM,"");
+if len(PrimM)==0 { PrimM=" "; }
+attrobj attach "PrimM" done pfas PrimM ;
+
+// Обработка скрейтча
+HmFt=0; keyHideFas=0;
+// putmsg(getvarinst(1,"BoxHmFt",HmFt,0))
+if getvarinst(1,"BoxHmFt",HmFt,0) {
+	if getvarinst(1,"fasСutHandMacro",hidehand,"")&&HmFt {
+		macro protopath+hidehand pfas DoorBand;
+		objident last 1 pfas;
+		keyHideFas=1;
+	}
+}
+
+// Установка по типу фасада
+hidehand=priceinfo(DoorPict,"fasСutHandMacro","",2)
+if len(hidehand)>0&&!keyHideFas
+{
+	macro protopath+hidehand pfas DoorBand;
+	objident last 1 pfas;
+}
+
+// //-- Восстановим маски для кромок
+// NULLOUT=getvarinst(2,"IsBandCut",bmc,1);                //-- Кромку можно резать
+// NULLOUT=getvarinst(2,"IsBandInside",bip,1);             //-- Кромка включена в размер панели
+// macro ProtoPath+"SetBandMask.mac" bip+bmc*8;
+// macro ProtoPath+"SetDecorate.mac" 0 0 0 0 ;
+kA=0;
+kF=0;
+if len(nmadeco)>1 {
+	nmadeco="A:"+nmadeco+")"
+	kA=1;
+}
+if len(nmfdeco)>1 {
+	nmfdeco="F:"+nmfdeco+")"
+	kF=1;
+}
+
+if kA||kF {
+	objgab3(pfas,xm);
+	text iif(kF,nmfdeco,"") iif(kA,nmadeco,"") done dx-5 xm[5]+0.01 5 normal 0 1 0 @-10 0 0
+	objident last 1 t1;
+	macro DrwzPath+"EdStrLong.mac" t1 dx-15 1;
+	objident last 1 t1;
+	attrobj attach "nohide" done t1 1 ;
+}
+	
+macro ProtoPath+"SetECod.mac" "" ;
+g_FurnType=PriceInfo(DoorPict,"FURNTYPE","500101",2);
+exit ;

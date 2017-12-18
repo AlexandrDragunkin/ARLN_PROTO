@@ -1,0 +1,34 @@
+//-- Запуск быстрых чертежей с проверкой крепежа и сверловки
+
+global ProtoPath;
+if (udgetentity("DrawType",ValType,DrawType,sVal)==0) //-- Тип создаваемых чертежей
+{
+  DrawType=1;
+}
+if (DrawType!=1)	//-- Профессиональные черетежи
+{
+  macro ProtoPath+"IsBand.mac" ;
+    //-- Подбор артикулов
+  if (udgetentity("FindArticle",ValType,IsFind,sVal)==0) //-- Нужно ли осуществлять подбор артикулов
+  {
+    IsFind=0;
+  }
+  if (IsFind==2)  //-- Подбор артикулов только перед выгрузкой
+  {
+    macro ProtoPath+"IsArticle.mac" ;
+  }
+  macro ProtoPath+"IsFixHole.mac" ; //-- Проверка на расставленный крепеж и сверловку
+}
+NULLOUT=initselected()
+// select partly attribute "FurnType!=\"010000\"&&Furntype!=\"050000\"&&!IsAssign(\"CommonPos\")" done;
+// if (sysvar(61)>0)
+// {
+  // macro ProtoPath+"Num.mac" ;
+// }
+if (DrawType==1)	//-- Профессиональные черетежи
+{
+  macro ProtoPath+"Drawall.mac" ;
+  exit;
+}
+//-- Иначе - быстрые чертежи
+drawing :

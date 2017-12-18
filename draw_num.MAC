@@ -1,0 +1,31 @@
+//-- Простановка номеров панелей
+global ProtoPath;
+defarr arr[14];
+
+NameAtrPos="CommonPos";
+// NameAtrPos="UDetNumber";
+// macro ProtoPath+"Num.mac";  //-- Расставляем номера тем панелям, у которых их нет
+NUMOUT=getsnap();
+NULL=sysarr(43,arr);
+CurGrk=arr[3];
+if (CurGrk<6)
+{
+  grfcoeff 6;
+}
+macro ProtoPath+"draw_numA.mac" 0 NameAtrPos byref result;
+// if result==1 {
+	// #ok_flag
+      // alternative "Отображение дополнений"
+		// msgbox text "Показать дополнительные указатели"
+
+     // done
+     // "Да"
+     // "Нет"
+	 // done;
+	// if ok_flag==1 {
+		// macro ProtoPath+"draw_num4Acc.mac" "PKMCount";
+		// macro ProtoPath+"drawNoteRenameCompl.mac" ;
+	// }
+// }
+NUMOUT=resnap();
+exit;

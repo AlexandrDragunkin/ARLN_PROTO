@@ -1,0 +1,69 @@
+//-- Установить текущие прогибы сторон и фасок панели
+global BendPan;     //-- Параметры прогибов сторон панели
+global BendFil;     //-- Параметры прогибов фасок
+defarr BendFil[4],BendPan[4];
+global TypeAngl;    //-- Типы подрезов углов
+global ParamPan;    //-- Параметры подрезов
+defarr TypeAngl[4], ParamPan[8];
+defarr bbb[15];
+global g_AngleCut;
+defarr g_AngleCut[4,5];
+getpar  P1 P2 P3 P4 P5 P6 P7 P8;
+BendPan[1]=P1;
+BendPan[2]=P2;
+BendPan[3]=P3;
+BendPan[4]=P4;
+BendFil[1]=P5;
+BendFil[2]=P6;
+BendFil[3]=P7;
+BendFil[4]=P8;
+NULLOUT=setarrinst(1,"BendPan",BendPan);
+
+//-- Начинаем геморрой
+//-- Угол 1
+Anglenum=1;
+gosub Anglnum;
+Anglenum=2;
+gosub Anglnum;
+Anglenum=3;
+gosub Anglnum;
+Anglenum=4;
+gosub Anglnum;
+NULLOUT=setarrinst(1,"g_AngleCut",g_AngleCut);
+exit;
+//-------------------------------------------------
+Anglnum:
+g_AngleCut[Anglenum,1]=TypeAngl[Anglenum];
+if (TypeAngl[Anglenum]==4)
+{
+  g_AngleCut[Anglenum,1]=5;
+}
+if (TypeAngl[Anglenum]==2)
+{
+  g_AngleCut[Anglenum,1]=4;
+}
+if (TypeAngl[Anglenum]==3)
+{
+  g_AngleCut[Anglenum,1]=2;
+  g_AngleCut[Anglenum,4]=0;
+}
+if (TypeAngl[Anglenum]==5)
+{
+  g_AngleCut[Anglenum,1]=2;
+}
+g_AngleCut[Anglenum,4]=min(ParamPan[Anglenum*2-1],ParamPan[Anglenum*2]);
+g_AngleCut[Anglenum,5]=0;
+sq=sqrt(ParamPan[Anglenum*2-1]*ParamPan[Anglenum*2-1]+ParamPan[Anglenum*2]*ParamPan[Anglenum*2]);
+if (TypeAngl[Anglenum]==1&&BendFil[Anglenum]!=0&&sq>0)
+{
+  g_AngleCut[Anglenum,1]=3;
+  x3=ParamPan[Anglenum*2-1]/2-ParamPan[Anglenum*2]*BendFil[Anglenum]/sq;
+  y3=ParamPan[Anglenum*2]/2-ParamPan[Anglenum*2-1]*BendFil[Anglenum]/sq;
+  #aaa arc ParamPan[Anglenum*2-1],0,0 0,ParamPan[Anglenum*2],0 x3,y3,0;
+  NULLOUT=getobjgeo(aaa,bbb);
+  g_AngleCut[Anglenum,4]=iif(BendFil[Anglenum]>0,bbb[1],-bbb[1]);
+  delete aaa done;
+}
+g_AngleCut[Anglenum,2]=ParamPan[Anglenum*2-1];
+g_AngleCut[Anglenum,3]=ParamPan[Anglenum*2];
+return;

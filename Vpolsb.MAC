@@ -1,0 +1,90 @@
+//-- Макропрограмма построения выдвижной полки
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами 
+NULLOUT=getvarinst(2,"CompColor",col,159);          //-- Цвет выдвижных полок 
+NULLOUT=getvarinst(2,"IsColorUse",icu,1);           //-- Использовать ли цвета 
+
+defarr Band[4];
+
+x=DbVar("x",1000);
+y=DbVar("y",450);
+Ff=DbVar("Ff_E",0);
+Band[3]=DbVar("Band_D",0);
+Band[2]=DbVar("Band_C",0);
+Band[1]=DbVar("Band_B",0);
+Band[4]=DbVar("Band_E",0);
+Col_Kro=DbVar("Face_col",1);
+BxType=DbVar("BxType",0);
+PrMater=DbVar("PrMater",0);
+//------------------------------------------------------------------------------
+Vpol_mac=PriceInfo(BxType,"MacroFile","",2);
+h_dsp=PriceInfo(PrMater,"Thickness",DbVar("HDSP",16));
+FurnType="320000";
+Namescr="ProtoParams";
+NULLOUT=setvarinst(1,"FurnType",FurnType);
+NULLOUT=setvarinst(1,"CompShelfType",BxType);  //-- Тип выдвижной полки
+ElemName=priceinfo(BxType,"NAME"," ",2);       //-- Название выдвижной полки из прайс-листа
+if (ElemName!=" ")
+{
+  ElemName="Полка "+ElemName;
+}
+//--------------------------------------------------------------------------------
+object_1=sysvar(60);
+objDo=sysvar(60);
+if (icu==1)
+{
+  curcol=sysvar(40);
+  color col;
+}
+if (Len(Vpol_mac)==0)
+{
+  box 0 0 0 x y h_dsp;
+}
+else
+{
+	macro Protopath+Vpol_mac x y PrMater Col_Kro Band ff;
+}
+if (icu==1)
+{
+  color curcol;
+}
+objPosle=sysvar(60);
+//macro ProtoPath+"SetCinema.mac" objDo objPosle "0, 1, 1, 0, "+str(y-150)+", 0 ";
+HaveCinP=0;							//-- признак того, что в комплектующих нет информации для движения
+macro ProtoPath+"SetCinemaFromObj.mac" byref HaveCinP byref ScrCinO1 0 objDo objPosle 0 0 0 0 0;
+if (HaveCinP==0)
+{
+	
+	macro ProtoPath+"SetCinMain.mac" ByRef scarr, 0, 0, 10, 1;
+	macro ProtoPath+"SetCinMove.mac" scarr,0,(y-150),0, 0, 10, 0; 
+	macro ProtoPath+"SetCinemaByType.mac" objDo objPosle scarr "0000" ;
+	kol=CinemaScr(99,scarr);
+}
+if (HaveCinP==1)
+{
+	NULLOUT=getvarinst(1,"col_box_cin",Kbox,1);
+	NULLOUT=getvarinst(1,"num_box_cin",Nbox,1);
+	NULLOUT=GetScratch(ScrCinO1,"Move0","MoveY",LBoxC,SN);
+	if (NULLOUT==1&&Nbox>1)
+	{
+		NULLOUT=AddScratch(ScrCinO1,"Move0","MoveY",LBoxC-(Nbox-1)*(LBoxC/(Kbox+1)));
+	}
+	NULLOUT=AddScratch(ScrCinO1,"Main","Control",0);
+	macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0000" ;
+	NULLOUT=AddScratch(ScrCinO1,"Main","Control",2);
+	macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0403" ;
+}
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"x",x);
+err=AddScratch(ScrMod,FurnType,"y",y);
+err=AddScratch(ScrMod,FurnType,"PrMater",PrMater);
+err=AddScratch(ScrMod,FurnType,"BxType",BxType);
+err=AddScratch(ScrMod,FurnType,"Face_col",Col_Kro);
+err=AddScratch(ScrMod,FurnType,"Band_E",Band[4]);
+err=AddScratch(ScrMod,FurnType,"Band_D",Band[3]);
+err=AddScratch(ScrMod,FurnType,"Band_B",Band[1]);
+err=AddScratch(ScrMod,FurnType,"Band_C",Band[2]);
+err=AddScratch(ScrMod,FurnType,"Ff_E",Ff);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+exit;

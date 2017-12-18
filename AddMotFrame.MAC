@@ -1,0 +1,95 @@
+//-- Макропрограмма устанавливает рамки для навесных элементов
+global ProtoPath;
+defarr basep[3];
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами
+onerror final;
+NULLOUT=getsnap();
+NULLOUT=pushinst(1);
+defarr arr[10];
+
+NULLOUT=getvarinst(2,"MotFrameType",FrameType,0);				//-- Умолчание на раму
+DefFrame=str(getyadsubst(78))+"#"+str(FrameType) ;			//-- Формируем строку умолчаний.
+
+#ok_flag
+setvar
+"Параметры выжвижной рамки"
+//PicturesPath+"PantRas.jpg"
+//center
+"Задайте параметры рамки"
+done
+string auto button 6 default DefFrame
+     "Тип рамки:" FrameType
+str listonly current  "Нет"
+											"Кронштейн"
+											"Расширитель"
+                     done "Крепление рамы слева:" BLt
+str listonly current  "Нет"
+											"Кронштейн"
+											"Расширитель"
+                     done "Крепление рамы справа:" BRt
+done;
+if (ok_flag==0)
+{
+  goto final;
+}
+//-------------------------------------------------
+if (BLt=="Нет") {	BL=0;}
+if (BLt=="Кронштейн") {	BL=1;}
+if (BLt=="Расширитель") {	BL=2;}
+if (BRt=="Нет") {	BR=0;}
+if (BRt=="Кронштейн") {	BR=1;}
+if (BRt=="Расширитель") {	BR=2;}
+//-------------------------------------------------
+
+splitbydelim(FrameType,"#",Arr);
+typeF=Arr[2];
+
+
+if (BL==1||BR==1)
+{  
+  H_frame=priceinfo(typeF,"ToleranceZ",108,2);			//-- Высота рамы
+	//-- Запрос ниши
+	mbget "Укажите положение выдвижной рамки:" niche xgab ygab zgab :
+	basep[1]=0;
+	basep[2]=0;
+	basep[3]=zgab-H_frame;
+	Numb=0;
+}
+else
+{
+	H_frame=priceinfo(typeF,"Height",86,2);			//-- Высота рамы
+	//-- Запрос ниши
+	defarr arrin[3], arrout[14];
+	arrin[1]=H_frame;  // Высота резиновой панели
+	mbget "Укажите положение выдвижной рамки:" shell arrin arrout :
+	basep[1]=arrout[1];
+	basep[2]=arrout[2];
+	basep[3]=arrout[3];
+	xgab=arrout[4];
+	ygab=arrout[5];
+	Numb=arrout[6];
+	Shift=arrout[7];
+}
+
+position=getprotoid("Shkaf","Рамка выдвижная для навесных элементов","ProtoMacro","MotFrameP");  //-- ID прототипа
+protoobj create "Shkaf.ptl" position
+   "W"			 xgab
+   "D"			 ygab
+   "typeF"	     typeF
+   "BR"			 BR
+   "BL"			 BL
+   done
+basep[1], basep[2], basep[3];
+
+objident last 1 object;
+if (Numb>1)
+{
+  move multicopy Numb-1 object done 0 0 shift;
+}
+
+final:
+offerror;
+NULLOUT=resnap();
+NULLOUT=popinst(1);
+exit;

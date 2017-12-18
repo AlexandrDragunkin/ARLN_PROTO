@@ -1,0 +1,62 @@
+//-- Прототип "Фасад"
+global ProtoPath;
+global MacroSw;         //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+KarkasNumb=getcarcnumb();    //-- Порядковый номер каркаса в сцене
+global g_FurnType;      //-- Тип мебельного объекта
+MacroSw=0;
+
+Fasrtype=DbVar("Fasrtype",0);     //-- Рисунок фасада
+pr=DbVar("PrMater",0);            //-- Материал фасада
+W=DbVar("W",0);                   //-- Ширина фасада
+H=DbVar("H",0);                   //-- Высота фасада
+D=priceinfo(Fasrtype,"Thickness",priceinfo(pr,"Thickness",16),2); //-- Толщина фасада
+
+macro ProtoPath+"ScrFasInit.mac"; //-- Обнуление скретч параметров
+macro ProtoPath+"Fasad.mac";
+group all done;
+
+//-- Присваиваем атрибуты
+position=52;
+Namescr="ProtoParams";
+ElemDoorName=priceinfo(Fasrtype,"NAME","Фасад",2); //-- Имя фасада из справочника сборочных единиц
+if (ElemDoorName!="Фасад")
+{
+  ElemDoorName="Фасад "+ElemDoorName;
+}
+attrobj attach "Posit" done last 1 position;
+
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done last 1 done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+}
+if (isassign("CNPropil",0))
+{
+    attrobj copy record "CNPropil" done Last 1 done;
+}
+if (isassign("ElemName",0))
+{
+  attrobj copy record "ElemName" done Last 1 done;
+}
+else
+{
+  attrobj attach "ElemName" done last 1 ElemDoorName;
+}
+attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 W D H; //-- Размеры фасада
+attrobj attach "Assembly" done last 1 1;      //-- Добавим атрибут сборочной единицы
+attrobj attach "FurnType" done last 1 g_FurnType ;
+attrobj attach "GoodsID" done last 1 Fasrtype ; //-- Тип фасада
+attrobj copy record Namescr done last 1 done;
+if (isassign("FasadPar",0))
+{
+  attrobj copy record "FasadPar" done last 1 done;
+}
+nullout=getvarinst(1,"PrimMFas",PrimM,"");
+if len(PrimM)>0
+{ attrobj attach "PrimM" done last 1 PrimM; }
+nullout=setvarinst(1,"PrimMFas","");
+exit;

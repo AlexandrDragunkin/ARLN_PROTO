@@ -1,0 +1,24 @@
+//-- Переназначить номера объектов
+
+global ProtoPath;
+
+#ok_flag
+alternative "Перенумерация мебельных элементов"
+msgbox picture 2 beep 2 text "Выполнить перенумерацию мебельных элементов?"
+"Ранее присвоенные номера будут потеряны"
+done
+" Да  " " Нет "
+done
+if (ok_flag==2)
+{
+  cancel;
+}
+macro ProtoPath+"ReNum.mac" ;
+#ok_flag
+alternative "Перенумерация"
+msgbox picture 4 beep 4 text left
+"Перенумерация мебельных элементов успешно выполнена"
+done
+"  OK  "
+done;
+exit;

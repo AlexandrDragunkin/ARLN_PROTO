@@ -1,0 +1,302 @@
+//DrwPrAll.mac
+//*********************************************
+//  Чертеж профильных длинномеров (Пр.карниз н.пофиль балюстрада)
+//              Драгункин А.Р.
+//              ГеоС 2007-14 гг.
+//*********************************************
+
+global
+Xpop
+Xlkn Ylkn Zlkn   // Лицевое конец  в гск
+Xlkg Ylkg Zlkg   // Лицевое начало в гск
+Xlkgl Ylkgl Zlkgl   // Лицевое начало обекта
+Ygab  //высота профиля
+L_SUPPORT
+ProtoPath
+;
+
+setucs save "DrwPrAll" ;
+onerror meterr;
+//=======================================
+KeyLTrim=1 //Обрезать длинные  1-да 0-нет
+keyVimg=0
+setucs gcs ;
+vport 3 ;
+//Ltype=5;
+getpar Ltype result;
+onerror n_nxt;
+invisible all remove attribute "LongsType=="+str(Ltype)  done ;
+n_nxt:
+offerror;
+vimage off;
+keyVimg=1
+macro L_support+"ProfRevizia.mac"  Ltype ByRef n ;
+if n==0 {
+	goto metend;
+}
+vimage on;
+keyVimg=0
+//нумерация
+macro L_support+"Re_numLN.mac" Ltype ;
+
+
+//--------------------------------------------
+defarr
+	obj[n]   //Указатель на кусок
+	ObjN[n]  //Указатель на примыкающий в начале
+	ObjK[n]  //Указатель на примыкающий в конце
+	Xnd[n]   //Координата чертежа лицевой в начале
+	Ynd[n]   //Координата чертежа лицевой в начале
+	Znd[n]   //Координата чертежа лицевой в начале
+	Xndl[n]   //Координата чертежа лицевой в начале
+	Yndl[n]   //Координата чертежа лицевой в начале
+	Zndl[n]   //Координата чертежа лицевой в начале
+	Xkd[n]   //Координата чертежа лицевой в конце (где ЛСК)
+	Ykd[n]   //Координата чертежа лицевой в конце  (где ЛСК)
+	Zkd[n]   //Координата чертежа лицевой в конце  (где ЛСК)
+	Nobj[n]  //массив начальных объектов
+	Kobj[n]
+	objD[n]
+	xm[6]
+	GabZ[n]
+	matr[9]
+;
+macro L_support+"mselbyattrW.mac" "getattr(pt,\"LongsType\",0)=="+str(Ltype)  obj ByRef n ;
+
+i=0
+met2:
+if i<n {
+   i=i+1
+   spz=1
+   
+   if ltype==5 { 
+		spz=0 
+   }
+   macro L_support+"DrwPr.mac" 1 obj[i]
+   KeyLTrim //Обрезать длинные  1-да 0-нет
+   1  //Углы образмеривать 1-да 0-нет
+   1  //Линейные размеры ставить 1-да 0-нет
+   600
+   1 // позиции ставить
+   Spz // сечения показывать
+   ;
+   objident last 1 objD[i] ;
+   Xnd[i]=Xlkg   //Координата чертежа лицевой в начале
+   Ynd[i]=Ylkg   //Координата чертежа лицевой в начале
+   Znd[i]=Zlkg   //Координата чертежа лицевой в начале
+   Xndl[i]=Xlkgl   //Координата чертежа лицевой в начале
+   Yndl[i]=Ylkgl   //Координата чертежа лицевой в начале
+   Zndl[i]=Zlkgl   //Координата чертежа лицевой в начале
+   Xkd[i]=Xlkn   //Координата чертежа лицевой в конце  (где ЛСК)
+   Ykd[i]=Ylkn   //Координата чертежа лицевой в конце  (где ЛСК)
+   Zkd[i]=Zlkn   //Координата чертежа лицевой в конце  (где ЛСК)
+   gabZ[i]=Ygab
+   goto met2 ;
+}
+
+if KeyLTrim==1 {
+	setucs gcs ;
+	k=0
+	k1=0
+	
+	//vimage off;
+	i=0
+	met6:
+	if i<n 
+	{
+	  i=i+1
+	  j=0
+	  #lk cylinder Xndl[i] Yndl[i] Zndl[i] Xndl[i] Yndl[i] Zndl[i]+gabz[i] 1  ;
+	  #ln cylinder Xkd[i] Ykd[i] Zkd[i] Xkd[i] Ykd[i] Zkd[i]+gabz[i] 1  ;
+	  ObjN[i]=0
+	  ObjK[i]=0
+	  met3:
+	  if j<n 
+	  {
+		 j=j+1
+			  if i!=j {
+				 dsn=0
+				 dsk=0
+				 #dsn dist  object ln obj[j] done ;
+				 
+				 #dsk dist  object lk obj[j] done ;
+			
+					 if dsn<iif(Ltype==5,20,5)
+					 {
+						ObjN[i]=j ; //PutMsg(dsn,1);PutMsg(dsk,1);  //Указатель на номер примыкающий в начале 
+					 } 
+					 
+					 if dsk<iif(Ltype==5,20,5)
+					 { 
+						ObjK[i]=j ; //PutMsg(dsn,1);PutMsg(dsk,1);  //Указатель на номер примыкающий в конце
+					 } 
+				 }
+		 goto met3 ;
+	  }
+	  //PutMsg(ObjN[i],1);PutMsg(ObjK[i],1);	
+	  
+	  delete ln lk done ;
+	  if ObjK[i]==0  { k=k+1; =k; =n ;  Nobj[k]=i  } //массив начальных объектов
+	  
+	  if ObjN[i]==0  { k1=k1+1; Kobj[k1]=i } //массив конечных объектов
+	  
+	  goto met6 ;
+	}
+
+	meterr:
+	offerror;
+	//vimage on;
+	if k==0 { 
+		goto metend ; 
+	}
+	defarr grp[k] ;
+	dxgr=0
+	dygr=0
+	XmOld=0
+	YmOld=0
+	j=0
+	met4:
+	if j<k {
+	  j=j+1
+	  GrStart=0
+	  i=NObj[j]
+	  met5:	  
+	  if ObjN[i]!=0  {
+			ePNT=objD[ObjN[i]]
+			gosub getSPAttrib;
+			if !resSPAttrib {
+				gosub met5;
+			}
+		   dx=Xkd[i]-Xnd[ObjN[i]]
+		   dy=Ykd[i]-Ynd[ObjN[i]]
+		   move objD[ObjN[i]] done dx dy 0 nocopy ;
+		   if GrStart==0 {
+			  group objD[ObjN[i]] done ; 
+			  objident last 1 grp[j] ;
+			  GoSub SetPrAttrib ;
+		   }
+		   else {
+				msg=GetObjType(grp[j]) ;
+				
+				msg=GetObjType(objD[ObjN[i]]) ;
+			
+
+				//Функция возвращает тип объекта <Obj>. Результат может
+				//принимать следующие значения:
+				//0 - Текст (Text)
+				//1 - Точка (Point)
+				//2 - Отрезок (Line)
+				//3 - Окружность (Circle)
+				//4 - Дуга (Arc)
+				//5 - Контур (Path)
+				//6 - Тело (BRep)
+				//7 - Группа (Group)
+				//10 - Размер (Dim)
+				//11 - Вставка блока (Insert)
+				//12 - Сплайн (Spline)
+				//15 - Набор линий (Frame )
+				if CompareObj(grp[j],objD[ObjN[i]])  { 
+					i=ObjN[i] ;
+					goto met5 ; 
+				} //если ссылки указывет на один объект
+				if FindObjHoldG(grp[j],objD[ObjN[i]]) { 
+					i=ObjN[i] ;
+					goto met5 ; 
+				} //если ссылка указывает что объект уже в этой группе
+				//Функция проверяет, находится ли объект <Obj> в группе
+				//<Group> на любом уровне. Если задан необязательный параметр
+				//<Hold>, то ему присваивается ссылка на непосредственного родителя
+				//объекта <Obj>. Функция возвращает:
+				//1 – объект <Obj> находится в составе группы <Group>.
+				//0 – объект <Obj> не находится в составе группы <Group>.
+
+				add grp[j] objD[ObjN[i]] done;
+				GoSub AddEndTile ;
+		   }
+		   met7:
+		   GrStart=1
+		   Xnd[ObjN[i]]=Xnd[ObjN[i]]+dx
+		   Ynd[ObjN[i]]=Ynd[ObjN[i]]+dy
+		   Xkd[ObjN[i]]=Xkd[ObjN[i]]+dx
+		   Ykd[ObjN[i]]=Ykd[ObjN[i]]+dy
+		   i=ObjN[i]
+		   goto met5 ;
+	  }
+	  else { GoSub AddEndTile ; }
+	  
+	  if GrStart==0 {      //значит кусок отдельно висит
+		ePNT=objD[i]
+		gosub getSPAttrib;
+		if !resSPAttrib {
+			gosub met4;
+		} 
+		 grp[j]=objD[i] ;
+		 GoSub SetPrAttrib ;
+		 GoSub MovObjZNul ;
+	  }
+		 if j==1 {
+			objgab3(grp[j],xm);
+			XmOld=xm[4]
+			YmOld=xm[5]+20
+			GoSub MovObjZNul ;
+		 }
+		 else {
+			  objgab3(grp[j],xm);
+			  dxgr=XmOld-xm[4]
+			  dygr=YmOld-xm[2]
+			  move grp[j] done dxgr dygr 0 nocopy ;
+			  move grp[j] done 0 120 0 nocopy ; 
+			  
+			  GoSub MovObjZNul ;
+			  objgab3(grp[j],xm);
+			  XmOld=xm[4]
+			  YmOld=xm[5]+20
+		 }
+
+	  goto met4 ;
+	}
+}
+
+metend:
+   gosub endsub;
+   result=0;
+	if n>0 {
+		macro L_support+"Win_PltLnG.mac" Ltype ;
+		result=1;
+		}
+
+exit ;
+//==========================
+endSub:
+	if keyVimg==1 {
+		vimage on;
+	}
+	invisible attribute "LongsType=="+str(Ltype)  done ;
+	setucs restore "DrwPrAll" ;
+	setucs delete  "DrwPrAll" ;
+return;
+AddEndTile:
+if ObjK[i]!=0 {
+	if !FindObjHoldG(grp[j],objD[ObjK[i]]) { add grp[j] objD[ObjK[i]] done  }
+}
+return;
+getSPAttrib:
+	resSPAttrib=0
+	if IsVarDef("iatpr")==0 { iatpr=0 }
+	IPRLNR=getattr(ePnt,"IPRLN"+str(Ltype),0)
+	if IPRLNR==0 {
+		resSPAttrib=1
+	}
+return;
+//==========================
+SetPrAttrib:
+	iatpr=iatpr+1
+	if (!IsAttrdef("IPRLN"+str(Ltype))) { Attribute Create "IPRLN"+str(Ltype) "Номер сборки проф типа "+str(Ltype) Real 5 0  ; }
+	attrobj attach "IPRLN"+str(Ltype) done grp[j] iatpr  ;
+return;
+//==========================
+MovObjZNul:
+	nullout=Objgab3(grp[j],xm) ;
+	PtransCS(0,3,xm[1],xm[2],xm[3],Xceil,Yceil,Zceil) ;
+	move grp[j] done 0 0 -Zceil nocopy ;
+return;

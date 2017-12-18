@@ -1,0 +1,44 @@
+//-- Создание объекта - стол пятиугольный
+global MacroSw; //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global ProtoPath;		//-- Путь к папке с макропрограммами общей библиотеке прототипов
+global LocalPath;		//-- Путь к папке с макропрограммами локальной библиотеке прототипов
+
+MacroSw=0;
+ProtoPath=GetProtoMac("Shkaf.ptl");
+LocalPath=GetProtoMac("Kitchen.ptl");
+
+w=DbVar("Шир",330);			    //-- Ширина
+d=DbVar("Глуб",320);			  //-- Глубина
+h=DbVar("Выс",822);			    //-- Высота
+wr=DbVar("ШирС",660);			  //-- Ширина глухая правая
+WallAngle=DbVar("WallAngle",90);//-- Пристенный угол
+//----------------------------------------------------------------------
+ТипКонт=2;   //-- Пятиугольный
+Верхний=0;   //-- Нижний
+ObjTyp=0;    //-- Мебельный
+PlcTyp=0;    //-- Нижний
+BiblNum=131; //-- В библиотеке ID=131
+FurnType="100005";
+//----------------------------------------------------------------------
+Ang=radian(WallAngle-90);   //-- Пристенный угол
+ws=(w-d*sin(Ang))/cos(Ang); //-- Пристенная ширина
+ds=(d-w*sin(Ang))/cos(Ang); //-- Пристенная глубина
+dl=ds-(ws-wr); //-- Глубина глухой секции слева
+
+Macro ProtoPath+"BegUnit.mac" "" ;
+macro ProtoPath+"ScrBoxGet.mac" 0; //-- Создание Scratch атрибута ящика
+macro LocalPath+"aboad5U.mac" ;
+
+//-- Ставим размеры
+Macro ProtoPath+"aDimLine.mac" w d h ТипКонт Верхний;
+//-- Линии контакта
+Macro ProtoPath+"aContLine.mac" ws dl ds h WallAngle-90 ТипКонт Верхний;
+#Boad group all done;
+macro ProtoPath+"SetEnam.mac" "Стол пятиугольный";
+macro ProtoPath+"EndUnit.mac" w d h ;
+//-- Присваиваем атрибуты
+macro ProtoPath+"FurnAttr.mac" ObjTyp PlcTyp BiblNum FurnType;
+attrobj attach "AngleType" done last 1 1 ;
+macro ProtoPath+"OldArtic.mac" ;
+macro ProtoPath+"Scrcopatr.mac" ; //-- Запись в объект Scratch атрибута
+exit;

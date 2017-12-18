@@ -1,0 +1,163 @@
+//-- Прототип ниши "BLUM"
+global ProtoPath;
+global FasVaria;  //-- Вариант фасада
+global PanDir;    //-- Направление шпона
+global
+DoorMater,		//-- Материал фасада
+DoorPict,			//-- Рисунок фасада
+DoorBCol,			//-- Цвет кромки фасада
+DoorBand,			//-- Тип кромки фасада
+DoorMatVS1,		//-- Материал первой вставки фасада
+DoorMatVS2,		//-- Материал второй вставки фасада
+
+HandleType, 	// Тип ручки
+HandleX,    	// Сдвиг ручки по x
+HandleZ,    	// Сдвиг ручки по z
+HandleA,    	// Поворот ручки
+HandleD,			// Двойная или одиночная ручка
+HandleR;			// Тип положения ручки 0-своб 1-центр 3-сверх 4-сниз
+KarkasNumb=getcarcnumb();		//-- Текущий номер каркаса
+defarr x[4], y[4], rad[3], gab[6], gabD[6];
+
+h=dbVar("h",720);
+d=dbVar("d",450);
+w=dbVar("w",600);
+FrontMat=dbvar("FrontMat",0);
+FasType=dbvar("FasType",0);
+Noga=dbvar("LegType",0);
+HType=dbvar("HandleType",0);
+Rpl_r=dbvar("Rpl_r",0);
+BandType=dbvar("BandType",0);
+FsMater=dbvar("FsMater",0);
+backmat=dbvar("backmat",0);
+ARMX=dbvar("rx",0);
+ARMZ=dbvar("rz",0);
+ARMA=dbvar("ra",0);
+//--------------------------------------------------
+DoorMater=FrontMat;	  //-- Материал фасада
+DoorPict=FasType;			//-- Рисунок фасада
+DoorBand=BandType;		//-- Тип кромки фасада
+DoorMatVS1=FsMater;		//-- Материал первой вставки фасада
+DoorMatVS2=FsMater;		//-- Материал второй вставки фасада
+//--------------------------------------------------
+BiblNum=getprotoid("Shkaf","Стол Dynaplan (Blum)","ProtoMacro","BlumTypeP");  //-- ID прототипа
+FurnType="101100";	
+Variant=Rpl_r;	//-- тип открывания двери
+//---------------------------------------------------
+NULLOUT=pushinst(1);
+NULLOUT=setvarinst(1,"DySeiteMat",281);
+NULLOUT=setvarinst(1,"DyBaseMat",281);
+NULLOUT=setvarinst(1,"DyBackMat",281);
+NULLOUT=setvarinst(1,"DyInnenFMat",281);
+NULLOUT=setvarinst(1,"DyFrontMat",dbvar("FrontMat",495));
+NULLOUT=setvarinst(1,"Dy_H",dbvar("H",720));
+NULLOUT=setvarinst(1,"Dy_D",dbvar("D",560));
+NULLOUT=setvarinst(1,"Dy_W",dbvar("W",600));
+NULLOUT=setvarinst(1,"Dy_FixCorp",0);
+NULLOUT=setvarinst(1,"Dy_FixBp",0);
+NULLOUT=setvarinst(1,"Dy_BandType",dbvar("BandType",0));
+NULLOUT=setvarinst(1,"Dy_KorpusPan",0);
+//---------------------------------------------------
+//--Вызываем модули создания или редактирования Blum.
+if !isattrdef("BlumType") 
+{
+	attribute create "BlumType" "Признак Dynaplan BLUM" Real 5 0 ;
+}
+vBlum=getAttr(0,"BlumType",-99);
+if vBlum!=1 
+{
+	macro Protopath+"dynaplansupport\\Blum_sub7.py" "newobject" done ;
+}
+else
+{
+	macro Protopath+"dynaplansupport\\Blum_sub7.py" "editobject" done ;
+}
+NULLOUT=popinst(1);
+objident last 1 ObjDynalog;
+//----------------------------------
+h_fas=priceinfo(FrontMat,"Thickness",0);
+h_back=priceinfo(backmat,"Thickness",0);
+NULLOUT=objgab3(ObjDynalog,gabD);
+w=gabD[4]-gabD[1];
+d=gabD[5]-gabD[2]-h_fas-h_back;
+h=gabD[6]-gabD[3];
+//----------------------------------
+attrobj copy ObjDynalog all record done;	//-- копируем атрибуты
+explode ObjDynalog done;									//-- разваливаем объект
+
+objDO=sysvar(60);
+//-- Заменяем панели на фасад
+selbyattr "(FurnType==\"500001\")" partly all done ;
+object_2=sysvar(61);
+if (object_2==0)
+{
+	goto next;
+}
+defarr arrobj[object_2];
+macro ProtoPath+"ArrObj.mac" object_2 arrobj;	//-- заполняем массив фасадами
+global MacroSW;
+BegMacroSW=MacroSW;
+MAcroSW=0;
+i=0;
+LOOP1:
+i=i+1;
+NULLOUT=objgab3(arrobj[i],gab);
+dx=gab[4]-gab[1];	//-- ширина фасада
+dy=gab[6]-gab[3];	//-- высота фасада
+x1=gab[1];				//-- координаты дальнего нижнего угла
+y1=gab[2];	
+z1=gab[3];
+//-- Меняем значения 
+global MacroSW;
+BegMacroSW=MacroSW;
+MAcroSW=0;
+macro ProtoPath+"SetFasPlas.mac" 0 0 0 0;
+macro ProtoPath+"MakeFas.mac" x1, y1, z1, dx, dy;									//-- Создаем фасад
+macro Protopath+"GetFasThin.mac" ByRef h_fas FasType, ARMX, ARMZ;	//-- Узнаем толщину фасада
+if (HType!=0)
+{
+	HND_mac=PriceInfo(Fastype,"HNDMac","",2);
+	dRucR=PriceInfo(HType,"Height",0);
+	HandleType=HType; 				// Тип ручки
+	HandleX=ARMX;							// Сдвиг ручки по x
+	HandleZ=ARMZ;    					// Сдвиг ручки по z
+	HandleA=ARMA;	    				// Поворот ручки
+	HandleD=0;								// Двойная или одиночная ручка
+	HandleR=Rpl_r;						// Тип положения ручки 0-своб 1-центр 3-сверх 4-сниз
+	if (Len(HND_Mac)!=0) //-- Читаем макро установки ручки
+  {
+		macro Protopath+HND_Mac	
+		x1 y1+h_fas z1					// Базовый угол двери (на фасаде)
+		dx dy										// Размеры
+		0 HandleType						// Способ открывания и тип ручки из прайса
+		ARMX	ARMZ	ARMA;				// Сдвиги и угол поворота
+  }
+  else //-- Или используем макро по-умолчанию
+  {
+		macro Protopath+"BoxHND.Mac" 
+		x1 y1+h_fas z1					// Базовый угол двери (на фасаде)
+		dx dy										// Размеры
+		0 HandleType						// Способ открывания и тип ручки из прайса
+		ARMX	ARMZ	ARMA;				// Сдвиги и угол поворота
+  }
+}
+delete partly arrobj[i];	//-- удаляем старый фасад
+if (i<object_2)
+{ 
+	goto LOOP1;
+}
+//-- Возвращаем значения глобальным переменным
+MacroSW=BegMacroSW;
+next:
+objPosle=sysvar(60)-objDO;
+//-- Собираем все в группу
+group all done;	
+//-- Присваиваем атрибуты
+macro ProtoPath+"SetEnam.mac" "Ниша Blum";
+attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 w d h ; //-- Размеры изделия
+attrobj attach "FurnType" done last 1 FurnType;
+macro ProtoPath+"Scrcopatr.mac" ; //-- Запись в объект Scratch атрибута
+attrobj attach "BlumType" done last 1 1;
+attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+attrobj copy record all last 1 done;
+exit;

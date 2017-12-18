@@ -1,0 +1,83 @@
+//--Макро создания креплений для полки колонной системы Komandor.
+global ProtoPath;
+nullout=getvarinst(2,"UnitCodeWard",UnitCodeWard,"8000");
+
+getpar 
+GoodsID			//-- ID сборочной единицы
+MatID			//-- ID материала полки
+W			//-- Ширина
+D			//-- Глубина
+D_B			//-- Отступ сзади для крепежа			
+An_B		//-- Отступ спереди для крепежа			
+;
+// putmsg(W)
+// putmsg(D)
+// putmsg(D_B)
+// putmsg(An_B)
+//--Читаем свойства сборочной единицы
+KarkasNumb=getcarcnumb();				//-- Текущий номер каркаса
+IDKom1=PriceInfo(GoodsID,"GoodID1",1,2);		//-- правый крепеж
+Macro1=PriceInfo(IDKom1,"MacroFile",1,2);		//-- макро крепежа
+NameKom1=PriceInfo(IDKom1,"Name"," ",2);		//-- имя крепежа
+
+IDKom2=PriceInfo(GoodsID,"GoodID2",1,2);		//-- левый крепеж
+Macro2=PriceInfo(IDKom2,"MacroFile",1,2);		//-- макро крепежа
+NameKom2=PriceInfo(IDKom2,"Name"," ",2);		//-- имя крепежа
+
+IDProf1=PriceInfo(GoodsID,"GoodID3",1,2);		//-- профиль
+Macro3=PriceInfo(IDProf1,"MacroFile",1,2);		//-- макро
+NameProf1=PriceInfo(IDProf1,"Name"," ",2);		//-- имя
+
+ShiftXB=PriceInfo(IDKom1,"ToleranceX",20,2);		//-- подрез полки
+typeFL=PriceInfo(GoodsID,"FixID",1,2);			//-- Тип крепежа для фиксации полки к профилю.
+
+obj_do=sysvar(60); 
+//-- Добавляем крепеж
+if (D_B>20)
+{
+	macro ProtoPath+macro1 IDKom1;
+	attrobj attach "ElemName" Done last 1 NameKom1;
+	move last 1 done ShiftXB-17 D_B 11 nocopy;
+	attrobj attach "GoodsID" done last 1 IDKom1 ;
+	attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+	attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 0 0 0 ; //-- Размеры
+	attrobj attach "Assembly" done last 1 1;
+}
+if (An_B>20)
+{
+ macro ProtoPath+macro1 IDKom1;
+ attrobj attach "ElemName" Done last 1 NameKom1;
+ // move last 1 done ShiftXB-17 D_B+An_B 11 nocopy;
+ move last 1 done ShiftXB-17 D-An_B 11 nocopy;
+ attrobj attach "GoodsID" done last 1 IDKom1 ;
+ attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+ attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 0 0 0 ; //-- Размеры
+ attrobj attach "Assembly" done last 1 1;
+}
+//-- Добавляем профиль
+macro ProtoPath+Macro3 IDProf1 D;
+attrobj attach "ElemName" Done last 1 NameProf1;
+// attrobj attach "UnitCode" Done last 1 UnitCodeWard;
+move last 1 done  ShiftXB 0 0 nocopy;
+attrobj attach "GoodsID" done last 1 IDProf1 ;
+attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 0 D 0 ; //-- Размеры
+attrobj attach "Assembly" done last 1 1;
+
+//-- Добавляем линию крепежа
+fixing fix manual param typeFL free			
+ShiftXB+10,0,-3, 
+ShiftXB+10,0,1, 
+ShiftXB+10,D,-3 
+ShiftXB+10,20,-3 
+ShiftXB+10,D-20,-3 
+done;
+
+obj_posle=sysvar(60);
+kol=obj_posle-obj_do;
+group last kol done;
+FurnType=PriceInfo(GoodsID,"FurnType","350000",2);
+NameEl=PriceInfo(GoodsID,"Name"," ",2);
+attrobj attach "FurnType" done last 1 FurnType;
+attrobj attach "ElemName" Done last 1 NameEl;
+exit;

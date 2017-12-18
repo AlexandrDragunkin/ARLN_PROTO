@@ -1,0 +1,382 @@
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+//-- Программа редактирования системы дверей
+//-- Просит пользователя указать объект
+//-- Позволяет выбрать, что редактировать
+
+nullout=getvarinst(2,"Doors63",Doors63,"Doors63.zmc|");
+
+global ProtoPath g_key_prev;
+global g_drp g_CLTop g_CLDown g_CLMid g_CLDer g_CLVer g_TCLDown g_TCLTop;
+global g_CLrTop g_CLrDown g_CLrMid g_CLrDer g_CLrVer g_TCLrDown g_TCLrTop g_CLObram g_CLrObram;
+global g_VstSt; // материал вставки по умолчанию
+global g_tab_place, g_keyDS63,g_Doorscon;
+global g_DRSysN,g_DRSysI,g_DRNumb,g_Ndors,g_DRS,g_DRP,g_nameSf;
+global g_MoveType g_Move g_dwRailD g_top_zw g_dwRailH;
+global g_DSet g_DrVar;
+
+global g_DRTopN, g_DRTopI, g_DRTopNumb,   g_DRTop  ;
+global g_DRDownN,g_DRDownI,g_DRDownNumb,  g_DRDown ;
+global g_DRMidN, g_DRMidI, g_DRMidNumb,   g_DRMid  ;
+global g_DRDerN, g_DRDerI, g_DRDerNumb,   g_DRDer  ;
+global g_DRVerN, g_DRVerI, g_DRVerNumb,   g_DRVer  ;
+
+global g_TrTopN, g_TrTopI,g_TrTopNumb,    g_TrTop;
+global g_TrDownN,g_TrDownI,g_TrDownNumb,  g_TrDown, g_NBTrack;
+
+defarr sqlARR[4] sqlVer[4] sqlTop[4] sqlDOWN[4] sqlMid[4] sqlDEr[4] sqlTopTrack[4] sqlDownTrack[4] SqlObram[9] arMs[19] Xcm[20] Ycm[20] Zcm[20] arXtemp[20] arN[20];
+global g_fasca g_SysEdit63;
+global g_delete; //-- массив удаляемых элементов
+defarr temp[6] g_fasca[8];
+defarr g_delete[20] obj[20] arObjFlap[20];
+ndel=0;
+g_SysEdit63=0;
+
+
+
+
+//-- Выбираем дверную систему
+label1:
+objident prompt "Укажите систему дверей" : drsys;
+syst=getattr(drsys,"NSysDoor",-1);
+systP=getattr(drsys,"P1",-1);
+if (syst==-1) { goto label1; }
+KarkasNumb=getattr(drsys,"KarkasNumb",-1);
+posit=getattr(drsys,"Posit",-1);
+SelElem=drsys;
+
+selbyattr "KarkasNumb=="+str(KarkasNumb)+"&&NSysDoor=="+str(syst) all done;
+Nobj=SysVar(61);
+if Nobj==0
+{
+    errcode="Указана не система дверей"
+    gosub err;
+    goto label1;
+}
+  //====================================================
+g_keyDS63=iif(isvardef("g_keyDS63")==0,0,g_keyDS63);
+g_key_prev=1
+
+
+if g_keyDS63!=1
+{
+   macro ProtoPath+Doors63+"CrtSysDoor63.mac" ;
+}
+if g_key_prev==0
+{
+ macro ProtoPath+Doors63+"ClosSysDoor63.mac";
+ g_SysEdit63=0
+ exit;
+}
+//====================================================
+//Ищем Каркас дверной системы 63
+ID_R63=getprotoid("Shkaf","Каркас дверной системы 63","PROTOMACRO","DRRailP63"); //-- ID прототипа в библиотеке прототипов
+if ID_R63==0
+{
+            Putmsg("Отсутствует прототип Каркас дверной системы 63",0);
+            exit;
+}
+//Ищем створку дверной системы 63
+ID_S63=getprotoid("Shkaf","Створка дверной системы 63","PROTOMACRO","DRFlapP63"); //-- ID прототипа в библиотеке прототипов
+if ID_S63==0
+{
+            Putmsg("Отсутствует прототип Створка  дверной системы 63",0);
+            exit;
+}
+//------------------------------------------------------
+// Сортируем створки по порядку
+//------------------------------------------------------
+//Putmsg("Nobj="+str(Nobj),0);
+i_st=0
+i_flap=0
+labst1:
+if I_st<Nobj
+{
+   i_st=i_st+1
+   drsys=GetSelNum(i_st);
+   g_delete[i_st]=drsys
+   posit=getattr(drsys,"Posit",-1);
+   //Putmsg("posit="+str(posit),0);
+   //Putmsg("ID_R63="+str(ID_R63),0);
+   if (posit==ID_R63)
+   {
+      tracks=drsys;
+      gosub Init_TrSys;
+   }
+   if (posit==ID_S63)
+   {
+      // Списываем скрейч ScrFlat
+      i_flap=i_flap+1
+      ScrIndex=ReadScratch("ScrFlat",drsys);
+      arObjFlap[i_flap]=drsys;
+      if ScrIndex!=0
+      {
+         err=ScrtchToFile(ScrIndex,GetProtoMac("Shkaf.ptl")+"ScrFlat"+str(i_flap)+".scr");
+         err=TermScratch(ScrIndex);
+      }
+      v_flSys=0;
+      gosub Init_FlSys;
+   }
+   goto labst1;
+}
+Del_st=i_st;
+g_Ndors=i_flap
+i_flap=0;
+lFlapCM:
+if g_Ndors>i_flap
+{
+ i_flap=i_flap+1
+      #arMs mix nodc arObjFlap[i_flap] done;
+      ptransCS(0,3,arms[17],arms[18],arms[19],Xcm[i_flap],Ycm[i_flap],Zcm[i_flap]);
+      //Putmsg("arms[17]="+str(arms[17]),0);
+      //Putmsg("Xcm["+str(i_flap)+"]="+str(Xcm[i_flap]),0);
+      //Putmsg("g_Ndors="+str(g_Ndors),0);
+ goto lFlapCM;
+}
+//====================================================
+ok_flag=5;
+//====================================================
+SqlArr[1]="SELECT Types.ID  as TID, * "
+SqlArr[2]="FROM DSSystemFlap INNER JOIN (DSTypeFlap INNER JOIN Types ON DSTypeFlap.NameFlap = Types.Name) ON DSSystemFlap.TypeFlap = DSTypeFlap.ID "
+SqlArr[3]="WHERE (((DSSystemFlap.ID)="+str(syst)+"));"
+SysRs=adbOpen(g_Doorscon,SqlArr,3);
+ij=adbRecCount(SysRs);
+//-- Если количество нужных систем дверей не равно единице - выходим
+if (ij!=1)
+{
+  errcode="Количество систем дверей с номером "+str(Syst)+" равно "+str(ij);
+  gosub err;
+  SysRs=adbClose(SysRs);
+  goto end;
+}
+NULLOUT=adbMoveFirst(SysRs);
+Name=adbGetValue(SysRs,"NameSys");
+Type=adbGetValue(SysRs,"TypeFlap");
+g_MoveType=adbGetValue(SysRs,"TID");
+SysRs=adbClose(SysRs);
+
+g_drp=syst
+
+//====================================================
+gosub InitOsVar;
+//====================================================
+
+#ok_flag
+     alternative "Редактирование дверной системы"
+     msgbox text "Указана система "+Name
+     "Что редактируем?"
+     done
+     "Систему"  "Одну створку" "Ничего"
+     done;
+
+
+if (ok_flag==1)
+{
+   objects=SysVar(60);
+   macro ProtoPath+Doors63+"DREditSys63.mac" 0;
+   Nobj=SysVar(60)-objects;
+   setucs save "GEosTemp";
+   #newSys group  last Nobj done;
+   setucs lcs tracks;
+   i_flap=0;
+   lNflapCS:
+   if i_flap<g_Ndors
+   {
+      i_flap=i_flap+1;
+      ptransCS(3,0,Xcm[i_flap],Ycm[i_flap],Zcm[i_flap],Xcm[i_flap],Ycm[i_flap],Zcm[i_flap]);
+      macro ProtoPath+"Sort2Arr.mac" Xcm[i_flap] i_flap arXtemp arN i_flap-1 ;
+      //macro ProtoPath+Doors63+"Sort2Arr.mac" Xcm[i_flap] i_flap arXtemp arN i_flap-1 ;
+      //Putmsg("arN[1]="+str(arN[1]),0);
+      //Putmsg("arN[2]="+str(arN[2]),0);
+      //Putmsg("arN[3]="+str(arN[3]),0);
+
+      goto lNflapCS;
+   }
+   place newSys ;
+   explode newsys done;
+   setucs restore "GEosTemp" ;
+   setucs delete "GEosTemp"  ;
+   select last Nobj done;
+   //================================
+   i_st=0
+   i_flap=0
+   labst2:
+   if I_st<Nobj
+   {
+      i_st=i_st+1
+      drsys=GetSelNum(i_st);
+
+      posit=getattr(drsys,"Posit",-1);
+
+      if (posit==ID_S63)
+      {
+         // Списываем скрейч ScrFlat
+         i_flap=i_flap+1
+            obj[i_flap]=drsys
+            ScrIndex=FileToScrtch(GetProtoMac("Shkaf.ptl")+"ScrFlat"+str(arN[i_flap])+".scr");
+            WriteScratch(ScrIndex,"ScrFlat",drsys);
+            err=TermScratch(ScrIndex);
+      }
+      goto labst2;
+   }
+   i=0
+   labdel:
+   if i<del_st
+   {
+       i=i+1
+       delete g_delete[i] done;
+       goto labdel;
+   }
+   i=0
+   labnew:
+   if i<i_flap
+   {
+       i=i+1
+       smart edit list obj[i] nodc; //done;
+       goto labnew;
+   }
+}
+if (ok_flag==2)
+{
+  #ok_flag1
+     alternative "Редактирование створки дверной системы"
+     msgbox text "Указана система "+Name
+     "Что редактируем?"
+     done
+     "Mатериал вставки"
+     "Разделитель эквидистантно"
+     "Разделитель по точкам"
+     "Переместить разделитель"
+     "Удалить разделитель"
+     "Очистить створку"
+     "Ничего"
+     done;
+
+
+  if (ok_flag1==1)   {   ;macro ProtoPath+Doors63+"EdMatVst63.mac" ;  }
+  if (ok_flag1==2)   {   ;macro ProtoPath+Doors63+"ScrFlapMEDDm.mac" ;  }
+  if (ok_flag1==3)   {   ;macro ProtoPath+Doors63+"ScrFlapMedn.mac" ;  }
+  if (ok_flag1==4)   {   ;macro ProtoPath+Doors63+"ScrFlapMovMid.mac";  }
+  if (ok_flag1==5)   {   ;macro ProtoPath+Doors63+"ScrFlapDelSel.mac";   }
+  if (ok_flag1==6)   {   ;macro ProtoPath+Doors63+"ScrFlatDel63.mac";   }
+}
+end:
+
+macro ProtoPath+Doors63+"ClosSysDoor63.mac";
+exit;
+//==============================================================================
+//-- Вывод окна сообщения об ошибке
+//-- Входные параметры:
+//-- errcode - сод ошибки
+err:
+#ok_flag
+     alternative "Ошибка системы дверей"
+     msgbox text "База данных систем дверей некорректна"
+     "Или ошибка в установке систем дверей"
+     " "
+     errcode
+     done
+     "  OK  "
+     done;
+return;
+//------------------------------------------------------------------------------
+//===========================================================================================================================================
+Init_TrSys:
+       g_xb=0;
+       g_yb=0;
+       g_zb=0;
+       g_TCLTop=iif(IsVArdef("g_TCLTop")==0,0,g_TCLTop);
+       g_TCLDown=iif(IsVArdef("g_TCLDown")==0,0,g_TCLDown);
+       err=InitArray(g_Fasca,0);
+       g_x1=0
+       g_y1=0
+       g_z1=0
+       err=GetProtoVal(drsys,"Syst",g_drp);
+       err=GetProtoVal(drsys,"RailU",g_TCLTop);
+       err=GetProtoVal(drsys,"RailD",g_TCLDown);
+       err=GetProtoVal(drsys,"x",g_x1);
+       err=GetProtoVal(drsys,"y",g_y1);
+       err=GetProtoVal(drsys,"z",g_z1);
+       err=GetProtoVal(drsys,"dx1",g_Fasca[1]);
+       err=GetProtoVal(drsys,"dz1",g_Fasca[2]);
+       err=GetProtoVal(drsys,"dx2",g_Fasca[3]);
+       err=GetProtoVal(drsys,"dz2",g_Fasca[4]);
+       err=GetProtoVal(drsys,"dx3",g_Fasca[5]);
+       err=GetProtoVal(drsys,"dz3",g_Fasca[6]);
+       err=GetProtoVal(drsys,"dx4",g_Fasca[7]);
+       err=GetProtoVal(drsys,"dz4",g_Fasca[8]);
+		NULLOUT=setVarinst(2,"g_x1",g_x1);
+		NULLOUT=setVarinst(2,"g_y1",g_y1);
+		NULLOUT=setVarinst(2,"g_z1",g_z1);
+		NULLOUT=setVarinst(2,"g_xb",g_xb);
+		NULLOUT=setVarinst(2,"g_yb",g_yb);
+		NULLOUT=setVarinst(2,"g_zb",g_zb);
+
+return;
+
+Init_FlSys:
+if v_flSys==0
+{
+   v_flSys=1;
+     g_CLTop=iif(IsVArdef("g_CLTop")==0,0,g_CLTop);
+     g_CLDown=iif(IsVArdef("g_CLDown")==0,0,g_CLDown);
+     g_CLVer=iif(IsVArdef("g_CLVer")==0,0,g_CLVer);
+     g_CLObram=iif(IsVArdef("g_CLObram")==0,0,g_CLObram);
+     err=GetProtoVal(drsys,"CLVerR",g_CLVer);   //id Вертикального
+     err=GetProtoVal(drsys,"CLTop",g_CLTop);   //id верхнего
+     err=GetProtoVal(drsys,"CLDown",g_CLDown);  //id Нижнего
+     err=GetProtoVal(drsys,"ClVst",g_VstSt);   //id материала вставки по умолчанию
+}
+return;
+
+InitOsVar:
+//=====
+Id_Tprice=g_CLVer;
+gosub funOsVAr;
+g_DRVer=ID_DSys63;
+g_CLObram=Cl_DSys63;
+g_CLrObram=CR_DSys63;
+//=====
+Id_Tprice=g_CLTop;
+gosub funOsVAr;
+g_DRTop=ID_DSys63;
+g_CLrtop=CR_DSys63;
+//=====
+Id_Tprice=g_CLDown;
+gosub funOsVAr;
+g_DRDown=ID_DSys63;
+g_CLrDown=CR_DSys63;
+//=====
+Id_Tprice=g_TCLTop;
+gosub funOsVAr;
+g_TrTop=ID_DSys63;
+g_TCLrTop=CR_DSys63;
+//=====
+Id_Tprice=g_TCLDown;
+gosub funOsVAr;
+g_TrDown=ID_DSys63;
+g_TCLrDown=CR_DSys63;
+return;
+
+funOsVAr:
+str_tab="SELECT * FROM (DSFlapProfile INNER JOIN DSColorProfile ON DSFlapProfile.Color = DSColorProfile.ID) INNER JOIN NNomenclature ON DSColorProfile.COLOR = NNomenclature.ID WHERE DSFlapProfile.ID="+str(Id_Tprice);
+SysRs=adbOpen(g_Doorscon,str_tab);
+ij=adbRecCount(SysRs);
+//-- Если количество нужных систем дверей не равно единице - выходим
+if (ij!=1)
+{
+  errcode="Количество профилей с номером "+str(Id_Tprice)+" равно "+str(ij);
+  gosub err;
+  SysRs=adbClose(SysRs);
+  goto end;
+}
+NULLOUT=adbMoveFirst(SysRs);
+ID_DSys63=adbGetValue(SysRs,"IDProfile");
+Cl_DSys63=adbGetValue(SysRs,"NNomenclature.ID");
+CR_DSys63=adbGetValue(SysRs,"NAME");
+SysRs=adbClose(SysRs);
+return;

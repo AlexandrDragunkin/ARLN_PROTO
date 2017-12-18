@@ -1,0 +1,47 @@
+//-- Программа создания каркаса тумбы для стола
+//-- Входные параметры:
+//-- xsek1, xsek2, ysek1, ysek2, zsek1, zsek2 - габаритные координаты ниши по сторонам
+//-- cokflag - признак наличия цоколя (0- нет цоколя, 1 - есть цоколь)
+//-- hcok - высота цоколя
+//-- PrMater - материал тумбы
+//-- Col_Kro - цвет кромки
+//-- Band - тип кромки
+//-- Krep - тип крепежа стенок тумбы
+//-- Krep1 - тип крепежа к столешнице
+
+global ProtoPath;
+getpar xsek1,xsek2,ysek1,ysek2,zsek1,zsek2,cokflag,hcok,PrMater,Col_Kro,Band,Krep,Krep1;
+
+sh=PriceInfo(PrMater,"Thickness",16);
+//-- Низ
+macro ProtoPath+"SetMat.mac" PrMater;
+macro ProtoPath+"SetKrom.mac" Col_Kro 0 0 0 Band;
+macro ProtoPath+"SetFix.mac"  Krep Krep  Krep 0;
+macro ProtoPath+"SetEnam.mac" "Дно";
+macro ProtoPath+"SetECod.mac" "1103" ;
+// macro ProtoPath+"SetKCod.mac"	"DPSXX"	xsek2-xsek1 ysek2-ysek1-sh;
+macro ProtoPath+"MakePan.mac" xsek1 ysek1+sh zsek1+hcok xsek2-xsek1 ysek2-ysek1-sh 12;
+
+//-- Задняя панель
+macro ProtoPath+"SetKrom.mac" Col_Kro Band 0 0 0;
+macro ProtoPath+"SetFix.mac"  0 Krep1 Krep Krep;
+macro ProtoPath+"SetEnam.mac" "Задняя стенка";
+macro ProtoPath+"SetECod.mac" "1105";
+if (sh<10)
+{
+  macro ProtoPath+"SetECod.mac" "1201";
+}
+// macro ProtoPath+"SetKCod.mac"	"DZXXX"	zsek2-zsek1-hcok	xsek2-xsek1;
+macro ProtoPath+"MakePan.mac" xsek1 ysek1 zsek1+hcok zsek2-zsek1-hcok xsek2-xsek1 14;
+//-- Цоколь
+if (cokflag==1&&hcok>0)
+{
+  macro ProtoPath+"SetKrom.mac" Col_Kro Band 0 0 0;
+  macro ProtoPath+"SetFix.mac"  0 0 Krep Krep;
+	macro ProtoPath+"SetEnam.mac" "Цоколь";
+	macro ProtoPath+"SetECod.mac" "1108" ;
+	// macro ProtoPath+"SetKCod.mac"	"DTXXX"	hcok	xsek2-xsek1;
+  macro ProtoPath+"MakePan.mac" xsek1 ysek2-sh zsek1 hcok xsek2-xsek1 14;
+}
+macro ProtoPath+"SetEnam.mac" " " ;
+exit;

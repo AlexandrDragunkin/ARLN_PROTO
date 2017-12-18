@@ -1,0 +1,520 @@
+//-- Создание объекта - шкаф угловой
+global MacroSw; //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global ProtoPath;
+
+global
+D_DzU		//-- Зазор по высоте для утопленных
+D_DzN		//-- Зазор по высоте для накладных
+;
+
+NULLOUT=GetVarInst(2,"DfHandl",DfHandl,0);
+NULLOUT=GetVarInst(2,"DfPetl",DfPetl,0);
+
+NULLOUT=getmplsubst(25,"Pl_IdCol","");
+
+defarr error[10];
+NULLOUT=initarray(error,"");
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+
+defarr BaseGab[5] arr[3] MK[6];
+KarkNum=GetCarcNumb();
+selbyattr "FurnType==\"100000\"&&KarkasNumb=="+str(KarkNum) all done;
+MK[1]=getselnum(1);
+NULLOUT=getcarcpar(1,MK);
+NULLOUT=getcarcpar(3,MK);
+arrK=MK[1];
+NULLOUT=getarrinst(2,"BaseGab",BaseGab);        //-- Габариты каркаса
+NULLOUT=getvarinst(2,"PrMater",PrMater,0);      //-- Запрос  переменной PrMater из пользовательских умолчаний
+NULLOUT=getvarinst(2,"BPMater",BPMater,0);      //-- Запрос  переменной BPMater из пользовательских умолчаний
+NULLOUT=getvarinst(2,"BUMater",BUMater,0);      //-- Запрос  переменной BUMater из пользовательских умолчаний  //-[Сбитнев Р.Н.8.11.2011.]
+NULLOUT=getvarinst(2,"Typ_Kro",Typ_Kro,0);          //-- Тип лицевой кромки
+NULLOUT=getvarinst(2,"DfFixPol",DfFixPol,0);      //-- Запрос  переменной DfFixPol из пользовательских умолчаний
+NULLOUT=getvarinst(2,"DfFixSt",DfFixSt,0);      //-- Запрос  переменной DfFixPol из пользовательских умолчаний
+NULLOUT=getvarinst(2,"FasDMat",FasDMat,0);
+NULLOUT=getvarinst(2,"FixPBack",FixPBack,0);      //-- Читаем умолчание на крепеж накландных задних стенок
+NULLOUT=getvarinst(2,"FasBMat",FasBMat,0);
+NULLOUT=getvarinst(2,"FasDTyp",FasDTyp,0);
+NULLOUT=getvarinst(2,"FasBTyp",FasBTyp,0);
+
+PlIdCol=Pl_IdCol[1];       // Пока в пользовательских умолчаниях нет этого параметра, берем первый
+NULLOUT=getvarinst(2,"g_DfLeg",g_DfLeg,0);      //-- Запрос  переменной g_DfLeg из пользовательских умолчаний
+DefPrPol=str(getyadsubst(25))+"#"+str(PlIdCol) ;
+// DefK356=str(getyadsubst(62))+"#"+str(I_K356[1]) ;                 // Тут бы надо умолчание подхватить
+DefNoga=str(getyadsubst(42))+"#"+str(g_DfLeg) ;
+
+MacroSw=1;
+x=BaseGab[1];  	//-- Ширина каркаса
+y=BaseGab[2];  	//-- Глубина каркаса
+z=BaseGab[3];  	//-- Высота каркаса
+
+if (BaseGab[4]==0&&BaseGab[5]==0)						//-Добавил Сбитнев Р.Н. 4.08.2011
+{
+ stx=300;
+ sty=200;
+}
+else
+{
+ stx=BaseGab[4];
+ sty=BaseGab[5];
+}
+//-- Количество створок дверей
+a=sqrt(x*x+y*y); //-- Диагональ
+if (a<1500)
+{
+  dn1=2;
+  dn2=3;
+  dn3=4;
+}
+else
+{
+  if (a>=1500&&a<=2000)
+  {
+    dn1=3;
+    dn2=2;
+    dn3=4;
+  }
+  else
+  {
+    if (a>2000)
+    {
+      dn1=4;
+      dn2=3;
+      dn3=2;
+    }
+  }
+}
+pr=0;
+#ok_flag
+setvar
+"Шкаф угловой"
+PicturesPath+"qsh.wmf"
+center
+"Определите параметры углового шкафа"
+done
+real     default stx	     "Размер стыковой по X:"   		svx	//-изменил Сбитнев Р.Н. 4.08.2011
+real     default sty	     "Размер стыковой по Y:"   		svy	//-изменил Сбитнев Р.Н. 4.08.2011
+real     default 80	       "Высота цоколя:"    	        hcok
+str listonly
+	  current	 "Фаска"
+		        "Без подреза"
+	done
+	"Тип подреза"                                                   CutType
+str listonly
+	  current	"Врезная"
+	          "Накладная"
+	done
+	"Тип крышки"                                                    CoverType
+//---------------------------------------------[Сбитнев Р.Н.8.11.2011.]-------------------------------------------------------
+str listonly
+	  current	"Утопленная"
+	          "Накладная"
+	done
+	"Тип стенки"                                                    BackType
+//----------------------------------------------------------------------------------------------------
+//real     default 0              "Прогиб:"                               pr
+real     default 0              "Навес:"                                nv
+str listonly
+    current "Без дверей"
+	          // "Раздвижная"
+	          "Распашная"
+	 done
+	 "Тип двери"                                                    Val
+real	listonly
+current dn1
+	dn2
+	dn3
+        done
+	"Количество дверей:"                                           dnumb
+//-----------------------------------------------------------------------------
+
+// string auto button 6 default DefPrPol        "Материал полотна:"   NN_Pol
+// string auto button 6         default DefK356         "Тип системы дверей:" NN_Stv
+logical  default 0             "Опорное дно" dno
+
+string auto button 6 default DefNoga         "Тип опоры:"          NNoga
+done;
+if (ok_flag==0)
+{
+  exit;
+}
+//-----------------------------------------------------------------------------
+splitbydelim(NNoga,"#",Arr);
+Noga=Arr[2];
+vis_nogi=PriceInfo(Noga,"Height",0)
+if (vis_nogi*2>z)
+{
+  error[1]="Высота опор превышает допустимую.";
+  error[2]=" ";
+  error[3]="Проверьте, правильно ли выбран тип опор."
+  error[4]="Проверьте, правильно ли задана высота шкафа.";
+  error[5]="Убедитесь, что высота ножек корректно внесена в Прайс-лист расходных материалов.";
+  macro Protopath+"ShowSmartError.mac" "Ошибка в построении шкафа."
+  5 error;
+  exit;
+}
+// splitbydelim(NN_Pol,"#",Arr);
+// N_Pol=Arr[2];
+// splitbydelim(NN_Stv,"#",Arr);
+// N_Stv=Arr[2];
+
+Band=Typ_Kro;
+PrMaterT=PrMater;
+h_dsp=PriceInfo(PrMaterT,"Thickness",DbVar("HDSP",16))   //-- Толщина панели
+h_dvp=PriceInfo(BPMater,"Thickness",DbVar("HDVP",4))     //-- Толщина задней стенки
+DeMater=FasDMat;
+h_dspDe=PriceInfo(DeMater,"Thickness",DbVar("HDSP",16))
+//-- Заступ для задней стенки
+if (h_dsp>14)
+{
+  Zastyp=h_dsp-14;
+}
+else
+{
+  zastyp=0;
+}
+//--------------------------------------------------------------------------
+alpha=abs(grad(atan((y-svy-h_dsp)/(x-svx-h_dsp)))); //-- Угол поворота стойки
+ct=0;
+fx=0;
+fy=0;
+if (CutType=="Фаска")
+{
+  ct=1;
+  fx=x-svx-nv/sin(radian(alpha));
+  fy=y-svy-nv/cos(radian(alpha));
+}
+//--------------------------------------------------------------------------
+if (x<=0||y<=0||z<=0||hcok>=z||svx>=x||svy>=y||fx<0||fy<0||fx>=x||fy>=y)
+{
+  error[1]="Параметры шкафа некорректны.";
+  error[2]=" ";
+  error[3]="Проверьте правильно ли заданы параметры шкафа."
+  error[4]="Убедитесь, что выбран нужный типовой проект.";
+  macro Protopath+"ShowSmartError.mac" "Ошибка в построении шкафа."
+  4 error;
+  exit;
+}
+//--------------------------------------------------------------------------> [Сбитнев Р.Н.8.11.2011.]---
+
+if (BackType=="Утопленная")
+{
+ h_dvp=0;
+}
+
+if (Dno==1)
+{
+ vis_nogi=hcok;
+}
+
+//----------------------------------------------------------------------------
+if (dno==0) //-- Накладное дно
+{
+  vis_nogi=0;
+  aplus=0;
+  aminus=0;
+  vis_zs=hcok;
+}
+else  //-- Опорное дно
+{
+  aplus=vis_nogi+h_dsp;
+  aminus=vis_nogi-h_dsp;
+  vis_zs=aplus-h_dsp;
+}
+if (CoverType=="Врезная")
+{
+  visp=z-aplus;
+  Xk=x-h_dsp;
+  ct=1;
+  fx=x-svx-h_dsp;
+  fy=y-svy-h_dsp;
+  Shir=y-h_dsp;
+}
+else
+{
+  visp=z-aplus-h_dsp;
+  Xn=0;
+  Xk=x;
+  Shir=y;
+}
+//sq=sqrt((x-svx-h_dsp)*(x-svx-h_dsp)+(y-svy)*(y-svy)); //-- Длина стойки
+sq=sqrt((x-svx-h_dsp)*(x-svx-h_dsp)+(y-svy-h_dsp)*(y-svy-h_dsp)); //-- Длина стойки
+//--------------------------------------------------------------------------
+NULLOUT=getsnap();
+//-- Построение
+macro ProtoPath+"SetInit.mac" ;
+macro ProtoPath+"SetMat.mac" PrMaterT ;
+//-- Задняя стенка
+if (BackType=="Утопленная")
+{
+  macro ProtoPath+"SetMat.mac" BUMater;
+}
+else
+{
+  macro ProtoPath+"SetMat.mac" BPMater;
+}
+
+macro ProtoPath+"SetECod.mac" "1201" ;
+// macro ProtoPath+"SetKCod.mac"	"DZXXX"	z-vis_zs-2*zastyp x-2*zastyp;
+macro ProtoPath+"SetEnam.mac" "Задняя стенка" ;
+macro ProtoPath+"SetKrom.mac" 0 0 0 Band Band ;
+macro ProtoPath+"SetFix.mac"  iif(BackType=="Утопленная",DfFixSt,0) iif(BackType=="Утопленная",DfFixSt,0) 0 0 ;
+if (BackType=="Утопленная")
+{
+  macro ProtoPath+"MakePan.mac" h_dsp 0 vis_zs+h_dsp z-vis_zs-2*h_dsp x-2*h_dsp 14 ;
+}
+else
+{
+  macro ProtoPath+"MakePan.mac" zastyp 0 vis_zs+zastyp z-vis_zs-2*zastyp x-2*zastyp 13 ;
+}
+
+
+//-- Боковая стенка
+macro ProtoPath+"SetMat.mac" PrMaterT ;
+macro ProtoPath+"SetECod.mac" "1101" ;
+// macro ProtoPath+"SetKCod.mac"	"DBXXX"	visp y-h_dsp-h_dvp;
+macro ProtoPath+"SetEnam.mac" "Боковая стенка" ;
+macro ProtoPath+"SetKrom.mac" 0 0 0 0 0 ;
+macro ProtoPath+"SetFix.mac"  DfFixSt DfFixSt iif(BackType=="Утопленная",0,FixPBack) 0;
+macro ProtoPath+"MakePan.mac" iif(arrK==1,0,x-h_dsp) 0 hcok+h_dsp z-(hcok+h_dsp)-h_dsp y-h_dsp 11 ;
+
+
+//-- Боковая стенка стыковая
+macro ProtoPath+"SetECod.mac" "1102" ;
+macro ProtoPath+"SetEnam.mac" "Боковая стенка стыковая" ;
+// macro ProtoPath+"SetKCod.mac"	"DBXXX"	visp svy-h_dvp;
+macro ProtoPath+"SetKrom.mac" 0 0 0 0 Band ;
+macro ProtoPath+"SetFix.mac"  iif(dno==1,DfFixSt,0) iif(CoverType=="Врезная",0,DfFixSt) iif(BackType=="Утопленная",0,FixPBack)  0 ;
+macro ProtoPath+"MakePan.mac" iif(arrK==1,x-h_dsp,0) 0 aplus visp svy 11 ;
+
+//-- Стенка передняя стыковая
+macro ProtoPath+"SetECod.mac" "1104" ;
+macro ProtoPath+"SetEnam.mac" "Стенка передняя стыковая" ;
+// macro ProtoPath+"SetKCod.mac"	"DBXXX"	visp svx;
+macro ProtoPath+"SetKrom.mac" 0 0 0 Band Band ;
+macro ProtoPath+"SetFix.mac"  iif(dno==1,DfFixSt,0) iif(CoverType=="Врезная",0,DfFixSt) 0  0 ;
+macro ProtoPath+"MakePan.mac" iif(arrK==1,0,x-svx) y-h_dsp aplus visp svx 14 ;
+
+
+//-- Полка верхняя
+macro ProtoPath+"SetKrom.mac" 0 Band Band Band Band ;
+if (arrK==1)
+{
+	macro ProtoPath+"SetFix.mac" 0 iif(CoverType=="Врезная",DfFixSt,0) iif(BackType=="Утопленная",0,FixPBack) iif(CoverType=="Врезная",DfFixSt,0) ;
+}
+if (arrK==0)
+{
+	macro ProtoPath+"SetFix.mac" iif(CoverType=="Врезная",DfFixSt,0) 0 iif(BackType=="Утопленная",0,FixPBack) iif(CoverType=="Врезная",DfFixSt,0) ;
+}
+
+// if (arrK==1)
+// {
+	// macro ProtoPath+"SetFilet.mac" 0 0 0  0 0 0 ct fx fy  0 0 0 ;
+// }
+// if (arrK==0)
+// {
+	// macro ProtoPath+"SetFilet.mac" 0 0 0  0 0 0  0 0 0 ct fx fy;
+// }
+
+// macro ProtoPath+"SetOneAngleCut.mac" 3 ct fx fy 0 0 0;
+
+macro ProtoPath+"SetOneFilet.mac" iif(arrK==1,3,4) 1 fx fy;
+
+macro ProtoPath+"SetBend.mac" 0 0 0 0 0 0 pr 0 ;
+macro ProtoPath+"SetEnam.mac" "Крышка";
+macro ProtoPath+"SetECod.mac" "1104" ;
+// macro ProtoPath+"SetKCod.mac"	"DPXXX"	Xk Shir;
+if (arrk==0&&CoverType=="Врезная")
+{
+	macro ProtoPath+"MakePan.mac" h_dsp 0 z-h_dsp Xk Shir 12 ;
+}
+else
+{
+  macro ProtoPath+"MakePan.mac" 0 0 z-h_dsp Xk Shir 12 ;
+}
+macro ProtoPath+"SetFilet.mac" 0 0 0  0 0 0  0 0 0  0 0 0;
+putmsg("NORM")
+if (dno==0)
+{
+  vis=hcok;
+  if (hcok==0)
+  {
+    vis=0;
+  }
+//-- Полка цоколя
+  macro ProtoPath+"SetECod.mac" "1106" ;
+  macro ProtoPath+"SetEnam.mac" "Полка цоколя" ;
+  macro ProtoPath+"SetKrom.mac" 0 0 0 0 0 ;
+  macro ProtoPath+"SetFix.mac"  iif(arrK==1,0,DfFixSt) iif(arrK==1,DfFixSt,0) iif(BackType=="Утопленная",0,FixPBack) DfFixSt  ;
+  
+	if (arrK==1)
+	{
+		macro ProtoPath+"SetFilet.mac"   0 0 0  0 0 0  1 x-svx-h_dsp y-svy-h_dsp  0 0 0 ;
+	}
+	if (arrK==0)
+	{
+		macro ProtoPath+"SetFilet.mac"   0 0 0  0 0 0  0 0 0 1 x-svx-h_dsp y-svy-h_dsp;
+	}
+  macro ProtoPath+"SetBend.mac" 0 0 0 0 0 0 0 0 ;
+  // macro ProtoPath+"SetKCod.mac"	"DPXXX"	x-h_dsp y-h_dsp;
+  macro ProtoPath+"MakePan.mac" iif(arrK==1,0,h_dsp) 0 vis x-h_dsp y-h_dsp 12 ;
+
+  macro ProtoPath+"SetFilet.mac" 0 0 0  0 0 0  0 0 0  0 0 0;
+  
+	//-- Стяжка по X
+	sdx=50;		// отступы до стяжек
+	sdy=50;
+
+	macro ProtoPath+"SetEnam.mac" "Стяжка" ;
+	// macro ProtoPath+"SetKCod.mac"	"DBXXX"	hcok x-(sdx+2*h_dsp) ;
+	macro ProtoPath+"SetKrom.mac" 0 0 0 0 0 ;
+	macro ProtoPath+"SetFixMask.mac" 0 0 0 0;
+	macro ProtoPath+"SetFix.mac"  0 0 iif(arrk==1,DfFixSt,0)  iif(arrk==1,0,DfFixSt) ;
+	macro ProtoPath+"MakePan.mac" iif(arrK==1,sdx+h_dsp,x-(x-h_dsp)) sdy 0 hcok x-(sdx+2*h_dsp) 14 ;
+	macro ProtoPath+"SetFixMask.mac" 0 0 0 0;
+	
+	if (arrK==1)
+	{
+		move last 1 done 0 svy*0.5 0 copy 1 ;
+	}
+	else
+	{
+		move last 1 done 0 0 0 copy 1 ;
+	}
+	
+	//-- Стяжка по Y
+	macro ProtoPath+"SetEnam.mac" "Стяжка" ;
+	// macro ProtoPath+"SetKCod.mac"	"DBXXX"	hcok y-(sdy+h_dsp) ;
+	macro ProtoPath+"SetKrom.mac" 0 0 0 0 0 ;
+	macro ProtoPath+"SetFix.mac"  0 0 0 0 ;
+	if (arrK==0)
+	{
+	 macro ProtoPath+"SetFixMask.mac" 0 0 0 0;
+	}
+	macro ProtoPath+"MakePan.mac" iif(arrK==1,sdx,x-sdx-h_dsp) sdy 0 hcok y-(sdy+h_dsp) 11 ;
+	if (arrK==0)
+	{
+	 macro ProtoPath+"SetFixMask.mac" 0 0 0 0;
+	}
+
+  if (hcok>0)
+  {
+//-- Стойка цоколя
+    macro ProtoPath+"SetECod.mac" "1109" ;
+    macro ProtoPath+"SetEnam.mac" "Стойка цоколя" ;
+    // macro ProtoPath+"SetKCod.mac"	"DTXXX"	hcok sq;
+    macro ProtoPath+"SetFix.mac"  0 0 0 0 ;
+    macro ProtoPath+"SetFilet.mac"   0 0 0  0 0 0  0 0 0  0 0 0 ;
+    macro ProtoPath+"MakePan.mac" iif(arrk==1,svx,h_dsp) iif(arrk==1,y-2*h_dsp,sty-h_dsp) 0 hcok sq 14 ;
+		if (arrk==1)
+		{
+			rotate last 1 done 2points svx,y-h_dsp,0 svx,y-h_dsp,hcok -alpha nocopy;
+		}
+    if (arrk==0)
+		{
+			rotate last 1 done 2points h_dsp,sty,0 h_dsp,sty,hcok alpha nocopy;
+		}
+  }
+}
+if (dno==1)
+{
+//-- Полка цоколя
+  macro ProtoPath+"SetKrom.mac" 0 0 0 0 0 ;
+  macro ProtoPath+"SetFix.mac"  0 0 0 0  ;
+	if (arrk==1)
+	{
+		 macro ProtoPath+"SetFilet.mac"   0 0 0  0 0 0  1 x-svx y-svy  0 0 0 ;
+	}
+	if (arrk==0)
+	{
+	  macro ProtoPath+"SetFilet.mac"   0 0 0  0 0 0  0 0 0  1 x-svx y-svy;
+	}
+  macro ProtoPath+"SetBend.mac" 0 0 0 0 0 0 0 0 ;
+  macro ProtoPath+"SetECod.mac" "1111" ;
+  macro ProtoPath+"SetEnam.mac" "Полка цоколя" ;
+  // macro ProtoPath+"SetKCod.mac"	"DTXXX"	x y;
+  Macro ProtoPath+"MakePan.mac" 0 0 vis_nogi x y 12 ;
+
+  macro ProtoPath+"SetECod.mac" "7101" ;
+  macro ProtoPath+"SetEnam.mac" "Ножка" ;
+  // macro ProtoPath+"SetKCod.mac" "Noga" "" 0;
+  macro ProtoPath+"MakeLeg.mac" Noga 1   70 70 0   0 0 0;
+	if (arrk==1)
+	{
+		move last 1 done x-140 0 0 copy 1 ;
+		move last 1 done -x+140 y-140 0 copy 1 ;
+		move last 1 done x-140 -y+40+svy 0 copy 1 ;
+		move last 1 done -x+svx y-svy-40 0 copy 1 ;
+	}
+	if (arrk==0)
+	{
+		move last 1 done x-140 0 0 copy 1 ;
+		move last 1 done 0 y-140 0 copy 1 ;
+		move last 1 done -x+140 -y+40+svy 0 copy 1 ;
+		move last 1 done x-svx y-svy-40 0 copy 1 ;
+	}
+
+}
+if (dno==0)
+{
+  vis_d=hcok;
+}
+else
+{
+  vis_d=vis_nogi;
+}
+// //-- Раздвижная дверь
+// if (Val=="Раздвижная")
+// {
+  // macro ProtoPath+"SetStvor56.mac" N_pol N_pol N_pol 0 0 0 0 N_Stv 1 500 0 1000 0 0 0 0 0 0 0 0;
+  // macro ProtoPath+"SetTrack.mac" 0 0 0 ;
+  // f=SysVar(60);
+  // macro ProtoPath+"MakeK3-56.mac" iif(arrk==1,svx,h_dsp) iif(arrk==1,y-h_dsp,sty) vis_d+h_dsp sq z-vis_d-2*h_dsp 0 dnumb  ;
+  // s=SysVar(60);
+  // n=s-f;
+	// if (arrk==1)
+	// {
+		// rotate last n done 2points svx,y-h_dsp,0 svx,y-h_dsp,hcok+10 -alpha nocopy;
+	// }
+  // if (arrk==0)
+  // {
+		// rotate last n done 2points h_dsp,sty,0 h_dsp,sty,hcok+10 alpha nocopy;  
+  // }
+// }
+if (Val=="Распашная") //-- Рисуется только накладная
+{
+  ufas=-D_DzU;
+  if (CoverType=="Врезная")
+  {
+    ufas=h_dsp-D_DzN;
+  }
+  putmsg(DfPetl)
+  protoobj create "Shkaf.ptl" 121
+    "S" sq
+    "G" 0
+    "Hd" z-vis_d-2*h_dsp
+    "R_Fas" 0
+    "L_Fas" 0
+    "U_Fas" ufas
+    "D_Fas" h_dsp-D_DzN
+    "PrMater" FasDMat
+    "Fasrtype"  FasDTyp
+    "Face_col" 0
+    "Double" iif(dnumb<2,0,1)
+    "P_Type" DfPetl
+    "HanType" DfHandl
+    "Rpl_r" 1
+    "Rplace" 2
+  done
+  iif(arrk==1,svx,h_dsp) iif(arrk==1,y-h_dsp,sty) vis_d+h_dsp;
+  if (arrk==1)
+	{
+		rotate last 1 done 2points svx,y-h_dsp,0 svx,y-h_dsp,hcok+10 -alpha nocopy;
+	}
+  if (arrk==0)
+  {
+		rotate last 1 done 2points h_dsp,sty,0 h_dsp,sty,hcok+10 alpha nocopy;  
+  }
+}
+macro ProtoPath+"SetEnam.mac" " " ;
+NULLOUT=resnap();
+exit;

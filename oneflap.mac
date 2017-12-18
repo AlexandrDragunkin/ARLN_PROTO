@@ -1,0 +1,282 @@
+//-- Программа отрисовки одной вставки в створку системы дверей
+//-- иВходные параметры:
+//-- px[4], pz[4] - координаты точек - краев створки
+//-- y - глубина установки вставки
+//-- Mater - матерниал вставки
+//-- Nshp - направление шпона вставки
+//-- AdapVert - вертикальный уплотнитель
+//-- AdapHoriz - горизонтальный уплотнитель
+//-- Если AdapHoriz или AdapVert равны нулю - уплотнители не рисуются
+//-- l_vert, l_horiz - удлинения вертикального и горизонтального профилей соответственно
+//-- Выходные параметры:
+//-- g_deltaz - глобальная переменная с ошибкой округления высоты вставки,
+//-- vstn - порядковый номер вставки
+
+global ProtoPath;
+global g_deltaz;
+NULLOUT=GetVarInst(2,"g_eps",g_eps,0.01); // Погрешность округления
+
+getpar px,pz,y,Mater,Nshp,AdapVert,AdapHoriz,l_vert,l_horiz,vstn;
+goto begin;
+global MacroSw;
+MacroSw=1;
+defarr px[4], pz[4];
+px[1]=0;
+px[2]=0;
+px[3]=100;
+px[4]=100;
+y=0;
+pz[1]=50;
+pz[2]=200;
+pz[3]=100;
+pz[4]=0;
+Mater=355; //948 355
+AdapVert=21;
+AdapHoriz=0; //21;
+l_vert=0;
+l_horiz=0;
+
+next:
+#ok_flag
+setvar
+"Установка систем дверей в нишу"
+""
+left
+"Определите параметры системы дверей"
+done
+real     default px[1]           "x1"      	px[1]
+real     default pz[1]           "z1"      	pz[1]
+real     default px[2]           "x2"      	px[2]
+real     default pz[2]           "z2"      	pz[2]
+real     default px[3]           "x3"      	px[3]
+real     default pz[3]           "z3"      	pz[3]
+real     default px[4]           "x4"      	px[4]
+real     default pz[4]           "z4"      	pz[4]
+//real     default v_h             "v_h"      	v_h
+//real     default v_zh            "v_zh"      	v_zh
+//real     default h_h             "h_h"      	h_h
+//real     default h_zh            "h_zh"      	h_zh
+done;
+if (ok_flag==0) { exit; }
+
+begin:
+
+v_h=0;
+v_zh=0;
+v_w=0;
+v_zw=0;
+h_h=0;
+h_zh=0;
+h_w=0;
+h_zw=0;
+VertID=0;
+HorizID=0;
+
+h_dsp=Priceinfo(Mater,"Thickness",10);
+//y=y-h_dsp/2;
+
+if (AdapVert==0&&AdapHoriz==0)
+{
+  goto ins;
+}
+tab_place=ProtoPath+"DoorSys.mdb";
+szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+tab_place;
+Doorscon=adbCon(szSrc);
+if (AdapVert!=0)
+{
+  CurP=AdapVert;
+  gosub read;
+  v_h=h;
+  v_zh=zh;
+  v_w=w;
+  v_zw=zw;
+  VertID=ID;
+}
+if (AdapHoriz!=0)
+{
+  CurP=AdapHoriz;
+  gosub read;
+  h_h=h;
+  h_zh=zh;
+  h_w=w;
+  h_zw=zw;
+  HorizID=ID;
+}
+DoorsCon=adbDisCon(DoorsCon);
+ins:
+x=px[1];
+z=pz[1];
+a1=0;
+x1=0;
+z1=0;
+al1=0;
+co1=1;
+ta1=0;
+a2=0;
+x2=0;
+z2=0;
+al2=0;
+co2=1;
+ta2=0;
+if (abs(pz[4]-pz[1])>g_eps)
+{
+  a1=1;
+  z1=int(pz[4]-pz[1]);
+  x1=int(px[4]-px[1]);
+  ta1=z1/x1;
+  al1=atan(ta1);
+  co1=cos(al1);
+
+}
+if (abs(pz[3]-pz[2])>g_eps)
+{
+  a2=1;
+  z2=int(pz[2]-pz[3]);
+  x2=int(px[3]-px[2]);
+  ta2=z2/x2
+  al2=atan(ta2);
+  co2=cos(al2);
+}
+dx=int(px[4]-px[1]);
+dz=pz[2]-pz[1];
+
+cutd=v_h-v_zh;
+cute=v_h-v_zh;
+cutb=(h_h-h_zh)/co1;
+cutc=(h_h-h_zh)/co2;
+
+g_deltaz=dz-cutc-cutb-(floor(dz)-ceil(cutc)-ceil(cutb));
+
+dz=floor(dz);
+cutb=ceil(cutb);
+cutc=ceil(cutc);
+cutd=(ceil(cutd+cute))/2;
+cute=cutd;
+x1=x1-cutd-cute;
+x2=x2-cutd-cute;
+//z2=z2+cutc;
+//z1=z1+cutb;
+ug1=0;
+ugp1=0;
+ugp2=0;
+ug2=0;
+ugp3=0;
+ugp4=0;
+ug3=0;
+ugp5=0;
+ugp6=0;
+ug4=0;
+ugp7=0;
+ugp8=0;
+
+if (z1<=0)
+{
+  z=z+z1
+  ug1=a1;
+  ugp1=-z1;
+  ugp2=x1;
+  dz=dz-z1;
+}
+else
+{
+  ug4=a1;
+  ugp7=z1;
+  ugp8=x1;
+}
+if (z2<=0)
+{
+  ug2=a2;
+  ugp3=-z2;
+  ugp4=x2;
+  dz=dz-z2;
+}
+else
+{
+  ug3=a2;
+  ugp5=z2;
+  ugp6=x2;
+}
+
+macro ProtoPath+"SetMat.mac" Mater;
+macro ProtoPath+"SetDir.mac" Nshp;
+if (AdapVert!=0||AdapHoriz!=0)
+{
+  macro ProtoPath+"SetECod.mac" "5300";
+}
+else
+{
+  macro ProtoPath+"SetECod.mac" "5200";
+}
+macro ProtoPath+"SetEnam.mac" "Вставка "+str(vstn)+" в дверь";
+macro ProtoPath+"SetCuts.mac" cutb cutc cutd cute;
+macro ProtoPath+"SetFilet.mac"  ug1 ugp1 ugp2 ug2 ugp3 ugp4 ug3 ugp5 ugp6 ug4 ugp7 ugp8 ;
+macro ProtoPath+"MakePan.mac" x y+h_w-h_zw z dz dx 14 ;
+macro ProtoPath+"SetCuts.mac" 0 0 0 0;
+if (AdapVert!=0)
+{
+  macro ProtoPath+"SetECod.mac" "5900" ;
+  macro ProtoPath+"SetEnam.mac" "Профиль уплотнительный" ;
+  macro ProtoPath+"SetProfS.mac" 0 0;
+  macro ProtoPath+"SetProfC.mac" VertID l_vert l_vert -v_h v_w -90 0 0 0;
+  Macro ProtoPath+"MakeProf.mac"  px[2] y pz[2] px[1] y pz[1];
+
+  macro ProtoPath+"SetProfS.mac" 0 1;
+  macro ProtoPath+"SetProfC.mac" VertID l_vert l_vert v_h v_w 90 0 0 0;
+  Macro ProtoPath+"MakeProf.mac" px[3] y pz[3] px[4] y pz[4];
+}
+if (AdapHoriz!=0)
+{
+  macro ProtoPath+"SetECod.mac" "5900" ;
+  macro ProtoPath+"SetEnam.mac" "Профиль уплотнительный" ;
+  macro ProtoPath+"SetProfS.mac" 0 0;
+  macro ProtoPath+"SetProfC.mac" HorizID l_horiz l_horiz -h_w -h_h 0 0 0 0;
+  Macro ProtoPath+"MakeProf.mac" px[3] y pz[3] px[2] y pz[2];
+
+  macro ProtoPath+"SetProfS.mac" 0 0;
+  macro ProtoPath+"SetProfC.mac" HorizID l_horiz l_horiz h_w h_h 180 0 0 0;
+  Macro ProtoPath+"MakeProf.mac" px[1] y pz[1] px[4] y pz[4];
+  macro ProtoPath+"SetProfS.mac" 0 0;
+}
+exit;
+
+//==============================================================================
+//-- Подпрограмма чтения информации о профилях
+//-- Входные параметры:
+//-- CurP - номер профиля
+//-- Выходные параметры:
+//-- h, zh, w, zw - параметры геометрии контура профиля
+read:
+str_tab="SELECT * FROM Profiles WHERE ID="+str(CurP) ;
+ProfRs=adbOpen(DoorsCon,str_tab);
+ij=adbRecCount(ProfRs);
+if (ij<1)
+{
+  errcode="Количество профилей с ID "+str(CurP)+" равно "+str(ij);
+  ProfRs=adbClose(ProfRs);
+  gosub err1;
+  return;
+}
+NULLOUT=adbMoveFirst(ProfRs);
+w=adbGetValue(ProfRs,"w");
+h=adbGetValue(ProfRs,"h");
+zh=adbGetValue(ProfRs,"zh");
+zw=adbGetValue(ProfRs,"zw");
+ID=adbGetValue(ProfRs,"IDProf");
+ProfRs=adbClose(ProfRs);
+return;
+//==============================================================================
+//-- Вывод окна сообщения об ошибке
+//-- Входные параметры:
+//-- errcode - сод ошибки
+err1:
+//-- ShowSmartError
+#ok_flag
+     alternative "Ошибка базы данных"
+     msgbox text "Некорректно заполнена база данных систем дверей"
+     " "
+     errcode
+     done
+     "  OK  "
+     done;
+return;
+//==============================================================================

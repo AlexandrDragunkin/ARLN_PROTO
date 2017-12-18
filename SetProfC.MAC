@@ -1,0 +1,33 @@
+// Установить тек. Типы и Параметры профиля для библиотеки стандартных объектов
+global 
+PrfMater // Материал профиля
+PrfP_1   // Подрез начальной точки
+PrfP_2   // Подрез конечной точки
+PrfSd_X  // Сдвиг по Х ЛСК
+PrfSd_Y  // Сдвиг по У ЛСК
+PrfAngle // Угол поворота вокруг оси (град)
+PrfAng_1 // Угол подрезки 1 стороны
+PrfAng_2 // Угол подрезки 2 стороны
+PrfColor // Цвет профиля из прайса
+;
+global ProtoPath;
+
+getpar  P1 P2 P3 P4 P5 P6 P7 P8 P9;
+
+PrfMater=P1 
+PrfP_1=P2   
+PrfP_2=P3   
+PrfSd_X=P4  
+PrfSd_Y=P5  
+PrfAngle=P6 
+PrfAng_1=p7 
+PrfAng_2=p8
+AngDir1=0
+AngDir2=0
+if (abs(PrfAng_1)>0) { AngDir1=2 }
+if (abs(PrfAng_2)>0) { AngDir2=2 }
+macro ProtoPath+"SetProfD.mac" AngDir1 AngDir2;
+PrfColor=p9
+;
+
+exit ;

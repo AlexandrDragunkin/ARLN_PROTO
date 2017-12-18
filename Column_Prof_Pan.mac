@@ -1,0 +1,33 @@
+//--Макро создания профиля полки для колонной системы Komandor.
+global ProtoPath;
+nullout=getvarinst(2,"UnitCodeWard",UnitCodeWard,"8000");
+getpar GoodsID D;
+//--Читаем свойства сборочной единицы
+IDFix1=PriceInfo(GoodsID,"NomID1",1,2);		//-- крепление 1
+NameFix1=PriceInfo(IDFix1,"MatName","",1);	//-- название
+Shift1=PriceInfo(IDFix1,"LengthY",2,1);		//-- толщина заглушки
+
+IDProf1=PriceInfo(GoodsID,"NomID2",1,2);	//-- профиль
+NameProf1=PriceInfo(IDProf1,"MatName","",1);	//-- название
+obj_do=sysvar(60); 
+//-- Добавляем заглушки
+accessory "040000" IDFix1 1 yes ;
+attrobj attach "UnitCode" Done last 1 UnitCodeWard;
+accessory "040000" IDFix1 2 no ;
+attrobj attach "UnitCode" Done last 1 UnitCodeWard;
+macro ProtoPath+"CompAttr.mac" IDFix1 1 ;
+move last 1 done 0 D-Shift1 0 nocopy;
+
+//-- Добавляем профиль
+macro ProtoPath+"SetProf.mac" IDProf1 Shift1 Shift1 0 0 180;
+macro ProtoPath+"MakeProf.mac" 0 0 0 0 D 0;
+attrobj attach "UnitCode" Done last 1 UnitCodeWard;
+
+obj_posle=sysvar(60);
+kol=obj_posle-obj_do;
+group last kol done;
+FurnType=PriceInfo(GoodsID,"FurnType","350000",2);
+NameEl=PriceInfo(GoodsID,"Name"," ",2);
+attrobj attach "FurnType" done last 1 FurnType;
+attrobj attach "ElemName" Done last 1 NameEl;
+exit;

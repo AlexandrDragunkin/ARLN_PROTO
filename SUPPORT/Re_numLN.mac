@@ -1,0 +1,78 @@
+//Re_numLN.mac
+//============================================
+//Нумерация объектов
+//
+//
+// (c) Драгункин Александр г.Дубна 2003-2014гг.
+//============================================
+CurStat=SysVar(70) ;
+global L_SUPPORT                        //Устанавливаем статус вывода сообщений в зависимости от значения параметра
+       g_colselect;                   //ЦВЕТ ВЫБИРАЕМОГО ОБЪЕКТА
+//macro L_SUPPORT+"SaveParSp.mac" "ParSp2.cfg"  ;
+global
+CBDpath
+TMPpath
+ProtoPath
+setsbKEY
+U_layer
+finalcbd
+FTmpName ;
+
+getpar Ltype ;
+
+
+TMPpath=MPathExpand("<appdata>")+"\\"; //+L_SUPPORT;
+u_layer=1;
+UNAME=str(u_layer)
+met11:
+//Открываем базу
+FTmpName="TmpDet"+UNAME+".dbf"
+
+fnk=TMPpath+FTmpName
+
+GoSub DelAttrib ;
+
+macro L_SUPPORT+"TMPDETLN.mac" Ltype   ; //Создание базы TMPDET.DBF
+
+macro L_SUPPORT+"fantomLn.mac" Ltype   ;
+
+macro L_SUPPORT+"re_numLn5.mac" Ltype  ;
+
+
+layers set "0" ;
+
+exit;
+//------------------------------------
+DelAttrib:
+//поиск и удаление атрибута из списка
+defarr aaa[17];
+n=0;
+if IsAttrdef("MIH_X")       { n=n+1; aaa[n]="MIH_X"     ; }
+if IsAttrdef("MIH_Y")       { n=n+1; aaa[n]="MIH_Y"     ; }
+if IsAttrdef("MIH_Z")       { n=n+1; aaa[n]="MIH_Z"     ; }
+if IsAttrdef("MIH_S")       { n=n+1; aaa[n]="MIH_S"     ; }
+if IsAttrdef("MIH_V")       { n=n+1; aaa[n]="MIH_V"     ; }
+if IsAttrdef("MIH_P")       { n=n+1; aaa[n]="MIH_P"     ; }
+if IsAttrdef("MIH_M")       { n=n+1; aaa[n]="MIH_M"     ; }
+if IsAttrdef("MIH_Sxy")     { n=n+1; aaa[n]="MIH_Sxy"   ; }
+if IsAttrdef("MIH_Syz")     { n=n+1; aaa[n]="MIH_Syz"   ; }
+if IsAttrdef("MIH_Szx")     { n=n+1; aaa[n]="MIH_Szx"   ; }
+if IsAttrdef("SYS_SB")      { n=n+1; aaa[n]="SYS_SB"    ; }
+if IsAttrdef("LnCOD")       { n=n+1; aaa[n]="LnCOD"     ; }
+if IsAttrdef("LnName")      { n=n+1; aaa[n]="LnName"    ; }
+if IsAttrdef("LnMat")       { n=n+1; aaa[n]="LnMat"     ; }
+if IsAttrdef("LnPrim")      { n=n+1; aaa[n]="LnPrim"    ; }
+if IsAttrdef("PozNumber")   { n=n+1; aaa[n]="PozNumber" ; }
+if IsAttrdef("SelER")       { n=n+1; aaa[n]="SelER"     ; }
+if n>0 {
+i=1
+;attribute delete
+lll:
+aaa[i]
+let i=i+1
+if i<=n { goto lll }
+;
+}
+
+
+return ;

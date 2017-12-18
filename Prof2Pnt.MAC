@@ -1,0 +1,14 @@
+//-- Установить профиль по двум точкам
+global ProtoPath;
+
+NULLOUT=getvarinst(2,"DfProf",DfProf,0);   //-- ID текущего профиля
+defarr first[3] second[3];
+get "Первая точка установки профиля" point missing  first[1] first[2] first[3] end :
+get "Вторая точка установки профиля" point first[1] first[2] first[3]
+second[1] second[2] second[3]  end :
+MacroMode Undo Off;
+macro ProtoPath+"SetEnam.mac" "Профиль";
+macro Protopath+"PutProf.mac" first second ;
+ObjIdent last 1 hobj;
+MacroMode Undo On "Установить профиль" hobj;
+exit;

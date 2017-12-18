@@ -1,0 +1,4 @@
+global ProtoPath;
+dimtext 0 "<>" done;
+macro ProtoPath+"SetToleranS.mac" 3 3;
+exit;

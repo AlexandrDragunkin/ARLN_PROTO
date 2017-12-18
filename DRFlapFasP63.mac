@@ -1,0 +1,256 @@
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+//-- Программа рисует створку дверной системы
+
+nullout=getvarinst(2,"Doors63",Doors63,"Doors63.zmc|");
+nullout=getvarinst(2,"Doors64",Doors64,"Doors64.zmc|");
+
+global MacroSw; // Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+MacroSw=0;
+global g_FurnType;
+global ProtoPath;
+g_KarkasNumb=getcarcnumb();    //-- Порядковый номер каркаса в сцене
+global g_IDPrice g_drp;        //-- ID створки дверной системы из Прайс-листа
+global
+       gs_IdMid             // -- Id Разделительных профилей
+       gs_MidHV             // -- Массив с парметрами эквидистанты для расчета вставок в районе средних профилей
+       gs_XmidS  gs_ZmidS   // -- координаты начальных точек разделительных профилей в створке
+       gs_XmidE  gs_ZmidE   // -- координаты конечных  точек разделительных профилей в створке
+       gs_AngS   gs_AngE    // -- Углы подрезки профиля вначале и в конце разделительного профиля
+       gs_FlMater           // -- материалы вставок
+       gs_FlNshp            // -- направление текстуры шпона вставок
+       gs_IdFl              // -- Cчетчик обработанных в объекте вставок
+       gs_IdMpr             // -- Cчетчик обработанных в объекте средних профилей
+       gs_KFL               // -- Количество вставок из скретча
+       gs_KMpr              // -- Количество средних профилей из скретча
+       ;
+	   
+global
+	g_attrNH1 // имя атрибута владельца
+	g_attrVH1 // добавляемое значение
+	g_attrNH2 // имя атрибута владельца
+	g_attrVH2 // добавляемое значение
+	g_attrNH3 // имя атрибута владельца
+	g_attrVH3 // добавляемое значение
+	;
+g_attrNH1=""; // имя атрибута владельца
+g_attrVH1=""; // добавляемое значение
+g_attrNH2=""; // имя атрибута владельца
+g_attrVH2=""; // добавляемое значение
+g_attrNH3=""; // имя атрибута владельца
+g_attrVH3=""; // добавляемое значение
+
+//================
+defarr
+		g_DimPstr[500] //-- массив точек проемов
+		g_DimVstr[500] //-- массив точек вставок
+		;
+		
+gs_IdFl=0;
+gs_IdMpr=0;
+i_dimpstr=0;
+i_dimvstr=0;
+nullout=InitArray(g_DimPstr,0);
+nullout=InitArray(g_DimVstr,0);
+
+nullout=getvarinst(1,"DoorSw",DoorSw,0);
+if DoorSw==1
+{
+	// global g_drp, g_CLVer, g_CLTop, g_CLDown, g_VstSt;
+	// global FascaS;
+	// nullout=getvarinst(1,"CLVerR",CLVerR,0);
+	// nullout=getvarinst(1,"CLVerL",CLVerL,0);
+	nullout=getvarinst(1,"x1",x1,100);
+	nullout=getvarinst(1,"y1",y1,100);
+	nullout=getvarinst(1,"z1n",z1n,100);
+	Syst=g_drp;
+	x=x1;
+	y=y1;
+	z=z1n;
+}
+else
+{
+	Syst=DbVar("Syst",1); //-- ID Системы дверей
+	x=DbVar("x",1000);
+	y=DbVar("y",450)
+	z=DbVar("z",1870);
+}
+dx1=DbVar("dx1",0);  // Фаска по X угла 1                            // |2              1|
+dx2=DbVar("dx2",0);  // Фаска по X угла 2                            // |                |
+dx3=DbVar("dx3",0);  // Фаска по X угла 3                            // |                |
+dx4=DbVar("dx4",0);  // Фаска по X угла 4                            // |3______________4|
+dz1=DbVar("dz1",0);  // Фаска по Z угла 1
+dz2=DbVar("dz2",0);  // Фаска по Z угла 2
+dz3=DbVar("dz3",0);  // Фаска по Z угла 3
+dz4=DbVar("dz4",0);  // Фаска по Z угла 4
+P_L=DbVar("P_L",0);  // Подрез слева
+P_R=DbVar("P_R",0);  // Подрез справа
+P_D=DbVar("P_D",0);  // Подрез снизу
+
+Macro ProtoPath+Doors64+"ScrFlapGet63.mac" 1 ;
+Macro ProtoPath+Doors64+"ScrFlapGetF63.mac" 1 ;
+Macro ProtoPath+Doors64+"ScrFlapGetB63.mac" 1 ;
+Macro ProtoPath+Doors64+"ScrKomplGet63.mac" 1 syst ;
+
+n=sysvar(60);
+Macro ProtoPath+Doors64+"DRFlapFas63.mac";
+nn=sysvar(60);
+if ((nn-n)<=0)
+{
+  point 0,0,0;
+  exit;
+}
+
+#door group last nn-n done;
+objident last 1 door;
+
+if (!IsAttrdef("NSysDoor"))
+{ Attribute Create "NSysDoor" "Дверная система" Real 5 0 ; }
+
+  If (IsAssign("NSysDoor",0)) {
+    attrobj copy record "NSysDoor" done door done
+  }
+  else {
+    Attrobj Attach "NSysDoor" Done Last 1 Syst;
+  }
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+
+If (IsAssign("KarkasNumb",0))
+{
+    attrobj copy record "KarkasNumb" done door done;
+}
+else
+{
+    Attrobj Attach "KarkasNumb" done door g_KarkasNumb;
+}
+position=getprotoid("Shkaf","Створка-фасад дверной системы 64","PROTOMACRO","DRFlapFasP63");
+	If (!IsAttrdef("Posit"))
+	{ Attribute Create "Posit" "Posit" Real 5 0 ; }
+	Attrobj Attach "Posit" Done door position;
+
+// If (IsAttrdef("ElemName")) {
+  // If (IsAssign("ElemName",0)) {
+    // attrobj copy record "ElemName" done last 1 done
+    // Eln=getattr(0,"ElemName"," ");
+    // if (Eln==" ") { goto Snam; }
+  // }
+  // else {
+// Snam:
+	nullout=getvarinst(1,"NameSys63",NameSys63,"Створка дверной системы");
+    Attrobj Attach "ElemName" Done Last 1 NameSys63;
+  // }
+// }
+If (IsAttrdef("HOldName")) {
+  If (IsAssign("HOldName",0)) {
+    attrobj copy record "HOldName" done last 1 done
+  }
+}
+If (IsAttrdef("MoveDoor")) {
+  If (IsAssign("MoveDoor",0)) {
+    attrobj copy record "MoveDoor" done last 1 done
+  }
+}
+    Attrobj Attach "XUnit" "YUnit" "ZUnit" Done last 1 x-P_L-P_R z-P_D 0 ; // размеры створки
+    Attrobj Attach "P1" "P2" "P3" Done last 1 P_L P_R P_D ; // подрезы створки слева справа снизу
+    //Attrobj Attach "PriceID" Done last 1 g_DRP ; // Тип створки
+	Attrobj Attach "GoodsID" Done last 1 g_DRP ; // Тип створки
+    attrobj attach "FurnType" done last 1 g_FurnType;
+    //Attrobj Attach "P1" Done last 1 koldv ;
+    // macro ProtoPath+"Doors63.zmc|KolDv.mac" ; // Счетчик дверей
+
+  Attrobj Attach  "Assembly" Done Last 1 1;  // Добавим атрибут сборочной единицы
+  objident last 1 pntFl ;
+
+  objident last 1 pntFl ;
+  if (!IsAttrdef("DimPstr"))
+   { Attribute Create "DimPstr" "Массив точек" text 30 255 ; }
+  if (!IsAttrdef("DimVstr"))
+   { Attribute Create "DimVstr" "Массив точек" text 30 255 ; }
+  i=1
+  lab1:
+  if i<i_dimpstr
+  {
+    NumPar=0;
+    if (isassign("DimPstr",pntFl))  //-- Если атрибут уже присвоен, копируем в массив
+    {
+       NumPar=getattrtext(pntFl,"DimPstr",aDimPstr);
+    }
+    aDimPstr[NumPar+1]=str(g_dimPstr[i])+","+str(g_dimPstr[i+1])+","+str(g_dimPstr[i+2])
+    NULLOUT=TextByStr(pntFl,"DimPstr",NumPar+1,aDimPstr);
+    i=i+3
+    goto lab1;
+  }
+  i=1
+  lab2:
+  if i<i_dimvstr
+  {
+    NumPar=0;
+    if (isassign("DimVstr",pntFl))  //-- Если атрибут уже присвоен, копируем в массив
+    {
+       NumPar=getattrtext(pntFl,"DimVstr",aDimpstr);
+    }
+    aDimpstr[NumPar+1]=str(g_dimVstr[i])+","+str(g_dimVstr[i+1])+","+str(g_dimVstr[i+2])
+    NULLOUT=TextByStr(pntFl,"DimVstr",NumPar+1,aDimpstr);
+    i=i+3
+    goto lab2;
+  }
+  
+  macro ProtoPath+Doors64+"ScrFlatatr63.mac" 0 pntFl ;              //-- Запись в объект Scratch атрибута
+  macro ProtoPath+Doors64+"ScrFlatatrF63.mac" 0 pntFl ;             //-- Запись в объект Scratch атрибута
+  macro ProtoPath+Doors64+"ScrFlatatrB63.mac" 0 pntFl ;             //-- Запись в объект Scratch атрибута
+  macro ProtoPath+Doors64+"ScrKomplAtr63.mac" 0 pntFl ;             //-- Запись в объект Scratch атрибута
+//-- Копирование значений сдвига
+if (isassign("MoveDoor",0))  //-- Если створка была сдвинута
+{
+  MoveDoor=getattr(0,"MoveDoor",0);
+  attrobj attach "MoveDoor" done last 1 MoveDoor;
+}
+if (isassign("MoveDoorX",0))  //-- Если створка была сдвинута
+{
+  MoveDoorX=getattr(0,"MoveDoorX",0);
+  attrobj attach "MoveDoorX" done last 1 MoveDoorX;
+}
+if (isassign("MoveDoorZ",0))  //-- Если створка была сдвинута
+{
+  MoveDoorZ=getattr(0,"MoveDoorZ",0);
+  attrobj attach "MoveDoorZ" done last 1 MoveDoorZ;
+}
+nullout=getVarinst(2,"N_DSComm",N_DSComm,1);
+defarr DSComm[100];
+initarray(DSComm,"");
+nullout=getArrinst(2,"DSComment",DSComm);
+fullcomm="";
+i=0;
+nds:
+i=i+1;
+if i<=N_DSComm
+{
+	fullcomm=iif(N_DSComm!=i,"; ","")+str(DSComm[i])+str(fullcomm)
+	goto nds;
+}
+if len(fullcomm)>0
+{
+	Attrobj Attach "PrimM" Done last 1 fullcomm;
+}
+
+// Для резинового шкафа запомним для двери номер её вставки
+nullout=getvarinst(1,"numVst",numVst,0);
+if numVst>0
+{
+  // attrobj attach "CommonPos" done Last 1 numVst;
+  attrobj attach "Number" done Last 1 numVst;
+}
+// И номер самой двери
+nullout=getvarinst(1,"iDoorSys",iDoorSys,0);
+attrobj attach "NUnit" done Last 1 iDoorSys;
+
+Namescr="ProtoParams";
+attrobj copy record Namescr done last 1 done;
+NULLOUT=addattrpi(door,1,position);
+
+exit;
+

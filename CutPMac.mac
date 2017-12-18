@@ -1,0 +1,133 @@
+//-- Разрезать панель
+global ProtoPath;
+getpar St Pn;
+
+defarr arr[10];
+defarr arr2[10];
+
+defarr error[10];
+NULLOUT=initarray(error,"");
+
+defarr pg[6]; //-- массив габаритных координат
+tmp=0;
+//================================
+NULLOUT=GetSnap();
+Obj=St;
+gosub Gettype;
+PosS=Pos
+TypeS=PosS;
+Obj=Pn;
+gosub Gettype;
+NULLOUT=InitArray(arr,0);
+arr[1]=Pn;
+err=GetPan6Par(1,arr);
+err=GetPan6Par(11,arr);
+err=GetPan6Par(11,arr2);
+x=arr[2];
+y=arr[3];
+setucs lcs Pn;
+MaxX_B=0; MaxY_D=0;
+MaxX_C=0; MaxY_E=0;
+TypePan=Pos;
+num=ObjGab3(St,pg);
+
+//==================================
+if (TypePan==12)            // Режем полку
+{
+  if (TypeS==11)            // стойкой
+  {
+    if (pg[1]<MaxX_B||pg[1]>=x-MaxX_C) { goto Merror; }
+    if (pg[4]<MaxX_B||pg[4]>=x-MaxX_C) { goto Merror; }
+    mbpanel divide Pn pg[1] 0 0 ;
+  objident last 1 Pn2;
+    mbpanel divide Pn2 pg[4]-pg[1] 0 0 ;
+  objident last 2 Perr;
+    delete Perr done;
+  }
+  if ((TypeS==13)||(TypeS==14))      // Стенкой
+  {
+    if (pg[2]<MaxX_B||pg[2]>=y-MaxX_C) { goto Merror; }
+    if (pg[5]<MaxX_B||pg[5]>=y-MaxX_C) { goto Merror; }
+    mbpanel divide Pn 0 pg[2]  0 ;
+  objident last 1 Pn2;
+    mbpanel divide Pn2 0 pg[5]-pg[2] 0 ;
+  objident last 2 Perr;
+    delete Perr done;
+  }
+}
+if (TypePan==11)              // Режем стойку
+{
+  if (TypeS==12)                  // Полкой
+  {
+    if (pg[1]<MaxX_B||pg[1]>=x-MaxX_C) { goto Merror; }
+    if (pg[4]<MaxX_B||pg[4]>=x-MaxX_C) { goto Merror; }
+    mbpanel divide Pn pg[1] 0 0 ;
+  objident last 1 Pn2;
+    mbpanel divide Pn2 pg[4]-pg[1] 0 0 ;
+  objident last 2 Perr;
+    delete Perr done;
+  }
+  if ((TypeS==13)||(TypeS==14))                // Стенкой
+  {
+    if (pg[2]<MaxX_B||pg[2]>=y-MaxX_C) { goto Merror; }
+    if (pg[5]<MaxX_B||pg[5]>=y-MaxX_C) { goto Merror; }
+    mbpanel divide Pn 0 pg[2]  0 ;
+  objident last 1 Pn2;
+    mbpanel divide Pn2 0 pg[5]-pg[2] 0 ;
+  objident last 2 Perr;
+    delete Perr done;
+  }
+}
+if ((TypePan==13)||(TypePan==14))           // Режем стенку
+{
+  if (TypeS==12)                  // Полкой
+  {
+    if (pg[1]<MaxX_B||pg[1]>=x-MaxX_C) { goto Merror; }
+    if (pg[4]<MaxX_B||pg[4]>=x-MaxX_C) { goto Merror; }
+    mbpanel divide Pn pg[1] 0 0 ;
+  objident last 1 Pn2;
+    mbpanel divide Pn2 pg[4]-pg[1] 0 0 ;
+  objident last 2 Perr;
+    delete Perr done;
+  }
+  if (TypeS==11)                // Стенкой
+  {
+    if (pg[2]<MaxX_B||pg[2]>=y-MaxX_C) { goto Merror; }
+    if (pg[5]<MaxX_B||pg[5]>=y-MaxX_C) { goto Merror; }
+    mbpanel divide Pn 0 pg[2]  0 ;
+  objident last 1 Pn2;
+    mbpanel divide Pn2 0 pg[5]-pg[2] 0 ;
+  objident last 2 Perr;
+    delete Perr done;
+  }
+}
+goto end2;
+Merror:
+    error[1]="Данную панель нельзя рассечь.";
+    error[2]="Габариты панелей не пересекаются";
+    error[3]=" ";
+    error[4]="Возможно, рассекаемая и секущая панель указаны неверно."
+    error[5]="Воспользуйтесь другой командой редактирования."
+    macro Protopath+"ShowSmartError.mac" "Рассечь панель" 5 error;
+End:
+select St Pn done;
+end2:
+NULLOUT=ReSnap();
+exit;
+//---------------------------------------------
+//-- Определить тип полки в старых терминах
+Gettype:
+Pos=1;
+Furn=getattr(Obj,"FurnType","")
+if (len(Furn)>0)
+{
+	if (left(Furn,4)=="0101") { Pos=12; }
+  if (left(Furn,4)=="0102") { Pos=11; }
+	if (left(Furn,4)=="0103") { Pos=14; }
+	if (left(Furn,4)=="0104") { Pos=13; }
+}
+else
+{
+   goto end2;
+}
+return;

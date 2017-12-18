@@ -1,0 +1,11 @@
+//-- Установить текущие материалы для каркаса систем дверей
+global
+RDoorRail,    //-- Материал направляющих
+RDoorMBok,    //-- Материал боковин
+RTrackColor;  //-- Цвет профилей направляющих
+
+getpar P1,P2,P3;
+RDoorRail=P1;
+RDoorMBok=P2;
+RTrackColor=P3;
+exit;

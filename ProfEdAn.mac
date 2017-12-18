@@ -1,0 +1,62 @@
+//-- Изменить угол установки профиля
+global ProtoPath;
+
+global pnt, iPNT;
+defarr arr[16];
+#ok_flag
+setvar
+"Изменить угол установки профиля"
+""
+left
+"Определите параметры замены"
+done
+real  default 90	       "Угол поворота:"     Pangle
+str 	listonly
+	    current "По указанию"
+		          "Все профили"
+	done				"Способ замены:"    S_zam
+done;
+
+if (ok_flag==0)
+{
+  cancel;
+}
+
+macro Protopath+"ChgSel.mac" S_zam ;
+if (S_zam=="По указанию")
+{
+  Loop:
+  switch autosingle on;
+  selbyattr "(Left(FurnType,2)==\"02\")||iif(IsAssign(\"Posit\"),Posit==39,1)"
+    prompt "Укажите профиль:" : ;
+  switch autosingle off;
+  if (sysvar(61)==0)
+  {
+    exit;
+  }
+  pnt1=getselnum(1);
+  select stayblink pnt1 done;
+  arr[1]=pnt1;
+  GetProf6Par(1,arr);
+  GetProf6Par(4,arr);
+  Angle=arr[1]
+  MBProfile item   pnt1  12   Angle+Pangle 0 ;
+  goto Loop;
+}
+else
+{
+  i=0;
+LoopAll:
+  if (i<iPNT)
+  {
+    i=i+1;
+    pnt1=pnt[i];
+    arr[1]=pnt1;
+    GetProf6Par(1,arr);
+    GetProf6Par(4,arr);
+    Angle=arr[1]
+    MBProfile item   pnt1  12   Angle+Pangle 0 ;
+    goto LoopAll;
+  }
+}
+exit;

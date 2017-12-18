@@ -1,0 +1,87 @@
+//-- Создание выдвижной корзины/полки
+global ProtoPath;
+defarr MatProp[2];
+defarr ValProp[2];
+w=DbVar("w",600);									//-- Ширина
+typeF=DbVar("typeF",0);						//-- Тип корзины
+F_Width=DbVar("F_Width",0);				//-- Наличие расширителя
+Tray=DbVar("Tray",0);							//-- Наличие лотка
+RV=DbVar("RV",0);									//-- Установка справа 
+//-- Свойства корзины
+typeKor=priceinfo(typeF,"NomID1",0,2);	//-- Тип корзины
+HeightF=priceinfo(typeKor,"Height",0);		//-- Высота
+WidthF=priceinfo(typeKor,"ToleranceX",0);		//-- Ширина
+//-- Свойства сборочной единицы
+ShiftY=priceinfo(typeF,"ShiftY",0,2);			//-- Отступ спереди
+ShiftZ=priceinfo(typeF,"ShiftZ",0,2);			//-- Расстояние до верха крепления
+Shift=priceinfo(typeF,"Shift",0,2);				//-- Шаг медду крепежами
+RasT=priceinfo(typeF,"NomID2",0,2);				//-- Расширитель
+Lot=priceinfo(typeF,"NomID3",0,2);				//-- Лоток
+//---------------------------------
+x=0;
+y=0;
+z=0;
+ots=0;
+colobj=0;
+
+position=getprotoid("Shkaf","Выдвижная корзина/полка","ProtoMacro","MotFlasP");  //-- ID прототипа
+Namescr="ProtoParams";
+//-- Проверки на размеры
+if (RasT>0&&F_Width==1)
+{
+ 	ots=priceinfo(RasT,"Width",0);								//-- Ширина расширителя
+	ShiftR=priceinfo(RasT,"ShiftZ",0);						//-- Отсутп до края расширителя
+}
+//-- Если ширина ниши меньше допустимой
+if (w<WidthF+ots)
+{
+  putmsg("Ширина ниши меньше допустимой",0);
+  putmsg("Допустимая ширина "+str(WidthF+ots),0);
+  putmsg("Ширина ниши "+str(w),0);
+  goto final;
+}
+//-- Строим сборную корзину
+//--------------------------------------------------------------------------
+objDO=sysvar(60);
+
+//--Добавляем расширитель
+if (RasT>0&&F_Width==1)
+{
+	macroR=priceinfo(RasT,"MacroFile","");				//-- макрос установки расширителя
+	macro ProtoPath+macroR Shift RasT;
+	move last 1 done ots 0 -ShiftZ nocopy;
+	macro ProtoPath+macroR Shift RasT;
+	move last 1 done ots 0 -HeightF+ShiftR nocopy;
+	colobj=colobj+2;
+}
+//--Добавляем корзину
+accessory "042100" typeKor 0 yes;
+move last 1 done ots 0 -ShiftZ nocopy;
+colobj=colobj+1;
+//--Добавляем лоток
+if (Lot>0&&Tray==1)
+{
+	SZL=priceinfo(Lot,"ShiftZ",0);								//-- Отступ по Z
+	accessory "040000" Lot 0 yes;
+	move last 1 done ots 0 -HeightF-SZL nocopy;
+	colobj=colobj+1;
+}
+if (RV==0)	//-- если ставим слева
+{
+	mirror last colobj done 3points w/2,0,0 w/2,0,10 w/2,10,10 nocopy;
+}
+//--------------------------------------------------------------------------
+objPosle=sysvar(60)-objDo;
+group last objPosle done;
+objident last 1 pant;
+FurnType=priceinfo(typeF,"FurnType","000000",2);	
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"w",w);;
+err=AddScratch(ScrMod,FurnType,"typeF",typeF);
+err=AddScratch(ScrMod,FurnType,"F_Width",F_Width);
+err=AddScratch(ScrMod,FurnType,"RV",RV);
+err=AddScratch(ScrMod,FurnType,"Tray",Tray);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+final:
+exit;

@@ -1,0 +1,68 @@
+x=dbvar("x",400);         //-- Размер по Х
+x1=dbvar("x1",150);       //-- Размер по Х1
+y=dbvar("y",400);         //-- Размер по Y
+y1=dbvar("y1",150);       //-- Размер по Y1
+R=dbvar("R",50);          //-- Радиус R внутреннего скругления
+R1=dbvar("R1",50);        //-- Радиус R1 внешнего скругления
+
+defarr Ps[9];
+defarr Ps1[9];
+
+//-- Определение точек сопряжения дуг и линий
+gosub ParamsLine;
+//-- Находим точки сопряжения дугой R двух отрезков
+a=Fillet(l1,l5,R,Ps);
+//-- Находим точки сопряжения дугой R двух отрезков
+a=Fillet(l2,l5,R,Ps1);
+//--------------------------------
+//-- Удаляем эти отрезки
+delete l1,l2,l5 done;
+//--------------------------------
+pline Normal 0 0 1
+      Origin 0 0 0
+      ox 1 0 0
+      0 0 0
+      x 0 0
+ arc  direction 0 0 0   //-- Направление дуги
+      x-R1 R1 0
+ line ps[1] ps[2] ps[3]
+ arc  ps[4] ps[5] ps[6]
+ line ps1[4] ps1[5] ps1[6]
+ arc  ps1[1] ps1[2] ps1[3]
+ line R1 Y-R1 0
+ arc  0 Y 0
+ line 0 0 0 ;
+exit;
+//===========================================
+ParamsLine:
+//--Задаем параметры линий
+Zln1=0;
+Zlk1=0;
+Zln2=0;
+Zlk2=0;
+Zln3=0;
+Zlk3=0;
+Zln4=0;
+Zlk4=0;
+Zln5=0;
+Zlk5=0;
+//=========== L1
+Xln1=x-R1;
+Yln1=0;
+Xlk1=x-R1 ;
+Ylk1=y1;
+//=========== L2
+Xln2=x1;
+Yln2=y-R1;
+Xlk2=0;
+Ylk2=y-R1;
+//=========== l5
+Xln5=x-R1;
+Yln5=Y1;
+Xlk5=x1;
+Ylk5=Y-R1;
+//-----------------------------------------
+#l1  line Xln1 Yln1 Zln1 Xlk1 Ylk1 Zlk1 ;
+#l2  line Xln2 Yln2 Zln2 Xlk2 Ylk2 Zlk2 ;
+#l5  line Xln5 Yln5 Zln5 Xlk5 Ylk5 Zlk5 ;
+return;

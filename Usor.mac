@@ -1,0 +1,18 @@
+//-- Сформировать узор для дверки
+
+getpar xn,yn,zn,dx,dz;
+
+dx1=40; //-- Отступ узора по ширине
+dz1=50; //-- Отступ узора по высоте
+line xn+dx1 yn zn+dz-dz1
+		 xn yn zn+dz-dz1
+		 xn yn zn
+		 xn+dx yn zn
+		 xn+dx yn zn+dz-dz1
+		 xn+dx-dx1 yn zn+dz-dz1;
+
+arc xn+dx-dx1 yn zn+dz-dz1
+		Internal xn+dx/2 yn  zn+dz
+		xn+dx1 yn zn+dz-dz1;
+path select last 6 done last 6 create;
+exit;

@@ -1,0 +1,122 @@
+// Рисуем номера
+// Диалоговая карточка и алгоритм расстановки для первого случая
+
+//Входные параметры:
+//    auto-вариант работы 0-запуск диалоговой карточки или 1-сразу по первому варианту
+//    NameAtrPos-имя атрибута
+global ProtoPath g_delnum;
+getpar auto NameAtrPos result;
+result=0;
+#ok_flag
+     alternative "Отображение номеров"
+msgbox text "Укажите способ отображения"
+"Номеров на объектах сцены"
+     done
+     "Центр лицевого торца"
+     "Габаритный центр"
+	 "Габаритный центр на выноске"
+     "На плоскости панели"
+	 "Вокруг сцены Vis"
+	 "Вокруг сцены"
+     "Отмена"
+	 done;
+If (!IsAttrdef("NumHolder")) {
+	Attribute Create "NumHolder" "UitPos которому относится номер" Real 5 0 ;
+}
+If (!IsAttrdef("NmMacNums")) {
+	Attribute Create "NmMacNums" "Имя макроса нумерации " string 20 20 ;
+}
+If (!IsAttrdef("FT_Holder")) {
+	Attribute Create "FT_Holder" "FurnType родителя " string 20 20 ;
+}
+
+if ok_flag==2 {
+	gosub sDelNum;
+	macro ProtoPath+"draw_num2.mac" NameAtrPos 0;
+	result=1;
+	goto endlab;
+}
+if ok_flag==3 {
+	gosub sDelNum; 
+	macro ProtoPath+"draw_num2.mac" NameAtrPos 1;
+	result=1;
+	goto endlab;
+}
+if ok_flag==4 {
+	gosub sDelNum;
+	macro ProtoPath+"draw_num3noKarkas.mac" NameAtrPos;
+	result=1;
+   goto endlab;
+}
+if ok_flag==5 {
+	// if NameAtrPos!="CommonPos" {
+		// macro ProtoPath+"ShowSmartError.mac" "Атрибут для номера панели" 1 "Вариант работает только с атрибутом CommonPos. Текущее значение "+NameAtrPos done;
+		// cancel;
+	// }
+
+	a=fltrparamobj(1,61);  //-- Фильтр по мебельной панели
+	switch autosingle on;
+	onerror endlab;
+	select partly all ;
+	switch autosingle off;
+	offerror;
+	a=fltrparamobj(0);     //-- Выключили фильтр по мебельной панели
+	n=sysvar(61)
+	if (n==0) {
+		cancel;
+	}
+	numcount=0;
+	numstr="";
+	maxcount=80;
+	i=0;
+	lb1:
+	if i<n {
+		i=i+1;
+		num_v=getattr(getselnum(i),"Commonpos",-99.998);
+		// num_v=getattr(getselnum(i),"UDetNumber",-99.998);
+		if num_v>0 {
+			if inStr(1,numstr,str(num_v),1)==0 {
+				numstr=numstr+str(num_v)+"#";
+				numcount=numcount+1;
+				if numcount>maxcount {
+					macro ProtoPath+"ShowSmartError.mac" "Слишком много панелей" 1 "Этот вариант работает медленно и предназначен для схем сборок отдельных изделий. Установлено ограничение по числу различных номеров "+str(maxcount) done;
+					cancel;
+				}
+			}
+		}
+		goto lb1;
+	}
+	gosub sDelNum;
+	macro ProtoPath+"\\complexlabeldraw\\complexlabel.py" ;
+	result=1;
+	goto endlab;
+}
+if ok_flag==6 {
+	gosub sDelNum;
+	macro ProtoPath+"numframe\\SetNumFrame.mac" ;
+	result=1;
+   goto endlab;
+}
+if ok_flag==7 {
+   goto endlab;
+}
+autos:
+if ok_flag==1 {
+	gosub sDelNum;
+	macro ProtoPath+"draw_num1noKarkas.mac" NameAtrPos;
+	goto endlab;
+}
+endlab:
+	switch autosingle off;
+	a=fltrparamobj(0);     //-- Выключили фильтр по мебельной панели
+exit;
+//-----------------
+sDelNum:
+	selbyattr "NumType!="+str(-999) partly all done ;
+	g_delnum=iif(isvardef("g_delnum")==0,0,g_delnum);
+	if sysvar(61)>0&&g_delnum==0
+	{
+		//--  Удаляем старые номера объектов
+		delete partly previous done;
+	}
+return;

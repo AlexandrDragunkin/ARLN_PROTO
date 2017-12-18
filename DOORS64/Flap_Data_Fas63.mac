@@ -1,0 +1,449 @@
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+//-- программа установки индивидуальной створки дверной системы
+//-- Входные параметры:
+//-- X - ширина створки
+//-- Y - глубина установки
+//-- Z - высота створки
+//-- dz1 - Фаска по Z угла 1
+//-- dz2 - Фаска по Z угла 2
+//-- dz3 - Фаска по Z угла 3
+//-- dz4 - Фаска по Z угла 4
+//-- g_DRP - номер дверной системы (из таблицы DSSystemFlap базы данных DoorSys63.mdb)
+//--  g_CLTop ID  верхнего профиля (из таблицы DSFlapProfile базы данных DoorSys63.mdb)
+//-- g_CLDown ID  нижнего профиля  (из таблицы DSFlapProfile базы данных DoorSys63.mdb)
+//--  g_CLMid ID  разделительного профиля (из таблицы DSFlapProfile базы данных DoorSys63.mdb)
+//--  g_CLDer ID  декоративного профиля   (из таблицы DSFlapProfile базы данных DoorSys63.mdb)
+//--  g_CLVer ID  Вертикального профиля   (из таблицы DSFlapProfile базы данных DoorSys63.mdb)
+
+nullout=getvarinst(2,"Doors63",Doors63,"Doors63.zmc|");
+nullout=getvarinst(2,"Doors64",Doors64,"Doors64.zmc|");
+
+global ProtoPath ;
+// global g_MoveType;
+global g_DRP;
+global g_tab_place, g_keyDS63, g_Doorscon;
+defarr SqlArr[5];
+N_PB=1             //-- число профилей
+
+global
+       gs_FlMater           // -- материалы вставок
+       gs_FlOtdel           // -- материалы отделки вставки
+       gs_FlOtdelN          // -- Число отделок вставки
+       gs_FlNshp            // -- направление текстуры шпона вставок
+       ;
+
+getpar
+x  //-- X - ширина створки
+y  //-- Y - глубина установки
+z  //-- Z - высота створки
+dx1             //-- Фаска по X угла 1                            // |2              1|
+dz1
+dx2            //-- Фаска по X угла 2                            // |                |
+dz2
+dx3           //-- Фаска по X угла 3                            // |                |
+dz3
+dx4             //-- Фаска по X угла 4                            // |3______________4|
+dz4
+P_L            // 	Подрез слева
+P_R            // 	Подрез справа
+P_D            // 	Подрез снизу
+;
+
+//putmsg("Построение створки")
+
+DoorNS=1; // --Число вставок
+//================Проверяем и открываем доступ к базе=================================
+C_key=0
+if g_keyDS63!=1
+{
+   macro ProtoPath+"CrtSysDoor63.mac" ;
+   C_key=1 // Признак что база открыта в этом макро
+}
+//====================================================================================
+str_tab="SELECT * FROM DSSystemFlap WHERE (((DSSystemFlap.ID)="+str(g_DRP)+"));";
+FlapRs=adbOpen(g_Doorscon,str_tab);
+ij=adbRecCount(FlapRs);
+if (ij<1)
+{
+  errcode="err62 FD63: Количество систем с ID "+str(g_DRP)+" равно "+str(ij);
+  ProfRs=adbClose(FlapRs);
+  gosub err1;
+  return;
+}
+NULLOUT=adbMoveFirst(FlapRs);
+MaxHeight=adbGetValue(FlapRs,"MaxHeight");
+MinHeight=adbGetValue(FlapRs,"MinHeight");
+MaxWidth=adbGetValue(FlapRs,"MaxWidth");
+MinWidth=adbGetValue(FlapRs,"MinWidth");
+
+FlapRs=adbClose(FlapRs)
+ 
+//-- Проверяем створку на соответствие диапазону
+if (x-P_L-P_R>MaxWidth)
+{
+  errcode="Ширина створки ("+str(x-P_L-P_R)+") больше допустимой ("+str(MaxWidth)+")";
+  gosub err;
+}
+if (x-P_L-P_R<MinWidth)
+{
+  errcode="Ширина створки ("+str(x-P_L-P_R)+") меньше допустимой ("+str(MinWidth)+")";
+  gosub err;
+}
+if (z-P_D>MaxHeight)
+{
+  errcode="Высота створки ("+str(z-P_D)+") больше допустимой ("+str(MaxHeight)+")";
+  gosub err;
+}
+if (z-P_D<MinHeight)
+{
+  errcode="Высота створки ("+str(z-P_D)+") меньше допустимой ("+str(MinHeight)+")";
+  gosub err;
+}
+nullout=getvarinst(1,"DoorKonst",DoorKonst,0); //-- Тип конструкции двери
+nullout=getvarinst(1,"FasDMat",FasDMat,1); // Материал панелей двери
+// nullout=getvarinst(1,"DoorMater",DoorMater,1); // Материал панелей двери
+DoorMater=FasDMat;
+nullout=getvarinst(1,"FasDTyp",FasDTyp,0); // тип фасада(рисунка)
+DoorPict=FasDTyp;
+nullout=getvarinst(1,"HandleType",HandleType,0); //-- Тип ручки
+nullout=getvarinst(1,"HandleX",HandleX,0); //-- Сдвиг ручки по x
+nullout=getvarinst(1,"HandleZ",HandleZ,0); //-- Сдвиг ручки по z
+nullout=getvarinst(1,"HandleA",HandleA,0); //-- Поворот ручки
+
+nullout=getvarinst(1,"ShCorDown",ShCorDown,100);
+nullout=getvarinst(1,"ShCorUp",ShCorUp,100);
+nullout=getvarinst(1,"ShCorSideL",ShCorSideL,50);
+nullout=getvarinst(1,"ShCorSideR",ShCorSideR,50);
+
+// // Корректора проверка
+// NULLOUT=getvarinst(2,"zcormax",zcormax,1920);
+// NULLOUT=getvarinst(2,"shcordrill",shcordrill,64);
+// zcor=z-ShCorUp-ShCorDown-2*shcordrill;
+
+// if zcor>zcormax
+// { 
+	// #ok_flag
+	// alternative "Предупреждение!"
+	// msgbox
+	// text
+	// center
+	// "Превышены максимально допустимые габариты корректора для фасада"
+	// "По высоте максимум - "+str(zcormax)+" мм. между креплениями"
+	// done
+	// "OK"
+	// done
+	// KeyCreate=0;	
+// }
+// else
+// {
+	nullout=setvarinst(1,"IsCreateCor",1);
+	KeyCreate=1;
+// }	
+
+// PS03=1;
+// nullout=setvarinst(1,"PS03",PS03); 
+nullout=getvarinst(1,"DoorPlace",DoorPlace,1); // Сторона открывания
+
+    macro ProtoPath+"MakeDoorWing.mac"
+		0,y,0, //-- Положение
+		x, z,   //-- Ширина и высота
+		0 0 0 0 //-- Увеличение фасада
+		DoorPlace                 // вариант расположения
+		DoorKonst               //  Тип конструкции двери
+                DoorMater,              //-- Материал панелей двери
+                DoorPict               // Тип фасада
+		HandleType,HandleX,HandleZ,HandleA;  //-- Тип ручки и параметры положения
+		
+// Используем простую установку. Через PutOnProfile.mac установка на профиля с дополнительными параметрами.
+// Но у нас нет профиля. Можно делать установку отрезка и ставить по нему.
+// Если для этого типа створок будет установка с фаской, то необходимо добавить.
+
+// Comment="ЦЕХ";
+
+// IDLock=4148; // ID стопора
+// IDFix=2546 // ID крепежа ролика 2546 - 4Х16 саморез с п.г.
+// shift=PriceInfo(DoorPict,"ShiftRoller",37,2);
+// // Нижние
+// IdAcces=5446;
+// FTAcces=040000;
+// ax=0;
+// az=0;
+// ax1=0;
+
+// 12572	Комплект роликов MEZZO для 1 двери 60 кг (2 верних + 2 нижних)	ROL-1260
+// 12573	Ролик нижний MEZZO
+// 12574	Ролик верхний MEZZO визуализация
+
+IdAcces=12573;
+FTAcces=040000;
+shift=37;
+ax=0;
+az=0;
+ax1=0;
+Name=PriceInfo(IdAcces,"MATNAME","Ролик")
+macro ProtoPath+"SetECod.mac" "3007";
+macro ProtoPath+"SetEnam.mac" Name;
+macro ProtoPath+"MakeAcce.mac" 
+IdAcces         //-- Тип комплектующих
+FTAcces	        //-- FurnType
+shift y -10	    //-- Положение начала локальной системы координат
+ax az ax1;	    //-- Углы поворота
+// attrobj attach "PrimM"  done last 1 Comment;
+
+macro ProtoPath+"MakeAcce.mac" 
+IdAcces         //-- Тип комплектующих
+FTAcces	        //-- FurnType
+x-shift y -10	    //-- Положение начала локальной системы координат
+ax az ax1;	    //-- Углы поворота
+// attrobj attach "PrimM" done last 1 Comment;
+
+// Name=PriceInfo(IDFix,"MATNAME","Саморез")
+// macro ProtoPath+"SetECod.mac" "3000";
+// macro ProtoPath+"SetEnam.mac" Name;
+
+// zx=5;
+// macro ProtoPath+"MakeFixer.mac" shift y zx 0 1 0 0 0 1 IDFix;
+// objident last 1 obj;
+// attrobj attach "PrimM" done obj Comment;
+// move obj done 0,0,0 copy 3;
+// macro ProtoPath+"MakeFixer.mac" x-shift y zx 0 1 0 0 0 1 IDFix;
+// objident last 1 obj;
+// attrobj attach "PrimM" done obj Comment;
+// move obj done 0,0,0 copy 3;
+// attrobj attach "PrimM" done last 8 Comment;
+
+// // Стопоры
+// Name=PriceInfo(IDLock,"MATNAME","Стопор")
+// macro ProtoPath+"SetECod.mac" "3007";
+// macro ProtoPath+"SetEnam.mac" Name;
+// macro ProtoPath+"MakeAcce.mac" 
+// IDLock         //-- Тип комплектующих
+// FTAcces	       //-- FurnType
+// shift y 0	   //-- Положение начала локальной системы координат
+// ax az ax1;	   //-- Углы поворота
+
+// // macro ProtoPath+"MakeAcce.mac" 
+// // IDLock         //-- Тип комплектующих
+// // FTAcces	        //-- FurnType
+// // x-shift y 0	      //-- Положение начала локальной системы координат
+// // ax az ax1;	    //-- Углы поворота
+
+// Верхние ролики
+Th=PriceInfo(DoorMater,"Thickness",16);
+IdAcces1=12572;
+IdAcces2=12574;
+FTAcces=040000;
+ax=0;
+az=0;
+ax1=180;
+
+Name=PriceInfo(IdAcces1,"MATNAME","Ролик");
+macro ProtoPath+"SetECod.mac" "3007";
+macro ProtoPath+"SetEnam.mac" Name;
+macro ProtoPath+"MakeAcce.mac" 
+IdAcces1         //-- Тип комплектующих
+FTAcces	        //-- FurnType
+shift y+Th/2 z	    //-- Положение начала локальной системы координат
+ax az ax1;	    //-- Углы поворота
+// attrobj attach "PrimM"  done last 1 Comment;
+
+macro ProtoPath+"MakeAcce.mac" 
+IdAcces2         //-- Тип комплектующих
+FTAcces	        //-- FurnType
+x-shift y+Th/2 z	    //-- Положение начала локальной системы координат
+ax az ax1;	    //-- Углы поворота
+// attrobj attach "PrimM"  done last 1 Comment;
+
+// IdAcces=12575;
+closertype=DbVar("closertype",0);
+Name=PriceInfo(IdAcces,"MATNAME","Доводчик");
+macro ProtoPath+"SetECod.mac" "3007";
+macro ProtoPath+"SetEnam.mac" Name;
+macro ProtoPath+"MakeAcce.mac" 
+closertype         //-- Тип комплектующих
+FTAcces	        //-- FurnType
+x/2 y+Th/2 z	    //-- Положение начала локальной системы координат
+ax az ax1;	    //-- Углы поворота
+
+// Name=PriceInfo(IDFix,"MATNAME","Саморез")
+// macro ProtoPath+"SetECod.mac" "3000";
+// macro ProtoPath+"SetEnam.mac" Name;
+// macro ProtoPath+"MakeFixer.mac"  shift y z-zx 0 1 0 0 0 1 IDFix;
+// objident last 1 obj;
+// attrobj attach "PrimM" done obj Comment;
+// move obj done 0,0,0 copy 3;
+// macro ProtoPath+"MakeFixer.mac"  x-shift y z-zx 0 1 0 0 0 1 IDFix;
+// objident last 1 obj;
+// attrobj attach "PrimM" done obj Comment;
+// move obj done 0,0,0 copy 3;
+
+
+// // Стопоры
+// Name=PriceInfo(IDLock,"MATNAME","Стопор")
+// macro ProtoPath+"SetECod.mac" "3007";
+// macro ProtoPath+"SetEnam.mac" Name;
+// macro ProtoPath+"MakeAcce.mac" 
+// IDLock         //-- Тип комплектующих
+// FTAcces	       //-- FurnType
+// shift y 0	   //-- Положение начала локальной системы координат
+// ax az ax1;	   //-- Углы поворота
+// //attrobj attach "PrimM"  done last 1 Comment;
+
+// // macro ProtoPath+"MakeAcce.mac" 
+// // IDLock         //-- Тип комплектующих
+// // FTAcces	        //-- FurnType
+// // x-shift y 0	      //-- Положение начала локальной системы координат
+// // ax az ax1;	    //-- Углы поворота
+
+// Установка корректоров
+if KeyCreate
+{
+	NULLOUT=getvarinst(2,"IDCorrector",IDCorrector,12431);
+	NULLOUT=getvarinst(2,"IDCorrector2",IDCorrector2,12431);
+	NULLOUT=getvarinst(2,"wcor",wcor,42);
+	NULLOUT=getvarinst(2,"IDFixChoke",IDFixChoke,2535);
+	NULLOUT=getvarinst(2,"Hzcor",Hzcor,95); // Высота замка
+	NULLOUT=getvarinst(2,"shcordrill",shcordrill,21.5);
+	zcor=z-ShCorUp-ShCorDown-2*shcordrill;	
+	
+	// OldK=0;
+	// if zcor<=1790 { IDCorr=IDCorrector; }
+	// else { IDCorr=IDCorrector2; OldK=1; }
+	
+	Hcor=z-ShCorDown-ShCorUp-2*Hzcor;
+	// step=150;
+	// Ns=ceil(Hcor/step);
+
+	box ShCorSideR-wcor/2 y ShCorDown, ShCorSideR+wcor/2 y z-ShCorUp, height 3 ;
+	attrobj Attach "ElemName" Done last 1 PriceInfo(IDCorrector,"MATNAME","Корректор");;
+	attrobj attach "FurnType" done last 1 "040000";
+	attrobj attach "UnitCode" done last 1 "3000";
+	attrobj attach "PriceID" done last 1 IDCorrector;
+	// attrobj attach "PrimM"  done last 1 Comment;
+
+	box x-(ShCorSideL-wcor/2) y ShCorDown, x-(ShCorSideL+wcor/2) y z-ShCorUp, height 3 ;
+	attrobj Attach "ElemName" Done last 1 PriceInfo(IDCorrector,"MATNAME","Корректор");;
+	attrobj attach "FurnType" done last 1 "040000";
+	attrobj attach "UnitCode" done last 1 "3000";
+	attrobj attach "PriceID" done last 1 IDCorrector;
+	// attrobj attach "PrimM"  done last 1 Comment;
+
+	if x>650
+	{
+		nd=2;
+		if x>=1000
+		{
+			nd=3;
+			box x/nd-wcor/2 y ShCorDown, x/nd+wcor/2 y z-ShCorUp, height 3 ;
+			attrobj Attach "ElemName" Done last 1 PriceInfo(IDCorrector,"MATNAME","Корректор");;
+			attrobj attach "FurnType" done last 1 "040000";
+			attrobj attach "UnitCode" done last 1 "3000";
+			attrobj attach "PriceID" done last 1 IDCorrector;
+		}
+		
+		box (nd-1)*x/nd-wcor/2 y ShCorDown, (nd-1)*x/nd+wcor/2 y z-ShCorUp, height 3 ;
+		attrobj Attach "ElemName" Done last 1 PriceInfo(IDCorrector,"MATNAME","Корректор");;
+		attrobj attach "FurnType" done last 1 "040000";
+		attrobj attach "UnitCode" done last 1 "3000";
+		attrobj attach "PriceID" done last 1 IDCorrector;
+		
+	}
+	
+	// // Саморезы на заглушку корректора
+	// if OldK==0
+	// {
+		// macro ProtoPath+"SetECod.mac" "3000";
+		// Name=PriceInfo(IDFixChoke,"MATNAME","Саморез 3х12")
+		// macro ProtoPath+"SetEnam.mac" Name;
+		// macro ProtoPath+"MakeFixer.mac"  ShCorSideR-wcor/2 y ShCorDown+Hzcor 0 1 0 0 0 1 IDFixChoke;
+		// objident last 1 obj;
+		// attrobj attach "PrimM"  done last 1 Comment;
+		// move obj done 0,0,step copy Ns;
+
+		// macro ProtoPath+"MakeFixer.mac"  ShCorSideR+wcor/2 y ShCorDown+Hzcor 0 1 0 0 0 1 IDFixChoke;
+		// objident last 1 obj;
+		// attrobj attach "PrimM"  done last 1 Comment;
+		// move obj done 0,0,step copy Ns;
+
+		// macro ProtoPath+"MakeFixer.mac"  x-(ShCorSideL-wcor/2) y ShCorDown+Hzcor 0 1 0 0 0 1 IDFixChoke;
+		// objident last 1 obj;
+		// attrobj attach "PrimM"  done last 1 Comment;
+		// move obj done 0,0,step copy Ns;
+
+		// macro ProtoPath+"MakeFixer.mac"  x-(ShCorSideL+wcor/2) y ShCorDown+Hzcor 0 1 0 0 0 1 IDFixChoke;
+		// objident last 1 obj;
+		// attrobj attach "PrimM"  done last 1 Comment;
+		// move obj done 0,0,step copy Ns;
+	// }
+	// else
+	// {
+		// macro ProtoPath+"SetECod.mac" "3000";
+		// IDFixChoke=2546;
+		// Name=PriceInfo(IDFixChoke,"MATNAME","Саморез SPAX-S 4.0x16 оц., потай. гол.")
+		
+		// macro ProtoPath+"MakeFixer.mac"  ShCorSideR-wcor/2 y ShCorDown+Hzcor 0 1 0 0 0 1 IDFixChoke;
+		// objident last 1 obj;
+		// attrobj attach "PrimM" done last 1 Comment;
+		// move obj done 0,0,step copy 11;
+		
+		// macro ProtoPath+"MakeFixer.mac"  x-(ShCorSideL+wcor/2) y ShCorDown+Hzcor 0 1 0 0 0 1 IDFixChoke;
+		// objident last 1 obj;
+		// attrobj attach "PrimM" done last 1 Comment;
+		// move obj done 0,0,step copy 11;
+	// }
+	
+}
+
+
+//====================================================================================
+if C_key==1
+{
+ macro ProtoPath+"ClosSysDoor63.mac";
+}
+exit;
+
+//==============================================================================
+//-- Вывод окна сообщения об ошибке
+//-- Входные параметры:
+//-- errcode - сод ошибки
+err1:
+// =g_CLTop
+// =g_CLDown
+// =g_CLMid
+// =g_CLDer
+// =g_CLVer
+// =g_CLVerR
+// =g_CLVerL
+// =g_DRP;
+
+#ok_flag
+     alternative "Ошибка базы данных Flap_Data_Fas63.mac"
+     msgbox text "Некорректно заполнена база данных систем дверей"
+     " "
+     errcode
+     done
+     "  OK  "
+     done;
+return;
+
+//==============================================================================
+//-- Вывод окна сообщения об ошибке
+//-- Входные параметры:
+//-- errcode - сод ошибки
+err:
+
+
+#ok_flag
+     alternative "Предупреждение"
+     msgbox text "Обратите внимание!"
+     " "
+     errcode
+     done
+     "  OK  "
+     done;
+return;

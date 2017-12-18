@@ -1,0 +1,55 @@
+//-- Добавление поперечной вешалки
+global ProtoPath ;
+global HoldName ; //-- Имя хозяина
+global UnitCode ; //-- Код изделия (текст)
+global ElemCode ; //-- Код изделия (текст)
+KarkasNumb=getcarcnumb(); //-- Порядковый номер каркаса в сцене
+
+getpar
+IdAcces         //-- Тип комплектующих
+NAcces	        //-- Не используется
+xn yn zn;	      //-- положение 0 локальной системы координат
+
+Отст=50;  //-- Отступ вешалки от края
+FurnType="040900";
+Namescr="ProtoParams";
+
+NULLOUT=getsnap();
+
+object_1=sysvar(60); //-- Кол-во объектов
+
+  accessory "040900" IdAcces  0 yes 0+2+384;
+  
+  objident last 1 Elem;
+  move nocopy Elem done xn yn zn ;
+
+NULLOUT=resnap();
+object_2=sysvar(60)-object_1; //-- Кол-во объектов
+if (object_2==0) //-- Нет объектов
+{
+  exit;
+}
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done Elem done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done Elem KarkasNumb;
+}
+// if (isattrdef("HoldName"))
+// {
+  // attrobj attach "HoldName" done Elem HoldName ;
+// }
+if len(ElemCode)>0
+{
+	attrobj attach "UnitCode" done Elem ElemCode ;
+}
+	//  attrobj attach "GroupID" done Elem 29 ; //-- 29 - Группа поперечных вешалок
+attrobj attach "XUnit" "YUnit" "ZUnit" done Elem 0 0 0 ; //-- Размеры детали
+
+//attrobj attach "FurnType" done Elem FurnType ;
+//-- Присваиваем атрибуты комплектующим
+macro ProtoPath+"CompAttr.mac" IdAcces 1 ;
+exit;

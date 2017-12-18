@@ -1,0 +1,196 @@
+// CalcBendDoorFs.mac
+//============================================
+// Драгункин Александр г.Дубна 2008 г.
+//============================================
+// Расчет параметров гибки створки фасадного полотна
+Global
+G_BendS    //параметр развертки
+sproem
+LSegBARC
+BpL
+BpR
+NewParam
+RadiusB    // Радиус
+AngleB     // Угол  гибки
+G_ust
+AngleBP
+AngleBL
+dWfas
+;  //macro ProtoPath+"CalcBendDoorFs.mac" 0 AngleBend W_pol Br Bl R_Fas L_Fas Door_Zw DOUD ;
+getpar
+NumVar // вариант работы программы       // 0 - по углу между касательными       // 1 - по заданному радиусу       // 2 - по стреле прогиба
+VarEx  // значение в соответствии с вариантом
+W_pol  // ширина фасадного полотна
+Bpl2   // длина линейного участка
+Bpl1   // длина линейного участка
+R_Fas L_Fas
+Door_Zw   //-- Зазор по ширине
+DOUD   //-- Признак двойной двери
+;
+//=========================
+defarr arr[4] xm[6];
+//=========================
+
+
+   gosub InitVAR;   // Вытаскиваем значения переменных из значений прототипа
+   gosub OrientVar; // Вычисляем параметры для гибки
+   gosub EdDoor;    // редактируем дверку
+   gosub DebugInfa;
+
+     //gosub Bend_D;    // Гнем дверку
+
+exit;
+
+//==============================
+//==============================SUB
+//==============================
+//==============================
+InitVAR: //Вытаскиваем значения переменных
+  R_Fas=0;	// + к фасаду справа	Размер 0
+  L_Fas=0;	// + к фасаду слева	Размер 0
+  G_ust=0;      // Глубина установки
+  dWfas=0
+
+  WFas=w_pol
+  BpL=Bpl1-L_Fas //Длины линейных участков
+  BpR=Bpl2-R_Fas //Длины линейных участков
+  delta=BpR-BpL           // разница длины линейных участков
+  Sproem=Wfas-R_Fas-L_Fas
+  if (DOUD==1) //-- Двойная дверь
+  {
+      WFasOld=int((W_Pol-Door_Zw)/2);
+      Alp1=(90-VarEx/2)
+      Alp=Alp1/2
+      WFasN=WfasOld/cos(radian(alp))
+      VarEx=90+VarEx/2                              // угол противолежащий длинной стороне симметричного треугольника
+      Wfas=WfasN                                    // длинная сторона  симметричного треугольника
+      SimAlp=(pi()-radian(VarEx))/2                 // величина острых углов симметричного треугольника
+      BsimKatet=Wfas*sin(SimAlp)/sin(radian(VarEx)) // длина стороны симметричного треугольника
+      Sproem=Wfas
+      if delta!=0
+      {
+          DeltaLong=Delta/(1+cos(radian(Alp1)))
+          DeltaCurt=DeltaLong*cos(radian(Alp1))
+          BlongKat=abs(BsimKatet+DeltaLong)
+          BcurtKat=abs(BsimKatet-DeltaCurt)
+          Sproem=sqrt(BlongKat*BlongKat+BcurtKat*BcurtKat-2*BlongKat*BcurtKat*cos(radian(VarEx)))
+
+          AngleBP1=asin(BcurtKat*sin(radian(VarEx))/Sproem)
+          AngleBl1=Pi()-AngleBP1-radian(VarEx)
+          gosub DebugInfa1;
+
+      }
+      if delta==0
+      {
+          AngleBP1=0
+          AngleBP1=0
+      }
+  }
+  else    //-- одинарная дверь
+  {
+
+          AngleBP1=0
+          AngleBP1=0
+
+  }
+
+
+
+  
+return;
+//==============================
+OrientVar: // Вычисляем параметры для гибки
+  // стартовая инициализация
+  xp1=0 yp1=0 zp1=0 xp2=0 yp2=0 zp2=0 xp3=0 yp3=0 zp3=0 // Параметры положения оси  и плоскости гибки
+  RadiusB=0  // Радиус
+  AngleB=0   // Угол  гибки
+  
+  // допинициализация
+  AngleBP=0  // Угол  линейного участка  справа
+  AngleBL=0  // Угол  линейного участка  слева
+  
+  // Вычисляем в соответствии с вариантом задания NumVar - вариант работы программы
+ if NumVar==0 { //по углу между касательными
+    AngleB=180-VarEx   // Угол  гибки
+
+    // Длины катетов треугольника с основанием  Sproem и углом при вершине VarEx
+    // Находим решая квадратное уравнение
+    Ckf=(-1)*(Sproem*Sproem-delta*delta)/(1-cos(radian(VarEx)))  // коэффициент С для уравнения
+    Bcf=2*Delta                                                  // Коэффициент  B для уравнения
+    BRKat=abs(-Bcf-sqrt(Bcf*Bcf-4*2*Ckf))/4                      // правый катет
+    BLKat=abs(-Bcf+sqrt(Bcf*Bcf-4*2*Ckf))/4                      // левый катет
+    //
+    AngleBP=asin(BLKat*sin(radian(VarEx))/Sproem)
+    AngleBL=Pi()-AngleBP-radian(VarEx)
+
+    LSegBend=sqrt(2*(BRKat-BpR)*(BRKat-BpR)*(1-cos(radian(varEx))))   //Sproem-(BpL*cos(AngleBL))-(BpR*cos(AngleBP)); //Длина хорды дуги
+    
+    RadiusB=LSegBend/(2*sin(radian(AngleB)/2));             // радиус гибки
+    
+    LSegBARC=RadiusB*radian(AngleB);                       // длина дуги
+ }
+ if NumVar==1 { //по заданному радиусу
+    RadiusB=VarEx
+     putmsg("В данный момент вариант по радиусу не реализван!",0);
+     cancel ;
+    // Проверяем значение радиуса
+    if RadiusB==0 {
+       putmsg("Задан радиус равный 0!",0);
+       cancel;
+    }
+    if RadiusB<((Sproem+BpL+BpR)/2) {
+       putmsg("Задан радиус меньше допустимого!("+str((Sproem+BpL+BpR)/2)+" мм)",0);
+       cancel;
+    }
+ }
+ if NumVar==2 { //по стреле прогиба
+ putmsg("В данный момент вариант по стреле прогиба не реализван!",0);
+ cancel ;
+ }
+return;
+//==============================
+EdDoor:    // редактируем дверку
+    G_BendS=LSegBARC+BpL+BpR+R_fas+L_fas
+    WFasOld=iif(isVarDef("WFasOld")!=0,WFasOld,0);
+    dWfas=G_BendS-WFasOld
+return;
+
+//=============================
+EditName:
+return;
+DebugInfa:
+#aaa alternative
+"Отладочная информация"
+msgbox default 1
+text center
+"G_Bends= "+str(G_Bends)
+"AngleB= "+str(AngleB)
+"RadiusB= "+str(RadiusB)
+"Sproem= "+str(Sproem)
+"delta= "+str(delta)
+"BRKat= "+str(BRKat)
+"BLKat= "+str(BLKat)
+"AngleBP= "+str(grad(AngleBP))
+"AngleBL= "+str(grad(AngleBL))
+"dWfas= "+str(dWfas)
+done
+"Ok"
+done;
+return;
+DebugInfa1:
+#aaa alternative
+"Отладочная информация"
+msgbox default 1
+text center
+"BLongKat= "+str(BlongKat)
+"BcurtKat= "+str(BcurtKat)
+"VarEx= "+str(Varex)
+"Sproem= "+str(Sproem)
+"BcurtKat*sin(radian(VarEx)/Sproem)= "+str(BcurtKat*sin(radian(VarEx))/Sproem)
+"AngleBP1= "+str(grad(AngleBP1))
+"AngleBL1= "+str(grad(AngleBL1))
+"Sproem= "+str(Sproem)
+done
+"Ok"
+done;
+return;

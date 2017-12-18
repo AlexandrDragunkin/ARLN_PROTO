@@ -1,0 +1,103 @@
+// VB35+7.5 (Сверловка одной стороны объекта)
+
+global NumFixMac;   // Для передачи количества из пользовательского макро
+NumFixMac=0;        // надо расчитать здесь
+
+getpar
+Lengh		// Длина стороны 
+IDHol		// ID отверстия
+XHol		// положение вдоль длины от начала
+YHol		// положение поперек длины
+ZHol		// положение внутрь панели ? может и не надо
+;
+LenPan=600	// Минимальный размер панели, на который ставится больше 2х крепежей (было 600)
+Tip1=1510	// Тип крепежа эксцентрика
+Tip2=1513	// Тип крепежа дюбеля
+Dx=60		// Расстояние до первого и последнего крепежа
+Lengh=round(Lengh,0.1)
+
+if Lengh<150 { Dx=30 }
+if Lengh>=150&&Lengh<=500 { Dx=50 }
+if Lengh>500 { Dx=100 }
+
+if Lengh>LenPan&&Lengh<=1000 { FixNum=3 }
+if Lengh>1000&&Lengh<=1700 { FixNum=4 }
+if Lengh>1700&&Lengh<=2200 { FixNum=5 }
+if Lengh>2200 { FixNum=6 }
+
+if Lengh<50
+{
+	exit;
+}
+
+if Lengh<100
+{
+	i=1;
+	IDHol[i]=Tip1 // Тип крепежа эксцентрик
+	XHol[i]=Lengh/2  // Положение первого крепежа
+	YHol[i]=0
+	zHol[i]=0
+
+	i=i+1;
+	IDHol[i]=Tip2 // Тип крепежа дюбель
+	XHol[i]=Lengh/2  // Положение первого крепежа
+	YHol[i]=0
+	zHol[i]=0
+
+	NumFixMac=i;
+	NumComm=NumFixMac/2;
+	exit;
+}
+
+i=1;
+IDHol[i]=Tip1 // Тип крепежа эксцентрик
+XHol[i]=Lengh-Dx  // Положение первого крепежа
+YHol[i]=0
+zHol[i]=0
+
+i=i+1;
+IDHol[i]=Tip2 // Тип крепежа дюбель
+XHol[i]=Lengh-Dx  // Положение первого крепежа
+YHol[i]=0
+zHol[i]=0
+
+
+i=i+1
+IDHol[i]=Tip1 // Тип крепежа эксцентрик
+XHol[i]=Dx  // Положение последнего крепежа
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip2 // Тип крепежа дюбель
+XHol[i]=Dx  // Положение последнего крепежа
+YHol[i]=0
+zHol[i]=0
+
+// "Серединные" крепежи
+if round(Lengh,0.1)>LenPan {
+	// Расчет количества и расстояний
+	Dist=(Lengh-Dx*2)/(FixNum-1); // Расстояние между крепежами расчетное
+	FixNum=FixNum*2
+
+	cycle:
+	if i<FixNum
+	{
+		i=i+1
+		IDHol[i]=Tip1 // Тип крепежа эксцентрик
+		XHol[i]=XHol[i-1]+Dist  // Положение крепежа
+		YHol[i]=0
+		zHol[i]=0
+
+		i=i+1
+		IDHol[i]=Tip2 // Тип крепежа дюбель
+		XHol[i]=XHol[i-2]+Dist // Положение крепежа
+		YHol[i]=0
+		zHol[i]=0
+
+		goto cycle;
+	}
+}
+NumFixMac=i;
+NumComm=NumFixMac/2;
+exit;

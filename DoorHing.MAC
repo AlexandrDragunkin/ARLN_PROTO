@@ -1,0 +1,146 @@
+global ProtoPath;
+
+global DoorHinge  // Петля тип
+       DoorInOu;  // Утопл, накл.
+global DoorMater;  //-- Материал фасада
+global DoorPict;   //-- Рисунок фасада
+global FsMater;
+
+
+GETPAR
+xn
+yn
+zn
+dx
+dz
+R_Fas L_Fas U_Fas D_Fas // Увел. фасада // Не используются
+variant
+;
+if (variant==0)||DoorHinge==0
+{
+  exit;
+}
+// Для ограничения для фасада типов петель храним в свойстве список допустимых петель и сверяем
+DefGood=PriceInfo(FsMater,"GoodID1",0,1);  //-- Читаем ID записи для свойств профилей
+nelem=PriceInfo(DefGood,"ListMat",0,2,"ArrID");
+if nelem>0
+{
+	// putmsg(ArrID)
+	hinge=priceinfo(DoorHinge,"NomID1",0,2);
+	// putmsg(hinge)
+	if findinarray(ArrID,hinge)==0
+	{
+		alternative "Предупреждение"
+		msgbox text center "Выбранная петля не соответствует"
+		" фасаду "+str(priceinfo(DoorPict,"NAME","COMPACT",2))+"!"
+		"Ставим без петель!"
+		done "ОК" done
+		exit
+	}
+}
+
+object_1=sysvar(60); // Кол-во объектов
+macro ProtoPath+"SetECod.mac" "7401" ;
+macro ProtoPath+"SetEnam.mac" "Петля" ;
+Macro ProtoPath+"MakeHing.mac" DoorHinge 1 xn  yn 0 0 0 0;
+
+kray=100; //-- Минимальный отступ петли от края створки
+
+object_2=sysvar(60)-object_1; // Кол-во объектов
+if object_2<=0 { exit; }
+
+#gr group last object_2 done;
+FurnType="004000";
+attrobj attach "FurnType" done last 1 FurnType ;
+attrobj attach "ElemName" done last 1 "Петля" ;
+
+KeyNHin=0;
+If (IsAttrdef("NHinges"))
+{
+  If (IsAssign("NHinges",0))
+  {
+    KHin=getattr(0,"NHinges",0);
+    if (KHin>1)
+    {
+      KHin=KHin-1;
+      KeyNHin=1;
+	  // putmsg(KeyNHin)
+	  // goto MDoors;
+    }
+  }
+}
+
+if (variant<3)
+{
+  hd=dz; SD=D_Fas; SU=U_Fas;
+}
+else
+{
+  hd=dx; SD=R_Fas; SU=L_Fas;
+}
+// putmsg(hd)
+hfas=hd+SD+SU;
+// putmsg(hfas)
+if (hfas<=320)					{ KHin=iif(KeyNHin==0,1,KHin); kray=48; }
+if (hfas>320)&&(hfas<=900)		{ KHin=iif(KeyNHin==0,1,KHin); kray=86; }
+if (hfas>900)&&(hfas<=1600)		{ KHin=iif(KeyNHin==0,2,KHin); kray=118; }
+if (hfas>1600)&&(hfas<=2000)	{ KHin=iif(KeyNHin==0,3,KHin); kray=118; }
+if (hfas>2000)					{ KHin=iif(KeyNHin==0,4,KHin); kray=118; }
+
+// rhd=hd-kray*2;
+// irhd=int(rhd/32)*32;
+// if (irhd<10)
+// {
+  // kray=int(hd/3);
+// }
+// else
+// {
+  // kray=(hd-irhd)/2;
+// }
+
+s1=kray-SD;
+s2=hd-(kray-SU);
+
+// putmsg(s1)
+// putmsg(s2)
+
+//------------------------------------------------------------------------------
+MDoors:
+sdz=int((s2-s1)/KHin+.1);
+sdz=(s2-s1)/KHin;
+// putmsg(sdz)
+if (variant==1)
+{
+  move gr done 0 0 s1+zn nocopy ;
+  move gr done 0 0 s2-s1+zn copy 1;
+  move gr done 0 0 sdz copy KHin-1 ;
+}
+if (variant==2)
+{
+  rotate gr done 2points xn  yn 0 xn  yn+1 0 180 nocopy ;
+  move gr done dx 0 s1+zn nocopy ;
+  move gr done 0 0 s2-s1+zn copy 1;
+  move gr done 0 0 sdz copy KHin-1 ;
+}
+if (variant==3)
+{
+  rotate gr done 2points xn  yn 0 xn  yn+1 0 -90 nocopy ;
+  move gr done s1 0 zn nocopy ;
+  move gr done s2-s1 0 zn copy 1;
+  move gr done sdz 0 0 copy KHin-1 ;
+}
+if (variant==4)
+{
+  // s2=dx-64
+  rotate gr done 2points xn  yn 0 xn  yn+1 0 90 nocopy ;
+  move gr done s1 0 zn+dz nocopy ;
+  move gr done s2-s1 0 0 copy 1 ;
+  move gr done sdz 0 0 copy KHin-1 ;
+}
+
+Alias=priceinfo(DoorHinge,"Alias","");
+nullout=getvarinst(1,"PrimMFas",PrimM,"");
+if len(PrimM)>0 { PrimM=PrimM+" /" }
+if len(PrimM)==0 { PrimM=" "; }
+nullout=setvarinst(1,"PrimMFas",PrimM+"Петля "+iif(len(Alias)>0,Alias+" ","")+str(KHin+1)+" шт. по "+str(hfas)+"  ");
+exit;

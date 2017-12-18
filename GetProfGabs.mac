@@ -1,0 +1,12 @@
+// Получить габариты профиля по ID
+// Arr[4] - массив (gabX,  gabY, minX, minY)
+
+getpar ProfId, Arr;
+
+NULLOUT=setprof6par(1,Arr);
+Arr[1]=ProfId;
+Arr[2]=0;
+NULLOUT=setprof6par(2,Arr);
+
+NULLOUT=getprof6par(6,Arr);
+exit;

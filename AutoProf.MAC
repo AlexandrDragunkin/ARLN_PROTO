@@ -1,0 +1,116 @@
+//-- Установка профиля по двум профилям
+global ProtoPath;
+
+defarr first[3] second[3], dir[3];
+defarr arr[15], arr1[6], arr2[6], arrin[28];
+
+NULLOUT=getvarinst(2,"DfProf",DfProf,0);   //-- ID текущего профиля
+
+x1=0;
+y1=0;
+z1=0;
+NULLOUT=InitArray(arrin,0);
+onerror final1;
+newprof1:   //========================================
+switch autosingle on;
+selbyattr "(Left(FurnType,2)==\"02\")||iif(IsAssign(\"Posit\"),Posit==39,1)"  // (Left(FurnType,2)==\"02\")||iif(IsAssign(\"Posit\"),Posit==39,1)
+  prompt "Укажите первый профиль:" : ;
+switch autosingle off;
+if (sysvar(61)==0)
+{
+  exit;
+}
+point1=getselnum(1);
+//select stayblink getselnum(1);
+NULLOUT=InitArray(arr,0);
+arr[1]=point1;
+err=GetProf6Par(1,arr);    //-- Настраиваемся на профиль
+if (err!=1) {    // Не профиль
+  goto newprof1;
+}
+err=GetProf6Par(2,arr);    //-- Узнаем материал
+ID1=arr[1];  //  профиль
+IDCol1=arr[2];  //  цвет
+
+err=GetProf6Par(5,arr1);    //-- Узнаем форму
+if (arr1[1]!=0) {     // Не линейный
+  goto newprof1;
+}
+NULLOUT=getsnap();
+setucs lcs Point1 ;
+ptranscs(2,3,0.,0.,0.,arrin[13],arrin[14],arrin[15]);
+ptranscs(2,3,0.,0.,arr1[2],arrin[16],arrin[17],arrin[18]);
+NULLOUT=resnap();
+//select stayblink point1 done;
+
+newprof2:   //========================================
+switch autosingle on;
+selbyattr "(Left(FurnType,2)==\"02\")||iif(IsAssign(\"Posit\"),Posit==39,1)"
+  prompt "Укажите второй профиль:" : ;
+switch autosingle off;
+if (sysvar(61)==0)
+{
+  select point 1 done;
+  exit;
+}
+point2=getselnum(1);
+NULLOUT=InitArray(arr,0);
+arr[1]=point2;
+err=GetProf6Par(1,arr);    //-- Настраиваемся на профиль
+if (err!=1) {    // Не профиль
+  goto newprof1;
+}
+err=GetProf6Par(2,arr);    //-- Узнаем материал
+ID2=arr[1];  //  профиль
+IDCol2=arr[2];  //  цвет
+
+err=GetProf6Par(5,arr2);    //-- Узнаем форму
+if (arr2[1]!=0) {     // Не линейный
+  goto newprof2;
+}
+NULLOUT=getsnap();
+setucs lcs Point2 ;
+ptranscs(2,3,0.,0.,0.,arrin[19],arrin[20],arrin[21]);
+ptranscs(2,3,0.,0.,arr2[2],arrin[22],arrin[23],arrin[24]);
+NULLOUT=resnap();
+newprof3:   //========================================
+  arrin[1]=DfProf  //  ID текущего профиля
+  arrin[2]=10  // Шаг
+  arrin[3]=90  // Угол
+//arrin[4]=0  // Габариты, если нулевые - то расчет в коде по объекту
+//arrin[5]=0
+//arrin[6]=0
+//arrin[7]=0    // Сдвиг 0
+//arrin[8]=0
+//arrin[9]=0
+//  arrin[10]=ID1   // Id 1 профиля
+//  arrin[11]=ID2  // Id 2 профиля
+  arrin[10]=Point1   // hObj 1 профиля
+  arrin[11]=Point2  // hObj 2 профиля
+  arrin[12]=1   // режим установки по умолчанию
+  arrin[26]=1   //  Вектор нормали к плоскости параллальности (для режима 2)
+  arrin[27]=1   //
+  arrin[28]=1   //
+
+onerror final;
+NULLOUT=getsnap();
+  mbget "Укажите положение:" 2segment arrin arr  :
+//Line 0 0 0 arr[1] 0 0 ;
+macro ProtoPath+"SetProf.mac" DfProf arr[4]+arr[5] arr[8]+arr[9] 0 0 0;
+macro ProtoPath+"MakeProf.mac" 0 0 0  arr[1] 0 0;   // arr[1];   Длина
+//macro ProtoPath+"PutProf.mac" arr1 arr2 ;
+NULLOUT=ReSnap();
+//select stayblink point1, point2 done;
+
+exit;
+final:
+offerror;
+NULLOUT=ReSnap();
+final1:
+offerror;
+switch autosingle off;
+
+exit;
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+

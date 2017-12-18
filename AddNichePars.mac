@@ -1,0 +1,41 @@
+//-- Создание атрибута с габаритными координатами для ниши
+
+global ProtoPath;
+defarr xm[6];
+
+onerror end;
+switch autosingle on;
+selbyattr "IsAssign(\"FurnType\")" prompt "Укажите объект, который должен ограничивать нишу" : ;
+switch autosingle off;
+if (sysvar(61)==0)
+{
+  exit;
+}
+obj=getselnum(1);
+NULLOUT=getsnap();
+setucs lcs obj;
+NULLOUT=objgab3(obj,xm);
+#ok_flag
+setvar
+"Габариты ограничивающего объекта"
+""
+left
+"Определите габариты ограничивающего объекта"
+done
+real auto default xm[1] "XMin:"    xm[1]
+real auto default xm[2] "YMin:"    xm[2]
+real auto default xm[3] "ZMin:"    xm[3]
+real auto default xm[4] "XMax:"    xm[4]
+real auto default xm[5] "YMax:"    xm[5]
+real auto default xm[6] "ZMax:"    xm[6]
+done;
+NULLOUT=resnap();
+if (ok_flag==0)
+{
+	exit;
+}
+macro ProtoPath+"SetNichePars.mac" obj, xm[1], xm[2], xm[3], xm[4], xm[5], xm[6];
+end:
+offerror;
+switch autosingle off;
+exit;

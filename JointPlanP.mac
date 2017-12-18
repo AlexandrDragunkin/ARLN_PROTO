@@ -1,0 +1,50 @@
+//-- Прототип "Стыковой планки"
+global ProtoPath;
+global g_FurnType;    //-- Тип мебельного объекта
+global MacroSw;       //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+MacroSw=0;
+
+w=DbVar("w",330);               //-- Ширина
+d=DbVar("d",330);               //-- Глубина
+h=DbVar("h",330);               //-- Высота
+Angle=DbVar("Angle",90);        //-- Угол стыка
+//--------------------------------------
+ang=radian(90-Angle);                     //-- Угол планки в радианах
+wz=w-d*tan(ang);                          //-- Ширина планки сзади
+//--------------------------------------------------
+macro ProtoPath+"JointPlan.mac";
+//-- Линии контакта
+#L1 line 0 0 0 -50*cos(ang) -50*sin(ang) 0;
+attrobj attach "Contact" done L1 2;  //-- К нему справа
+#L1 line wz 0 0 wz+50 0 0;
+attrobj attach "Contact" done L1 5;  //-- К нему справа
+group all done;
+//-- Присваиваем атрибуты
+position=247;
+Namescr="ProtoParams";
+
+attrobj attach "Posit" done last 1 position;
+attrobj attach "Objtype" "PlaceType" done last 1 0 0;
+
+if (isassign("ElemName",0))
+{
+  attrobj copy record "ElemName" done last 1 done;
+}
+else
+{
+  attrobj attach "ElemName" done last 1 "Стыковая планка";
+}
+if (isassign("HoldName",0))
+{
+  attrobj copy record "HoldName" done last 1 done;
+}
+if (isassign("UnitName",0))
+{
+  attrobj copy record "UnitName" done last 1 done;
+}
+attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 w d h; //-- Размеры стыковой планки
+
+attrobj attach "Assembly" done last 1 1;   //-- Добавим атрибут сборочной единицы
+attrobj copy record Namescr done last 1 done;
+attrobj attach "FurnType" done last 1 g_FurnType;
+exit;

@@ -1,0 +1,42 @@
+//-- Макропрограмма установки параметров прототипа распашная дверь умолчаниями пользователя
+
+//--- считываем умолчания пользователей
+NULLOUT=getvarinst(2,"Typ_Kro",Typ_Kro,0);          //-- Тип лицевой кромки
+NULLOUT=getvarinst(2,"PrMater",PrMater,0);          //-- Умолчание для материалов корпуса
+NULLOUT=getvarinst(2,"FasDMat",FasDMat,0);          //-- Умолчание для материалов фасада двери
+NULLOUT=getvarinst(2,"DoorVsMater1",DoorVsMater1,0);//-- Умолчание для материалов первой вставки фасада двери
+NULLOUT=getvarinst(2,"DoorVsMater2",DoorVsMater2,0);//-- Умолчание для материалов второй вставки фасада двери
+NULLOUT=getvarinst(2,"FasDTyp",FasDTyp,0);          //-- Умолчание на тип фасада двери
+NULLOUT=getvarinst(2,"DfPetl",DfPetl,0);            //-- Умолчание на тип накладной петли
+NULLOUT=getvarinst(2,"DfHandl",DfHandl,0);          //-- Умолчание на тип ручки
+NULLOUT=getvarinst(2,"DNUp",DNUp,14);               //-- Нахлест накладной двери сверху
+NULLOUT=getvarinst(2,"DNDown",DNDown,14);           //-- Нахлест накладной двери снизу
+NULLOUT=getvarinst(2,"DNLeft",DNLeft,14);           //-- Нахлест накладной двери слева
+NULLOUT=getvarinst(2,"DNRight",DNRight,14);         //-- Нахлест накладной двери справа
+NULLOUT=getvarinst(2,"Door_Zw",Door_Zw,2);          //-- Зазор между двойными дверьми
+NULLOUT=getvarinst(2,"DrHandPlace",DrHandPlace,0);  //-- Расположение ручки
+NULLOUT=getvarinst(2,"DrHandDouble",DrHandDouble,0);//-- Две ручки
+NULLOUT=getvarinst(2,"DrHandX",DrHandX,0);          //-- Сдвиг ручки
+NULLOUT=getvarinst(2,"DrHandZ",DrHandZ,0);          //-- Высота установки ручки
+NULLOUT=getvarinst(2,"DrHandAngle",DrHandAngle,0);  //-- Угол установки ручки
+
+//--- устанавливаем эти умолчания в параметры прототипа "Распашная дверь"
+	dummy=DbSetVar("G",0);
+	dummy=DbSetVar("R_Fas",DNRight);
+	dummy=DbSetVar("L_Fas",DNLeft);
+	dummy=DbSetVar("U_Fas",DNUp);
+	dummy=DbSetVar("D_Fas",DNDown);
+	dummy=DbSetVar("PrMater",FasDMat);
+	dummy=DbSetVar("Fasrtype",FasDTyp);
+	dummy=DbSetVar("BAND",Typ_Kro);
+	dummy=DbSetVar("P_Type",DfPetl);
+	dummy=DbSetVar("HanType",DfHandl);
+	dummy=DbSetVar("Rpl_r",DrHandPlace);
+	dummy=DbSetVar("Doub_r",DrHandDouble);
+	dummy=DbSetVar("rx",DrHandX);
+	dummy=DbSetVar("rz",DrHandZ);
+	dummy=DbSetVar("ra",DrHandAngle);
+	dummy=DbSetVar("PrMatVs1",DoorVsMater1);
+	dummy=DbSetVar("PrMatVs2",DoorVsMater2);
+	dummy=DbSetVar("Door_Zw",Door_Zw);
+exit;

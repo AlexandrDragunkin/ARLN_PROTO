@@ -1,0 +1,5 @@
+//-- Макропрограмма установки типа гардеробной стойки
+global ProtoPath;
+getpar TypeStWard;
+NULLOUT=setvarinst(2,"TypeStWard",TypeStWard);	//-- Тип гардеробной стойки
+exit;

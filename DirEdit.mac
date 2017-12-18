@@ -1,0 +1,105 @@
+//-- Изменить направление текстуры (шпона, волокон) панели
+selbyattr "Posit==10" child all done;
+karkas_kol=sysvar(61);
+karkas_num=GetCarcNumb();
+if (karkas_kol==0)
+{
+ putmsg("Сначала надо создать мебельный каркас",0);
+ exit;
+}
+if (karkas_kol==1)
+{
+ #karkas MBCarcase set yes;
+}
+if (karkas_kol>1&&karkas_num==0)
+{
+ #karkas MBCarcase set no yes :
+} 
+
+global ProtoPath;
+global pnt, iPNT;
+
+#ok_flag
+setvar
+"Изменить направление текстуры"
+""
+left
+"Определите параметры замены"
+done
+
+str listonly current
+		"Отсутствует"
+	  "Вдоль длины"
+		"Поперек длины"
+		"По углу"
+done
+"Направление текстуры:"			DirType
+real     default 0  "Угол:"		ugol
+str listonly current
+		"По указанию"
+		"Все панели"
+		"Все полки"
+		"Все стойки"
+		"Все врезные стенки"
+		"Все накладные стенки"
+		"Все, кроме накладной стенки"
+	  "Только стандартные панели"
+done
+"Способ замены:"    S_zam
+done;
+if (ok_flag==0)
+{
+  exit;
+}
+if (DirType=="Отсутствует")
+{
+  E_col=-1;
+}
+if (DirType=="Вдоль длины")
+{
+  E_col=0;
+}
+if (DirType=="Поперек длины")
+{
+  E_col=90;
+}
+if (DirType=="По углу")
+{
+  E_col=ugol;
+}
+macro Protopath+"ChgSel.mac" S_zam;
+//-------------------------------------------------------
+if (S_zam=="По указанию")
+{
+  Loop:
+  a=fltrparamobj(1,61);  //-- Фильтр по мебельной панели
+  switch autosingle on;
+  onerror final;
+  select partly : ;
+  switch autosingle off;
+  offerror;
+  a=fltrparamobj(0);     //-- Выключили фильтр по мебельной панели
+  if (sysvar(61)==0)
+  {
+    exit;
+  }
+  pnt1=getselnum(1);
+  MBPanel item pnt1 2 E_col 0 ;
+  goto Loop;
+}
+else
+{
+  i=0;
+  LoopAll:
+  if (i<iPNT)
+  {
+    i=i+1;
+    pnt1=pnt[i];
+    MBPanel item pnt1 2 E_col 0 ;
+    goto LoopAll;
+  }
+}
+final:
+switch autosingle off;
+a=fltrparamobj(0);     //-- Выключили фильтр по мебельной панели
+exit;

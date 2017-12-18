@@ -1,0 +1,49 @@
+//-- Макропрограмма изменяет имя объекта
+onerror final;
+switch autosingle on;
+select prompt "Укажите объект, у которого нужно изменить имя" wholly : ;
+switch autosingle off;
+offerror;
+OBJ1=getselnum(1);
+
+FT=getattr(OBJ1,"FurnType","");
+//-- Для изделий - устанавливаем UnitName
+if (left(FT,2)=="10"&&(mid(FT,3,1)=="0"||mid(FT,3,1)>"2"))
+{
+  name="UnitName";
+  defa="Изделие";
+}
+else  //-- Для всего остального - ElemName
+{
+  name="ElemName";
+  defa="Элемент";
+}
+n=getattr(OBJ1,name,defa);
+#ok_flag
+setvar
+"Изменить имя объекта"
+""
+left
+"Введите имя объекта"
+done
+string size max(len(n),15) default n 
+list
+"Полка"
+"Стойка"
+"Стенка"
+"Боковина"
+"Крыша"
+"Дно"
+done
+"Имя объекта:" n
+done;
+if (ok_flag==0)
+{
+  exit;
+}
+attrobj attach name done partly OBJ1 n;
+
+final:
+switch autosingle off;
+
+exit;

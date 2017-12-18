@@ -1,0 +1,135 @@
+//stDraw5.mac
+//
+//============================================
+// (c) Драгункин Александр г.Дубна 2007 г.
+//============================================
+//создание заготовки чертежа плоского длинномера
+//
+//
+//
+//
+global L_SUPPORT ;
+global
+Idkrom
+Ukas
+ElUkas
+CurentNum //текущий номер обрабатываемой столешницы
+CurentMat
+CBDPAth
+ProtoPath
+;
+
+NULLOUT=GetSnap();
+
+
+defarr xm[6] ;
+defarr arr1[4] arr2[4] arr3[4] arr4[4];
+
+
+TypLS=7
+TipLO=0
+WidthLS=0.2
+WidthLS=0.4
+   If (!IsAttrdef("LongSTx"))  {
+      Attribute Create "LongSTx" "Параметр X в ЛСК длинномера" Real 12 5  ;
+   }
+   If (!IsAttrdef("LongSPN"))  {
+      Attribute Create "LongSPN" "Параметр номер куска длинномера" Real 5 0  ;
+   }
+   If (!IsAttrdef("PriceID"))  {
+      Attribute Create "PriceID" "Номер материала в библиотеке" Real 7 0  ;
+   }
+   If (!IsAttrdef("LongSKN"))  {
+      Attribute Create "LongSKN" "Параметр признак контура куска" Real 5 0  ;
+   }
+   If (!IsAttrdef("DwChainLoc")) {
+      Attribute Create "DwChainLoc" "Принадлежность цепочке" Real 5 0 ;
+   }
+//Укажите  длинномер
+//objident   :  pnt ;
+getpar
+pnt
+;
+//Result=SetLongObj(pnt);
+//CurMat=GetLongMat();
+
+select all ;
+N=sysVar(61) ;
+if N>1 { Invisible all remove pnt ; }
+//vimage off ;
+                                           //погасили все кроме объекта интереса
+setucs lcs pnt;                            //перешли в локалку куска
+ChLoc=GetAttr(pnt,"ChainLoc",-1) ;
+=ObjGab3(pnt,xm) ;
+
+//начало координат должно совпадать с началом габаритов проверяем и сдвигаем.
+if (xm[1]<0)||(xm[2]<0) {
+   setucs move xm[1] xm[2] 0 ;
+  Nulout=ObjGab3(pnt,xm) ;
+  //=xm[1] =xm[2] =xm[4] =xm[5]
+
+ }
+
+#pnts move pnt done 0 0 0 copy 1 ;         //копия плоского длинномера
+invisible pnt ;                            //гасим оригинал
+
+leng=xm[4]-xm[1]                          //определяем реальную длинну объекта
+Nob=Getcntobjg(pnts);                     //Количество объектов в группе
+
+if Nob>1 {
+    defarr Obpnt[Nob] ;                  //Массив для указателей на элементы группы
+   Nulout=GetArrObjg(pnts,Obpnt) ;            //Заполняем массив указателями
+    //Считываем атрибуты у элементов и извлекаем элемент имитирующий плиту столешницы
+    //Элемент не имеет атрибут PriceID
+    i=0
+    mets1:
+    i=i+1
+    if i<Nob&&IsAssign("PriceID",Obpnt[i]) {
+    goto mets1 ;
+    }
+    if !IsAssign("PriceID",Obpnt[i]) {
+       extract pnts Obpnt[i] done ;      //извлекаем элемент имитирующий плиту длинномера
+       }
+    delete pnts done ;                   //Удаляем остатки копии плоского длинномера
+    pnts=Obpnt[i]                        //переименовываем
+   Nulout=ObjGab3(pnts,xm) ;                  //измеряем
+}
+macro ProtoPath+"cutxyA.mac" pnts ;     //рассекли объект
+objident last 1 sec ;                   //присваиваем имя сечению
+//delete  pnts done ;                     //удаляем элемент имитирующий плиту длинномера
+
+TypSec=GetObjType(sec);                 //5-контур 7-группа
+if TypSec==7 {
+   objects=sysvar(60) ;
+   explode Sec done ;
+   objects=sysVar(60)-objects+1
+               If (IsAttrdef("LongSTx"))    { attrobj attach "LongSTx" done group last objects done xm[1] ;           }
+               If (IsAttrdef("LongSPN"))    { attrobj attach "LongSPN" done group last objects done 1 ;               }
+               If (IsAttrdef("PriceID"))    { attrobj attach "PriceID" done group last objects done CurentMat ;       }
+               If (IsAttrdef("LongSKN"))    { attrobj attach "LongSKN" done group last objects done CurentNum ;       }
+               If (IsAttrdef("ChainLoc"))   { attrobj attach "ChainLoc" done group last objects done Chloc ;          }
+}
+else {
+               If (IsAttrdef("LongSTx"))    { attrobj attach "LongSTx" done sec xm[1] ;           }
+               If (IsAttrdef("LongSPN"))    { attrobj attach "LongSPN" done sec 1 ;               }
+               If (IsAttrdef("PriceID"))    { attrobj attach "PriceID" done sec CurentMat ;       }
+               If (IsAttrdef("LongSKN"))    { attrobj attach "LongSKN" done sec CurentNum ;       }
+               If (IsAttrdef("ChainLoc"))   { attrobj attach "ChainLoc" done sec Chloc ;          }
+}
+
+TypPnts=GetObjType(pnts) ;              //5-контур 7-группа
+if TypPnts==7 {
+   objects=sysvar(60) ;
+   explode pnts done ;
+   objects=sysVar(60)-objects+1
+   If (IsAttrdef("DwChainLoc")) { attrobj attach "DwChainLoc" done group last objects done Chloc ;    }
+}
+else {
+               If (IsAttrdef("DwChainLoc")) { attrobj attach "DwChainLoc" done pnts Chloc ;    }
+}
+
+
+NULLOUT=ReSnap();
+
+exit;
+

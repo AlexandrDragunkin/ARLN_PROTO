@@ -1,0 +1,10 @@
+//-- Программа создания нового проекта
+//-- Пользователь может сюда добавить свои настройки старта
+global ProtoPath;
+mbnewproject 0;
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами 
+macro ProtoPath+"UserAttrs.mac" ; //-- Здесь собраны пользовательские атрибуты
+mbcarcase parameter :
+macro ProtoPath+"SetInit.mac" ; //-- Временно. потом убрать
+macro ProtoPath+"GlobalTMP.mac" ; //-- Временно. потом убрать
+exit;

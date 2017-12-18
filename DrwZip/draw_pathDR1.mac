@@ -1,0 +1,2589 @@
+//-- Макропрограмма чертежа панели.
+//-- Универсальная панель
+//-- Начальная инициализация переменных
+Global ProtoPath, g_base, g_chb, g_chc, g_chd, g_che, g_lz, g_stoi, g_begdraw, g_lza, g_band, g_grp, g_grr;
+global g_nbt, g_nbv, g_kbt, g_kbv, g_dbt, g_dbv, g_hbt, g_hbv, g_rbt, g_rbv, g_sbt, g_sbv, g_bus;
+global g_npt, g_npv, g_kpt, g_kpv, g_dpt, g_dpv, g_hpt, g_hpv, g_rpt, g_rpv, g_spt, g_spv, g_pus, g_upr;
+global g_dbp, g_hbp, g_xpp, g_ypp, g_dpp, g_glh;
+global coef, g_ov, g_stoi1;
+global g_h, g_w;
+global g_draw, g_draw1, g_table1, g_tablei1, g_table2, g_tablei2;
+global g_ip;
+NULLOUT=GetVarInst(2,"g_eps",g_eps,0.01); // Погрешность округления
+global g_DrawType Pl_SizeDet g_PanDir;
+// Умолчания для типов линий
+global
+TiLDef    // Толщина тонких линий (умолчание)
+TiLDet    // Толщина линий детали
+TiLPaz    // Толщина линий паза
+TiLKrom   // Толщина линий кромки
+TiLOs     // Толщина осевых линий
+TyLOs     // Тип осевых линий
+;
+
+txlead=0;   //-- Если ==1 - выводить размер на полочках-выносках в виде обычного текста (для особых извращенцев)
+cool=sysvar(40);
+lwidth TilDet;
+ltype 0;
+defarr temp[20] sid[3] tt2[6], sqlarr[20], str_arr[10] ;
+
+attan=0;
+cross=0;
+base=g_base;             //-- Базовый угол
+lz=g_lz;                 //-- Параметр размера символов и засечек
+
+stdisplay vi_approximation 0.01;
+
+chb=g_chb;
+chc=g_chc;
+chd=g_chd;
+che=g_che;
+sysv76=1;
+
+chdmax=1;
+chbmax=1;
+chemax=1;
+chcmax=1;
+if (chb==1&&g_ypp==1)
+{
+    chbmax=2;
+}
+if (chd==1&&g_ypp==1)
+{
+    chdmax=2;
+}
+
+radcount=0;
+dimcount=0;
+leadcount=0;
+begdraw=g_begdraw;
+ddw=0;
+vert=0;
+sysColor=sysvar(40)
+colrad=sysColor; //180;
+collead=sysColor;
+colvert=sysColor;
+colhor=sysColor;
+stoi=1;
+txtcorr=0;
+leadgroup=1;
+numobj=sysvar(60);
+defarr colomn[10], coltxt[10], Propsa[43];
+defarr gabs[6], objgeo[15];
+
+getpar UnitPos, PanPath, t, Band, Propil xp yp ;
+
+NULLOUT=objgab3(PanPath,gabs);
+sysarr(80,temp); // параметры текста
+theight temp[1];
+if (g_lza==1)
+{
+  lz=lz*max(max(gabs[4],gabs[5]),70)/70;
+  coef=lz/(2*temp[1]); // Это графический коэффициент тот самый который sysvar(76) был до 2012-04-07 
+
+//dimgcoeff coef; // был до 2012-04-07
+  grfcoeff coef; // теперь это локальный графический коеффициент с  2012-04-07
+  //putmsg(coef);
+}
+onerror metend;
+width=abs(gabs[4]-gabs[1]);
+height=abs(gabs[5]-gabs[2]);
+Pl_SizeDet=iif(g_PanDir!=2,str(round(width)),str(round(height)))+"x"+iif(g_PanDir!=1,str(round(width)),str(round(height)));
+
+//if (Type_pan==11||Type_pan==14)        //-- Если стойка или стенка - чертеж вертикальный
+//{
+//    stoi=g_stoi;
+//}
+//else
+//{
+//    stoi=0;
+//}
+
+//------------------------------------------------------------------------------
+//-- Инициализируем базы банных для размеров
+pathApp=MPathExpand("<appdata>")
+tab_place=pathApp+"\\AllDim.mdb";
+szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+tab_place;
+dimcon=adbCon(szSrc);
+//putmsg(dimcon);
+//------------------------------------------------------------------------------
+str_tab="DELETE * FROM radpar";
+radrs=adbModify(dimcon,str_tab);
+if (radrs!=0) { radrs=adbClose(radrs); }
+str_tab="DELETE * FROM dimpar";
+dimrs=adbModify(dimcon,str_tab);
+if (dimrs!=0) { dimrs=adbClose(dimrs); }
+str_tab="DELETE * FROM leadpar";
+leadrs=adbModify(dimcon,str_tab);
+if (leadrs!=0) { leadrs=adbClose(leadrs); }
+//------------------------------------------------------------------------------
+NULLOUT=getsnap();
+//------------------------------------------------------------------------------
+//-- Вычисление координат базы
+xf=gabs[1];   //-- Координаты угла на панели для установки размеров
+yf=gabs[2];
+mind=100000000; //-- Для сканера. Расстояние от базового угла до ближайшей точки
+if (base==1)
+{
+    xb=gabs[1];
+    yb=gabs[2];
+}
+if (base==2)
+{
+    xb=gabs[4];
+    yb=gabs[2];
+}
+if (base==3)
+{
+    xb=gabs[4];
+    yb=gabs[5];
+}
+if (base==4)
+{
+    xb=gabs[1];
+    yb=gabs[5];
+}
+//---------------------------------------------------------------------------------
+//-- Чертим геометрию панели
+//-- Сюда вставить анализ геометрии всех контуров
+zl1=0;
+zl2=0;
+z0=0;
+zc=0;
+zc1=0;
+zc2=0;
+rl=0;
+lnnn=sqrt((gabs[5]-gabs[2])*(gabs[5]-gabs[2])+(gabs[4]-gabs[1])*(gabs[4]-gabs[1]));
+if (getobjtype(PanPath)==5) //-- контур
+{
+  NumOb=getcntobjg(PanPath);
+  defarr npath[NumOb];
+  NULLOUT=getarrobjg(PanPath,npath);
+  i=1;
+  looi1:
+  el=npath[i];
+  gosub drawwww;
+  i=i+1;
+  if (i<=NumOb)
+  {
+    goto looi1;
+  }
+}
+if (getobjtype(PanPath)==3) //-- окружность
+{
+  el=PanPath;
+  gosub drawwww;
+}
+drwhol:
+//-- Образмериваем отверстия на торцах
+ddw=2;
+sd="D";
+ch=chd;
+gosub hole;        //-- Образмериваем отверстия по стороне D
+if (g_xpp==1)
+{
+  chdmax=chdmax+1;
+}
+ddw=2;
+sd="C";
+ch=chc;
+gosub hole;         //-- Образмериваем отверстия по стороне C
+if (g_ypp==1)
+{
+  chcmax=chcmax+1;
+}
+ddw=2;
+sd="E";
+ch=che;
+gosub hole;        //-- Образмериваем отверстия по сторне E
+if (g_xpp==1)
+{
+  chemax=chemax+1;
+}
+ddw=2;
+sd="B";
+ch=chb;
+gosub hole;       //-- Образмериваем отверстия по стороне B
+if (g_ypp==1)
+{
+  chbmax=chbmax+1;
+}
+ddw=0;
+//-----------------------------------------------------------------------------
+//-- Чертим кромки    (фигня тут написана)
+// указатель на кромки надо делать по каждому конкретному элементу в момент его отображения на экране
+leadgroup=0;
+if (g_band==-1000)
+{
+
+  xc=(gabs[4]+gabs[1])/2;
+  yc=gabs[2];
+  x0=xc+lz*sysv76;
+  y0=yc+lz*sysv76;
+  txt=PriceInfo(Band[3],"MATNAME","");
+  gosub leader;
+  xc=(gabs[4]+gabs[1])/2;
+  yc=gabs[5];
+  x0=xc-lz*sysv76;
+  y0=yc-lz*sysv76;
+  txt=PriceInfo(Band[4],"MATNAME","");
+  gosub leader;
+  yc=(gabs[5]+gabs[2])/2;
+  xc=gabs[1];
+  x0=xc+lz*sysv76;
+  y0=yc+lz*sysv76;
+  txt=PriceInfo(Band[1],"MATNAME","");
+  gosub leader;
+  yc=(gabs[5]+gabs[2])/2;
+  xc=gabs[4];
+  x0=xc-lz*sysv76;
+  y0=yc-lz*sysv76;
+  txt=PriceInfo(Band[2],"MATNAME","");
+  gosub leader;
+  txt="";
+}
+leadgroup=1;
+//------------------------------------------------------------
+//-- Образмериваем отверстия по сторонам A и F
+
+ddw=3;
+if g_DrawType=="A"
+{
+        sd="A"
+        gosub hole;
+        if (g_ypp==1)
+        {
+          chbmax=chbmax+1;
+        }
+        if (g_xpp==1)
+        {
+          chdmax=chdmax+1;
+        }
+}
+if g_DrawType=="F"
+{
+        sd="F"
+        gosub hole;
+        if (g_ypp==1)
+        {
+          chcmax=chcmax+1;
+        }
+        if (g_xpp==1)
+        {
+          chemax=chemax+1;
+        }
+}
+
+//------------------------------------------------------------------------------
+//-- Ставим размеры от угла до базы
+xl1=xb;
+yl1=yb;
+xl2=xf;
+yl2=yf;
+if (base==1||base==2)
+{
+  rl=-2*lz*sysv76;
+}
+else
+{
+  rl=2*lz*sysv76;
+}
+txt="<>";
+gosub hordim;
+gosub verdim;
+//------------------------------------------------------------------------------
+//-- Ставим габаритные размеры
+ddw=4;
+if (g_ypp==1)
+{
+  chbmax=chbmax+1;
+}
+if (g_xpp==1)
+{
+  chdmax=chdmax+1;
+}
+
+xl1=gabs[1];
+yl1=gabs[2];
+xl2=gabs[4];
+yl2=gabs[5];
+rl=-chdmax*lz*sysv76;
+txt="<>";
+gosub hordim;
+rl=-chbmax*lz*sysv76;
+gosub verdim;
+//------------------------------------------------------------------------------
+//-- Процедура обработки пропилов
+if (Propil!="")
+{
+  NULLOUT=splitbydelim(Propil,",",Propsa);
+  propn=Propsa[1] //-- Количество пропилов
+  jjj=0;
+  nextprop:
+  prop2=propsa[2+jjj];
+  prop3=propsa[3+jjj];
+  prop4=propsa[4+jjj];
+  prop5=propsa[5+jjj];
+  prop6=propsa[6+jjj];
+  prop7=propsa[7+jjj];
+  prop8=propsa[8+jjj];
+  gosub drawprop;
+  jjj=jjj+7;
+  if (jjj<=propn*7+1)
+  {
+  	goto nextprop;
+  }
+}
+//------------------------------------------------------------------------------
+lwidth TilOs;
+if (radrs!=0) { radrs=adbClose(radrs); }
+if (begdraw==1)
+{
+  gosub sparse;
+  gosub sparsedraw;
+}
+begdraw=0;
+if (dimrs!=0) { dimrs=adbClose(dimrs); }
+if (leadrs!=0) { leadrs=adbClose(leadrs);}
+//------------------------------------------------------------------------------
+nobjr=sysvar(60)-numobj;
+if nobjr!=0
+{
+        //#g_draw group last nobjr PanPath if (isvardef("g_draw")==16) { g_draw } done;
+        #g_draw group last nobjr if (isvardef("g_draw")==16) { g_draw } done;
+        NULLOUT=objgab3(g_draw,temp);
+        height=temp[5]-temp[2];
+        width=temp[4]-temp[1];
+}
+
+if (g_ov==1)
+{
+  if (g_stoi==1&&((g_h/g_w)>1&&(height/width)<1||(g_h/g_w)<1&&(height/width)>1))
+  {
+  //-- Если необходимо (размеры по ширине и по высоте не коррелируют с габаритами
+  //-- чертежа), поворачиваем его
+    stoi=1;
+    g_stoi1=1;
+    g_xb=xb;
+    g_yb=yb;
+	NULLOUT=getVarinst(2,"g_xb",g_xb,0);
+	NULLOUT=getVarinst(2,"g_yb",g_yb,0);
+  //  rotate g_draw done 2points xb,yb,0 xb,yb,10 -90 nocopy;
+  }
+  else
+  {
+    stoi=0;
+    g_stoi1=0;
+  }
+}
+g_ov=1;
+
+//------------------------------------------------------------------------------
+//-- Рисуем таблицу боковых отверстий
+hfil="holside=\"D\"OR holside=\"E\"OR holside=\"B\"OR holside=\"C\"";
+Str_tab="SELECT * FROM holespar WHERE UnitPos="+str(UnitPos)+" AND "+hfil;
+holesid=adbOpen(dimcon,str_tab);
+lwidth TilOs;
+ijt=adbRecCount(holesid);
+g_tablei1=0;
+nummm=sysvar(60);
+if (ijt>0)
+{
+  NULLOUT=adbMoveFirst(holesid);
+  if (stoi==1)
+  {
+  	xc=xb-chdmax*lz*sysv76-gabs[4];
+  	yc=yb-gabs[5]*(base==2||base==3);
+  }
+  else
+  {
+    xc=lz*15*sysv76;
+    yc=-(ijt+3+chdmax)*lz*sysv76;
+  }
+  curcol=0;
+  if (g_nbt==1)
+  {
+    curcol=curcol+1;
+    colomn[curcol]=3;
+    coltxt[curcol]="_N";
+  }
+  if (g_kbt==1)
+  {
+    curcol=curcol+1;
+    colomn[curcol]=5;
+    coltxt[curcol]="_X";
+    curcol=curcol+1;
+    colomn[curcol]=5;
+    coltxt[curcol]="_Y";
+  }
+  if (g_dbt==1)
+  {
+    curcol=curcol+1;
+    colomn[curcol]=5;
+    coltxt[curcol]="_%%c";
+  }
+  if (g_hbt==1)
+  {
+    curcol=curcol+1;
+    colomn[curcol]=5;
+    coltxt[curcol]="_h";
+  }
+  if (g_rbt==1)
+  {
+    curcol=curcol+1;
+    colomn[curcol]=17;
+    coltxt[curcol]="_        Крепеж";
+  }
+  if (g_sbt==1)
+  {
+    curcol=curcol+1;
+    colomn[curcol]=3;
+    coltxt[curcol]="стр";
+  }
+  colnum=curcol;
+  if (curcol>0)
+  {
+    gosub table;
+  }
+  ibc=1;
+  loobc:
+  ibc=ibc+1;
+  yc=yc+2*lz*sysv76/3;
+  curcol=0;
+  if (g_nbt==1)
+  {
+    curcol=curcol+1;
+    colomn[curcol]=3;
+    coltxt[curcol]=str(adbgetvalue(holesid,1));
+  }
+  if (g_kbt==1)
+  {
+    curcol=curcol+1;
+    xnn=adbgetvalue(holesid,8)
+    ynn=adbgetvalue(holesid,9)
+    if (base==1||base==4)
+    {
+      xnn=xnn-xb;
+    }
+    else
+    {
+      xnn=xb-xnn;
+    }
+    if (base==1||base==2)
+    {
+      ynn=ynn-yb;
+    }
+    else
+    {
+      ynn=yb-ynn;
+    }
+    coltxt[curcol]=str(int(xnn));
+    curcol=curcol+1;
+    coltxt[curcol]=str(int(ynn));
+  }
+  if (g_dbt==1)
+  {
+    curcol=curcol+1;
+    colomn[curcol]=5;
+    coltxt[curcol]=str(adbgetvalue(holesid,2));
+  }
+  if (g_hbt==1)
+  {
+    curcol=curcol+1;
+    colomn[curcol]=5;
+    coltxt[curcol]=str(adbgetvalue(holesid,3));
+  }
+  if (g_rbt==1)
+  {
+    curcol=curcol+1;
+    colomn[curcol]=17;
+    coltxt[curcol]=PriceInfo(adbgetvalue(holesid,4),"MATNAME","");
+  }
+  if (g_sbt==1)
+  {
+    curcol=curcol+1;
+    colomn[curcol]=3;
+    coltxt[curcol]=str(adbgetvalue(holesid,11));
+  }
+  colnum=curcol;
+  if (curcol>0)
+  {
+    gosub table;
+  }
+  if (ibc<=ijt)
+  {
+    NULLOUT=adbmovenext(holesid);
+    goto loobc;
+  }
+}
+NULLOUT=adbclose(holesid);
+nobjr=sysvar(60)-nummm;
+if (nobjr>0)
+{
+  #g_table1 group last nobjr done;
+  g_tablei1=1;
+}
+//------------------------------------------------------------------------------
+//-- Рисуем таблицу отверстий в пласти панели
+hfil="holside=\"A\" OR holside=\"F\"";
+Str_tab="SELECT * FROM holespar WHERE UnitPos="+str(UnitPos)+" AND "+hfil;
+holesid=adbOpen(dimcon,str_tab);
+ij=adbRecCount(holesid);
+g_tablei2=0;
+nummm=sysvar(60);
+if (ij>0)
+{
+//-- Рисуем координатные оси
+  st=stoi;
+  stoi=0;
+  if (g_npt+g_kpt+g_dpt+g_hpt+g_rpt+g_spt==0)
+  {
+  	goto rot;
+  }
+  if (base==1||base==2)
+  {
+  	ynx=-(chdmax+1.2)*lz*sysv76;
+  }
+  else
+  {
+  	ynx=gabs[5]+(chemax+1.2)*lz*sysv76;
+  }
+  xnx=xb;
+  llx=2*sysv76*lz;
+  if (base==2||base==3)
+  {
+  	llx=-llx
+  }
+  x0=xb;
+  y0=ynx;
+  yc=ynx;
+  xc=xb+llx;
+  txt="X";
+  collead=152;
+  gosub leader;
+  if (base==1||base==4)
+  {
+  	xnx=-(chbmax+1.2)*lz*sysv76;
+  }
+  else
+  {
+  	xnx=gabs[4]+(chcmax+1.2)*lz*sysv76;
+  }
+  ynx=yb;
+  llx=2*sysv76*lz;
+  if (base==4||base==3)
+  {
+  	llx=-llx
+  }
+  y0=yb;
+  x0=xnx;
+  xc=xnx;
+  yc=yb+llx;
+  txt="Y";
+  gosub leader;
+  collead=80;
+  stoi=st;
+  if (stoi==1)
+  {
+     rotate last 2 done 2points xb,yb,0 xb,yb,10 -90 nocopy;
+  }
+  add g_draw last 2 done;
+  rot:
+  NULLOUT=adbmovefirst(holesid);
+  if (stoi==1)
+  {
+    xc=xb-chdmax*lz*sysv76-gabs[5];
+    yc=yb+(ijt+3)*lz*sysv76-gabs[4]*(base==2||base==3);
+  }
+  else
+  {
+    xc=lz*15*sysv76;
+    yc=(chemax+3)*lz*sysv76+gabs[5];
+  }
+  curcol=0;
+  lwidth TilOs;
+  if (g_npt==1)
+  {
+    curcol=curcol+1;
+    colomn[curcol]=3;
+    coltxt[curcol]="_N";
+  }
+  if (g_kpt==1)
+  {
+    curcol=curcol+1;
+    colomn[curcol]=5;
+    coltxt[curcol]="_X";
+    curcol=curcol+1;
+    colomn[curcol]=5;
+    coltxt[curcol]="_Y";
+  }
+  if (g_dpt==1)
+  {
+    curcol=curcol+1;
+    colomn[curcol]=5;
+    coltxt[curcol]="_%%c";
+  }
+  if (g_hpt==1)
+  {
+    curcol=curcol+1;
+    colomn[curcol]=5;
+    coltxt[curcol]="_h";
+  }
+  if (g_rpt==1)
+  {
+    curcol=curcol+1;
+    colomn[curcol]=17;
+    coltxt[curcol]="_        Крепеж";
+  }
+  if (g_spt==1)
+  {
+    curcol=curcol+1;
+    colomn[curcol]=3;
+    coltxt[curcol]="стр";
+  }
+  colnum=curcol;
+  if (curcol>0)
+  {
+    gosub table;
+  }
+  ibc=1;
+  looaf:
+  ibc=ibc+1;
+  yc=yc+2*lz*sysv76/3;
+  curcol=0;
+  hold1=adbgetvalue(holesid,2);
+  holh1=adbgetvalue(holesid,3);
+  holxv=adbgetvalue(holesid,5);
+  holyv=adbgetvalue(holesid,6);
+  holzv=adbgetvalue(holesid,7);
+  holx=adbgetvalue(holesid,8);
+  holy=adbgetvalue(holesid,9);
+  holz=adbgetvalue(holesid,10);
+  sd=adbgetvalue(holesid,11);
+  if (g_npt==1)
+  {
+    curcol=curcol+1;
+    colomn[curcol]=3;
+    coltxt[curcol]=str(adbgetvalue(holesid,0));
+  }
+  if (g_kpt==1)
+  {
+    curcol=curcol+1;
+    xnn=adbgetvalue(holesid,8)
+    ynn=adbgetvalue(holesid,9)
+    if (base==1||base==4)
+    {
+      xnn=xnn-xb;
+    }
+    else
+    {
+      xnn=xb-xnn;
+    }
+    if (base==1||base==2)
+    {
+      ynn=ynn-yb;
+    }
+    else
+    {
+      ynn=yb-ynn;
+    }
+    coltxt[curcol]=str(int(xnn));
+    curcol=curcol+1;
+    coltxt[curcol]=str(int(ynn));
+  }
+  gosub afcheck;
+  if (g_dpt==1)
+  {
+    curcol=curcol+1;
+    colomn[curcol]=5;
+    coltxt[curcol]=str(holdd);
+  }
+  if (g_hpt==1)
+  {
+    curcol=curcol+1;
+    colomn[curcol]=5;
+    coltxt[curcol]=str(holhh);
+  }
+  if (g_rpt==1)
+  {
+    curcol=curcol+1;
+    colomn[curcol]=17;
+    coltxt[curcol]=PriceInfo(adbgetvalue(holesid,4),"MATNAME","");
+  }
+  if (g_spt==1)
+  {
+    curcol=curcol+1;
+    colomn[curcol]=3;
+    coltxt[curcol]=str(adbgetvalue(holesid,11));
+  }
+  colnum=curcol;
+  if (curcol>0)
+  {
+    gosub table;
+  }
+  if (ibc<=ij)
+  {
+    NULLOUT=adbmovenext(holesid);
+  	goto looaf;
+  }
+}
+NULLOUT=adbclose(holesid);
+
+nobjr=sysvar(60)-nummm;
+if (nobjr>0)
+{
+  #g_table2 group last nobjr done;
+  g_tablei2=1;
+}
+
+if isvardef("g_draw")&&(isvardef("g_table1")+isvardef("g_table2")>0)
+{
+	
+  #g_draw add g_draw if (isvardef("g_table1")==16) { g_table1 } if (isvardef("g_table2")==16) { g_table2 }  done;
+  
+}
+
+if (isvardef("DrillOsy")==16)
+{
+   #g_draw add g_draw  DrillOsy  done;
+}
+metend:
+offerror:
+lwidth 0.0;
+color cool;
+dimcon=iif(dimcon,adbDisCon(dimcon),0);
+NULLOUT=resnap();
+//putmsg(dimcon);
+exit;
+//==============================================================================
+//==================П О Д П Р О Г Р А М М Ы=====================================
+//==============================================================================
+drawwww:
+num=getobjgeo(el,objgeo);
+if (num==6) //-- Отрезок
+{
+  xl1=objgeo[1];
+  yl1=objgeo[2];
+  xl2=objgeo[4];
+  yl2=objgeo[5];
+}
+if (num==15) //-- Дуга
+{
+  rad=objgeo[1];
+  leng=rad*objgeo[15];
+  crit=min(gabs[5]-gabs[2],gabs[4]-gabs[1])/2.5;
+  txt="R"+str(int(rad));
+  gosub lmin;
+  xa=(objgeo[8]+objgeo[11])/2;
+  ya=(objgeo[9]+objgeo[12])/2;
+  xvp=xa-(gabs[4]+gabs[1])/2;
+  yvp=ya-(gabs[5]+gabs[2])/2;
+  xvc=xa-objgeo[5];
+  yvc=ya-objgeo[6];
+  sg=sgn(xvp*xvc+yvp*yvc);
+  x0=objgeo[5]-rad*cos(objgeo[14]+objgeo[15]/3);
+  y0=objgeo[6]-rad*sin(objgeo[14]+objgeo[15]/3);
+  xc=objgeo[5]+2*(x0-objgeo[5])*(sg>0&&attan==1);
+  yc=objgeo[6]+2*(y0-objgeo[6])*(sg>0&&attan==1);
+  //gosub raddim;
+  xl1=objgeo[8];
+  yl1=objgeo[9];
+  xl2=objgeo[11];
+  yl2=objgeo[12];
+  goto n15;
+}
+if (num==7) //-- окружность
+{
+  return;
+}
+//-- Отдельно образмериваем только наклонные отрезки и дуги
+//if ((abs(xl1-xl2)>g_eps||abs(xl1-xl2)>(gabs[4]-gabs[1])/3)&&(abs(yl1-yl2)>g_eps||abs(yl1-yl2)>(gabs[5]-gabs[2])/3))
+//{
+if ((abs(xl1-xl2)<(gabs[4]-gabs[1])/1.2)&&(abs(yl1-yl2)<(gabs[5]-gabs[2])/1.2))
+{
+  txt="<>";
+  if (((xl1+xl2)/2)>((gabs[4]+gabs[1])/2)) //-- Левый край
+  {
+    rl=lz*sysv76+gabs[4]-xl1;
+  }
+  else  //-- Правый край
+  {
+    rl=-lz*sysv76+xl1-gabs[1];
+  }
+  gosub verdim;
+  if (((yl1+yl2)/2)>((gabs[5]+gabs[2])/2)) //-- Передний край
+  {
+    rl=lz*sysv76+gabs[5]-yl1;
+  }
+  else  //-- Задний край
+  {
+    rl=-lz*sysv76+yl1-gabs[2];
+  }
+  gosub hordim;
+  goto ee;
+  n15:
+  if (num==15)
+  {
+    //-- Ставим осевую засечку (на дугах)
+    colcen=180;
+    if (abs(xl1-xl2)<g_eps)
+    {
+      xc1=xa-lz*sysv76;
+      yc1=ya;
+      xc2=xa+lz*sysv76;
+      yc2=ya;
+      gosub central;
+    }
+    if (abs(yl1-yl2)<g_eps)
+    {
+      xc1=xa;
+      yc1=ya-lz*sysv76;
+      xc2=xa;
+      yc2=ya+lz*sysv76;
+      gosub central;
+    }
+  }
+}
+ee:
+mn=sqrt((xl1-xb)*(xl1-xb)+(yl1-yb)*(yl1-yb));
+if (mn<mind)
+{
+  mind=mn;
+  xf=xl1;
+  yf=yl1;
+}
+mn=sqrt((xl2-xb)*(xl2-xb)+(yl2-yb)*(yl2-yb));
+if (mn<mind)
+{
+  mind=mn;
+  xf=xl2;
+  yf=yl2;
+}
+return;
+//-----------------------------------------------------------------------------------------------------
+//-- Проставляем радиус, и, если необходимо, центр
+//-- Входные параметры - txt, cross, attan, lmm, rad x0, y0, z0, xc, yc, zc
+//-- colrad - цвет
+raddim:
+if (txt=="")
+{
+  goto radfin;
+}
+if (lmm==0)
+{
+  return;
+}
+xn=lmm*(xc-x0)/rad+x0;
+yn=lmm*(yc-y0)/rad+y0;
+zn=lmm*(zc-z0)/rad+z0;
+
+color colrad;
+lwidth TilOs;
+dimtext 2 txt done;
+rdim 2points xn,yn,zn x0,y0,z0 ^x0,y0,z0;
+if (cross==1)               //-- Если необходимо, рисуем осевой крест
+{
+  xc1=xc;
+  yc1=yc-lz*sysv76;
+  zc1=zc;
+  xc2=xc;
+  yc2=yc+lz*sysv76;
+  zc2=zc;
+  colcen=colrad;
+  gosub central;
+  xl1=xc-lz*sysv76;
+  yl1=yc;
+  xl2=xc+lz*sysv76;
+  yl2=yc;
+  ltype 0;
+  gosub central;
+}
+dimtext 2 "<>" done;
+color cool;
+lwidth TilDet;
+radfin:
+return;
+//------------------------------------------------------------------------------
+//-- Определяем длину размерной линии
+//-- Входные параметры - rad, leng, crit, txt
+//-- Выходные параметры - lmm, cross, attan
+lmin:
+cross=0;
+attan=0;                         //-- Обратить внимание на длину размерной линии
+lmm=min(rad,leng);               //-- rad - радиус дуги. leng - длина дуги
+lmm=min(lmm,crit);               //-- crit - критерий, зависящий от геометрии детали
+ltxt=(len(txt)+3)*sysv76*lz/2;//-- lz/2 - Bысота символа размера
+if (lmm<ltxt)
+{
+  lmm=ltxt;
+}
+if (lmm>crit)
+{
+  attan=1;                    //-- Размерная линия определяется длиной текста
+}
+if (abs(lmm-rad)<g_eps)                   //-- Если длина размерной линии равна радиусу
+{
+  cross=1;                    //-- Необходимо нарисовать засечку центра
+}
+return;
+sUpgrXYp:
+        g_ip=g_ip+1
+		//putmsg(g_ip);
+
+		//putmsg(GetDimArray(xp));
+        xp[g_ip]=xl1, yp[g_ip]=yl1,
+        g_ip=g_ip+1
+		//putmsg(g_ip);
+        xp[g_ip]=xl2, yp[g_ip]=yl2
+return;
+//------------------------------------------------------------------------------
+//-- Простановка горизонтального размера
+//-- Входные парамеры:
+//-- координаты первой и второй точек xl1, yl1, zl1, xl2, yl2, zl2
+//-- Rl - расстояние (со знаком) от первой точки до размерной линии
+//-- colhor - цвет горизонтального размера
+//-- txt - размерный текст
+hordim:
+if (abs(xl1-xl2)<g_eps)
+{
+  return;
+}
+gosub sUpgrXYp;
+goto horfin;
+if (begdraw==1)
+{
+  vert=0;
+  gosub dimbase;
+  goto horfin;
+}
+color colhor;
+lwidth TilOs;
+dimtext 0 txt done;
+ldim 3ddim xl1,yl1,zl1 xl2,yl2,zl2 horizontal ^(xl1+xl2)/2,yl1+rl,(zl1+zl2)/2;
+dimtext 0 "<>" done;
+color cool;
+lwidth TilDet;
+horfin:
+return;
+//------------------------------------------------------------------------------
+//-- Простановка вертикального размера
+//-- Входные парамеры:
+//-- координаты первой и второй точек xl1, yl1, zl1, xl2, yl2, zl2
+//-- Rl - расстояние (со знаком) от первой точки до размерной линии
+//-- colvert - цвет вертикального размера
+//-- txt - размерный текст
+verdim:
+if (abs(yl1-yl2)<g_eps)
+{
+  return;
+}
+gosub sUpgrXYp;
+goto verfin;
+if (begdraw==1)
+{
+  vert=1;
+  gosub dimbase;
+  goto verfin;
+}
+color colvert;
+lwidth TilOs;
+dimtext 0 txt done;
+ldim 3ddim xl1,yl1,zl1 xl2,yl2,zl2 vertical ^xl1+rl,(yl1+yl2)/2,(zl1+zl2)/2;
+dimtext 0 "<>" done;
+color cool;
+lwidth TilDet;
+verfin:
+return;
+//------------------------------------------------------------------------------
+//-- простановка отверстий и их размеров.
+//-- Входные параметры:
+//-- sd - сторона, ch=0 - размеры цепочкой иначе от базы.
+//-- base - базовый угол,
+//-- sid[3] - массив с элементами стороны
+//-- База данных отверстий.
+hole:
+//hfil="holside=\""+sd+"\"";
+//putmsg("UnitPos"+str(UnitPos),1)
+dhfil=iif((sd=="A")||(sd=="F")," AND holh1<"+str(t)+" OR (UnitPos="+str(UnitPos)+" AND (holside=\"A\" Or holside=\"F\") AND holh1>="+str(t)+")","")
+hfil="holside=\""+sd+"\""+dhfil;
+         //SELECT * FROM holespar WHERE UnitPos="+str(UnitPos)+" AND "+hfil+" AND holh1<16 OR (UnitPos=32 AND (holside="A" Or holside="F") AND holh1>=16);
+xxbb="ABS("+str(xb)+"-holx), ABS("+str(yb)+"-holy)";
+Str_arr[1]="SELECT * FROM holespar WHERE UnitPos="+str(UnitPos);
+Str_arr[2]=" AND "+hfil;
+Str_arr[3]=" ORDER BY "+xxbb;
+holesid=adbOpen(dimcon,str_arr,3);
+ij=adbRecCount(holesid);
+jjj=0;
+if (ij==0)       //-- Если записей нет - выходим
+{
+  holesid=adbClose(holesid);
+  return;
+}
+NULLOUT=adbMoveFirst(holesid);
+//-- Устанавливаем начальные точки размеров
+if (sd=="C")
+{
+  yl2=yb;
+  xl2=gabs[4];
+}
+if (sd=="B")
+{
+  xl2=gabs[1];
+  yl2=yb;
+}
+if (sd=="E")
+{
+  xl2=xb;
+  yl2=gabs[5];
+}
+if (sd=="D")
+{
+  xl2=xb;
+  yl2=gabs[2];
+}
+if (sd=="A"||sd=="F")
+{
+  xca1=xb;
+  yca1=gabs[5];
+  xca2=gabs[1];
+  yca2=yb;
+}
+nexthole:
+//-- Читаем из базы
+holnum=adbGetValue(holesid,1);
+hold1=adbGetValue(holesid,2);
+holh1=adbgetvalue(holesid,3);
+holtypes=adbgetvalue(holesid,4);
+holxv=adbgetvalue(holesid,5);
+holyv=adbgetvalue(holesid,6);
+holzv=adbgetvalue(holesid,7);
+holx=adbgetvalue(holesid,8);
+holy=adbgetvalue(holesid,9);
+holz=adbgetvalue(holesid,10);
+
+if (sd=="A"||sd=="F")
+{
+  goto sdaf;
+}
+//-- Рисуем отверстие
+gosub drawhole;
+
+//-- Ставим размеры
+ddw=3;
+
+xl1=trx;
+yl1=try;
+
+if (sd=="C")
+{
+  rl=chcmax*lz*sysv76;
+}
+if (sd=="E")
+{
+  rl=chemax*lz*sysv76;
+}
+if (sd=="D")
+{
+  rl=-chdmax*lz*sysv76;
+}
+if (sd=="B")
+{
+  rl=-chbmax*lz*sysv76;
+}
+
+ltype 0;
+color cool;
+
+if (sd=="C"||sd=="B")
+{
+  txt="<>";
+  gosub verdim;
+  if (g_dbp==1)
+  {
+    ddw=1;
+    xlp=xl1;
+    ylp=yl1;
+    xll=xl2;
+    yll=yl2;
+    rlp=rl;
+    xl1=tex;
+    yl1=tey;
+    zl1=tez;
+    xl2=temp[4];
+    yl2=temp[5];
+    zl2=temp[6];
+    rl=TilDet*lz*sysv76;
+    if (sd=="C")
+    {
+      rl=-rl;
+    }
+    //dimtext 0 "%%c<>" done;
+    txt="%%c<>";
+    gosub verdim;
+    ltx=0.65*lz;
+    if ((gabs[5]-gabs[2])/2)<yl2)
+    {
+      ltx=-ltx;
+    }
+    //	dimedit last place ltx done;    //-- Потом вернуть
+    //dimtext 0 "<>" done;
+    xl1=xc1;
+    yl1=yc1;
+    zl1=zc1;
+    xl2=xc2;
+    yl2=yc2;
+    zl2=zc2;
+    rl=TilDet*lz*sysv76+hold1/2;
+    if (((gabs[5]-gabs[2])/2)<yl2)
+    {
+      rl=-rl;
+    }
+    txt="<>";
+    gosub hordim;
+    xl1=xlp;
+    yl1=ylp;
+    rl=rlp;
+    xl2=xll;
+    yl2=yll;
+    ddw=3;
+  }
+}
+else
+{
+  txt="<>";
+  gosub hordim;
+  if (g_dbp==1)
+  {
+    ddw=1;
+    xlp=xl1;
+    ylp=yl1;
+    xll=xl2;
+    yll=yl2;
+    rlp=rl;
+    xl1=tex;
+    yl1=tey;
+    zl1=tez;
+    xl2=temp[4];
+    yl2=temp[5];
+    zl2=temp[6];
+    rl=lz*sysv76/2;
+    if (sd=="E")
+    {
+      rl=-rl;
+    }
+    txt="%%c<>";
+    gosub hordim;
+    ltx=0.65*lz;
+    if (((gabs[4]+gabs[1])/2)<xl2)
+    {
+      ltx=-ltx;
+    }
+    xl1=xc1;
+    yl1=yc1;
+    zl1=zc1;
+    xl2=xc2;
+    yl2=yc2;
+    zl2=zc2;
+    rl=0.75*lz*sysv76+hold1/2;
+    if (((gabs[4]+gabs[1])/2)<xl2)
+    {
+      rl=-rl;
+    }
+    txt="<>";
+    gosub verdim;
+    xl1=xlp;
+    yl1=ylp;
+    xl2=xll;
+    yl2=yll;
+    rl=rlp;
+    ddw=3;
+  }
+}
+if (ch!=0)
+{
+  if (sd=="C")
+  {
+    chcmax=chcmax+1;
+  }
+  if (sd=="B")
+  {
+    chbmax=chbmax+1;
+  }
+  if (sd=="E")
+  {
+    chemax=chemax+1;
+  }
+  if (sd=="D")
+  {
+    chdmax=chdmax+1;
+  }
+}
+else
+{
+  xl2=xl1;
+  yl2=yl1;
+  zl2=zl1;
+}
+xc=holx;
+yc=holy;
+x0=holx+3*holh1*((holx<((gabs[4]+gabs[1])/2))*2-1);
+y0=holy+3*holh1*((holy<((gabs[5]+gabs[2])/2))*2-1);
+txt="";
+if (g_nbv==1)
+{
+  txt=txt+str(holnum);
+}
+if (g_kbv==1)
+{
+  xnn=holx;
+  ynn=holy;
+  if (base==1||base==4)
+  {
+    xnn=xnn-xb;
+  }
+  else
+  {
+    xnn=xb-xnn;
+  }
+  if (base==1||base==2)
+  {
+    ynn=ynn-yb;
+  }
+  else
+  {
+    ynn=yb-ynn;
+  }
+  txt=txt+" X="+str(int(xnn))+", Y="+str(int(ynn));
+}
+if (g_dbv==1)
+{
+  txt=txt+" %%c"+str(hold1);
+  txtcorr=2;
+}
+if (g_hbv==1)
+{
+//    txt=txt+" h="+str(holh1);
+  txt=txt+"x"+str(holh1);
+}
+if (g_rbv==1)
+{
+  txt=txt+" "+PriceInfo(holtypes,"MATNAME","");
+}
+if (g_sbv==1)
+{
+  txt=txt+" "+sd;
+}
+gosub leader;                   //-- Полочка-выноска от отверстия
+txtcorr=0;
+goto otvend;
+//------------------------------------------------------------------------------
+sdaf:
+ddw=3;
+gosub afcheck;
+
+xc1=holx;
+yc1=holy-holdd-1;
+xc2=holx;
+yc2=holy+holdd+1;
+colcen=60;
+gosub central;
+
+xc1=holx-holdd-1;
+yc1=holy;
+xc2=holx+holdd+1
+yc2=holy;
+gosub central;
+color 60;
+if (holhh<t&&sd=="F")
+{
+  ltype 1;
+  lwidth TilOs;
+  if (g_glh==1)
+  {
+    circle holx,holy,0 normal 0,0,1 holdd/3;
+    chprop grfcoef last done 0.01;
+  }
+}
+else
+{
+  ltype 0;
+  lwidth TilDet;
+}
+g_upr=iif((g_upr<0.0001),1,g_upr)
+circle holx,holy,0 normal 0,0,1 iif(holdd<15,(g_upr)*holdd/2,holdd/2);
+chprop grfcoef last done 0.01;
+
+ltype 0;
+lwidth TilOs;
+
+if (g_pus==1)
+{
+  us=PriceInfo(holtypes,"S1","");
+  if (len(us)>0)
+  {
+    append ProtoPath+us 2points 0,0,0 holx,holy,0;
+    scale last 1 done holx,holy,0 g_upr nocopy;
+  }
+}
+if isvardef("xl1")==0 { goto otvend; }
+if (g_xpp==1)
+{
+  xlp=xl1;
+  ylp=yl1;
+  xll=xl2;
+  yll=yl2;
+  rlp=rl;
+  xl2=holx;
+  yl2=holy;
+  xl1=xca1;
+  yl1=yca1;
+  if (sd=="A")
+  {
+    rl=-chdmax*lz*sysv76-yl1;
+  }
+  else
+  {
+    rl=chemax*lz*sysv76-yl1+gabs[5];
+  }
+  colhor=5;
+  txt="<>";
+  gosub hordim;
+  colhor=180;
+  if (g_chd!=0&&sd=="A")
+  {
+    chdmax=chdmax+1;
+  }
+  if (g_che!=0&&sd=="F")
+  {
+    chemax=chemax+1;
+  }
+  if (g_chd==0&&sd=="A"||g_che==0&&sd=="F")
+  {
+    xca1=xl2;
+    yca1=yl2;
+  }
+  xl1=xlp;
+  yl1=ylp;
+  xl2=xll;
+  yl2=yll;
+  rl=rlp;
+}
+if (g_ypp==1)
+{
+  xlp=xl1;
+  ylp=yl1;
+  xll=xl2;
+  yll=yl2;
+  rlp=rl;
+  xl2=holx;
+  yl2=holy;
+  xl1=xca2;
+  yl1=yca2;
+  if (sd=="A")
+  {
+    rl=-chbmax*lz*sysv76-xl1;
+  }
+  else
+  {
+    rl=chcmax*lz*sysv76-xl1+gabs[4];
+  }
+  if (g_chb==0&&sd=="A"||g_chc==0&&sd=="F")
+  {
+    rl=0.5*(sd=="A")-0.5*(sd=="F");
+    if (xl1!=xl2)
+    {
+      xl1=xl2;
+      yl1=yb;
+    }
+  }
+  colvert=5;
+  txt="<>";
+  gosub verdim;
+  colvert=180;
+  if (g_chb!=0&&sd=="A")
+  {
+    chbmax=chbmax+1;
+  }
+  if (g_chc!=0&&sd=="F")
+  {
+    chcmax=chcmax+1;
+  }
+  if (g_chb==0&&sd=="A"||g_chc==0&&sd=="F")
+  {
+    xca2=xl2;
+    yca2=yl2;
+  }
+  xl1=xlp;
+  yl1=ylp;
+  xl2=xll;
+  yl2=yll;
+  rl=rlp;
+}
+if (g_dpp==1)
+{
+  collead=10;
+  txt="%%c"+str(holdd);
+  xc=holx;
+  yc=holy;
+  x0=holx+3*holdd*((holx<((gabs[4]+gabs[1])/2))*2-1);
+  y0=holy+3*holdd*((holy>((gabs[5]+gabs[2])/2))*2-1);
+  txtcorr=2;
+  gosub leader;
+  txtcorr=0;
+  collead=80;
+}
+ltype 0;
+color cool;
+xc=holx;
+yc=holy;
+x0=holx+3*holdd*((holx<((gabs[4]+gabs[1])/2))*2-1);
+y0=holy+3*holdd*((holy<((gabs[5]+gabs[2])/2))*2-1);
+txt="";
+if (g_npv==1)
+{
+  txt=txt+str(holnum);
+}
+if (g_kpv==1)
+{
+  xnn=holx;
+  ynn=holy;
+  if (base==1||base==4)
+  {
+    xnn=xnn-xb;
+  }
+  else
+  {
+    xnn=xb-xnn;
+  }
+  if (base==1||base==2)
+  {
+    ynn=ynn-yb;
+  }
+  else
+  {
+    ynn=yb-ynn;
+  }
+  txt=txt+" X="+str(int(xnn))+" Y="+str(int(ynn));
+}
+if (g_dpv==1)
+{
+  txt=txt+" %%c"+str(holdd);
+  txtcorr=2;
+}
+if (g_hpv==1)
+{
+//    txt=txt+" h="+str(holh1);
+  txt=txt+iif(t>holhh,"x"+str(holhh),"");
+}
+if (g_rpv==1)
+{
+  txt=txt+" "+PriceInfo(holtypes,"MATNAME","");
+}
+if (g_spv==1)
+{
+  txt=txt+" "+sd;
+}
+gosub leader;
+txtcorr=0;
+
+otvend:
+eof=adbmovenext(holesid);
+jjj=jjj+1;
+
+if (jjj<ij)
+{
+  goto nexthole;
+}
+holesid=adbClose(holesid);
+ddw=3;
+return;
+//------------------------------------------------------------------------------
+afcheck:
+//-- Подпрограмма выдает диаметр и глубину отверстия в пласти панели
+//-- Выходные параметры:
+//-- holdd - диаметр отверстия
+//-- holhh - глубина отверстия
+
+holdd=hold1;
+holhh=holh1;
+return;
+//------------------------------------------------------------------------------
+leader:
+//-- Процедура рисования полочки-выноски с надписью
+//-- Входные параметры:
+//-- xc,yc,zc - координаты начала полочки-выноски
+//-- x0,y0,z0 - координаты конца полочки-выноски
+//-- txt - текст надписи
+//-- stoi==1 - чертеж вертикально
+//-- collead - цвет полочки - выноски
+//-- txtcorr - коррекция длины линии (из-за диаметров и пр.)
+//-- Leadgroup - нужно ли группировать полочки-выноски
+if (txt=="")
+{
+  goto leadfin;
+}
+
+if (stoi==1)
+{
+  if (y0>((gabs[5]+gabs[2])/2))
+  {
+    ybeg=y0-(sysv76*lz/2)*2;
+    yend=ybeg-(sysv76*lz/2)*(len(txt)-txtcorr);
+  }
+  else
+  {
+    ybeg=y0+(sysv76*lz/2)*2;//*(len(txt)-txtcorr);
+    yend=ybeg+(sysv76*lz/2)*(len(txt)-txtcorr);
+  }
+  xbeg=x0;
+  xend=xbeg+(sysv76*lz/2);
+}
+else
+{
+  if (x0>((gabs[4]-gabs[1])/2))
+  {
+    xbeg=x0-(sysv76*lz/2)*2;
+    xend=xbeg-(sysv76*lz/2)*(len(txt)-txtcorr);
+  }
+  else
+  {
+    xbeg=x0+(sysv76*lz/2)*2;//*(len(txt)-txtcorr);
+    xend=xbeg+(sysv76*lz/2)*(len(txt)-txtcorr);
+  }
+  ybeg=y0;
+  yend=ybeg+(sysv76*lz/2);
+}
+if (begdraw==1)
+{
+   gosub leadbase;
+   goto leadfin;
+}
+
+color collead;
+lwidth TilOs;
+
+if (txlead==0)
+{
+	dimtext 2 txt done;
+}
+else
+{
+  dimtext 2 "_" done;
+}
+rdim 2points x0,y0,z0 xc,yc,zc ^xc,yc,zc;
+rdim edit place leader ^x0,y0,z0 x0,y0,z0 xbeg,ybeg,z0 done;
+if (txlead==1)
+{
+	text txt done max(x0,xbeg),max(y0,ybeg),z0 min(x0,xbeg),min(y0,ybeg),z0;
+}
+dimtext 2 "<>" done;
+color cool;
+lwidth TilDet;
+leadfin:
+return;
+//------------------------------------------------------------------------------
+table:
+//-- Процедура рисует строку таблицы с заданным количеством столбцов
+//-- Входные параметры:
+//-- colnum - количество столбцов в таблице
+//-- colomn[colnum] - массив с длинами столбцов (в символах)
+//-- coltxt[colnum] - массив с текстами стpоки.
+//-- xc, yc - координаты верхнего левого края таблицы.
+//-- lz/2 - высота символа
+
+icol=1;
+lpos=0;
+tablloop:
+color 14
+rectangle xc-lpos*sysv76*lz/2,yc,0 xc-(colomn[icol]+lpos)*sysv76*lz/2,yc+2*lz*sysv76/3,0;
+//g_dx=0;
+//macro ProtoPath+"postext.mac" coltxt[icol];
+//g_dx=g_dx*lz/2;
+color 127;
+
+if (coltxt[icol]=="&&")
+{
+  us=PriceInfo(adbgetvalue(holesid,5),"S1","");
+  if (len(us)>0)
+  {
+    #uss append ProtoPath+us 2points 0,0,0 xc-(lpos+1)*sysv76*lz/2,yc+lz*sysv76/3,0;
+    scale uss done xc-(lpos+1)*sysv76*lz/2,yc+lz*sysv76/3,0 0.5*lz*sysv76/(max(ObjGab1(uss,1),ObjGab1(uss,2)/2)) nocopy;
+  }
+  coltxt[icol]="";
+}
+if (len(coltxt[icol])!=0)
+{
+  text coltxt[icol] done align xc-(lpos+TilOs)*sysv76*lz/2,yc+7*lz*sysv76/12,0 xc-(lpos+TilOs)*sysv76*lz/2-1,yc+7*lz*sysv76/12,0;
+}
+lpos=lpos+colomn[icol];
+icol=icol+1;
+if (icol<=colnum)
+{
+  goto tablloop;
+}
+color cool;
+return;
+//------------------------------------------------------------------------------
+radbase:
+//-- Занесение в базу данных  о радиусах
+
+radcount=radcount+1;
+sqlarr[4]=str(radcount)+", '"+txt+"', "+str(leng)+", "+str(crit)+", "+str(x0)+", ";
+sqlarr[5]=str(y0)+", "+str(z0)+", "+str(xn)+", "+str(yn)+", "+str(zn);
+sqlarr[6]=", "+str(cross);
+
+sqlarr[1]="INSERT INTO radpar (radnum, radtxt, radleng, radcrit, ";
+sqlarr[2]="radx0, rady0, radz0, radxn, radyn, radzn, radcross";
+sqlarr[3]=") VALUES ("
+sqlarr[7]=")";
+
+radrs=adbModify(dimcon,sqlarr,7);
+if (radrs!=0) { radrs=adbClose(radrs); }
+
+return;
+//------------------------------------------------------------------------------
+dimbase:
+//-- Занесение в базу данных информации о линейных размерах
+dimcount=dimcount+1;
+sqlarr[4]=str(dimcount)+", "+str(vert)+", "+str(ddw)+", \""+txt+"\", "+str(xl1)+", ";
+sqlarr[5]=str(yl1)+", "+str(zl1)+", "+str(xl2)+", "+str(yl2)+", "+str(zl2);
+sqlarr[6]=", "+str(rl);
+
+sqlarr[1]="INSERT INTO dimpar (dimnum, dimvert, dimweight, dimtxt, dimxl1, ";
+sqlarr[2]="dimyl1, dimzl1, dimxl2, dimyl2, dimzl2, dimrl";
+sqlarr[3]=") VALUES ("
+sqlarr[7]=")";
+
+dimrs=adbModify(dimcon,sqlarr,7);
+if (dimrs!=0) { dimrs=adbClose(dimrs); }
+return
+//------------------------------------------------------------------------------
+leadbase:
+//-- Занесение в базу данных информации о выносках
+leadcount=leadcount+1;
+sqlarr[4]=str(leadcount)+", '"+txt+"', "+str(xc)+", "+str(yc)+", "+str(zc)+", ";
+sqlarr[5]=str(x0)+", "+str(y0)+", "+str(z0)+", "+str(txtcorr)+", "+str(xbeg)+", "+str(ybeg)+", ";
+sqlarr[6]=str(xend)+", "+str(yend)+" ,"+str(leadgroup);
+
+sqlarr[1]="INSERT INTO leadpar (leadnum, leadtxt, leadxc, leadyc, ";
+sqlarr[2]="leadzc, leadx0, leady0, leadz0, leadcorr, leadxbeg, leadybeg, leadxend, leadyend, leadgroup";
+sqlarr[3]=") VALUES ("
+sqlarr[7]=")";
+
+leadrs=adbModify(dimcon,sqlarr,7);
+if (leadrs!=0) { leadrs=adbClose(leadrs); }
+
+return
+//------------------------------------------------------------------------------
+sparse:
+//-- Разрежение размеров
+//-- Входные параметры - таблицы dimpar, leadpar, radpar
+
+gosub dimsparse;
+gosub leadsparse;
+begdraw=0;
+return;
+//gosub radsparse;
+Str_tab="SELECT * FROM radpar";
+radrs=adbOpen(dimcon,str_tab);
+ij=adbRecCount(radrs);
+if (ij==0)
+{
+  goto sparsefin;
+}
+NULLOUT=adbmovefirst(rdrs);
+begdraw=0;
+jjj=0;
+sparseloop:
+jjj=jjj+1;
+if (jjj>ij)
+{
+  goto sparsefin;
+}
+
+txt=adbGetValue(radrs,1);
+leng=adbGetValue(radrs,2);
+crit=adbGetValue(radrs,3);
+x0=adbGetValue(radrs,4);
+y0=adbGetValue(radrs,5);
+z0=adbGetValue(radrs,6);
+xn=adbGetValue(radrs,7);
+yn=adbGetValue(radrs,8);
+zn=adbGetValue(radrs,9);
+cross=adbGetValue(radrs,10);
+gosub lmin;
+//gosub raddim;
+goto sparseloop;
+sparsefin:
+if (radrs!=0) { radrs=adbClose(radrs); }
+return
+//------------------------------------------------------------------------------
+radsparse:
+//-- Разрежение радиусов
+//-- Входные данные - таблица radpar
+xxbb=lgg="sqr((radx0-radxn)*(radx0-radxn)+(rady0-radyn)*(rady0-radyn)+(radz0-radzn)*(rady0-radyn))";
+Str_tab="SELECT * FROM radpar ORDER BY "+xxbb;
+radrs=adbOpen(dimcon,str_tab);
+ij=adbRecCount(radrs);
+if (ij==0)
+{
+  goto radsparsefin;
+}
+jjj=0;
+NULLOUT=adbmovefirst(radrs);
+
+radloop1:
+
+jjj=jjj+1;
+if (jjj>ij)
+{
+  goto radsparsefin;
+}
+
+radx0=adbgetvalue(radrs,4);
+rady0=adbgetvalue(radrs,5);
+radz0=adbgetvalue(radrs,6);
+radxn=adbgetvalue(radrs,7);
+radyn=adbgetvalue(radrs,8);
+radzn=adbgetvalue(radrs,9);
+
+iii=jjj;
+
+radloop2:
+
+iii=iii+1;
+if (iii>ij)
+{
+  goto radloop1;
+}
+NULLOUT=adbGoTo(radrs,iii);
+
+radx0i=adbGetValue(radrs,4);
+rady0i=adbGetValue(radrs,5);
+radz0i=adbGetValue(radrs,6);
+radxni=adbGetValue(radrs,7);
+radyni=adbGetValue(radrs,8);
+radzni=adbGetValue(radrs,9);
+
+#first line radx0,rady0,radz0 radxn,radyn,radzn done;
+#second line radx0i,rady0i,radz0i radxni,radyni,radzni done;
+
+ccc=intpoint(first,second,temp);
+delete first,second done;
+if (ccc==0)
+{
+  goto radloop2;
+}
+crit=sqrt((temp[1]-radx0i)*(temp[1]-radx0i)+(temp[2]-rady0i)*(temp[2]-rady0i)+(temp[3]-radz0i)*(temp[3]-radz0i));
+NULLOUT=adbSetValue(radrs,3);
+NULLOUT=adbSetValue(0,10);
+NULLOUT=adbUpdate(radrs);
+goto radloop2;
+
+radsparsefin:
+if (radrs!=0) { radrs=adbClose(radrs); }
+return;
+//------------------------------------------------------------------------------
+central:
+//-- Процедура построения осевой линии
+//-- Входные параметры:
+//-- xc1, yc1, zc1, xc2, yc2, zc2 - координаты концов линии
+//-- colcen - цвет линии
+
+color colcen;
+lwidth TilOs;
+ltype 5;
+line xc1,yc1,zc1 xc2,yc2,zc2 done;
+ltype 0;
+lwidth TilDet;
+color cool;
+return;
+//------------------------------------------------------------------------------
+drawhole:
+//-- Процедура рисования отверстия на боку панели
+//-- Входные параметры - информация из Базы отверстий
+
+//-- Нормируем вектор направления
+nor=sqrt(holxv*holxv+holyv*holyv+holzv*holzv);
+holxv=holxv/nor;
+holyv=holyv/nor;
+holzv=holzv/nor;
+
+//-- Внутренняя линия отверстия
+chkn=0;
+
+xc1=holx;
+yc1=holy;
+xc2=holx+holxv*holh1;
+yc2=holy+holyv*holh1;
+colcen=60;
+gosub central;
+
+lwidth TilOs;
+objident last chmi;
+color colcen;
+trx=holx;
+try=holy;
+ltype 1;
+
+#chli epath chmi point holx+hold1+0.05454,holy+hold1+0.06554,0 hold1/2;
+explode chli done;
+objident last chli;
+getobjgeo(chli,temp);
+tex=temp[4];
+tey=temp[5];
+tez=temp[6]
+
+#chri epath chmi point holx-hold1-0.02356,holy-hold1-0.08754,0 hold1/2;
+explode chri done;
+objident last chri;
+getobjgeo(chri,temp);
+
+line tex,tey,tez temp[4],temp[5],temp[6] done;
+chprop grfcoef last 3 done 0.01;
+color cool;
+ltype 0;
+
+lwidth TilDet;
+if (g_bus==1)
+{
+  us=PriceInfo(holtypes,"S1","");
+
+  if (len(us)>0)
+  {
+    append ProtoPath+us 2points 0,0,0 xc2,yc2,zc2 ;
+    scale last 1 done xc2,yc2,zc2 g_upr nocopy;
+  }
+}
+return;
+//------------------------------------------------------------------------------
+dimsparse:
+//-- Процедура коорекции линейных размеров
+//-- Входные параметры:
+//-- dimbase - таблица с параметрами линейных размеров
+//-- Выходные параметры:
+//-- dimbase - скорректированная таблица с параметрами линейных размеров
+xxbb="ABS(dimxl1-dimxl2)";//, ABS(dimyl1-dimyl2)";
+Str_tab="SELECT * FROM dimpar WHERE dimweight>=2 AND dimvert=0 ORDER BY "+xxbb;
+dimrs=adbOpen(dimcon,str_tab);
+ij=adbRecCount(dimrs);
+
+if (ij==0)
+{
+  goto dimsfin1;
+}
+jjj=0;
+NULLOUT=adbmovefirst(dimrs);
+
+dimloop1:
+
+jjj=jjj+1;
+if (jjj>ij)
+{
+  goto dimsfin1;
+}
+NULLOUT=adbGoTo(dimrs,jjj);
+dimxl1=adbgetvalue(dimrs,4);
+dimyl1=adbgetvalue(dimrs,5);
+dimxl2=adbgetvalue(dimrs,7);
+dimyl2=adbgetvalue(dimrs,8);
+dimweight=adbgetvalue(dimrs,2);
+dimrl=adbgetvalue(dimrs,10);
+dimvert=adbgetvalue(dimrs,1);
+dimnum=adbgetvalue(dimrs,0);
+sqd=abs(dimxl1-dimxl2);
+iii=jjj
+
+dimloop2:
+
+iii=iii+1;
+if (iii>ij)
+{
+  goto dimloop1;
+}
+
+NULLOUT=adbGoTo(dimrs,iii);
+dimxl1i=adbgetvalue(dimrs,4);
+dimyl1i=adbgetvalue(dimrs,5);
+dimxl2i=adbgetvalue(dimrs,7);
+dimyl2i=adbgetvalue(dimrs,8);
+dimweighti=adbgetvalue(dimrs,2);
+dimrli=adbgetvalue(dimrs,10);
+dimverti=adbgetvalue(dimrs,1);
+dimnumi=adbgetvalue(dimrs,0);
+sqdi=abs(dimxl1i-dimxl2i);
+
+if ((dimrl*dimrli)>=0)
+{
+  if (((min(dimxl1,dimxl2)==min(dimxl1i,dimxl2i))&&(max(dimxl1,dimxl2)==max(dimxl1i,dimxl2i)))||(abs(sqd-sqdi)<g_eps))
+  {
+    if (dimyl2>dimyl2i)
+    {
+      NULLOUT=adbdelrec(dimrs);
+      ij=ij-1;
+      iii=iii-1;
+    }
+    else
+    {
+      NULLOUT=adbGoTo(dimrs,jjj);
+      NULLOUT=adbdelrec(dimrs);
+      ij=ij-1;
+      jjj=jjj-1;
+      goto dimloop1;
+    }
+  }
+}
+
+goto dimloop2;
+
+dimsfin1:
+if (dimrs!=0) { dimrs=adbClose(dimrs); }
+
+xxbb="ABS(dimyl1-dimyl2)";//, ABS(dimyl1-dimyl2)";
+Str_tab="SELECT * FROM dimpar WHERE dimweight>=2 AND dimvert=1 ORDER BY "+xxbb;
+dimrs=adbOpen(dimcon,str_tab);
+
+ij=adbRecCount(dimrs);
+if (ij==0)
+{
+  goto dimsfin2;
+}
+jjj=0;
+NULLOUT=adbmovefirst(dimrs);
+
+dimloop3:
+
+jjj=jjj+1;
+if (jjj>ij)
+{
+  goto dimsfin2;
+}
+NULLOUT=adbGoTo(dimrs,jjj);
+dimxl1=adbgetvalue(dimrs,4);
+dimyl1=adbgetvalue(dimrs,5);
+dimxl2=adbgetvalue(dimrs,7);
+dimyl2=adbgetvalue(dimrs,8);
+dimweight=adbgetvalue(dimrs,2);
+dimrl=adbgetvalue(dimrs,10);
+dimvert=adbgetvalue(dimrs,1);
+dimnum=adbgetvalue(dimrs,0);
+sqd=abs(dimyl1-dimyl2);
+iii=jjj;
+
+dimloop4:
+
+iii=iii+1;
+if (iii>ij)
+{
+  goto dimloop3;
+}
+
+NULLOUT=adbGoTo(dimrs,iii);
+dimxl1i=adbgetvalue(dimrs,4);
+dimyl1i=adbgetvalue(dimrs,5);
+dimxl2i=adbgetvalue(dimrs,7);
+dimyl2i=adbgetvalue(dimrs,8);
+dimweighti=adbgetvalue(dimrs,2);
+dimrli=adbgetvalue(dimrs,10);
+dimverti=adbgetvalue(dimrs,1);
+dimnumi=adbgetvalue(dimrs,0);
+sqdi=abs(dimyl1i-dimyl2i);
+
+if ((dimrl*dimrli)>=0)
+{
+  if ((min(dimyl1,dimyl2)==min(dimyl1i,dimyl2i))&&(max(dimyl1,dimyl2)==max(dimyl1i,dimyl2i))||(abs(sqd-sqdi)<g_eps))
+  {
+    if (dimxl2>dimxl2i)
+    {
+      NULLOUT=adbdelrec(dimrs);
+      ij=ij-1;
+      iii=iii-1;
+    }
+    else
+    {
+      NULLOUT=adbGoTo(dimrs,jjj);
+      NULLOUT=adbdelrec(dimrs);
+      ij=ij-1;
+      jjj=jjj-1;
+      goto dimloop3;
+    }
+  }
+}
+
+goto dimloop4;
+
+dimsfin2:
+
+if (dimrs!=0) { dimrs=adbClose(dimrs); }
+
+xxbb="ABS(dimxl1-dimxl2)";//, ABS(dimyl1-dimyl2)";
+Str_tab="SELECT * FROM dimpar WHERE dimweight>1 AND dimvert=0 ORDER BY "+xxbb;
+dimrs=adbOpen(dimcon,str_tab);
+
+ij=adbRecCount(dimrs);
+if (ij==0)
+{
+  goto dspf;
+}
+jjj=0;
+NULLOUT=adbmovefirst(dimrs);
+
+chbmax=1;
+chcmax=1;
+chdmax=1;
+chemax=1;
+
+emax=gabs[5];
+dmax=0;
+cmax=gabs[4];
+bmax=0;
+
+diml1:
+
+jjj=jjj+1;
+if (jjj>ij)
+{
+  goto dspf;
+}
+
+NULLOUT=adbGoTo(dimrs,jjj);
+xl1=adbgetvalue(dimrs,4);
+yl1=adbgetvalue(dimrs,5);
+xl2=adbgetvalue(dimrs,7);
+yl2=adbgetvalue(dimrs,8);
+rl=adbgetvalue(dimrs,10);
+txt=adbgetvalue(dimrs,3);
+dimvert=adbgetvalue(dimrs,1);
+dimweight=adbgetvalue(dimrs,2);
+
+if (rl>=0)  //-- Сторона E
+{
+  dimrl=(chemax+dimweight-2)*sysv76*lz+emax;
+  dimrl=dimrl-yl1;
+  if (che==1)
+  {
+    chemax=chemax+1;
+  }
+}
+if (rl<0)  //-- Сторона D
+{
+  dimrl=-(chdmax+dimweight-2)*sysv76*lz-dmax;//ff[3]*(ff[3]>0);
+  dimrl=dimrl-yl1;
+  if (chd==1)
+  {
+    chdmax=chdmax+1;
+  }
+}
+NULLOUT=adbSetValue(dimrs,10,dimrl);
+NULLOUT=adbUpdate(dimrs);
+
+goto diml1;
+
+dspf:
+
+if (dimrs!=0) { dimrs=adbClose(dimrs); }
+
+xxbb="dimyl2, dimyl1";
+//xxbb="ABS(dimyl1-dimyl2)";//, ABS(dimyl1-dimyl2)";
+Str_tab="SELECT * FROM dimpar WHERE dimweight>1 AND dimvert=1 ORDER BY "+xxbb;
+dimrs=adbOpen(dimcon,str_tab);
+
+ij=adbRecCount(dimrs);
+if (ij==0)
+{
+  goto dspf1;
+}
+jjj=0;
+NULLOUT=adbmovefirst(dimrs);
+xca1=xb;
+yca1=yb;
+
+xca2=xb;
+yca2=yb;
+
+diml11:
+
+jjj=jjj+1;
+if (jjj>ij)
+{
+    goto dspf1;
+}
+
+NULLOUT=adbGoTo(dimrs,jjj);
+xl1=adbgetvalue(dimrs,4);
+yl1=adbgetvalue(dimrs,5);
+xl2=adbgetvalue(dimrs,7);
+yl2=adbgetvalue(dimrs,8);
+rl=adbgetvalue(dimrs,10);
+txt=adbgetvalue(dimrs,3);
+dimvert=adbgetvalue(dimrs,1);
+dimweight=adbgetvalue(dimrs,2);
+
+if (rl>=0)  //-- Сторона C
+{
+  dimrl=(chcmax+dimweight-2)*sysv76*lz+cmax;
+  if (chc==1)
+  {
+    chcmax=chcmax+1;
+  }
+  else
+  {
+    if (dimweight==2)
+    {
+      xl1=xca1;
+      yl1=yca1;
+      xca1=xl2;
+      yca1=yl2;
+    }
+  }
+  dimrl=dimrl-xl1;
+}
+if (rl<0)  //-- Сторона B
+{
+  dimrl=-(chbmax+dimweight-2)*sysv76*lz-bmax;
+  if (chb==1)
+  {
+    chbmax=chbmax+1;
+  }
+  else
+  {
+    if (dimweight==2)
+    {
+      xl1=xca2;
+      yl1=yca2;
+      xca2=xl2;
+      yca2=yl2;
+    }
+  }
+  dimrl=dimrl-xl1;
+}
+
+NULLOUT=adbSetValue(dimrs,10,dimrl);
+NULLOUT=adbSetvalue(dimrs,4,xl1);
+NULLOUT=adbSetvalue(dimrs,5,yl1);
+NULLOUT=adbUpdate(dimrs);
+
+goto diml11;
+
+dspf1:
+
+if (dimrs!=0) { dimrs=adbClose(dimrs);}
+
+return;
+//------------------------------------------------------------------------------
+//-- Процедура простановки размеров из базы
+//-- Входные параметры :
+//-- база AllDim.mdb
+sparsedraw:
+//xxbb="ABS(dimxl1-dimxl2), ABS(dimyl1-dimyl2)";
+Str_tab="SELECT * FROM dimpar";// ORDER BY "+xxbb;
+dimrs=adbOpen(dimcon,str_tab);
+
+ij=adbRecCount(dimrs);
+if (ij==0)
+{
+  goto spddimfin;
+}
+jjj=0;
+NULLOUT=adbmovefirst(dimrs);
+
+spdloop1:
+
+jjj=jjj+1;
+if (jjj>ij)
+{
+  goto spddimfin;
+}
+NULLOUT=adbGoTo(dimrs,jjj);
+xl1=adbgetvalue(dimrs,4);
+yl1=adbgetvalue(dimrs,5);
+xl2=adbgetvalue(dimrs,7);
+yl2=adbgetvalue(dimrs,8);
+rl=adbgetvalue(dimrs,10);
+txt=adbgetvalue(dimrs,3);
+dimvert=adbgetvalue(dimrs,1);
+
+if (dimvert==0)
+{
+  gosub hordim;
+}
+else
+{
+  gosub verdim;
+}
+goto spdloop1;
+
+spddimfin:
+if (dimrs!=0) { dimrs=adbClose(dimrs); }
+
+Str_tab="SELECT * FROM leadpar";// ORDER BY "+xxbb;
+leadrs=adbOpen(dimcon,str_tab);
+ij=adbRecCount(leadrs);
+if (ij==0)
+{
+  goto spdleadfin;
+}
+jjj=0;
+NULLOUT=adbmovefirst(leadrs);
+
+spdloop3:
+
+jjj=jjj+1;
+if (jjj>ij)
+{
+  goto spdleadfin;
+}
+NULLOUT=adbGoTo(leadrs,jjj);
+
+txt=adbgetvalue(leadrs,1);
+xc=adbgetvalue(leadrs,2);
+yc=adbgetvalue(leadrs,3);
+zc=adbgetvalue(leadrs,4);
+x0=adbgetvalue(leadrs,5);
+y0=adbgetvalue(leadrs,6);
+z0=adbgetvalue(leadrs,7);
+corr=adbgetvalue(leadrs,8);
+
+gosub leader;
+
+goto spdloop3;
+spdleadfin:
+if (leadrs!=0) { leadrs=adbClose(leadrs); }
+
+return;
+//------------------------------------------------------------------------------
+//-- Процедура рисования и образмеривания пропилов
+//-- Входные параметры:
+//-- prop1 - номер пропила
+//-- prop2 - Сторона панели (0 - F, 1 - A)
+//-- prop3 - Параллельно какому торцу пропил (0 - D, 1 - B)
+//-- prop4 - Отступ
+//-- prop5 - Ширина
+//-- prop6 - Глубина
+//-- prop7 - Начало
+//-- prop8 - Длина
+drawprop:
+
+//-- А существует ли пропил?
+if (prop3==0&&prop4>gabs[5]||prop3==1&&prop4>gabs[4]||prop6<=0)
+{
+  return; //-- пропила не существует
+}
+//-- Определяем рельную длину пропила
+if (prop4<0)
+{
+  prop5=prop5+prop4;
+  prop4=0;
+}
+if (prop7<0)
+{
+  prop8=prop8+prop7;
+  prop7=0;
+}
+if (prop3==0)
+{
+  prop8=min((gabs[4]-prop7),prop8)
+}
+else
+{
+  prop8=min((gabs[5]-prop7),prop8)
+}
+//-- Определяем рельную ширину пропила
+if (prop3==0)
+{
+  prop5=min((gabs[5]-prop4),prop5)
+}
+else
+{
+    prop5=min((gabs[4]-prop4),prop5)
+}
+
+//-- Рисуем пропил
+
+lwidth TilDet
+ltype 0;
+if (prop2==0&&prop6<t)
+{
+  lwidth TilOs;
+  ltype 1;
+}
+eterflag=0;
+
+if (prop3==0)
+{
+  if (prop8==0) //-- Если  пропил бесконечный
+  {
+    prop8=gabs[4]-gabs[1];
+    prop7=gabs[1];
+    eterflag=1;
+  }
+  #pr rectangle prop7,prop4,0 prop7+prop8,prop4+prop5,0;
+}
+else
+{
+  if (prop8==0) //-- Если  пропил бесконечный
+  {
+    prop8=gabs[5]-gabs[2];
+    prop7=gabs[2];
+    eterflag=1;
+  }
+  #pr rectangle prop4,prop7,0 prop4+prop5,prop7+prop8,0;
+}
+if (eterflag==1)
+{
+  prop7=0;
+  prop8=0;
+}
+lwidth TilOs
+ltype 0;
+ddw=1;
+
+zl1=0;
+zl2=0;
+rl=-lz*sysv76;
+txt="<>"
+if (prop3==0)
+{
+  xl1=prop7;
+  yl1=prop4;
+  xl2=prop7+prop8;
+  yl2=prop4+prop5;
+}
+else
+{
+  xl1=prop4;
+  yl1=prop7;
+  xl2=prop4+prop5;
+  yl2=prop7+prop8;
+}
+gosub hordim;
+gosub verdim;
+xl1=xb;
+yl1=yb;
+rl=rl*2;
+gosub hordim;
+gosub verdim;
+if (prop6<t)
+{
+  if (prop3==0)
+  {
+    xc=prop7+prop5/2;
+    yc=prop4+prop5/2;
+  }
+  else
+  {
+    xc=prop4+prop5/2;
+    yc=prop7+prop5/2;
+  }
+  zc=0;
+  z0=0;
+  x0=xc+prop5*((xc<((gabs[4]-gabs[1])/2))*2-1);
+  y0=yc+lz*sysv76+prop5*((yc<((gabs[5]-gabs[2])/2))*2-1);
+  z0=zc;
+  txt="h="+str(prop6);
+  gosub leader;
+}
+ddw=3;
+return;
+
+//------------------------------------------------------------------------------
+leadsparse:
+//-- Процедура коорекции полочек=-выносок
+//-- Входные параметры:
+//-- dimbase - таблица с параметрами линейных размеров
+//-- Выходные параметры:
+//-- dimbase - скорректированная таблица с параметрами линейных размеров
+
+if (g_grp==1)
+{
+  gosub leadgroup;     //-- Группировка отверстий
+}
+xxbb="1/abs((leadx0-leadxc)*(leadx0-leadxc)+(leady0-leadyc)*(leady0-leadyc))";
+Str_tab="SELECT * FROM leadpar WHERE leadgroup=1 ORDER BY "+xxbb;
+leadrs=adbOpen(dimcon,str_tab);
+ij=adbRecCount(leadrs);
+if (ij==0)
+{
+  goto leadsfin1;
+}
+jjj=0;
+intch10=0;
+intch20=0;
+NULLOUT=adbmovefirst(leadrs);
+
+leadloop1:
+
+jjj=jjj+1;
+if (jjj>ij)
+{
+  goto leadsfin1;
+}
+intch1=jjj
+
+iii=jjj;
+
+leadloop2:
+
+iii=iii+1;
+if (iii>ij)
+{
+  goto leadloop1;
+}
+
+intch2=iii;
+gosub intercheck;
+gosub oldlead;
+goto leadloop2;
+
+leadsfin1:
+if (leadrs!=0) { leadrs=adbClose(leadrs); }
+
+return;
+//------------------------------------------------------------------------------
+leadgroup:
+//-- Группировка боковых отверстий
+
+xxbb="leadtxt";
+Str_tab="SELECT * FROM leadpar WHERE leadzc>=0 AND leadgroup=1 ORDER BY "+xxbb;
+leadrs=adbOpen(dimcon,str_tab);
+ij=adbRecCount(leadrs);
+if (ij==0)
+{
+  goto groupfin1;
+}
+jjj=0;
+NULLOUT=adbmovefirst(leadrs);
+
+grouploop1:
+jjj=jjj+1;
+if (jjj>ij)
+{
+  goto groupfin1;
+}
+NULLOUT=adbGoTo(leadrs,jjj);
+leadtxt=adbgetvalue(leadrs,1);
+leadxc=adbgetvalue(leadrs,2);
+leadyc=adbgetvalue(leadrs,3);
+
+iii=jjj;
+notv=0;
+
+grouploop2:
+
+iii=iii+1;
+if (iii>ij)
+{
+  if (notv>0)
+  {
+  //        leadtxt=str(notv+1)+"отв."+leadtxt;
+    leadtxt=leadtxt+" "+str(notv+1)+"отв";
+    NULLOUT=adbGoTo(leadrs,jjj);
+    NULLOUT=adbSetValue(leadrs,1,leadtxt);
+    NULLOUT=adbUpdate(leadrs);
+  }
+  goto grouploop1;
+}
+
+NULLOUT=adbGoTo(leadrs,iii);
+leadtxti=adbgetvalue(leadrs,1);
+leadxci=adbgetvalue(leadrs,2);
+leadyci=adbgetvalue(leadrs,3);
+
+rasst=sqrt((leadxci-leadxc)*(leadxci-leadxc)+(leadyci-leadyc)*(leadyci-leadyc));
+
+if (rasst<g_grr&&leadtxti==leadtxt)
+{
+  notv=notv+1;
+  NULLOUT=adbdelrec(leadrs);
+  ij=ij-1;
+  iii=iii-1;
+}
+goto grouploop2;
+
+groupfin1:
+return;
+//------------------------------------------------------------------------------
+oldlead:
+//-- Процедура проверки, не пересекается ли новое положение выноски
+//-- с уже скорректированным
+kkk=0;
+oldlead1:
+kkk=kkk+1;
+if (kkk>iii-1)
+{
+  return;
+}
+
+intch1=kkk;
+gosub intercheck;
+goto oldlead1;
+//------------------------------------------------------------------------------
+intercheck:
+//-- Процедура проверяет, не пересекается ли выноска intch1 и intch2
+//-- И если пересекается, то корректирует положение intch2
+
+if (intch1!=intch10)
+{
+  NULLOUT=adbGoTo(leadrs,intch1);
+  leadxc1=adbgetvalue(leadrs,2);
+  leadyc1=adbgetvalue(leadrs,3);
+  leadx01=adbgetvalue(leadrs,5);
+  leady01=adbgetvalue(leadrs,6);
+  leadxbeg1=adbgetvalue(leadrs,9);
+  leadybeg1=adbgetvalue(leadrs,10);
+  leadxend1=adbgetvalue(leadrs,11);
+  leadyend1=adbgetvalue(leadrs,12);
+
+  texmin1=min(leadxend1,leadxbeg1);
+  texmax1=max(leadxend1,leadxbeg1);
+  teymin1=min(leadyend1,leadybeg1);
+  teymax1=max(leadyend1,leadybeg1);
+  intch10=intch1;
+}
+
+NULLOUT=adbGoTo(leadrs,intch2);
+if (intch2!=intch20)
+{
+  leadxc2=adbgetvalue(leadrs,2);
+  leadyc2=adbgetvalue(leadrs,3);
+  leadx02=adbgetvalue(leadrs,5);
+  leady02=adbgetvalue(leadrs,6);
+  leadxbeg2=adbgetvalue(leadrs,9);
+  leadybeg2=adbgetvalue(leadrs,10);
+  leadxend2=adbgetvalue(leadrs,11);
+  leadyend2=adbgetvalue(leadrs,12);
+
+  texmin2=min(leadxend2,leadxbeg2);
+  texmax2=max(leadxend2,leadxbeg2);
+  teymin2=min(leadyend2,leadybeg2);
+  teymax2=max(leadyend2,leadybeg2);
+  intch20=intch2;
+}
+
+ddxx=(texmin2>(texmin1-0.1)&&texmin2<(texmax1+0.1))||(texmax2>(texmin1-0.1)&&texmax2<(texmax1+0.1))||(texmin2<(texmin1-0.1)&&texmax2>(texmax1+0.1));
+ddyy=(teymin2>(teymin1-0.1)&&teymin2<(teymax1+0.1))||(teymax2>(teymin1-0.1)&&teymax2<(teymax1+0.1))||(teymin2<(teymin1-0.1)&&teymax2>(teymax1+0.1));
+
+if (ddxx&&ddyy)
+{
+  if (abs(leadx02-leadxbeg2)>0.1)
+  {
+    leady02=leady01+lz*(leady02-leadyc2)/(1.5*abs(leady02-leadyc2));
+    leadybeg2=leadybeg1+lz*(leady02-leadyc2)/(1.5*abs(leady02-leadyc2));
+    leadyend2=leadybeg2+lz/2;
+  }
+  else
+  {
+    leadx02=leadx01+lz*(leadx02-leadxc2)/(1.5*abs(leadx02-leadxc2));
+    leadxbeg2=leadxbeg1+lz*(leadx02-leadxc2)/(1.5*abs(leadx02-leadxc2));
+    leadxend2=leadxbeg2+lz/2;
+  }
+  NULLOUT=adbSetValue(leadrs,5,leadx02);
+  NULLOUT=adbSetValue(leadrs,6,leady02);
+  NULLOUT=adbSetValue(leadrs,9,leadxbeg2);
+  NULLOUT=adbSetValue(leadrs,10,leadybeg2);
+  NULLOUT=adbSetValue(leadrs,11,leadxend2);
+  NULLOUT=adbSetValue(leadrs,12,leadyend2);
+  NULLOUT=adbUpdate(leadrs);
+}
+return;
+

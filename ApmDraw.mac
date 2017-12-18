@@ -1,0 +1,940 @@
+//*********************************************
+//построение разверток по стенам для гарнитуров
+//
+//              Драгункин А.Р.
+//              ГеоС 2008-2015 г.
+//*********************************************
+global
+ProtoPath
+DRWZPath
+l_support
+g_name
+g_dorab
+g_pict
+g_DirDrawLn           //Все файлы чертежей длинномеров размещать в отдельной папке 0-нет 1-да
+g_DrawBlank           //Чертежи на бланках 0-нет 1-да
+g_DrawSpec            //Формировать спецификацию 0-нет 1-да
+g_DrawCod             //Способ обозначения чертежа 0-относительный по первому вхождению 1-абстрагированный код
+g_DrawStamp           //Ключ запроса информации для штампа бланка из файла stamp.dbf и из файла ZAKAZ.dbf =0 только stamp.dbf =1
+g_FormStamp           //Ключ запроса формы штампа 0-не запрашивать 1-регулярно
+g_PgFileDraw          //Каждый лист чертежа в отдельном файле 0-нет 1-да
+g_PgFileSpec          //Каждый лист спецификации в отдельном файле 0-нет 1-да
+g_GroupDoc            //Формировать групповой чертеж по всем документам 0-нет 1-да
+g_DrawTaile           //формировать деталировку 0-нет 1-да
+g_nameFK3, g_nameFWMF //имена папок для чертежей и файлов картинок
+Bl_Zoom
+g_dparln
+;
+
+g_DirDrawLn=1;
+//---------------
+g_nameFK3="\\K3_Walls\\"
+g_nameFWMF="\\WMF_Walls\\"
+
+pathApp=MPathExpand("<appdata>")
+
+CurStat=SysVar(70) ;
+if CurStat==0 { CurStat=2  }
+
+macro L_support+"SetPlProjectA.mac" 100;
+
+//Создаем аттрибут
+If (!IsAttrdef("D_StNum"))
+ { Attribute Create "D_StNum" "Номер стены" string 10 20 ; }
+//Идентификация предметов
+select wholly attribute "ObjType<3" remove attribute "LongsType>-999" done ;
+N_prd=SysVar(61) ;  // Число предметов подлежащих анализу
+select wholly attribute "LongsType>-999" done ;
+N_lng=SysVar(61) ;  // Число длинномеров подлежащих анализу
+setucs save "G_ApmDraw" ;
+setucs gcs ;
+N_wall=GetRoomInfo() ; //определяем число стен
+//============инициализация массивов====================
+defarr
+info[48]        // для размеров
+verSys[7]
+arr[4]
+xm[6]
+xmm[6]
+CtInfo[4]       // Массив для возвращаемых данных о подрезах в длинномере
+BdInfo[11]      // Массив для возвращаемых данных о гнутом длинномере
+WallArr[13]     // Массив для возвращаемых данных о стене
+WallAP[100]     // Массив для ссылок на стены вдоль которых определены предметы
+vid[100]        // Массив для ссылок на чертежные виды
+obj1[10]
+if N_prd==0
+{
+   //PutMsg("В сцене отсутствуют изделия.",0);
+   macro protopath+"ShowError.mac" "В сцене отсутствуют изделия." "" "Необходимо выполнить расстановку изделий (Расстановка\\Изделия\\Добавить)" ;
+   exit;
+}
+if N_wall==0
+{
+   //PutMsg("В сцене отсутствует комната.",0);
+   macro protopath+"ShowError.mac" "В сцене отсутствует комната." "" "Необходимо выполнить Установку комнаты (Расстановка\\Комната\\Создать)" ;
+   exit;
+}
+if N_prd>0 {
+   PrdArr[N_prd]     // Массив указателей на предметы
+   }
+if N_wall>0 {
+   UCS_Name[N_wall*2] //Массив имен систем координат
+   WLN[N_wall*8]      // Массив указателей на нижние линии стены
+   WLV[N_wall*8]      // Массив указателей на верхние линии стены
+   }
+if N_lng>0 {
+   LngArr[N_lng]    // Массив указателей на длинномеры
+   }
+DimInf[98] p1[3] darr[21] ArrSys[20]  aDDr[20]
+;
+
+gosub Dialog;
+//============инициализация переменных===================
+WallAP[100]=100 // значение для главного вида
+P_Yporog=650    //положительный порог чувствительности в мм по отношению предметов  к стене
+M_Yporog=-10    //отрицательный порог чувствительности в мм по отношению предметов  к стене
+hideA=0  //невидимые выводить    1-да 0-нет
+visA=1   //видимые выводить      1-да 0-нет
+switch ndeflayer off ;
+WidthVis=0
+NULLOUT=udgetentity("DrawLineS",ValType,WidthVis,sVal) ; //Толщина видимых линий
+WidthHid=0 ; //Толщина невидимых линий
+KyGRDGV=0
+ExpTyp=1  // вариант экспорта 0-pic 1-k3
+TimeVar=0 // вариант работы подсчета времени 0-все макро в целом 1-интервально
+DWLN=0    // Датчик заполнения массива указателей на нижние линии стен
+DWLV=0    // Датчик заполнения массива указателей на верхние линии стен
+g_name="Стена" // добавочное имя для файлов чертежей общего вида проекций по стенам
+DScene_name=sysvar(2) // Имя файла сцены
+
+//=======================================================
+SaveOrder; //Closeorder;
+//=======================================================
+vName="Name;Number;Customer;Address;Phone;Date;ExpDate;Firm;Salon;Acceptor;Executor;AddInfo;ToWorking;NCurrency;Discount;Rate"
+nelm=splitByDelim(vName,";",aDDr)
+i=0
+labvn:
+if i<nelm {
+	i=i+1
+    Name="O"+aDDr[i]
+	//putmsg(Name);
+    if !isattrdef(Name) {
+        attribute create  Name Name string 30 255 ;
+	}
+    vv=getorderinfo(aDDr[i]) ;
+	//putmsg(vv);
+    if len(str(vv))>0 {
+		attrobj  attach Name done record str(vv) ;
+	}
+	goto labvn;
+}
+//=======================================================
+dimgcoef 1 ; // проверяем графический коэффициент
+grfcoeff 9.6
+//open DScene_name;
+Save all  DScene_name-3+"t.k3" [ overwrite ]
+//=======================================================
+g_DrawSpec=0
+g_DrawTaile=0           //формировать деталировку 0-нет 1-да
+WideVid=sysvar(52)
+//=======================================================
+if N_prd>0 { Gosub GetPrdArr ; } //Заполняем массив PrdArr указателями на предметы
+//if N_lng>0 { Gosub GetLngArr ; } //Заполняем массив LngArr указателями на длинномеры
+//Простановка размера предмета относительно текущего вида
+Gosub GetWlUname ; //заполняем массив систем координат стен UCS_Name[i1]
+Gosub GetPrAttr  ; // определяем положение  предметов из массива PrdArr относительно стен присваиваем предмету аттрибут номера стены D_StNum
+//Gosub GetLngAttr ; // определяем положение  длинномеров из массива LngArr относительно предметов из массива PrdArr
+Gosub FormVidExp ;    // Формируем виды для экспорта
+setucs restore  "G_ApmDraw" ;
+GoSub ImpFilVid  ;
+// что делать с предметами отдельно стоящими, не у стен?
+regen all ;
+layers set "0" ;
+visible attribute "iprln99>0"  ;
+
+Gosub SortVid ; // Расставляем виды в ряд
+
+//формирование бланков и спецификаций
+if g_DrawBlank!=0
+{
+	//if IsVarDef("FormList")==0 { macro GetProtoMac("Shkaf.ptl")+L_Support+"SetPlProject.mac"; }
+
+	macro L_Support+"Win_PltLnG.mac" 99 ;
+	gosub sExpVI;
+}
+lwidth 0 ;
+setucs gcs ;
+switch ndeflayer on ;
+gosub DeleteTMP ;   //удаляем временные файлы
+vport 3 ;
+
+gosub dsave;
+
+if (g_dorab==2)
+{
+	g_dorab=1;
+	Visible all ;
+	zoom All ;
+	exit;
+}
+
+new; loadorder last;
+if isvardef("CurVid")>0 { vport CurVid }
+if (WideVid) {	vport zoom,,	}
+//
+fName=DScene_name-3+".~k3";
+gosub sDelBackF;
+//;ReportRegister;
+exit;
+//=======================================================
+//=======================================================
+//=======================================================
+//=======================================================
+GetWlUname: //заполняем массив систем координат стен UCS_Name[i1]
+//Считаем, что у стены есть две стороны.
+//Количество имен систем координат в два раза больше чем число стен
+//Имя системы координат un+номер стены+.+номер стороны 1 или 2
+i=0
+i1=0
+met1:
+if i<N_wall {
+   i=i+1
+   Result=GetWallInfo(i,WallArr);
+        //Параметры:
+        //i - номер стены,
+        //WallArr - Массив для возвращаемых данных. Длина массива должна быть больше или равна 13.
+        //В первых 12 элементах возвращаются координаты 4-х 3D опорных точек в плане стены.
+        //В 13-м элементе содержится количество проемов в стене.
+        //Линии начала и конца стены (вертикальные)
+        #L1n Line WallArr[4]  WallArr[5]  WallArr[6] WallArr[4] WallArr[5] WallArr[6]+1000 done ;
+        #L2n Line WallArr[1]  WallArr[2]  WallArr[3] WallArr[1] WallArr[2]  WallArr[3]+1000 done ;
+        #L1v Line WallArr[4]  WallArr[5]  WallArr[6]+1000 WallArr[4] WallArr[5] WallArr[6]+2000 done ;
+        #L2v Line WallArr[1]  WallArr[2]  WallArr[3]+1000 WallArr[1] WallArr[2]  WallArr[3]+2000 done ;
+        #L3n Line WallArr[10] WallArr[11] WallArr[12] WallArr[10] WallArr[11] WallArr[12]+1000 done ;
+        #L4n Line WallArr[7]  WallArr[8]  WallArr[9] WallArr[7] WallArr[8]  WallArr[9]+1000 done ;
+        #L3v Line WallArr[10] WallArr[11] WallArr[12]+1000 WallArr[10] WallArr[11] WallArr[12]+2000 done ;
+        #L4v Line WallArr[7]  WallArr[8]  WallArr[9]+1000 WallArr[7] WallArr[8]  WallArr[9]+2000 done ;
+        If (!IsAttrdef("WallLine"))
+        {
+        Attribute Create "WallLine" "Линия стены" Real 5 0 ; //Создаем атрибуты для линий стен
+        }
+        attrobj attach  "WallLine" "PlaceType" done group L1n L2n L3n L4n done 0 0 ; // Присваиваем атрибуты линий стен
+        attrobj attach  "WallLine" "PlaceType" done group L1v L2v L3v L4v done 1 1 ; // Присваиваем атрибуты линий стен
+        //создаем системы координат имена записываем в массив
+        setucs WallArr[4] WallArr[5] WallArr[6]
+               WallArr[1] WallArr[2]  WallArr[3]
+               @(WallArr[4]-WallArr[7]) WallArr[5]-WallArr[8] 0 ;
+
+        i1=i1+1
+        UCS_Name[i1]="un"+str(i)+"."+"1"
+        setucs save UCS_Name[i1] ;
+        setucs gcs ;
+        setucs WallArr[10] WallArr[11] WallArr[12]
+               WallArr[7] WallArr[8]  WallArr[9]
+               @(WallArr[10]-WallArr[1]) WallArr[11]-WallArr[2] 0 ;
+
+        i1=i1+1
+        UCS_Name[i1]="un"+str(i)+"."+"2"
+        setucs save UCS_Name[i1] ;
+        setucs gcs ;
+        //
+   goto met1 ;
+}
+return;
+//=======================================================
+GetPrAttr: // определяем положение  предметов из массива PrdArr относительно стен
+// присваиваем предмету аттрибут номера стены D_StNum
+
+i=0
+met2:
+if i<N_prd {  //перебираем предметы
+  i=i+1
+  setucs lcs PrdArr[i] ;
+  PtransCS(0,3,0,0,0,Xg,Yg,Zg) ;    //положение точки 000 предмета в ГСК
+  PtransCS(0,3,1000,0,0,Xn,Yn,Zn) ; //положение контрольной точки 1000 0 0 предмета в ГСК
+
+  i1=0
+  met3:
+  if i1<(N_wall*2) { //перебираем системы координат
+     i1=i1+1
+     setucs restore UCS_Name[i1]
+     PtransCS(3,0,Xg,Yg,Zg,Xl,Yl,Zl) ; //положение точки 000 предмета относительно стены
+     PtransCS(3,0,Xn,Yn,Zn,Xk,Yk,Zk) ; //положение точки 1000 0 0 предмета относительно стены
+     if ((Yl<P_Yporog)&&(Yl>M_Yporog))&&((Yk<P_Yporog)&&(Yk>M_Yporog)) {
+        Attrobj Attach "D_StNum" Done  PrdArr[i] UCS_Name[i1] ;
+     }
+  goto met3 ;
+  }
+ goto met2 ;
+}
+return;
+//=======================================================
+GetPrdArr: //Заполняем массив PrdArr указателями на предметы
+select attribute "ObjType<3" remove attribute "LongsType>-999" done ;
+i=0
+met4:
+if i<N_prd {
+   i=i+1
+   PrdArr[i]=getselnum(i) ;
+   goto met4 ;
+}
+return;
+//=======================================================
+GetLngArr: //Заполняем массив LngArr указателями на длинномеры
+select attribute "LongsType>-999" done ;
+i=0
+met5:
+if i<N_lng {
+   i=i+1
+   LngArr[i]=getselnum(i) ;
+   goto met5 ;
+}
+return;
+//=======================================================
+// Формируем виды для экспорта
+FormVidExp:
+	Vport 4 ;
+	GoSub ApmPlan ;
+	i1=0
+	i=0
+	met8:
+	if i<(N_wall*2) {
+	   i=i+1
+	   setucs restore UCS_Name[i] ;
+	   view user 0 1 0 done ;
+	//   =UCS_Name[i]
+	   select attribute "D_StNum=="+"\""+UCS_Name[i]+"\"" done ;
+	   if SysVar(61)==0 { goto met8 ; }
+	   #gr1 group previous done ;
+	   select attribute "D_StNum!="+"\""+UCS_Name[i]+"\"" done ;
+	   KeyGr2=0
+	  if SysVar(61)!=0 {
+	//     #gr2 group previous done ;
+	//     invisible gr2 done ;
+	//     KeyGr2=1
+		}
+	   err=Objgab3(gr1,xm) ;
+	   explode gr1 done ;
+	   GoSub FN_Wall ;    // ищем линии примыкающих стен  WallLine
+	   	   GoSUb ExpFilVid ; //Формируем файлы с проекциями (видами)
+	   Obs=SysVar(60) ;
+	   GoSub PrVidDimX ;  // размеры по горизонтальной оси
+	   GoSub NameVid ;    // Наименование развертки
+	   X_lev=Dx_minL+120
+	   X_prav=Dx_minR+120
+	   visbox visbox 4points Xm[1]-X_prav -10 Xm[3]-300  Xm[4]+X_lev -10 Xm[3]-300  Xm[1]-X_prav -10 3000  Xm[1]-X_prav  Xm[5]+100 3000 done;
+	   visbox on done ;
+	   zoom all;
+
+	   GoSub PrVidDimY ; //Размеры по вертикальной оси
+	   GoSub SvDimRes;   // Сохраняем результат построения размерной сетки
+	   //hide ;
+	   //GoSUb ExpFilVid ; //Формируем файлы с проекциями (видами)
+	   GoSub VidLD ;     // формируем указатель на главном виде
+	   if KeyGr2==1 {
+	//      visible gr2 done ;
+	//      explode gr2 done ;
+	   }
+	   regen 4 ;
+	   visbox switch done ;
+	//visbox off done ;
+	   visbox offdisplay done;
+	   i1=i1+1
+	   WallAP[i1]=i   // Записываем номер вида (стены)
+	   goto met8;
+	}
+	N_PrVid=i1 ; //колличество сформированных проекций по стенам
+	GoSub SvDimGRes ;      // Сохраняем результат построения указателей видов
+return;
+//=======================================================
+ExpFilVid:  //Формируем файлы с проекциями (видами)
+
+	if hideA==1 {
+	 //exp2d wmf no mono yes optimized yes continue VidFilesH[i] [ overwrite ] ;
+	 if ExpTyp==0 { // вариант экспорта 0-pic 1-k3
+		exp2d pic mono yes optimized yes continue pathApp+"VidFilesH"+str(i)+".tmp" [ overwrite ]
+	 }
+	 if ExpTyp==1 { // вариант экспорта 0-pic 1-k3
+		exp2d k3
+		inscribe yes      // экспортирывать все изображение или только видимую в окне часть
+		mono no          // все линии черные или со своим цветом
+		byobject yes      // оптимизация каждого объекта независимо друг от друга
+		bycolor no        // оптимизировать линии каждого цвета независимо от линий с другими цветами
+		bythickness no    // оптимизировать линии определенной толщины независимо от линий с другой толщиной
+		CreatePath no     // создавать контура из смежных линий
+		SupportEntity yes // объекты с типом текст, размер, дуга, окружность и плоский контур, лежащие в плоскостях, параллельных
+										 // картинной плоскости экспортируемого изображения экспортируются с сохранением своего типа
+		done    pathApp+"VidFilesH"+str(i)+".tmp" [ overwrite ]
+	  }
+	}
+	if visA==1 {
+	   hide 4;
+	   if ExpTyp==0 { // вариант экспорта 0-pic 1-k3
+		  exp2d pic mono yes optimized yes continue pathApp+"VidFilesV"+str(i)+".tmp" [ overwrite ]
+	   }
+	   if ExpTyp==1 { // вариант экспорта 0-pic 1-k3
+		exp2d k3
+		inscribe yes      // экспортирывать все изображение или только видимую в окне часть
+		mono no          // все линии черные или со своим цветом
+		byobject yes      // оптимизация каждого объекта независимо друг от друга
+		bycolor no        // оптимизировать линии каждого цвета независимо от линий с другими цветами
+		bythickness no    // оптимизировать линии определенной толщины независимо от линий с другой толщиной
+		CreatePath no     // создавать контура из смежных линий
+		done  pathApp+"VidFilesV"+str(i)+".tmp" [ overwrite ]
+			//SupportEntity no // объекты с типом текст, размер, дуга, окружность и плоский контур, лежащие в плоскостях, параллельных
+										 // картинной плоскости экспортируемого изображения экспортируются с сохранением своего типа
+	   }
+	}
+	'redraw all
+return;
+//=======================================================
+ImpFilVid: //Формируем общий файл с проекциями по стенам
+	keyGV=0 // ключ формирования главного вида номер 999
+	i=0
+	  //new;
+	  select all done ;
+	  if sysvar(61)>0 {
+		 invisible all ;
+	  }
+	  vport zoom 3 ;
+	  vport zoom on ;
+	  setucs vcs;
+	met9:
+	if i<N_PrVid {
+	  i=i+1
+	  met999:
+	  ltype 3 ;
+	  //color 11 ;
+
+	  vimage off;
+
+	  layers new str(i)+"|Am_Hid" ;
+	  layers set str(i)+"|Am_Hid" ;
+	  if hidea==1 {
+		ndexp=sysvar(60)
+		//import wmf no VidFilesH[i] 0 0 0;
+		if ExpTyp==0 { // вариант экспорта 0-pic 1-k3
+		  import pic no pathApp+"VidFilesH"+str(WallAP[i])+".tmp" 0 0 0;
+		}
+		if ExpTyp==1 { // вариант экспорта 0-pic 1-k3
+		
+		  append k3  pathApp+"VidFilesH"+str(WallAP[i])+".tmp" 0 0 0;
+		  gosub setwidth;
+		}
+	   chprop ltype all done 3 ;
+	   frame all done;
+	   objident last 1 hid ;
+	   vimage on ;
+	   redraw all;
+	   ltype 0 ;
+	   invisible last 1 done;
+	  }
+	  //color 0 ;
+	  ltype 0 ;
+	  vimage off ;
+	  layers new str(i)+"|Am_Vis" ;
+	  layers set str(i)+"|Am_Vis" ;
+	  if visa==1 {
+			ndexp=sysvar(60)
+		   //import wmf yes VidFilesV[i] 0 0 0 ;
+		   if ExpTyp==0 { // вариант экспорта 0-pic 1-k3
+			  import pic yes pathApp+"VidFilesV"+str(WallAP[i])+".tmp" 0 0 0 ;
+		   }
+		   if ExpTyp==1 { // вариант экспорта 0-pic 1-k3
+		   
+			  append  pathApp+"VidFilesV"+str(WallAP[i])+".tmp" 0 0 0 ;
+
+		   }
+			gosub setwidth;
+	   }
+
+	   vimage on ;
+	   regen all;
+
+	   lwidth 0;
+	   if hideA==1 { visible hid done; }
+	   NDF=pathApp+"DimFiles"+str(WallAP[i])+".tmp"
+	   if FileExist(NDF) { // если существует файл с размерами
+		  Setucs gcs ;
+		  append  NDF 0 0 0 ;
+		  objident last 1 gdim ;
+		  if i!=100 {
+			 setucs vcs ;
+			 place gdim ;
+		  }
+		  explode gdim done ;
+	   }
+	   group all done;
+
+	   objident last 1 vid[i] ;
+	   Gosub SetPrAttrib ;
+	   redraw all ;
+	   lwidth 0 ;
+	   invisible vid[i]  done;
+	   goto met9 ;
+	}
+	if keyGV!=1 {   // Импортируем главный вид
+	   keyGV=1
+	   oldi=i
+	   i=100
+
+	   goto met999 ;
+	}
+	i=oldi
+	NS_Vid=i // Общее число видов
+return;
+//=======================================================
+setwidth:
+				vimage on ;
+				regen all;
+				onerror nxl_1;
+				
+				Nullout=fltrtype(0);
+				Nullout=fltrtype("Line");
+				ndposexp=sysvar(60)-ndexp;
+
+
+				if ndposexp>0  {
+					chprop lwidth partly last ndposexp done WidthVis ; //Толщина видимых линийWidthVis
+				}
+				nxl_1:
+				offerror;
+				Nullout=fltrtype(0);
+return;
+
+//=======================================================
+PrVidDimX:     // размеры по горизонтальной оси
+	Obs=SysVar(60)
+	// размеры нижних предметов
+	select attribute "(D_StNum=="+"\""+UCS_Name[i]+"\""+")&&(PlaceType==0)" done ;
+
+	if SysVar(61)==0 { goto met10 ; }
+	macro L_support+"SelVidDim.mac" 0 1 Xm[4]+100 0 Xm[3]   Xm[1]-100 0 Xm[3]  Xm[1]+(Xm[4]-Xm[1])/2 0 Xm[3]-200  ;
+	met10:
+	// размеры верхних предметов
+	select attribute "(D_StNum=="+"\""+UCS_Name[i]+"\""+")&&(PlaceType!=0)" done ;
+
+	if SysVar(61)!=0 {
+	   macro L_support+"SelVidDim.mac" 0 1 Xm[4]+100 0 Xm[6]   Xm[1]-100 0 Xm[6]  Xm[1]+(Xm[4]-Xm[1])/2 0 Xm[6]+200  ;
+	}
+	keyobs=0
+	Obs=SysVar(60)-Obs
+	if obs>0 {
+	   keyobs=1
+	   #Gdim group Last Obs done ; // Создаем группу из размеров
+	}
+	Attrobj Attach "D_StNum" Done group Last Obs done UCS_Name[i] ;
+return;
+
+PrVidDimY:     // размеры по вертикальной оси
+	Kgrtmp=0
+	select all  remove window cross ^Xm[4]+50 0 Xm[3]-50   ^Xm[1]-50 0 Xm[6]+50 done ;
+	if SysVAr(61)>0 {
+	   #grtmp group all remove window cross ^Xm[4]+50 0 Xm[3]-50   ^Xm[1]-50 0 Xm[6]+50 done ;
+	   Kgrtmp=1
+	   }
+	else { 
+		return ; 
+	}
+	select wholly attribute "ObjType<3" done ;
+	Obs=SysVar(60)
+	if SysVar(61)!=0 {
+	   macro L_support+"SelVidDim.mac" 1 2 Xm[4] 0 Xm[3]-100
+										   Xm[4] 0 Xm[3]+100
+										   Xm[4]+200+DX_minL 0 Xm[3]+(Xm[6]-Xm[3])/2  ;
+	}
+	Obs=SysVar(60)-Obs
+	if obs>0 {
+	   if keyobs!=0 {
+		  add Gdim last Obs done ;
+	   }
+	   else {
+			#Gdim group Last Obs done ; // Создаем группу из размеров
+			keyobs=1
+			}
+	}
+	if Kgrtmp!=0 {
+	   explode grtmp done ;
+	   }
+return;
+
+//=======================================================
+SvDimRes:  // Сохраняем результат построения размерной сетки
+	Obs=SysVar(60) ;
+	if keyobs!=1 { return ; }
+	explode Gdim done ;
+	Obs=SysVar(60)-Obs+1 ;
+
+	if obs>0 {
+	Setucs save "tmp"  ;  // сохраняем систему координат
+	PtransCS(0,3,0,0,0,Xcr,Ycr,Zcr) ; // начало системы координат в ГСК
+	setucs vcs ; // переходим в видовую
+
+	PtransCS(3,0,Xcr,Ycr,Zcr,Xcr,Ycr,Zcr) ; // начало системы координат в видовой СК
+	setucs move Xcr Ycr Zcr ; // сдвигаем начальную точку СК
+	#Gdim group Last Obs done ; // Создаем группу из размеров в текущей ПСК
+	Save select Gdim done pathApp+"DimFiles"+str(i)+".tmp" [ overwrite ]   // Сохраняем выбранные (размеры) во внешнем файле
+	SetUcs restore "tmp"   ;  // Возвращаем ПСК
+	
+	}
+return ;
+
+//=======================================================
+ApmPlan: //Создаем план помещения (главный вид сверху с указанием стен)
+	view none gcs 0,0,1 done ; // Устанавливаем вид сверху
+	if hideA==1 {
+	 //exp2d wmf no mono yes optimized yes continue VidFilesH[i] [ overwrite ] ;
+	 if ExpTyp==0 { // вариант экспорта 0-pic 1-k3
+		exp2d pic mono yes optimized yes continue pathApp+"VidFilesH100.tmp" [ overwrite ]
+	  }
+	  if ExpTyp==1 { // вариант экспорта 0-pic 1-k3
+		exp2d k3
+		inscribe yes      // экспортирывать все изображение или только видимую в окне часть
+		mono no          // все линии черные или со своим цветом
+		byobject yes      // оптимизация каждого объекта независимо друг от друга
+		bycolor no        // оптимизировать линии каждого цвета независимо от линий с другими цветами
+		bythickness no    // оптимизировать линии определенной толщины независимо от линий с другой толщиной
+		CreatePath no     // создавать контура из смежных линий
+		//SupportEntity yes // объекты с типом текст, размер, дуга, окружность и плоский контур, лежащие в плоскостях, параллельных
+										 // картинной плоскости экспортируемого изображения экспортируются с сохранением своего типа
+		done  pathApp+"VidFilesH100.tmp" [ overwrite ]
+	  }
+	}
+	if visA==1 {
+	   hide 4;
+	   if ExpTyp==0 { // вариант экспорта 0-pic 1-k3
+		  exp2d pic mono yes optimized yes continue pathApp+"VidFilesV100.tmp" [ overwrite ]
+	   }
+	  if ExpTyp==1 { // вариант экспорта 0-pic 1-k3
+		exp2d k3
+		inscribe yes      // экспортирывать все изображение или только видимую в окне часть
+		mono no          // все линии черные или со своим цветом
+		byobject yes      // оптимизация каждого объекта независимо друг от друга
+		bycolor no        // оптимизировать линии каждого цвета независимо от линий с другими цветами
+		bythickness no    // оптимизировать линии определенной толщины независимо от линий с другой толщиной
+		CreatePath no     // создавать контура из смежных линий
+		//SupportEntity yes // объекты с типом текст, размер, дуга, окружность и плоский контур, лежащие в плоскостях, параллельных
+										 // картинной плоскости экспортируемого изображения экспортируются с сохранением своего типа
+		done     pathApp+"VidFilesV100.tmp" [ overwrite ]
+	  }
+	}
+	'redraw all
+return ;
+//=======================================================
+NameVid:   // Наименование развертки
+      #tvid text "%%uВид по стене "+right(UCS_Name[i],len(UCS_Name[i])-2) done  Xm[1]+(Xm[4]-Xm[1])/2+500 0 Xm[6]+400 Xm[1]+(Xm[4]-Xm[1])/2-100 0 Xm[6]+400
+      //chprop lwidth tvid done WidthVis ; //Толщина видимых линий
+      if keyobs!=0 {
+      add Gdim last 1 done ;
+   }
+   else {
+        #Gdim group Last 1 done ; // Создаем группу из размеров
+        keyobs=1
+        }
+return;
+//=======================================================
+TextParS: //Установка  параметров размеров и текста
+// определяем габариты вида
+// приводим их к формату А4
+
+return ;
+//=======================================================
+VidLD: //Указатель вида
+  // на виде сверху рисуем стрелку
+  Curvid=SysVar(51) ;
+  Vport 3 ;
+  view none gcs 0,0,1 done ; // Устанавливаем вид сверху
+
+  dimtext 2 "Вид "+right(UCS_Name[i],len(UCS_Name[i])-2) done ; // ставим имя вида
+  //#DGV Ldim 3ddim Xm[1]+(Xm[4]-Xm[1])/2 700 0  Xm[1]+(Xm[4]-Xm[1])/2 1500 0 parallel Xm[1]+(Xm[4]-Xm[1])/2-20 700 0 ;
+  #DGV Rdim 2points   ^Xm[1]+(Xm[4]-Xm[1])/2 1100 0 ^Xm[1]+(Xm[4]-Xm[1])/2 700 0 ^Xm[1]+(Xm[4]-Xm[1])/2 700 0 ;
+  result=GetDimInfo(DGV,Info) ;
+  result=GetDimInfo(DGV,Info) ;
+  info[23]=info[23]*2   //Высота символа
+  info[35]=10 //	Длина стрелки	DOUBLE
+  info[36]=10 //	Вынос стрелки	DOUBLE
+  iif(info[37]==0,info[37]=0,info[37]=7) //	Тип стрелок (от 0 до 15)	STRING
+  iif(info[38]==0,info[38]=0,info[38]=7) //	Тип стрелок (от 0 до 15)	STRING
+  info[33]=327
+  result=PutDimInfo(DGV,Info) ;
+  dimtext 2 "<>" done ;
+  objident last 1 DGV ;
+  if IsVarDef("GrDGV")==0 { // группируем // создаем или добавляем в группу
+     setucs save "TP" ;
+     setucs gcs ;
+     Group DGV done ;
+     objident last 1 GrDGV ;
+     setucs restore "TP" ;
+     KyGRDGV=1
+  }
+  else {
+     add GrDGV
+     DGV
+     done ;
+  }
+  vport curvid ;
+return ;
+//=======================================================
+SvDimGRes:  // Сохраняем результат построения указателей видов
+ if KyGRDGV==1 {
+    Save select GrDGV done pathApp+"DimFiles100.tmp" [ overwrite ]   // Сохраняем  во внешнем файле
+ }
+return ;
+//=======================================================
+//  ищем примыкающие стены. линия примыкания включаетсяя в размерную сетку  если они в пределах
+FN_Wall:
+	if DWLN==0 { //Если массив  нижних линий стен неопределен
+	   DWLN=1
+	   Select attribute "WallLine==0" done ; // выделяем Нижние линии
+	   N_wln=SysVar(61) ;
+
+	   i_wln=0
+	   m_wln:                  // определяем число этих линий
+	   if (i_wln<N_wln) {  // если эти линии существуют и массив не заполнен заполняем ссылки на массив
+		  i_wln=i_wln+1
+
+		  WLN[i_wln]=getselnum(i_wln)
+		  goto m_wln ;
+	   }
+	}
+	if DWLV==0 { //Если массив  верхних линий стен неопределен
+	   DWLV=1
+	   Select attribute "WallLine==1" done ; // выделяем верхние линии
+	   N_wlv=SysVar(61) ;
+	   i_wlv=0
+	   m_wlv:                  // определяем число этих линий
+	   if (i_wlv<N_wlv) {  // если эти линии существуют и массив не заполнен заполняем ссылки на массив
+		  i_wlv=i_wlv+1
+		  wlv[i_wlv]=getselnum(i_wlv)
+		  goto m_wlv ;
+	   }
+	}
+	// определяем координаты линий в ПСК
+
+	attrobj delete group attribute "WallLine>-1" done "D_StNum" ;
+
+	Wln_L=-1    // Стартовое значение (СЗ)  указателя левой линии
+	Wln_R=-1    // Стартовое значение указателя правой линии
+	DX_minL=1055   // СЗ расстояния до старотовой линии
+	DX_minR=1055   // СЗ расстояния до старотовой линии
+	i_wln=0        // Обнуляем счетчик
+	m_wln1:          // определяем число этих линий
+	if (i_wln<N_wln) {  // если эти линии существуют и массив не заполнен заполняем ссылки на массив
+	   i_wln=i_wln+1
+	   err=ObjGab3(wln[i_wln],xmm) ;
+	   //chprop color wholly wln[i_wln] done 14 ;
+
+	   if (abs(xmm[2])<5)&&((abs(xmm[1]-xm[4])<DX_minL)||(abs(xm[1]-xmm[1])<DX_minR)) {
+		  Wln_L=iif(abs(xmm[1]-xm[4])<DX_minL,wln[i_wln],Wln_L) ;
+		  DX_minL=iif(abs(xmm[1]-xm[4])<DX_minL,abs(xmm[1]-xm[4]),DX_minL) ;
+		  Wln_R=iif(abs(xm[1]-xmm[1])<DX_minR,wln[i_wln],Wln_R) ;
+		  DX_minR=iif(abs(xm[1]-xmm[1])<DX_minR,abs(xm[1]-xmm[1]),DX_minR) ;
+		  Attrobj Attach "D_StNum" Done  wln[i_wln] UCS_Name[i] ;
+	   }
+	   goto m_wln1 ;
+	}
+	if IsVarDef("Wln_L")==16 {
+	   Attrobj Attach "D_StNum" Done  Wln_L UCS_Name[i] ;
+	   }
+	if IsVarDef("Wln_R")==16 {
+	   Attrobj Attach "D_StNum" Done  Wln_R UCS_Name[i] ;
+	   }
+
+	DX_minL=1055   // СЗ расстояния до старотовой линии
+	DX_minR=1055   // СЗ расстояния до старотовой линии
+	i_wlv=0
+	m_wlv1:          // определяем число этих линий
+	if (i_wlv<N_wlv) {  // если эти линии существуют и массив не заполнен заполняем ссылки на массив
+	   i_wlv=i_wlv+1
+	   err=ObjGab3(wlv[i_wlv],xmm) ;
+	   if (abs(xmm[2])<5)&&((abs(xmm[1]-xm[4])<DX_minL)||(abs(xm[1]-xmm[1])<DX_minR)) {
+		  Wln_L=iif(abs(xmm[1]-xm[4])<DX_minL,wlv[i_wlv],Wln_L) ;
+		  DX_minL=iif(abs(xmm[1]-xm[4])<DX_minL,abs(xmm[1]-xm[4]),DX_minL) ;
+		  Wln_R=iif(abs(xm[1]-xmm[1])<DX_minR,wlv[i_wlv],Wln_R) ;
+		  DX_minR=iif(abs(xm[1]-xmm[1])<DX_minR,abs(xm[1]-xmm[1]),DX_minR) ;
+		  Attrobj Attach "D_StNum" Done  wlv[i_wlv] UCS_Name[i] ;
+	   }
+	   goto m_wlv1 ;
+	}
+	if IsVarDef("Wln_L")==16 { Attrobj Attach "D_StNum" Done  Wln_L UCS_Name[i] ; }
+	if IsVarDef("Wln_R")==16 { Attrobj Attach "D_StNum" Done  Wln_R UCS_Name[i] ; }
+
+return;
+//=======================================================
+SortVid: // Расставляем виды в ряд
+	if keyGV==1 { // если был сформирован главный вид сверху
+	   err=ObjGab3(vid[100],xmm) ; i=0
+	}
+	else {
+	   err=ObjGab3(vid[1],xmm)   ; i=1
+	}
+	Xs=xmm[1]
+	Ys=xmm[2]
+	met11:
+	if i<NS_vid  {
+	   i=i+1
+	   =i
+	   err=ObjGab3(vid[i],xmm) ;
+	   move vid[i] done 2points xmm[4] xmm[2] 0 Xs-500 Ys 0 nocopy ;
+	   err=ObjGab3(vid[i],xmm) ;
+	   Xs=xmm[1]
+	   Ys=xmm[2]
+	   goto met11 ;
+	}
+return;
+//==========================
+SetPrAttrib:
+   if IsVarDef("iatpr")==0 { iatpr=1 }
+   iatpr=iatpr+1
+   if i==100 { iatpr=1 }   //Главный вид
+   if (!IsAttrdef("IPRLN99")) { Attribute Create "IPRLN99" "Номер вида по стене " Real 5 0  ; }
+   attrobj attach "IPRLN99" done vid[i] iatpr  ;
+return;
+//==========================
+DSave:
+	Pict 3 Yes
+	g_dorab=0;
+	g_pict=3;
+	macro L_SUPPORT+"drawsaveL.mac" 99 ;
+return;
+//========================удаляем созданные временные файлы
+DeleteTMP:
+
+i=0
+met12:
+if i<N_PrVid {
+   i=i+1
+   NameH=pathApp+"VidFilesH"+str(WallAP[i])+".tmp"
+   NameV=pathApp+"VidFilesV"+str(WallAP[i])+".tmp"
+   NameDF=pathApp+"DimFiles"+str(WallAP[i])+".tmp"
+   if FileExist(NameH)   {   err=RemoveFile(NameH); }
+   if FileExist(NameV)   {   err=RemoveFile(NameV); }
+   if FileExist(NameDF)  {   err=RemoveFile(NameDF)  }
+   NameH=pathApp+"VidFilesH"+str(WallAP[i])+".~tm"
+   NameV=pathApp+"VidFilesV"+str(WallAP[i])+".~tm"
+   NameDF=pathApp+"DimFiles"+str(WallAP[i])+".~tm"
+   if FileExist(NameH)   {   err=RemoveFile(NameH); }
+   if FileExist(NameV)   {   err=RemoveFile(NameV); }
+   if FileExist(NameDF)  {   err=RemoveFile(NameDF)  }
+goto met12 ;
+}
+if i!=100 {  // Удаляем главный вид сверху
+   i=99 ;
+   N_PrVid=100 ;
+   goto met12 ;
+   }
+return ;
+Dialog:
+#ok_flag   //Если после setvar будет 0 - Нажали кнопку "Отмена"
+setvar
+"Параметры среды чертежей разверток стен"           // Заголовок окна
+""                  // Имя файла иллюстрации
+// Пояснительный текст
+center         //с выравниванием слева
+" Определите значения для " "чертежей разверток стен"
+done          // конец пояснительного текста
+
+//logical  default g_DirDrawLn           "Файлы чертежей в отдельной папке 0-нет 1-да"                                                    g_DirDrawLn
+logical  default g_DrawBlank           "Чертежи на бланках"                                                                              g_DrawBlank
+//logical  default g_DrawSpec            "Формировать спецификацию 0-нет 1-да"                                                                        g_DrawSpec
+//logical  default g_DrawCod             "Обозначения чертежа 0-относительный 1-абстрагированный"                                                     g_DrawCod
+//logical  default g_DrawStamp           "Ключ запроса информации для штампа бланка из файла stamp.dbf и из файла ZAKAZ.dbf =0 только stamp.dbf =1"   g_DrawStamp
+//logical  default g_FormStamp           "Ключ запроса формы штампа 0-не запрашивать 1-регулярно"                                                     g_FormStamp
+logical  default g_PgFileDraw          "Каждый лист чертежа в отдельном файле"                                                           g_PgFileDraw
+//logical  default g_PgFileSpec          "Каждый лист спецификации в отдельном файле 0-нет 1-да"                                                      g_PgFileSpec
+//logical  default g_GroupDoc            "Формировать групповой чертеж по всем документам 0-нет 1-да"                                                 g_GroupDoc
+logical  default 0    "Чертеж масштабировать?"   Bl_Zoom
+//logical  default g_DrawTaile           "формировать деталировку 0-нет 1-да"                                                                         g_DrawTaile
+let CurGrk=Sysvar(76)  // текущее значение графического коэффициента
+	// if CurGrk<9
+	// {
+		//real default 9.6 "Значение графического скорее всего недостаточно ="+str(CurGRk) CurGrk
+		// real default 9.6 "Графический коэффициент" CurGrk
+
+	// }
+done  // Конец команды
+if ok_flag==0 { exit }
+g_DirDrawLn=1
+g_DrawSpec=0;
+g_FormStamp=1
+g_GroupDoc=iif(isvardef("g_GroupDoc")==0,1,g_GroupDoc);
+//g_PgFileDraw=1
+if CurGrk>1	{
+	defarr errinf[3];
+	errinf[1]="К3/Установки/Размеры/Масштаб графических элементов."
+	errinf[2]="Должен быть равен 1:1.Установлен "+str(CurGrk)+":1"
+	errinf[3]="Чертежи будут отображаться с ошибками."
+	macro Protopath+"ShowSmartInfo.mac" "Ошибка в установках."  3 errinf;
+}
+
+return ;
+
+DDbas:
+	ldim 3ddim 0 0 0  0 100 0 free 50 0 0 ; //стартовый размер
+	ldim base  0 110 0 ;
+	ldim base space hdim 0 120 0  ;
+	//ldim base  0 120 0  ;
+	//putmsg("hdim="+str(hdim),0)
+
+	ldim 3ddim 0 0 0 100 0 0 free 0 50 0 ; //стартовый размер
+	delete last 4 done ;
+	return ;
+	 //--удаляет файл с именем fName
+	sDelBackF:
+	if FileExist(fName)
+	{
+		Nullout=RemoveFile(fName)
+	}
+return;
+sExpVI:
+	//-- Направление вида в ВСК
+	defarr vi[3];
+	vi[1]=0;
+	vi[2]=0;
+	vi[3]=1;
+	setucs vcs ;
+	//rotate nocopy all  done 2points 0 0 0 0 0 1 180
+	//view user 0 0 1 ;
+	fnam="" //numTxt
+	//PutMsg(vi,1);
+	vtranscs(1,3,vi[1],vi[2],vi[3],vi[1],vi[2],vi[3]);
+	//PutMsg(vi,1);
+	i=0;
+	lbexpDrawA:
+	if i<=NS_vid
+	{
+		i=i+1;
+		Stamp=0; Certeg=0;
+		ti=0;
+		selbyattr "IPRLN99=="+str(i) all done;	   
+		if sysvar(61)!=0 {
+			ti=ti+1;
+			Certeg=getselnum(1) 		
+			obj1[ti]=Certeg;
+			//putmsg(Certeg);
+			zoom byobject obj1[ti] done;	
+		}
+		else { 
+			goto lbexpDrawA ; 	
+		}
+		selbyattr "IPRLNDW99=="+str(i) all done;
+		if sysvar(61)>0 { 
+			ti=ti+1;
+			Stamp=getselnum(1) 
+			obj1[ti]=Stamp;
+			//putmsg(Stamp);
+			zoom byobject obj1[ti] done;
+		}		
+		if isvardef("Stamp")!=16&&isvardef("Certeg")!=16 { 
+			goto lbexpDrawA ; 
+		}
+		//NULLOUT=exportvi(obj1,1,vi,str(i),1); //,4,1,1 // было до 2012-11-27
+		if ti>0 {
+			NULLOUT=exportvim(obj1,ti,vi,str(i),0,iif(i==NS_vid+1,2,1),"Виды по стенам "); // стало с 2012-11-27
+			zoom previous;
+		}		
+		goto  lbexpDrawA ;
+	}
+	//rotate nocopy all  done 2points 0 0 0 0 0 1 180
+	labreturn:
+return;

@@ -1,0 +1,29 @@
+//-- Макропрограмма создания нестандартной панели
+//-- Входные параметры:
+//-- shell - полилиния панели
+//-- PrMater - материал панели
+//-- ColDKro - цвет кромки панели
+//-- Typ_Kro - тип кромки панели
+//-- TexAngle - угол текстуры
+
+getpar shell, PrMater, ColDKro, Typ_Kro, TexAngle;
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами 
+
+NULLOUT=getsnap();
+NULLOUT=pushinst(1);
+macro ProtoPath+"SetMat.mac" PrMater ;
+macro ProtoPath+"SetKrom.mac" ColDKro Typ_Kro Typ_Kro Typ_Kro Typ_Kro ;
+macro ProtoPath+"SetFix.mac"  0 0 0 0 ;
+macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0;
+macro ProtoPath+"SetCuts.mac" 0 0 0 0;
+macro ProtoPath+"SetFixOver.mac"  0 ;
+macro ProtoPath+"SetBend.mac"  0 0 0 0 0 0 0 0 ;
+macro ProtoPath+"SetTextureAngle.mac" TexAngle ;
+macro ProtoPath+"SetPropM.mac" " " " " 0 0 0 0 0;
+macro ProtoPath+"SetTrNull.mac" ;
+macro ProtoPath+"MakeFreePan.mac" shell;
+objident last 1 polka;
+final:
+NULLOUT=resnap();
+NULLOUT=popinst(1);
+exit;

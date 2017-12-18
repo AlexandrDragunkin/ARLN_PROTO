@@ -1,0 +1,16 @@
+global ProtoPath ;
+ProtoPath=DbVar("ProtoPath",GetFilePath(SysVar(7)))
+FileName="FasadPar.scr"
+scr=InitScratch();
+err=AddScratch(scr,"Doorresh","d1",45);   // Ширина рамы до узора
+err=AddScratch(scr,"Doorresh","d2",15);   // Ширина рамы от узора  до проемов
+err=AddScratch(scr,"Doorresh","nz",4);
+
+err=AddScratch(scr,"RamF1_al","RmMater",1139); // "Профиль" " алюминиевый 20 мм узкий"  "ramf1_al.k3";
+err=AddScratch(scr,"RamF1_al","RmColor",603);  // цвет профиля
+err=AddScratch(scr,"RamF1_al","RmGroup",85);   // Группа подстановки профилей
+err=AddScratch(scr,"RamF1_al","RmColGr",68);   // Группа подстановки профилей
+
+err=ScrtchToFile(scr,ProtoPath+FileName);
+TermScratch(scr);
+exit;

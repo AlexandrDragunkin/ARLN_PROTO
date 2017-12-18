@@ -1,0 +1,76 @@
+//-- Большой тест для К3-Мебель
+//global g_Radius;
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами
+defarr qwe[100], furn[10];
+global MacroSw;       //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+furn[1]="'500101'"
+furn[2]="'500201'"
+furn[3]="'500102'"
+furn[4]="'500202'"
+kfur=4
+New;
+vport 4;
+view cartesian none gcs .33,.87,.38 done;
+MBCarcase  create done;
+zoom viewall all;
+// Заполняем каркас
+//macro ProtoPath+"Stkarkas.mac" ;
+Hcok=80  //      "Высота цоколя:"
+Ycok=10  //      "Заглубление цоколя:"
+Sfp=100  //     "Ширина фальшпанелей:"     	Sfp
+Rfp=0	 //  "Справа фальшпанель:"
+Lfp=0	 //  "Слева фальшпанель:"
+Ufp=0	 //  "Сверху фальшпанель:"
+Dfp=0	 //  "Снизу фальшпанель:"
+dno=0    //    "Опорное дно"
+TopType=0
+Noga=0
+fask=0
+HFask=0
+YFask=0
+Sten=0
+//macro ProtoPath+"karkas.mac" hcok ycok TopType Sfp Rfp Lfp Ufp Dfp Noga dno fask HFask YFask Sten;
+// Поставим панели
+
+//mbpanel byobjects backwall post 616 200 90;
+//mbpanel byobjects  1200 100 0;
+//mbpanel byobjects shell 1300 400 500;
+
+NULLOUT=getvarinst(2,"FasDMat",FasDMat,0);
+NULLOUT=getvarinst(2,"FasDTyp",FasDTyp,0);
+NULLOUT=getvarinst(2,"DfPetl",DfPetl,0);
+NULLOUT=getvarinst(2,"DfHandl",DfHandl,0);
+	macro ProtoPath+"SetFasdN.mac" FasDMat, FasDTyp, 0, 0, 0, 0;
+	macro ProtoPath+"SetDoor.mac" 1, 1, 0, 1, DfPetl, 0, 16;
+	macro ProtoPath+"SetDoorK.mac" 0;
+	macro ProtoPath+"SetHandl.mac" DfHandl, 11, 0, 0;
+	macro ProtoPath+"SetHand.mac" 0, 1;
+	macro ProtoPath+"SetEnam.mac" "Дверь";
+MacroSw=1
+	macro ProtoPath+"MakeDoor.mac"  16,600,96, 1200, 1000;
+
+
+        objident last 1 tdoor;
+j=1
+LoopF:
+kol1=npgetbywhere(2,"furntype = "+furn[j],"qwe");
+      if (kol1>0) {
+//putmsg("Кол-во="+str(kol1))
+i=1;
+Loop:
+        if (qwe[i]>0) {
+           MacFil=PriceInfo(qwe[i],"MacroFile","Нет",2) ;
+           HNDMac=PriceInfo(qwe[i],"HNDMac","MPНет",2) ;
+           Name=PriceInfo(qwe[i],"NAME","error",2) ;
+//           putmsg(Name+" "+MacFil+" "+HNDMac+" "+furn[j]);
+          protoobj edit list tdoor nodc "Fasrtype" qwe[i]  done ;
+        }
+        objident last 1 tdoor;
+        i=i+1;
+        if (i<=kol1) { goto Loop; }
+      }
+   j=j+1;
+   if (j<=kfur) { goto  LoopF; }
+
+
+exit;

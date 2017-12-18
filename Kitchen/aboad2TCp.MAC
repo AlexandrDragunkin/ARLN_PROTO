@@ -1,0 +1,93 @@
+//-- Создание объекта - стол терминальный полукруглый двухсекционный
+global MacroSw; //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global ProtoPath;		//-- Путь к папке с макропрограммами общей библиотеке прототипов
+global LocalPath;		//-- Путь к папке с макропрограммами локальной библиотеке прототипов
+ProtoPath=GetProtoMac("Shkaf.ptl");
+LocalPath=GetProtoMac("Kitchen.ptl");
+MacroSw=0;
+
+PrMater=DbVar("PrMater",0);   //-- Материал стола
+w=DbVar("Шир",330);			      //-- Ширина
+d=DbVar("Глуб",320);          //-- Глубина
+Радиус=DbVar("Радиус",215);   //-- Радиус
+Правый=DbVar("Правый",1);     //-- Ориентация
+h=DbVar("Выс",822);			      //-- Высота
+h_c=DbVar("ВысЦок",100);		  //-- Высота цоколя
+ФасМат=DbVar("ФасМат",0);     //-- Материал фасада нижней секции
+ФасМат2=DbVar("ФасМат2",0);   //-- Материал фасада верхней секции
+РисФас=DbVar("РисФас",0);     //-- Рисунок фасада нижней секции
+РисФас2=DbVar("РисФас2",0);   //-- Рисунок фасада верхней секции
+//------------------------------------------------------------
+h_dsp=PriceInfo(PrMater,"Thickness",DbVar("HDSP",16));
+h_fas1=PriceInfo(ФасМат,"Thickness",DbVar("HDSP",16));
+h_fas2=PriceInfo(ФасМат2,"Thickness",DbVar("HDSP",16));
+FType1=PriceInfo(РисФас,"FurnType","0",2);
+FType2=PriceInfo(РисФас2,"FurnType","0",2);
+h_fas=max(h_fas1,h_fas2);
+ТипКонт=1;   //-- Прямой
+Верхний=0;   //-- Нижний
+ObjTyp=0;    //-- Мебельный
+PlcTyp=0;    //-- Нижний
+//BiblNum=164; //-- В библиотеке ID=164
+BiblNum=getprotoid("Kitchen","Стол терминальный полукруглый двухсекционный","ProtoMacro","aboad2TCp");  //-- ID прототипа
+if (Правый==1)
+{
+  FurnType="100010";
+}
+else
+{
+  FurnType="100007";
+}
+if ((FType1!=FType2)&&(РисФас!=0)&&(РисФас2!=0))
+{
+ #ok_flag alternative "Предупреждение!" msgbox picture 1 beep 1 text "Тип фасада верхней и нижней секции должны быть одинаковы" done " Ок " done;
+ exit;
+}
+
+//------------------------------------------------------------
+begin:
+Ширина=w-2*h_dsp;             //-- Внутренняя ширина
+if (Правый==0)                //-- Левая ориентация
+{
+  DD=Радиус;                  //-- Изменение глубины
+  dR=d;	   	                  //-- Глубина справа
+  dL=d-DD;		                //-- Глубина слева
+  if (dL<5*h_dsp)
+  {
+    d=int(Радиус+5*h_dsp);
+  }
+}
+else
+{
+  DD=Радиус;                 //-- Изменение глубины
+  dR=d-DD;	   	             //-- Глубина справа
+  dL=d;		                   //-- Глубина слева
+  if (dR<5*h_dsp)
+  {
+    d=int(Радиус+5*h_dsp);
+  }
+}
+d=max(dl,dr);               //-- Максимальная глубина
+//------------------------------------------------------------------
+
+macro ProtoPath+"BegUnit.mac" "" ;
+macro LocalPath+"aboad2TC.mac" ;
+
+//-- Ставим размеры
+macro ProtoPath+"aDimLine.mac" w  d h  ТипКонт Верхний;
+//-- Линии контакта
+macro ProtoPath+"aContLine.mac" w dL dR h 0 ТипКонт Верхний;
+#Boad group all done;
+macro ProtoPath+"SetEnam.mac" "Стол терминальный полукруглый двухсекционный";
+macro ProtoPath+"EndUnit.mac" w d h ;
+//-- Присваиваем атрибуты
+macro ProtoPath+"FurnAttr.mac" ObjTyp PlcTyp BiblNum FurnType;
+macro ProtoPath+"aCutAtr.mac" !Правый 2 Радиус-h_fas 0;
+macro ProtoPath+"OldArtic.mac" ;
+macro ProtoPath+"Scrcopatr.mac" ; //-- Запись в объект Scratch атрибута
+exit;
+//--------------------------------------------------------------------------
+err:
+stru="При заданной ширине глубина шкафа не может быть меньше "+str(d)+" мм";
+macro ProtoPath+"Exceptions.mac" 7 stru;
+goto begin;

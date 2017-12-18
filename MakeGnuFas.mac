@@ -1,0 +1,98 @@
+//-- Создание дугообразного фасада
+global ProtoPath;
+global g_FurnType;  //-- Тип мебельного объекта
+global ElemName;    //-- Имя мебельного элемента
+
+global FasVaria;  //-- Вариант фасада
+global PanDir;    //-- Направление шпона
+global
+DoorMater,  //-- Материал фасада
+DoorPict,   //-- Рисунок фасада
+DoorBCol,   //-- Цвет кромки фасада
+DoorBand,   //-- Тип кромки фасада
+DoorMatVS1, //-- Материал первой вставки фасада
+DoorMatVS2; //-- Материал второй вставки фасада
+global g_FasPlas;
+
+getpar
+x y z		//-- Правый нижний дальний угол	фасады
+w d h 	//-- Размер по ширине и высоте
+Rad     //-- Радиус
+R1      //-- Размер трапеции справа
+R2;     //-- Размер трапеции слева
+//---------------------------------------------------------------
+hdsp=priceinfo(DoorMater,"Thickness",16);
+position=52;  //-- Номер прототипа фасада
+ElemFasName=priceinfo(DoorPict,"NAME"," ",2); //-- Имя фасада из прайс-листа
+if (ElemFasName!=" ")
+{
+  ElemFasName="Фасад '"+ElemFasName+"'";
+}
+
+
+
+Namescr="ProtoParams";
+FurnType="500000";
+
+NULLOUT=getsnap();
+
+gosub SimpleFas;
+
+
+NULLOUT=resnap();
+ElemName=ElemFasName;
+FurnType=g_FurnType;
+//-- Присваиваем атрибуты
+attrobj attach "Posit" done last 1 position;
+attrobj attach "FurnType" done last 1 FurnType ;
+attrobj attach "Assembly" done last 1 1;      //-- Добавим атрибут сборочной единицы
+
+if (ElemName!=" ")
+{
+  attrobj attach "ElemName" done last 1 ElemName ;
+}
+else
+{
+  attrobj attach "ElemName" done last 1 "Фасад" ;
+}
+
+macro ProtoPath+"EndFas.mac" DoorPict w h hdsp;
+exit;
+//==================================================
+SimpleFas:
+
+object_1=sysvar(60);
+macro ProtoPath+"SetFasdN.mac" DoorMater DoorPict DoorBCol DoorBand DoorMatVS1 DoorMatVS2 ;
+macro ProtoPath+"SetDir.mac" PanDir;
+Fas_mac=PriceInfo(DoorPict,"MacroFile","fasad_vip.mac",2);
+if (Len(Fas_Mac)==0)
+{
+  point 0 0 0;
+}
+else
+{
+	macro Protopath+Fas_Mac 0, 0, 0, W, D, H, Rad, R1, R2;
+}
+
+g_FurnType=FurnType;
+object_2=sysvar(60)-object_1;
+move last object_2 done x y z nocopy;
+setucs move x y z;
+#fas group last object_2 done;
+//-------------------------------------------------------------
+FurnType=g_FurnType;
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"W",w);
+err=AddScratch(ScrMod,FurnType,"H",h);
+err=AddScratch(ScrMod,FurnType,"Fasrtype",DoorPict);
+err=AddScratch(ScrMod,FurnType,"PrMater",DoorMater);
+err=AddScratch(ScrMod,FurnType,"PrMatVs1",DoorMatVS1);
+err=AddScratch(ScrMod,FurnType,"PrMatVs2",DoorMatVS2);
+err=AddScratch(ScrMod,FurnType,"Face_col",DoorBCol);
+err=AddScratch(ScrMod,FurnType,"Nshp",PanDir);
+err=AddScratch(ScrMod,FurnType,"BAND",DoorBand);
+err=AddScratch(ScrMod,FurnType,"Variant",FasVaria);
+NULLOUT=writescratch(ScrMod,Namescr,fas);
+NULLOUT=TermScratch(ScrMod);
+NULLOUT=addattrpi(fas,1,52);
+return;

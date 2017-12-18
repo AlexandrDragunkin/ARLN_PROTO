@@ -1,0 +1,80 @@
+//-- Макропрограмма присваивает фасаду все необходимые атрибуты
+//-- Входные параметры:
+//-- FasType - Рисунок фасада
+//-- w h hdsp - Габариты фасада по ширине, высоте и толщине соответственно
+global ProtoPath;
+global UnitCode;  //-- Код изделия (текст)
+global HoldName;  //-- Имя хозяина
+global ElemName; //-- Имена мебельных элементов
+
+KarkasNumb=getcarcnumb(); //-- Порядковый номер каркаса в сцене
+
+// global DoorPropCode;  //-- У фасада здесь будет название параметра "Тип фасада" прототипа
+
+global
+DoorMater,            //-- Материал фасада
+DoorPict,             //-- Nип фасада(рисунка)
+DoorMatVS1;           //-- Материал первой вставки фасада
+
+global
+DoorCol               //-- Цвет (условно )
+DoorPok               //-- Покрытие
+DoorIsp;              //-- Исполнение
+
+getpar FasType w h hdsp ;
+
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done last 1 done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+}
+if (ElemName==" ")
+{
+  attrobj attach "ElemName" done last 1 "Фасад";
+}
+else
+{
+  attrobj attach "ElemName" done last 1 ElemName;
+}
+if (isassign("HoldName",0))
+{
+  attrobj copy record "HoldName" done last 1 done;
+}
+else
+{
+  attrobj attach "HoldName" done last 1 HoldName;
+}
+
+FurnT=priceinfo(FasType,"furntype","500101",2);
+GrID=26;
+if (right(FurnT,2)=="02"||right(FurnT,2)=="03")
+{ 
+ GrID=131;
+}
+if (right(FurnT,2)=="04")
+{ 
+ GrID=132;
+}
+attrobj attach "UnitCode" done last 1 "5000";
+attrobj attach "GroupID" done last 1 GrID;        //-- группа "Тип фасада"
+attrobj attach "GoodsID" done last 1 FasType;   //-- ID рисунка фасада фасада
+attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 w hdsp h; //-- Размеры фасада
+
+nullout=getvarinst(1,"PrimMFas",PrimM,"");
+if len(PrimM)>0
+{ attrobj attach "PrimM" done last 1 PrimM; }
+nullout=setvarinst(1,"PrimMFas","");
+
+// attrobj attach "P1" "P2" "P3" Done last 1 DoorCol DoorPok DoorIsp; //-- Дополнительные атрибуты
+// macro ProtoPath+"ProtoAttrName.mac" DoorPropCode;
+
+UEFname=ProtoPath+"UserEndFas.mac";
+if FileExist(UEFname)
+{
+	macro UEFname FasType w h hdsp done ;
+}
+exit;

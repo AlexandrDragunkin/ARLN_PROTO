@@ -1,0 +1,50 @@
+//--Макро создания соединителя полки для колонной системы Komandor.
+global ProtoPath;
+getpar GoodsID;
+nullout=getvarinst(2,"UnitCodeWard",UnitCodeWard,"8000");
+//--Читаем свойства сборочной единицы
+IDFix1=PriceInfo(GoodsID,"NomID1",1,2);		//-- Соединитель профиля под полку		..54-2042..
+NameFix1=PriceInfo(IDFix1,"MatName","",1);	
+IDFix2=PriceInfo(GoodsID,"NomID2",1,2);		//-- Зажимающая гайка				..54-2043..
+NameFix2=PriceInfo(IDFix2,"MatName","",1);	
+IDFix3=PriceInfo(GoodsID,"NomID3",1,2);		//-- Шуруп М5х10				..59-0720..
+NameFix3=PriceInfo(IDFix3,"MatName","",1);
+IDFix4=PriceInfo(GoodsID,"NomID4",1,2);		//-- Шуруп М5х5					..59-0719..
+NameFix4=PriceInfo(IDFix4,"MatName","",1);
+
+obj_do=sysvar(60); 
+//-- Добавляем соединитель профиля под полку
+macro ProtoPath+"MakeAcce.mac" IDFix1 "040000" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameFix1;
+attrobj attach "UnitCode" Done last 1 UnitCodeWard;
+rotate last 1 done 2points 0 0 0 1 0 0 180 nocopy;
+rotate last 1 done 2points 0 0 0 0 0 1 90 nocopy;
+//-- Добавляем зажимающую гайку
+macro ProtoPath+"MakeAcce.mac" IDFix2 "040000" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameFix2;
+attrobj attach "UnitCode" Done last 1 UnitCodeWard;
+//-- Добавляем шуруп М5х10
+macro ProtoPath+"MakeAcce.mac" IDFix3 "040400" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameFix3;
+attrobj attach "UnitCode" Done last 1 UnitCodeWard;
+move last 1 done 0 0 -6 nocopy;
+//-- Добавляем первый шуруп М5х10
+macro ProtoPath+"MakeAcce.mac" IDFix4 "040400" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameFix4;
+attrobj attach "UnitCode" Done last 1 UnitCodeWard;
+move last 1 done 0 23 5 nocopy;
+//-- Добавляем второй шуруп М5х10
+macro ProtoPath+"MakeAcce.mac" IDFix4 "040400" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameFix4;
+attrobj attach "UnitCode" Done last 1 UnitCodeWard;
+move last 1 done 0 -23 5 nocopy;
+
+obj_posle=sysvar(60);
+kol=obj_posle-obj_do;
+rotate last kol done 2points 0 0 0 0 1 0 90 nocopy;
+group last kol done;
+FurnType=PriceInfo(GoodsID,"FurnType","350000",2);
+NameEl=PriceInfo(GoodsID,"Name","",2);
+attrobj attach "FurnType" done last 1 FurnType;
+attrobj attach "ElemName" Done last 1 NameEl;
+exit;

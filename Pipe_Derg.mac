@@ -1,0 +1,22 @@
+//--Макро создания держателя трубы для системы Komandor.
+global ProtoPath;
+getpar GoodsID;
+//--Читаем свойства сборочной единицы
+IDKom1=PriceInfo(GoodsID,"NomID1",1,2);			//-- Держатель трубы односторонний			..54-1201-MS..
+NameKom1=PriceInfo(IDKom1,"MatName","",1);		//-- Наименование
+
+
+obj_do=sysvar(60); 
+//-- Добавляем  соединитель
+macro ProtoPath+"MakeAcce.mac" IDKom1 "040000" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameKom1;
+rotate last 1 done 2points 0 0 0 0 0 1 -90 nocopy;
+obj_posle=sysvar(60);
+kol=obj_posle-obj_do;
+rotate last kol done 2points 0 0 0 0 0 1 90 nocopy;
+group last kol done;
+FurnType=PriceInfo(GoodsID,"FurnType","350000",2);
+NameEl=PriceInfo(GoodsID,"Name","",2);
+attrobj attach "FurnType" done last 1 FurnType;
+attrobj attach "ElemName" Done last 1 NameEl;
+exit;

@@ -1,0 +1,18 @@
+//-- Макропрограмма установки типа крепления гардеробной полки
+global ProtoPath;
+getpar PanWFixB WFixOtB WFixRasB PanWFixC WFixOtC WFixRasC;
+
+NULLOUT=setvarinst(2,"PanWFixB",PanWFixB);	//-- Крепеж по стороне В
+NULLOUT=setvarinst(2,"WFixOtB",WFixOtB);	//-- Отступ крепежа по стороне В
+NULLOUT=setvarinst(2,"WFixRasB",WFixRasB);	//-- Расстояние между крепежами по стороне В
+
+NULLOUT=setvarinst(2,"PanWFixC",PanWFixC);	//-- Крепеж по стороне С
+NULLOUT=setvarinst(2,"WFixOtC",WFixOtC);	//-- Отступ крепежа по стороне С
+NULLOUT=setvarinst(2,"WFixRasC",WFixRasC);	//-- Расстояние между крепежами по стороне C
+
+ShiftXB=PriceInfo(PanWFixB,"ToleranceX",0,2);	//-- Величина подрезки панели по стороне В
+ShiftXC=PriceInfo(PanWFixC,"ToleranceX",0,2);	//-- Величина подрезки панели по стороне С
+
+NULLOUT=setvarinst(2,"Shift_XB",ShiftXB);	//-- Подрез панели по стороне В
+NULLOUT=setvarinst(2,"Shift_XC",ShiftXC);	//-- Подрез панели по стороне С
+exit;

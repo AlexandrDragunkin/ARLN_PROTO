@@ -1,0 +1,39 @@
+//-- Макрос установки ящиков с пиктограммы
+global ProtoPath;
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+PicturesPath=ProtoPath+"Pictures\\";
+defarr Ptype[10], altfl[10];
+
+altfl[1]=PicturesPath+"box_N.jpg"
+altfl[2]=PicturesPath+"box_U.jpg"
+
+Ptype[1]="Накладной";
+Ptype[2]="Утопленный";
+
+#altnum
+  alternative
+  "Установка ящиков"
+  picbox
+  text
+  center
+  "Тип наложения ящика:"
+  done
+  default 1
+  Ptype[1]  altfl[1]
+  Ptype[2]  altfl[2]
+done;
+if altnum==0
+{
+  cancel;
+}
+NULLOUT=GetSnap();
+if (altnum==1) 
+{
+	macro ProtoPath+"box_n.mac" ;				//-- вызываем макро накладного ящика
+}
+if (altnum==2) 
+{
+	macro ProtoPath+"box_u.mac" ;				//-- вызываем макро утопленного ящика
+}
+NULLOUT=ReSnap();
+exit;

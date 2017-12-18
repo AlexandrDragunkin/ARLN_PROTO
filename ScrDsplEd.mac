@@ -1,0 +1,28 @@
+// Подпрограмма редактирования дверки с Фасадом сплошной
+global ProtoPath ;
+global g_Scratch;
+getpar pnt, FasCode;
+
+Namescr="FasadPar"
+ #res CalcVarScr  g_Scratch  FasCode;
+#ok_flag
+setvar
+"Редактировани параметров сплошного фасада"
+""
+left
+"Измените параметры и нажмите ОК"
+done
+  logical default  ris  "Тип рисунка"  ris
+  logical default  skr  "Наличие скруглений"  skr
+  real default  d1  "Ширина до узора"  d1
+
+done
+if ok_flag==0 { TermScratch(g_Scratch); cancel }
+err=AddScratch(g_Scratch,FasCode,"ris",ris);   // Наличие рисунка
+err=AddScratch(g_Scratch,FasCode,"skr",skr);   // Наличие скругления
+err=AddScratch(g_Scratch,FasCode,"d1",d1);   // Ширина рамы до узора
+
+WriteScratch(g_Scratch,Namescr,pnt);
+TermScratch(g_Scratch);
+
+exit;

@@ -1,0 +1,137 @@
+defarr first[3], second[3], next[3];
+
+getpar
+KeyBase // 1-от базы
+code  // 1-по горизонтальной оси  2-по вертикальной
+first[1] first[2] first[3]
+second[1] second[2] second[3]
+next[1] next[2] next[3]
+;
+
+defarr  xm[6] ;
+defarr xm1[500] xm2[500] xp3[500];
+global TXT_cut;
+//code=1;
+object_2=sysvar(61);
+i=0
+j=0
+j1=0;
+
+NEXT1:
+i=i+1
+If (i<=object_2) {
+  point=getselnum(i);
+// Получаем информацию о текущем положении объекта
+metunit:
+xmn1=0
+ymn1=0
+zmn1=0
+xmn2=0
+ymn2=0
+zmn2=0;
+
+rr=objgab3(point,xm)
+xsmin=xm[1];
+ysmin=xm[2];
+zsmin=xm[3];
+xsmax=xm[4];
+ysmax=xm[5];
+zsmax=xm[6];
+xmn1=xsmin
+ymn1=ysmin
+zmn1=zsmin
+xmn2=xsmax
+ymn2=ysmax
+zmn2=zsmax
+
+if (code==1) {
+//  if (first[3]>zmn1)&&(first[3]<zmn2) {
+    macro  GetProtoMac("Shkaf.ptl")+"SortArr.mac" xmn1 xp3 j1 ;
+    j1=j1+1
+    macro  GetProtoMac("Shkaf.ptl")+"SortArr.mac" xmn2 xp3 j1 ;
+    j1=j1+1
+    j=j+1
+    xm1[j]=xmn1;
+    xm2[j]=xmn2;
+//  }
+}
+if (code==2) {
+//  if (first[3]>zmn1)&&(first[3]<zmn2) {
+    macro  GetProtoMac("Shkaf.ptl")+"SortArr.mac" zmn1 xp3 j1 ;
+    j1=j1+1
+    macro  GetProtoMac("Shkaf.ptl")+"SortArr.mac" zmn2 xp3 j1 ;
+    j1=j1+1
+    j=j+1
+    xm1[j]=zmn1;
+    xm2[j]=zmn2;
+//  }
+}
+
+  goto NEXT1;
+}
+
+if (j==0)  { goto END_P1; }
+if (j1==0) { goto END_P1; }
+minx=min(second[code],first[code]);
+maxx=max(second[code],first[code]);
+
+x1=maxx;
+
+ If (!IsAttrdef("AutoPlace"))
+ { Attribute Create "AutoPlace" "Номер вида на котором определен размер" Real 5 0 ; }
+  If (!IsAttrdef("VidDimPlace"))
+ { Attribute Create "VidDimPlace" "Номер вида на котором определен размер" Real 5 0 ; }
+ CurrVi=SysVar(51)   ;
+ CV="VidDim_"+Str(CurrVi) ;
+ =CV;
+
+if !ExistsLayer("VidDim_1")   { layers new  "VidDim_1" ; }
+if !ExistsLayer("VidDim_2")   { layers new  "VidDim_2" ; }
+if !ExistsLayer("VidDim_3")   { layers new  "VidDim_3" ; }
+if !ExistsLayer("VidDim_4")   { layers new  "VidDim_4" ; }
+
+ //layers set CurrViD ;
+if Keybase!=1 { Ncy=j1-1 }
+else { Ncy=j1 }
+CodFirst=0
+i=0
+lab1:
+if i<Ncy {
+   i=i+1
+  if (code==1)&&(abs(xp3[i]-xp3[i+1])>3) {
+    #Hdim LDim 3DDim xp3[i] first[2] first[3] xp3[i+1] first[2] first[3] parallel xp3[i+1] next[2] next[3] ;
+    Attrobj Attach  "AutoPlace"  Done Last 1 1;
+    Attrobj Attach  "VidDimPlace"  Done Last 1 CurrVi;
+    chprop layer last 1 done CV ;
+    layers on CV ;
+  }
+    if (code==2)&&(abs(xp3[i]-xp3[i+1])>3) {    //
+    if KeyBase!=1 {  //цепочкой
+       #Hdim LDim 3DDim first[1] first[2] xp3[i] first[1] first[2] xp3[i+1] parallel next[1] next[2] xp3[i+1] ;
+    }
+    else { //Ставим от базы
+       if CodFirst!=1 {   //первый размер базы
+          #Hdim LDim 3DDim first[1] first[2] xp3[i] first[1] first[2] xp3[i+1] vertical next[1] next[2] xp3[i+1] ;
+          lastdim=xp3[i+1]
+          CodFirst=1
+          i=i+1
+       }
+       else {  //Следующие размеры от базы
+       =i
+              if (abs(xp3[i]-lastdim)>3) {
+                 #Hdim LDim base first[1] first[2] xp3[i]  ;
+                 lastdim=xp3[i]
+              }
+       }
+    }
+    Attrobj Attach  "AutoPlace"  Done Last 1 1;
+    Attrobj Attach  "VidDimPlace"  Done Last 1 CurrVi;
+    chprop layer last 1 done CV ;
+    layers on CV ;
+  }
+
+goto lab1 ;
+}
+
+END_P1:
+exit ;

@@ -1,0 +1,71 @@
+// ќпределение глобальных переменных дл€ L_SUPPORT ѕ ћ
+global PKM_SP ;
+if isvardef("PKM_SP")==0
+{
+   //‘ункци€ определ€ет, определена ли к данному моменту переменна€, им€ которой содержит строка variable. ‘ункции возвращает:
+   //0  Ц переменна€ не определена;
+   //3  Ц переменна€ €вл€етс€ массивом
+   //5  Ц переменна€ числового типа
+   //6  Ц переменна€ строкового типа
+   //16  Ц переменна€ €вл€етс€ ссылкой на объект
+exit
+}
+
+PKM_SP=1
+//ƒл€ бланка чертежа
+Global
+Pl_Obozn
+Pl_name
+Pl_name1
+Pl_MatrZag
+Pl_Razrab
+Bl_OverPlot
+Pl_Pref
+Bl_OverVis
+Bl_OverEdit
+DrawType
+vid
+;
+global level ; //дл€ нумерации лидера
+level=0 ;
+
+ Pl_Obozn=". " ;
+ Pl_name="."  ;
+ Pl_name1="." ;
+ Pl_MatrZag="." ;
+ Pl_Razrab="." ;
+ Bl_OverPlot=0 ;
+ Pl_Pref="" ;
+ Bl_OverVis=0 ;
+ Bl_OverEdit=0 ;
+ vid=0 ;
+ DrawType="A" ;
+//===ƒл€ допусков
+TolceTip="val";
+NULLOUT=SetVarInst(2,"TolceTip",TolceTip);	//Val Otv  Lin
+TolceVal=13;
+NULLOUT=SetVarInst(2,"TolceVal",TolceVal);	//квалитет  10...18
+TolcePol="h";
+NULLOUT=SetVarInst(2,"TolcePol",TolcePol);	//Н h k Js  Натяг    (с зазором=-1 Переходная=0 с натягом=1)
+TolceVar=4;
+NULLOUT=SetVarInst(2,"TolceVar",TolceVar);	//Вариант отображения      0 1 2 3
+global snm ; snm=0
+global wmfout ; wmfout=0
+//======дл€ гнутых длинномеров
+global
+Rlong
+;
+Rlong=250   // стартовое значение радиуса
+//==========
+
+global L_SUPPORT ;
+//L_SUPPORT=""
+global prm1 prm2 ; //значени€ углов подрезки дл€ CnAng.mac
+prm1=0
+prm2=0
+//===========—охран€ем —тартовые параметры
+
+//macro L_Support+"SaveParSp.mac" "ParSp.cfg" ;
+macro L_Support+"D_Set_DrawParLn.mac"  1    ;
+global StrArr; defarr StrArr[256];
+exit;

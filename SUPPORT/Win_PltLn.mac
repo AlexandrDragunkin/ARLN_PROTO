@@ -1,0 +1,379 @@
+//Win_PltLn.mac
+//*****************************************************************************
+//     Сборочный чертеж профильных длинномеров
+//            Заполнение штампа
+//              Драгункин А.Р.
+//              ГеоС 2008-2014 гг.
+//*****************************************************************************
+
+ver=5.1;
+
+
+defarr  xm[6] data[8] ;
+
+Global 
+	FormList
+	Pl_Obozn
+	Pl_name
+	Pl_name1
+	Pl_MatrZag
+	Pl_Razrab
+	Pl_Prov
+	Pl_Utv
+	Bl_OverPlot 
+	Pl_Pref
+	Bl_OverVis 
+	Bl_OverEdit
+	L_SUPPORT
+	g_name
+	g_DrawTaile           //формировать деталировку 0-нет 1-да
+	Bl_Zoom
+	ProtoPath
+;
+
+
+
+CurGrk=Sysvar(76) ;
+FileName=SysVar(2) ;
+
+FileNameSP=FileName-3+"-"+g_name+".k3" ;
+
+
+//#gr2 group window :
+Getpar
+gr2        //указатель на объект вокруг которого создаем штамп
+Dobname    //Дополнительный символ для головного штампа "" для следующих "д"
+Ltype      //Тип профильных длинномеров
+Nlist         //Число листов
+Ilist         //Номер листа
+Result
+;
+onerror mmm;
+invisible gr2 done;
+goto uuu;
+mmm:
+offerror;
+result=0
+exit;
+offerror;
+uuu:
+
+#gr1 point 0 0 0;
+;
+invisible all done;
+visible gr2 done ;
+
+
+setucs Vcs ;
+setucs Rotate 0 0 0 180 ;
+=objgab3(gr2,xm) ;
+
+if IsVarDef("FormList")==0 { macro L_SUPPORT+"SetPlProject.mac" ; }
+
+if FormList=="UserBlank_1_a4"    { N_Scale1=(xm[4]-xm[1])/180 ;n_scale2=(xm[5]-xm[2])/225; }
+if FormList=="BlankKD"    { N_Scale1=(xm[4]-xm[1])/180 ;n_scale2=(xm[5]-xm[2])/225; }
+if FormList=="BlankDS"    { N_Scale1=(xm[4]-xm[1])/286 ;n_scale2=(xm[5]-xm[2])/170; }
+if FormList=="Blank1"    { N_Scale1=(xm[4]-xm[1])/290 ;n_scale2=(xm[5]-xm[2])/190; }
+if FormList=="gost_a3"   { N_Scale1=(xm[4]-xm[1])/396 ;n_scale2=(xm[5]-xm[2])/225; }
+if FormList=="gost_a4"   { N_Scale1=(xm[4]-xm[1])/180 ;n_scale2=(xm[5]-xm[2])/210; }
+if FormList=="Без_бланка_портрет"   { N_Scale1=(xm[4]-xm[1])/180 ;n_scale2=(xm[5]-xm[2])/210; }
+if FormList=="Без_бланка_альбом"    { N_Scale1=(xm[4]-xm[1])/210 ;n_scale2=(xm[5]-xm[2])/170; }
+n_scale=n_scale1 ;
+
+
+Xcen=(xm[4]-xm[1])/2+xm[1]
+Ycen=(xm[5]-xm[2])/2+xm[2]
+
+ //#ok_flag alternative "Внимание!!" msgbox text "N_Scale1="+str(n_scale1)+"        n_scale2="+str(n_scale2) done "Ок" done
+
+if (n_scale2>n_scale1) { n_scale=n_scale2 ;  }
+//Подбираем ближайший из стандартного ряда
+//GoSub MasstInit ;
+
+gost=FormList+"ф"+Dobname+".k3"
+gost2=FormList+"ф.k3"
+Objects=Sysvar(60) ;
+mp="<K3Files>"
+ffPath=MPathExpand(mp)+"\\Штампы\\";
+ffnameb=ffPath+gost;
+if fileexist(ffnameb) {
+	#Forma append ffnameb ; //-10 0 0 ;
+}
+else {
+	ffnameb=ffPath+gost2;
+	#Forma append ffnameb ; //-10 0 0 ;
+}
+Objects=Sysvar(60)-Objects ;
+group last Objects done ; objident Last 1 Forma ;
+macro L_SUPPORT+"GrKfTextEdit.mac" Forma 3 ;
+Objects=Sysvar(60) ;
+Explode Forma done ;
+Objects=Sysvar(60)-Objects+1 ;
+
+
+//macro L_SUPPORT+"data.mac";
+
+      
+if Left(gost,14)=="UserBlank_1_a4" { prsetup a4 portrait  blackcolor wholescene vp3 done ; Gosub SetStmG ; }
+if Left(gost,7)=="BlankKD" 	{ prsetup a4 portrait blackcolor wholescene vp3 done ; Gosub SetStmG ; }      
+if Left(gost,7)=="BlankDS" 	{ prsetup a4 landscape blackcolor wholescene vp3 done ; Gosub SetStmG2 ; }  
+if Left(gost,6)=="Blank1" 	{ prsetup a4 landscape blackcolor wholescene vp3 done ; Gosub SetStmG1 ; }
+if Mid(gost,6,2)=="a4" 		{ prsetup a4 portrait  blackcolor wholescene vp3 done ; Gosub SetStmG ; } //gost=="gost_a4ф.k3"
+if Mid(gost,6,2)=="a3" 		{ prsetup a3 landscape blackcolor wholescene vp3 done ; Gosub SetStmG ; } //gost=="gost_a3ф.k3"
+if left(gost,18)=="Без_бланка_портрет" 		{ prsetup a4 portrait  blackcolor wholescene vp3 done ; Gosub SetStmG ; } //gost=="Без_бланка_портретф.k3"
+if left(gost,17)=="Без_бланка_альбом" 		{  prsetup a4 landscape blackcolor wholescene vp3 done ; Gosub SetStmG ; } //gost=="Без_бланка_альбомф.k3"
+
+
+	//scale Forma done 0 0 0 N_Scale nocopy ; // Изменяем масштаб формы
+        //ScaleView gr2 done Xcen Ycen 0  1/N_scale  1/N_scale  ; //Изменяем масштаб чертежа
+if Bl_Zoom { ScaleView gr2 done Xcen Ycen 0  1/N_scale  1/N_scale  ; } //Изменяем масштаб чертежа
+else { scale Forma done 0 0 0 N_Scale nocopy ; } // Изменяем масштаб формы
+zoom all ;
+
+move gr2 done -Xcen -Ycen 0 nocopy ;
+
+	//explode FormaA3 done ;
+//explode gr2 ;
+zoom all ;
+pict Sysvar(51) yes ;
+
+if (Bl_OverEdit==1) {  : }
+pict Sysvar(51) yes ;
+if (Bl_OverPlot==1) {
+// preprint ;
+prdirect ;
+}
+lab_A:
+if (Bl_OverVis==1) { invisible forma done } ;
+//visible gr1 ;
+//if Bl_OverEdit==0 { dimedit : }
+lwidth 0 ;
+setucs gcs;
+result=1;
+exit;
+
+//================
+DefStamp:
+//Умолчания из Stamp.dbf
+pathApp=MPathExpand("<appdata>")
+F_stamp=pathApp+"\\Stamp.dbf"
+macro L_support+"ChPathSetDrawFile.mac";
+if GetCount(f_stamp)==0 {
+   Pl_Obozn=""
+   Pl_name=""
+   Pl_name1=""
+   Pl_MatrZag=""
+   Pl_Razrab=""
+   Pl_Prov=""
+   Pl_UTV=""
+   DbCreate cst,F_stamp,
+   "PlObozn","C",50,0,
+   "Plname","C",50,0,
+   "Plname1","C",50,0,
+   "PlMatrZag","C",50,0,
+   "PlRazrab","C",50,0,
+   "PlProv","C",50,0,
+   "PlUtv","C",50,0;
+   DbAddNew cst;
+   DbSetValue cst,0,Pl_Obozn;
+   DbSetValue cst,1,Pl_name;
+   DbSetValue cst,2,Pl_name1;
+   DbSetValue cst,3,Pl_MatrZag;
+   DbSetValue cst,4,Pl_Razrab;
+   DbSetValue cst,5,Pl_Prov;
+   DbSetValue cst,6,Pl_Utv;
+   DbUpdate cst ;
+   DbClose cst ;
+   metDefault=1 ;
+   }
+else {
+     DbOpen cst,f_stamp,""
+     DbMoveFirst cst;
+   Pl_Obozn=DbGetValue(cst,0,"")
+   Pl_name=DbGetValue(cst,1,"")
+   Pl_name1=DbGetValue(cst,2,"")
+   Pl_MatrZag=DbGetValue(cst,3,"")
+   Pl_Razrab=DbGetValue(cst,4,"")
+   Pl_Prov=DbGetValue(cst,5,"")
+   Pl_Utv=DbGetValue(cst,6,"")
+   dbClose cst ;
+     }
+return;
+//================
+NewStData:
+//сохраняем новые данные в stamp.dbf
+DbOpen cst,f_stamp,""
+DbMoveFirst cst;
+   DbSetValue cst,0,Pl_Obozn;
+   DbSetValue cst,1,Pl_name;
+   DbSetValue cst,2,Pl_name1;
+   DbSetValue cst,3,Pl_MatrZag;
+   DbSetValue cst,4,Pl_Razrab;
+   DbSetValue cst,5,Pl_Prov;
+   DbSetValue cst,6,Pl_Utv;
+   DbUpdate cst ;
+   DbClose cst ;
+return;
+
+//=================
+SetStmG:
+
+
+      //присваиваем в штампе значения
+      if g_DrawTaile!=0 {
+         GoSub GetStDbf ;
+         }
+
+      if IsVarDef("PL_obozn")==0 { PL_obozn="." }
+      
+      if g_DrawTaile!=1 
+	  { 
+		StrObozn=PL_obozn+".0"+Str(Ltype+1)+".00 СБ" 
+
+	  }  //формировать деталировку 0-нет 1-да
+      else { StrObozn=ValDescr }
+		//putmsg(StrObozn);      
+      ;macro L_SUPPORT+"EdTextAttrib.mac"  "oboznSB!=0" StrObozn ;
+      if SysVar(61)>0 { objident last t1 ;
+         ;macro L_SUPPORT+"EdStrLong.mac" t1 120 0 ; //Размещаем строку в заданную ширину за счет изменения высоты символаg.mac" t1 20 0 ;
+      }
+      if g_DrawTaile!=1 { GoSub LongName ; }
+      else { SB_Nam1=ValName }
+      if IsVarDef("SB_Nam1")==0 { SB_Nam1="." }
+      ;macro L_SUPPORT+"EdTextAttrib.mac"  "NaimenSB1!=0" SB_Nam1 ;
+      if SysVar(61)>0 { objident last t1 ;
+         ;macro L_SUPPORT+"ChStrTxLnG.mac" t1 60 ;  //Преобразует длину текста до заданной, без изменения параметров стиля самого текста.nG.mac" t1 60 ;
+      }
+      if IsVarDef("Pl_Razrab")==0 { Pl_Razrab="." }
+         ;macro L_SUPPORT+"EdTextAttrib.mac"  "RazrabSp!=0" Pl_Razrab ;
+      if SysVar(61)>0 { objident last t1 ;
+         ;macro L_SUPPORT+"EdStrLong.mac" t1 20 0 ; //Размещаем строку в заданную ширину за счет изменения высоты символаg.mac" t1 20 0 ;
+      }
+      if IsVarDef("Pl_Prov")==0 { Pl_Prov="." }
+      ;macro L_SUPPORT+"EdTextAttrib.mac"  "ProvSP!=0" Pl_Prov ;
+      if SysVar(61)>0 { objident last t1 ;
+         ;macro L_SUPPORT+"EdStrLong.mac" t1 20 0 ; //Размещаем строку в заданную ширину за счет изменения высоты символаg.mac" t1 20 0 ;
+      }
+      if IsVarDef("Pl_Utv")==0 { Pl_Utv="." }
+      ;macro L_SUPPORT+"EdTextAttrib.mac"  "UtvSP!=0" Pl_Utv ;
+      if SysVar(61)>0 { objident last t1 ;
+         ;macro L_SUPPORT+"EdStrLong.mac" t1 20 0 ; //Размещаем строку в заданную ширину за счет изменения высоты символаg.mac" t1 20 0 ;
+      }
+      MasDT="1:"+str(n_scale)
+      ;macro L_SUPPORT+"EdTextAttrib.mac"  "MashtabDT!=0" MasDT ;
+      if SysVar(61)>0 { objident last t1 ;
+       ;macro L_SUPPORT+"EdStrLong.mac" t1 20 0 ; //Размещаем строку в заданную ширину за счет изменения высоты символаg.mac" t1 20 0 ;
+      }
+
+      if IsVarDef("ListBl")==0 { ListBl=1 }
+      ;macro L_SUPPORT+"EdTextAttrib.mac"  "ListSP_N!=0" Nlist ;
+      if SysVar(61)>0 { objident last t1 ;
+         attrobj attach "ListSP_N" done t1 -99  ;
+      }
+      
+      if IsVarDef("ListBl")==0 { ListBl=1 }
+      ;macro L_SUPPORT+"EdTextAttrib.mac"  "ListSP_i!=0" Ilist ;
+
+
+     Nulout=SysArr(81,data) ; Curdata=FileNameSP+"  "+str(data[1])+"-"+str(data[2])+"-"+str(data[3])+"  "+str(data[5])+":"+str(data[6])+":"+str(data[7])
+      ;macro L_SUPPORT+"EdTextAttrib.mac"  "CurDataSp!=0" Curdata ;
+
+      if SysVar(61)>0 { objident last t1 ;
+         ;macro L_SUPPORT+"EdStrLong.mac" t1 90 0 ; //Размещаем строку в заданную ширину за счет изменения высоты символаg.mac" t1 110 0 ;
+      }
+      if IsVarDef("Zagotdt")==0 { Zagotdt="." }
+      
+      ;macro L_SUPPORT+"EdTextAttrib.mac"  "Zagotdt!=0" Zagotdt ;
+      if SysVar(61)>0 { objident last t1 ;
+         ;macro L_SUPPORT+"EdStrLong.mac" t1 60 0 ; //Размещаем строку в заданную ширину за счет изменения высоты символаg.mac" t1 20 0 ;
+      }
+      
+      if IsVarDef("Massdt")==0 { Massdt="." }
+      ;macro L_SUPPORT+"EdTextAttrib.mac"  "Massdt!=0" Massdt ;
+      if SysVar(61)>0 { objident last t1 ;
+         ;macro L_SUPPORT+"EdStrLong.mac" t1 20 0 ; //Размещаем строку в заданную ширину за счет изменения высоты символаg.mac" t1 20 0 ;
+      }
+      
+      group last Objects done ; objident Last 1 Forma ;
+      if (!IsAttrdef("IPRLNDW"+str(Ltype))) { Attribute Create "IPRLNDW"+str(Ltype) "IPRLNDW"+str(Ltype) Real 5 0  ; }
+              Attrobj Attach "IPRLNDW"+str(Ltype) Done Forma  ILIST  ;
+return;
+//===============================
+MasstInit:
+defarr Masst[29] ;
+Masst[1]=0.001
+Masst[2]=0.01
+Masst[3]=0.02
+Masst[4]=0.025
+Masst[5]=0.05
+Masst[6]=0.1
+Masst[7]=0.2
+Masst[8]=0.25
+Masst[9]=0.4
+Masst[10]=0.5
+Masst[11]=1
+Masst[12]=2
+Masst[13]=2.5
+Masst[14]=4
+Masst[15]=5
+Masst[16]=10
+Masst[17]=20
+Masst[18]=25
+Masst[19]=40
+Masst[20]=50
+Masst[21]=100
+Masst[22]=200
+Masst[23]=400
+Masst[24]=500
+Masst[25]=1000
+Masst[26]=2000
+Masst[27]=5000
+Masst[28]=10000
+Masst[29]=50000
+mi=0
+metmi:
+if mi<29 {
+   mi=mi+1
+   if n_scale<=Masst[mi] { n_scale=Masst[mi] ; goto metmid;  }
+   goto metmi;
+}
+metmid:
+return;
+//===================
+LongName:
+         LtypeS=Ltype+1
+         If LtypeS==100 { nametyp="Проекции по стенам" }    //Для проекций по стенам
+         else {
+              If LtypeS!=8 { nametyp=GetLongsAI(LtypeS,1) ; }
+              else { nametyp="Балюстрада" }
+         }
+         SB_Nam1=nameTyp+" заказ "+Pl_obozn+" cборочный чертеж"
+return;
+//===================
+GetStDbf:
+TMPpath=MPathExpand("<appdata>")+"\\";
+FTMPname=TMPpath+"TmpDetL"+str(Ltype)+".dbf"
+
+if GetCount(FTMPname) {  DbOpen rcdTMP,FTMPname, "PNUMBER=="+str(ILIST);   //открыли базу проекта
+   n=DbRecCount(rcdTMP) ;//ОПРЕДЕЛИЛИ ЧИСЛО ЗАПИСЕЙ В ОТКРЫТОЙ БАЗЕ
+   if n<1 { #ok_flag alternative "Внимание!!" msgbox text "Записи в базе с именем "+FTMPname+" не обнаружены."
+   done "Ок" done ;
+   //Vimage on;
+   'regen all
+   ;cancel ;
+}
+DbMoveFirst rcdTMP ;
+metIm:
+If (!DbEOF(rcdTMP))||(Ilist!=dbBookmark(rcdTMP)) {
+=Ilist
+ValPoz=DbGetValue(rcdTMP,"POZ",-99);          //CПИСАЛИ ЗНАЧЕНИЕ
+ValDescr=DbGetValue(rcdTMP,"DESCR",-99);      //CПИСАЛИ ЗНАЧЕНИЕ
+ValName=DbGetValue(rcdTMP,"NAME",-99);        //CПИСАЛИ ЗНАЧЕНИЕ
+Zagotdt=DbGetValue(rcdTMP,"LNMAT",-99);        //CПИСАЛИ ЗНАЧЕНИЕ
+DbMoveNext rcdTMP ;
+}
+dbClose rcdTMP ;
+}
+return ;
+
+

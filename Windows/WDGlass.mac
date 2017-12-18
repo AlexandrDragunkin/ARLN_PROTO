@@ -1,0 +1,36 @@
+//-- Стекло для окон
+global TextLib;
+global ProtoPath;
+getpar Width, Height, BoxThick, glasscolor, PicColor HideFlag;
+//------------------------------------------------------------------------------
+if (HideFlag==0)
+{
+  goto D2Draw ;
+}
+#GL box 0 0 0 Width  BoxThick  Height ;
+ChProp MapByPars last 1 Done
+0,  -1                    //-- Для всех секций
+1,  TextLib+str(glasscolor)
+if (PicColor>0)
+{
+  0,  1                   //-- Для первой секций
+  1,  TextLib+str(PicColor)
+  14, 1
+}
+;
+chprop norenderframe GL done ;
+exit;
+//------------------------------------------------------------------------------
+D2Draw:
+defarr p1[3], p2[3], p3[3];
+p1[1]=0;
+p1[2]=0;
+p1[3]=0;
+p2[1]=Width;
+p2[2]=0;
+p2[3]=0;
+p3[1]=Width;
+p3[2]=BoxThick;
+p3[3]=0;
+macro ProtoPath+"WDDRHatch.mac" p1 p2 p3 1;
+exit;

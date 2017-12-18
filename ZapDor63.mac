@@ -1,0 +1,75 @@
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+nullout=getvarinst(2,"Doors63",Doors63,"Doors63.zmc|");
+
+global ProtoPath;
+
+global g_keyDS63;
+// global koldv;
+global g_SysEdit63;
+g_SysEdit63=1; // Выкл. запрос фаски
+// NULLOUT=getsnap();
+// //===================================================Находим дверные системы
+  // object_2=sysvar(60);
+   // i=0
+   // koldv=0;
+   // NEXT12:
+   // i=i+1
+   // if (i<=object_2) {
+    // point=getobjnum(i);
+    // name=getattr(point,"Posit",0);
+    // if (name==162) {koldv=koldv+1;} // Треки
+    // goto NEXT12;
+                    // }
+// gosub SaveLay;
+//===================================================Находим дверные системы
+// Карточки параметров системы
+
+g_keyDS63=0
+macro ProtoPath+"niche.mac";   //-- Запрашиваем параметры ниши
+
+// g_xb=g_xb-pinf[3] 
+// g_zb=g_zb-pinf[1]
+// g_x1=g_x1+pinf[3]+pinf[4]
+// g_z1=g_z1+pinf[1]+pinf[2]
+
+macro ProtoPath+Doors63+"DREditSys63.mac" 0;
+// NULLOUT=resnap();
+exit;//==========================================Создаем слой и записываем туда кол-во дверных систем
+// SaveLay:
+// PKM=InitScratch();
+     // object=sysvar(60);
+     // i=0
+  // NEXT1:
+    // i=i+1
+    // if (i<=object) {
+       // point=getobjnum(i);
+       // pop=getattr(point,"ElemName"," ");
+       // if pop=="КолДв" {  PKM2=ReadScratch("КолДв",point);
+                          // if (PKM2!=0) {
+                          // Proba=GetScratch(PKM2,"Умолчания","КолДв",koldv,Par);
+                          // PutMsg("======================================="+Str(koldv));
+                          // Close=TermScratch(PKM2);
+                                       // }
+                          // layers on "1122"; delete point done; object=object-1;
+                       // }
+       // goto NEXT1;
+                   // }
+    // koldv=koldv+1;
+    // Proba=AddScratch(PKM,"Умолчания","КолДв",koldv);
+    // if (!IsAttrdef("КолДв")) {Attribute Create "КолДв" "Умолчания" text 40 100 ;}
+    // Pi1=WriteScratch(PKM,"КолДв",0);
+    // #attr box 0 0 0 100 100 100;
+
+    // attrobj copy record "КолДв" Done attr done;
+    // Attrobj Attach "ElemName" Done attr "КолДв";
+    // layers new "1122";
+    // ;chprop layer last 1 done "1122";
+    // Close=TermScratch(PKM);
+    // layers off "1122";
+// return;
+//==========================================Создаем слой и записываем туда кол-во дверных систем

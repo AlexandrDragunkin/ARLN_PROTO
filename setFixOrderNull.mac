@@ -1,0 +1,8 @@
+//setFixOrder.mac
+//-- Обнуляет правило крепежа по сторонам панели
+global FixtOrder; //-- правило крепежа по сторонам
+defarr FixtOrder[8];
+
+initarray(FixtOrder,0)
+NULLOUT=setarrinst(1,"FixtOrder",FixtOrder);
+exit;

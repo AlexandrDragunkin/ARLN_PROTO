@@ -1,0 +1,2724 @@
+//-- Формирование БД для выгрузки
+//-- Подразумевается, что все панели в сцене получили номера.
+//-- Номер в минус подразумевает панель в исключение
+
+global ProtoPath;
+global NumFixMac; 
+
+getpar MyConn, tab_place;
+// putmsg("A_CreateBase");
+onError ErrCrBase;
+// Если надо отдельно считать кромки раскомментировать
+// nullout=NPGetByWhere(1,"[BandType]=327","ArrProp",0); // Заполнение массива фактическими кромками
+nullout=NPGetByWhere(1,"[Transparency]=1","ArrTran",0); // Прозрачность
+nullout=NPGetByWhere(1,"[MDF]=1","ArrMDF",0); // Заполнение массива МДФ материалами
+nullout=NPGetByWhere(1,"[Shpon]=1","ArrShpon",0);
+nullout=getvarinst(2,"ProtoArl",ProtoArl,"A__A.ar|");
+
+//-- UnitCode цельнокройных фасадов МДФ
+N_FWUC=1;
+defarr FasWholeUC[N_FWUC];
+FasWholeUC[1]="1200";
+
+//-- Умолчания ID отделок
+NULLOUT=getvarinst(2,"IDGroupPVH",IDGroupPVH,103);
+NULLOUT=getvarinst(2,"IDGroupPnt",IDGroupPnt,94);
+
+//-- Умолчания на минимальный габарит для ДСП и МДФ
+DSPmin=80;
+MDFmin=50;
+
+defarr FlArr[2], xm[6];
+defarr SQLStr[34], SQLArr[36], Pan[26], Arr[26];
+defarr DSArr[200];
+defarr Mask[8], BandID[8];
+nTA=4; defarr TypeArr[nTA];
+defarr ArrScr[20], ArrScrPar[20], ArrD[2];
+defarr DecDec[50];
+initarray(DecDec,"");
+
+nullout=getVarinst(2,"n_units",n_units,7);
+defarr UnitsID[n_units];
+defarr UnitsName[n_units];
+nullout=getArrinst(2,"UnitsID",UnitsID);
+nullout=getArrinst(2,"UnitsName",UnitsName);
+// putmsg(UnitsID)
+// putmsg(UnitsName)
+TypeArr[1]="шт";
+TypeArr[2]="п/м";
+TypeArr[3]="кв/м";
+TypeArr[4]="компл";
+// defarr sadd[3],fadd[3];
+// defarr HSideA[500], HSideF[500];
+CommentDec="";
+
+// defarr ExcGr[3];
+// ExcGr[1]=103;	// Группа самокл пленок
+// ExcGr[2]=-1;	// См.Эскиз
+// ExcGr[3]=334;	// Лицо по F
+
+// defarr inGr[6];
+// inGr[1]=336;	// Фотопечать
+// inGr[2]=346;	// Пленка
+// inGr[3]=347;	// Кожа
+// inGr[4]=98;		// Пескоструй
+// inGr[5]=95;		// Пластики
+// inGr[6]=354;	// Поролон
+
+KeyDF=0;		// Логическая - объявление массивов крепежа
+LastUDN=0;		// Последний UDetNumber
+ManualRP=0;		// RecProf считывание инфы с профиля или задание вручную
+ManualRF=0;		// RecFurn считывание инфы с фурнитуры или задание вручную
+con=adbCon(2);	// Главная база
+
+NameAtrPos="CommonPos";
+
+err=renumerate(); // Присвоим UnitPos и TopParentPos
+
+// ProjPath=getfilepath(sysvar(2));	//-- Возвращает путь до проекта
+// NameBase="BaseAR.mdb";
+// tab_place=ProjPath+NameBase;
+
+//-- Создаем базу данных
+
+// <?python
+// import k3
+// from dbaccessforK3 import DataBase_ACCESS
+// tab_place=k3.Var('FullPathBase').value
+// dba=DataBase_ACCESS()
+// MyConn = dba.adbCon(tab_place)
+// k3.Var('MyConn').value = MyConn
+// ?> 
+
+// putmsg(tab_place)
+// szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+tab_place;
+// fl=adbCreateMDB(tab_place,1);
+// MyConn=adbCon(szSrc);
+
+// Comment пусть будет. Поле доп.информации возможно прочитать только после повторного открытия проекта.
+ex=adbChkMdbTbl(tab_place,"TWorkPlace");
+if (ex==1) { MyRs1=adbModify(MyConn,"DROP TABLE TWorkPlace"); }
+
+// Name - Название заказа
+// Number - Номер заказа
+// Customer - Заказчик
+// Address - Адрес
+// Phone - Номер телефона
+// Date - Дата приема заказа
+// ExpDate - Дата исполнения заказа
+// Firm - Фирма
+// Salon - Салон
+// Acceptor - Имя приемщика заказа
+// Executor - Имя исполнителя заказа
+// AddInfo - Дополнительная информация о заказе
+// ToWorking - Дата передачи заказа на производство
+// NCurrency - Валюта, используемая в заказе
+// Discount - Размер скидки\наценки
+// Rate - Курс условной единицы
+
+Name=getorderinfo("Name");
+Number=getorderinfo("Number");
+Customer=getorderinfo("Customer");
+Adress=getorderinfo("Address");
+Phone=getorderinfo("Phone");
+Date=getorderinfo("Date");
+Salon=getorderinfo("Salon");
+Acceptor=getorderinfo("Acceptor");
+NCurrency=getorderinfo("NCurrency");
+Discount=getorderinfo("Discount");
+//Rate=getorderinfo("Rate");
+
+AddInfo=getorderinfo("AddInfo","ArrAInfo"); 
+
+if AddInfo==0 { defarr ArrAInfo[3]; initarray(ArrAInfo,""); }
+
+Comment1="";
+Comment2="";
+Comment3="";
+Darr=GetDimArray(ArrAInfo);
+
+if Darr<=2&&Darr!=0
+{
+	Comment1=ArrAInfo[1];
+	if Darr==2
+	{
+		Comment2=ArrAInfo[2];
+	}
+}
+if Darr>=3
+{
+	Comment1=ArrAInfo[1];
+	Comment2=ArrAInfo[2];
+	Comment3=ArrAInfo[3];
+	if Darr>3
+	{
+		putmsg("В примечании к заказу содержится больше информации, чем может быть выведено в отчет",0);
+	}
+}
+
+nullout=initarray(SQLStr,"");
+SQLStr[1]="CREATE TABLE TWorkPlace (";
+SQLStr[2]="WorkPlace VARCHAR, ";
+SQLStr[3]="PName VARCHAR, ";
+SQLStr[4]="PNumber VARCHAR, ";
+SQLStr[5]="PCustomer VARCHAR, ";
+SQLStr[6]="PAdress VARCHAR, ";
+SQLStr[7]="PPhone VARCHAR, ";
+SQLStr[8]="PDate VARCHAR, ";
+SQLStr[9]="PSalon VARCHAR, ";
+SQLStr[10]="PAcceptor VARCHAR, ";
+SQLStr[11]="PDiscount INT, ";
+SQLStr[12]="Comment1 VARCHAR, ";
+SQLStr[13]="Comment2 VARCHAR, ";
+SQLStr[14]="Comment3 VARCHAR); ";
+
+nullout=initarray(SQLarr,"");
+Comment="";
+SQLarr[1]="INSERT INTO TWorkPlace (WorkPlace, PName, PNumber, PCustomer, PAdress, PPhone, PDate,";
+SQLarr[2]="PSalon, PAcceptor, PDiscount, Comment1, Comment2, Comment3) VALUES (";
+SQLarr[3]=str(0)+", '";
+SQLarr[4]=str(Name)+"', '";
+SQLarr[5]=str(Number)+"', '";
+SQLarr[6]=str(Customer)+"', '";
+SQLarr[7]=str(Adress)+"', '";
+SQLarr[8]=str(Phone)+"', '";
+SQLarr[9]=str(Date)+"', '";
+SQLarr[10]=str(Salon)+"', '";
+SQLarr[11]=str(Acceptor)+"', ";
+SQLarr[12]=str(Discount)+", '";
+SQLarr[13]=str(Comment1)+"',";
+SQLarr[14]="'"+str(Comment2)+"'";
+SQLarr[15]=",'"+str(Comment3);
+SQLarr[16]="')";
+
+MyRs=adbModify(MyConn,SQLStr);
+MyRs=adbModify(MyConn,SQLarr);
+
+// Наш уникальный ключ UnitPos объекта
+// Сущность - головные элементы сцены
+ex=adbChkMdbTbl(tab_place,"TElements");
+if (ex==1) { MyRs1=adbModify(MyConn,"DROP TABLE TElements"); }
+
+nullout=initarray(SQLStr,"");
+SQLStr[1]="CREATE TABLE TElements (";
+SQLStr[2]="ParentPos INT, ";
+SQLStr[3]="UnitPos INT, ";
+SQLStr[4]="Posit INT, ";
+SQLStr[5]="Name VARCHAR(80), ";
+SQLStr[6]="IDPrice INT, ";
+SQLStr[7]="UnitCode VARCHAR(10), ";
+SQLStr[8]="FurnType VARCHAR(10), ";
+SQLStr[9]="Length INT, ";
+SQLStr[10]="Width INT, ";
+SQLStr[11]="Height INT, ";
+SQLStr[12]="PosNum INT, ";
+SQLStr[13]="NumberDS INT, ";
+SQLStr[14]="PlaceType INT, ";
+SQLStr[15]="Data1 VARCHAR, ";
+SQLStr[16]="Data2 VARCHAR, ";
+SQLStr[17]="Data3 VARCHAR, ";
+SQLStr[18]="Data4 VARCHAR, ";
+SQLStr[19]="Data5 VARCHAR, ";
+SQLStr[20]="Data6 VARCHAR, ";
+SQLStr[21]="Comment VARCHAR); ";
+
+MyRs=adbModify(MyConn,SQLStr);
+
+ex=adbChkMdbTbl(tab_place,"TPanels");
+if (ex==1) { MyRs1=adbModify(MyConn,"DROP TABLE TPanels"); }
+
+nullout=initarray(SQLStr,"");
+SQLStr[1]="CREATE TABLE TPanels (";
+SQLStr[2]="TopParentPos INT, ";			// Имя верхнего родителя
+SQLStr[3]="ParentPos INT, ";			// Имя основного родителя
+SQLStr[4]="UnitPos INT, ";				// UnitPos - уникальный ключ для бд и в сцене
+SQLStr[5]="UDetNumber VARCHAR(10), ";	// Номер панели
+SQLStr[6]="Name VARCHAR, ";				// Название
+SQLStr[7]="IDPrice INT, ";				// ID номенклатурного справочника
+SQLStr[8]="OneSCode VARCHAR(15), ";		// 1С код
+SQLStr[9]="IDPiece INT, ";				// ID заготовки из TPieces
+SQLStr[10]="NameMat VARCHAR, ";			// Название материала
+SQLStr[11]="UnitCode VARCHAR(10), ";	// Атрибут UnitCode
+SQLStr[12]="Type TINYINT, ";			// Тип панели 11,12,13,14
+SQLStr[13]="TypeP TINYINT, ";			// Тип панели по способу создания(парам., по контуру)
+SQLStr[14]="Length INT, ";				// Длина
+SQLStr[15]="Width INT, ";				// Ширина
+SQLStr[16]="Thickness INT, ";			// Толщина
+SQLStr[17]="PanDir INT, ";				// Направление текстуры
+SQLStr[18]="Curline TINYINT, ";			// Признак криволинейности панели
+SQLStr[19]="PrFlag INT, ";				// Признак наличия присадки
+SQLStr[20]="PazFlag INT, ";				// Признак стандартного паза
+SQLStr[21]="Transparency TINYINT, ";	// Ключ прозрачность
+SQLStr[22]="FrezKey TINYINT, ";			// Ключ фрезеровки
+SQLStr[23]="Comment VARCHAR, ";			// Комментарий к панели
+SQLStr[24]="Eskis VARCHAR, ";			// Комментарий эскиз
+SQLStr[25]="WorkComm VARCHAR, ";		// Комментарий обработок
+SQLStr[26]="DecComm VARCHAR, ";			// Комментарий к стеклам,зеркалам
+SQLStr[27]="IsFaceF TINYINT,";			// Лицо по F
+SQLStr[28]="MDF TINYINT,";				// Признак МДФ
+SQLStr[29]="Shpon TINYINT);";			// Признак Шпон
+
+MyRs=adbModify(MyConn,SQLStr);
+
+ex=adbChkMdbTbl(tab_place,"TBands");
+if (ex==1) { MyRs1=adbModify(MyConn,"DROP TABLE TBands"); }
+
+nullout=initarray(SQLStr,"");
+SQLStr[1]="CREATE TABLE TBands (";
+SQLStr[2]="TopParentPos INT, ";			// Имя верхнего родителя
+SQLStr[3]="ParentPos INT, ";			// Имя основного родителя
+SQLStr[4]="Unit INT, ";					// UnitPos - уникальный ключ для бд и в сцене
+SQLStr[5]="Name VARCHAR, ";				// Название
+SQLStr[6]="IDPrice INT, ";				// ID номенклатурного справочника
+SQLStr[7]="OneSCode VARCHAR(15), ";		// 1С код
+SQLStr[8]="Length INT, ";				// Длина
+SQLStr[9]="Width INT, ";				// Ширина
+SQLStr[10]="Thickness FLOAT, ";			// Толщина
+SQLStr[11]="Curline TINYINT, ";			// Признак криволинейности панели
+SQLStr[12]="Comment VARCHAR); ";		// Комментарий
+
+MyRs=adbModify(MyConn,SQLStr);
+
+ex=adbChkMdbTbl(tab_place,"TFixes");
+if (ex==1) { MyRs1=adbModify(MyConn,"DROP TABLE TFixes"); }
+
+nullout=initarray(SQLStr,"");
+SQLStr[1]="CREATE TABLE TFixes (";
+SQLStr[2]="TopParentPos INT, ";
+SQLStr[3]="ParentPos INT, ";
+SQLStr[4]="UnitPos INT, ";
+SQLStr[5]="Name VARCHAR(80), ";
+SQLStr[6]="NameMat VARCHAR(80), ";
+SQLStr[7]="IDPrice INT, ";
+SQLStr[8]="OneSCode VARCHAR(15), ";
+SQLStr[9]="UnitCode VARCHAR(10), ";
+SQLStr[10]="FurnType VARCHAR(10), ";
+SQLStr[11]="Comment VARCHAR(50));";
+
+MyRs=adbModify(MyConn,SQLStr);
+
+ex=adbChkMdbTbl(tab_place,"TFixLines");
+if (ex==1) { MyRs1=adbModify(MyConn,"DROP TABLE TFixLines"); }
+
+nullout=initarray(SQLStr,"");
+SQLStr[1]="CREATE TABLE TFixLines (";
+SQLStr[2]="ParentPos INT, ";
+SQLStr[3]="UnitPos INT, ";
+SQLStr[4]="Name VARCHAR(80), ";
+SQLStr[5]="FixSide VARCHAR(80), ";
+SQLStr[6]="FixID INT, ";
+SQLStr[7]="FurnType VARCHAR(10),";
+SQLStr[8]="Comment VARCHAR(50));";
+
+MyRs=adbModify(MyConn,SQLStr);
+
+ex=adbChkMdbTbl(tab_place,"TDecorates");
+if (ex==1) { MyRs1=adbModify(MyConn,"DROP TABLE TDecorates"); }
+
+nullout=initarray(SQLStr,"");
+SQLStr[1]="CREATE TABLE TDecorates (";
+SQLStr[2]="ParentPos INT, ";
+SQLStr[3]="DecoratePos INT, ";
+SQLStr[4]="MaterialID INT, ";
+SQLStr[5]="OneSCode VARCHAR(15), ";
+SQLStr[6]="Name VARCHAR(80), ";
+SQLStr[7]="Map INT, "; // Секция
+SQLStr[8]="GabChange INT, "; // Изменение габаритов полотна отделки
+SQLStr[9]="TypeID INT, "; // Группа отделки
+SQLStr[10]="TypeName VARCHAR(50), "; // Название группы
+SQLStr[11]="Gab FLOAT, "; // Название группы
+SQLStr[12]="Comment VARCHAR(50));";
+
+MyRs=adbModify(MyConn,SQLStr);
+
+ex=adbChkMdbTbl(tab_place,"TFurn");
+if (ex==1) { MyRs1=adbModify(MyConn,"DROP TABLE TFurn"); }
+
+nullout=initarray(SQLStr,"");
+SQLStr[1]="CREATE TABLE TFurn (";
+SQLStr[2]="TopParentPos INT, ";
+SQLStr[3]="ParentPos INT, ";
+SQLStr[4]="UnitPos INT, ";
+SQLStr[5]="Name VARCHAR, ";
+SQLStr[6]="IDPrice INT, ";
+SQLStr[7]="OneSCode VARCHAR(15), ";
+SQLStr[8]="UnitCode VARCHAR(10), ";
+SQLStr[9]="FurnType VARCHAR(10),";
+SQLStr[10]="Length INT,";
+SQLStr[11]="Width INT,";
+SQLStr[12]="Type VARCHAR(80),";
+SQLStr[13]="Article VARCHAR, ";
+SQLStr[14]="Comment VARCHAR);";
+
+MyRs=adbModify(MyConn,SQLStr);
+
+// Заготовки
+ex=adbChkMdbTbl(tab_place,"TPieces");
+if (ex==1) { MyRs1=adbModify(MyConn,"DROP TABLE TPieces"); }
+
+nullout=initarray(SQLStr,"");
+SQLStr[1]="CREATE TABLE TPieces (";
+SQLStr[2]="IDPiece INT, ";
+SQLStr[3]="UnitPos INT, ";
+SQLStr[4]="UDetNumber VARCHAR(10), ";
+SQLStr[5]="Name VARCHAR(100), ";
+SQLStr[6]="IDPrice INT, ";
+SQLStr[7]="OneSCode VARCHAR(15), ";
+SQLStr[8]="Amount INT, ";
+SQLStr[9]="Length INT, ";
+SQLStr[10]="Height INT, ";
+SQLStr[11]="Width INT, ";
+SQLStr[12]="Stock INT, "; // Запас + к заготовке
+SQLStr[13]="Article VARCHAR, ";
+SQLStr[14]="FurnType VARCHAR(10), ";
+SQLStr[15]="Comment VARCHAR(50)); ";
+
+MyRs=adbModify(MyConn,SQLStr);
+
+// Профили
+ex=adbChkMdbTbl(tab_place,"TProfiles");
+if (ex==1) { MyRs1=adbModify(MyConn,"DROP TABLE TProfiles"); }
+
+nullout=initarray(SQLStr,"");
+SQLStr[1]="CREATE TABLE TProfiles (";
+SQLStr[2]="TopParentPos INT, ";
+SQLStr[3]="ParentPos INT, ";
+SQLStr[4]="UnitPos INT, ";
+SQLStr[5]="Name VARCHAR(150), ";
+SQLStr[6]="IDPrice INT, ";
+SQLStr[7]="OneSCode VARCHAR(15), ";
+SQLStr[8]="UnitCode VARCHAR(10), ";
+SQLStr[9]="FurnType VARCHAR(10),";
+SQLStr[10]="Length INT, ";
+SQLStr[11]="IDPiece INT, ";
+SQLStr[12]="ColorName VARCHAR, ";
+SQLStr[13]="Article VARCHAR, ";
+SQLStr[14]="Comment VARCHAR(50)); ";
+
+MyRs=adbModify(MyConn,SQLStr);
+
+// Гардеробные системы
+ex=adbChkMdbTbl(tab_place,"TWardSys");
+if (ex==1) { MyRs1=adbModify(MyConn,"DROP TABLE TWardSys"); }
+
+nullout=initarray(SQLStr,"");
+SQLStr[1]="CREATE TABLE TWardSys (";
+SQLStr[2]="TopParentPos INT, ";
+SQLStr[3]="ParentPos INT, ";
+SQLStr[4]="UnitPos INT, ";
+SQLStr[5]="Name VARCHAR(150), ";
+SQLStr[6]="IDPrice INT, ";
+SQLStr[7]="OneSCode VARCHAR(15), ";
+SQLStr[8]="UnitCode VARCHAR(10), ";
+SQLStr[9]="FurnType VARCHAR(10),";
+SQLStr[10]="Length INT, ";
+SQLStr[11]="IDPiece INT, ";
+SQLStr[12]="Article VARCHAR, ";
+SQLStr[13]="Comment VARCHAR(50)); ";
+
+MyRs=adbModify(MyConn,SQLStr);
+
+gosub ZeroTElem;	// Обнулить переменные для TElements
+gosub ZeroTPanels;	// Обнулить переменные для TPanels
+gosub ZeroTBands;	// Обнулить переменные для TBands
+gosub ZeroTFixes;	// Обнулить переменные для TFixes
+gosub ZeroTFixLn;	// Обнулить переменные для ZeroTFixLn
+// gosub ZeroTDecor;	// Обнулить переменные для ZeroTDecor
+gosub ZeroTFurn;	// Обнулить переменные для ZeroTFurn
+gosub ZeroTPiece;	// Обнулить переменные для ZeroTPiece
+gosub ZeroTProf;	// Обнулить переменные для ZeroTProf
+gosub ZeroTWard;	// Обнулить переменные для TWardSys
+
+// adbStored() работать отказывается
+// Процедуры с Union отказывается видеть adbChkMdbTbl
+// Поэтому отключаем вывод ошибок и принудительно удаляем все процедуры
+nullout=adbdiagnoz(0) // 1-вкл. ругалки
+MyRs1=adbModify(MyConn,"DROP PROC GetPanels");
+MyRs1=adbModify(MyConn,"DROP PROC GetBands");
+MyRs1=adbModify(MyConn,"DROP PROC GetProfiles");
+MyRs1=adbModify(MyConn,"DROP PROC GetFurn");
+MyRs1=adbModify(MyConn,"DROP PROC GetDecor");
+nullout=adbdiagnoz(1) // 1-вкл. ругалки
+
+// Панели
+initarray(SQLStr,"");
+SQLStr[1]="CREATE PROCEDURE GetPanels AS "
+SQLStr[2]="SELECT UDetNumber, First(TPanels.Name) AS [Name], IDPrice, OneSCode, First(TPanels.NameMat) AS [NameMat], UnitCode,"
+SQLStr[3]="Type, Length, Width, Thickness, Curline, Transparency, Count(*) AS Cnt FROM TPanels GROUP BY UDetNumber,"
+SQLStr[4]="IDPrice, OneSCode, UnitCode, Type, Length, Width, Thickness, Curline, Transparency;"
+MyRs=adbModify(MyConn,SQLStr,4);
+
+// Кромка
+initarray(SQLStr,"");
+SQLStr[1]="CREATE PROCEDURE GetBands AS "
+SQLStr[2]="SELECT First(TBands.Name) AS Name, IDPrice, OneSCode, Width, Thickness, SUM(Length/1000) AS Len "
+SQLStr[3]="FROM TBands GROUP BY IDPrice, OneSCode, Width, Thickness;"
+MyRs=adbModify(MyConn,SQLStr,3);
+
+// Профили
+initarray(SQLStr,"");
+SQLStr[1]="CREATE PROCEDURE GetProfiles AS "
+SQLStr[2]="SELECT First(TProfiles.Name) AS Name, IDPrice, OneSCode, UnitCode, FurnType, "
+SQLStr[3]="Length AS Len, Count(*) AS Cnt FROM TProfiles WHERE IDPiece=0 GROUP BY IDPrice, OneSCode, "
+SQLStr[4]="UnitCode, FurnType, Length UNION "
+SQLStr[5]="SELECT TPieces.Name AS Name, IDPrice, OneSCode, \"0000\" AS UnitCode, FurnType, "
+SQLStr[6]="[Length]+[Stock] AS Len, Amount AS Cnt FROM TPieces WHERE FurnType=\"020000\""
+MyRs=adbModify(MyConn,SQLStr,6);
+
+// Фурнитура
+initarray(SQLStr,"");
+SQLStr[1]="CREATE PROCEDURE GetFurn AS "
+SQLStr[2]="SELECT First([tmp].Name2) AS Name, [tmp].IDPrice, [tmp].OneSCode, [tmp].UnitCode, "
+SQLStr[3]="[tmp].FurnType, [tmp].Article, SUM([tmp].Cnt) AS CntFin FROM "
+SQLStr[4]="( SELECT First(Name) AS Name2, IDPrice, OneSCode, UnitCode, FurnType, Article, COUNT(*) AS Cnt "
+SQLStr[5]="FROM TFurn WHERE FurnType<>'999999' "
+SQLStr[6]="GROUP BY IDPrice, OneSCode, UnitCode, FurnType, Article UNION "
+SQLStr[7]="SELECT First(Name) AS Name2, IDPrice, OneSCode, UnitCode, FurnType, Comment AS Article, COUNT(*) AS Cnt "
+SQLStr[8]="FROM TFixes GROUP BY IDPrice, OneSCode, UnitCode, FurnType, Comment ) AS [tmp] "
+SQLStr[9]="GROUP BY [tmp].IDPrice, [tmp].OneSCode, [tmp].UnitCode, [tmp].FurnType, [tmp].Article "
+SQLStr[10]="UNION SELECT Name, IDPrice, OneSCode, UnitCode, FurnType, Comment AS Article, COUNT(*) AS Cnt "
+SQLStr[11]="FROM TFurn WHERE FurnType='999999' "
+SQLStr[12]="GROUP BY Name, IDPrice, OneSCode, UnitCode, FurnType, Comment "
+MyRs=adbModify(MyConn,SQLStr,12);
+
+// Отделка
+initarray(SQLStr,"");
+SQLStr[1]="CREATE PROCEDURE GetDecor AS ";
+SQLStr[2]="SELECT First(CStr(TDecorates.TypeName)+' - '+CStr(TDecorates.Name)) AS Name, ";
+SQLStr[3]="TDecorates.MaterialID AS IDPrice, OneSCode, SUM(TDecorates.Gab + TDecorates.GabChange) AS Gab ";
+SQLStr[4]="FROM TDecorates GROUP BY MaterialID, OneSCode;";
+MyRs=adbModify(MyConn,SQLStr,4);
+
+
+// Найдем всю сверловку
+// HoleType==1 - Группа "Отверстие"
+// HoleType==2 - Первый цилиндр в группе
+// HoleType==3 - Второй цилиндр в группе
+// selbyattr "HoleType==2||HoleType==3" partly all done;
+// shole=sysvar(61);
+// if shole>0
+// {
+	// defarr holes[shole];
+	// //putmsg(shole);
+	// i=0;
+	// nexti_1:
+	// i=i+1;
+	// if i<=shole
+	// {
+		// holes[i]=GetSelNum(i);
+		// goto nexti_1;
+	// }
+// }
+// Найдём все свободные линии крепежа.
+// И заносим их, дабы исключить в дальнейшем дублирование при пересечении нескольких панелей 
+// ft=800500; // FurnType свободной линии крепежа
+// selbyattr "FurnType==\""+str(ft)+"\"" partly all done;
+// nfreel=sysvar(61);
+// if nfreel>0
+// {
+	// defarr freel[nfreel];
+	
+	// i=0;
+	// loop:
+	// i=i+1;
+	// if i<=nfreel
+	// {
+		// freel[i]=GetSelNum(i);
+		// UnitPos=GetAttr(freel[i],"UnitPos",0);
+		// TopParentPos=GetAttr(freel[i],"TopParentPos",-1);
+		// Name=GetAttr(freel[i],"ElemName","");
+		// //NameMat="Свободная линия крепежа";
+		// UnitCode=GetAttr(freel[i],"UnitCode","0000");
+		// ft=str(ft);
+		// SplitByDelim(getattr(freel[i],"FixSide","1;1"),";",FlArr);
+		// Length=FLArr[2]
+		// // Width=0; PanDir=-1; PriceID=0; Curline=0;
+		// // Type=0;	PrFlag=0; UDetNumber="0"; Comment="";	
+
+		// gosub MakeRecElem; // Запись про свободную линию крепежа
+		// KeyFL=0; // Для занесения временно обнулим
+		// obj=freel[i];
+		// gosub FixLine; // Занесем в базу крепежа
+		// goto loop;
+	// }
+	// KeyFL=1;
+// }
+// else { KeyFL=0; }
+// putmsg("Свободных линий крепежа "+str(nfreel));
+
+n=sysvar(62);
+// putmsg(n);
+nstart=n;
+defarr ObjFT[n], ObjFst[n], ObjFstt[n];	// массив объектов первого и последующих уровней
+defarr OneSArrID[n], OneSArrN[n];		// Для работы с 1С кодами
+nullout=setVarinst(2,"N_OneSCode",n);
+nullout=setArrinst(2,"OneSArrID",OneSArrID);
+nullout=setArrinst(2,"OneSArrN",OneSArrN);
+
+defarr NDet[n], UPDet[n], MaxNDet[n], LenDet[n], HDet[n];
+defarr IDMatDet[n], CommDet[n], StockA[n], DopPar[n], FurnT[n]; // Заготовки
+defarr ProfIDP[n], ProfLen[n];
+NDet_i=0; // Счетчик обработанных номеров панелей для объединения в заготовку
+NProf_i=0; // Счетчик обработанных профилей для объединения в заготовку
+i1s=0; // Счетчик обработанных 1С кодов(индекс для массивов)
+
+nullout=getvarinst(2,"AttrScrName",AttrScrName,"SumCostInfo");
+nullout=getvarinst(2,"SCLayName",LayName,"AdditionalElements");
+
+// Проверим, открыт ли слой и существует ли
+res=CountLayers();
+defarr Lay[res], OnOff[res];
+err=NameLayers(Lay,OnOff);
+
+i=0;
+nexti:
+i=i+1;
+if i<=res
+{
+	if Lay[i]==LayName
+	{
+		if OnOff[i]==1
+		{
+			layers on LayName;
+			goto finlay;
+		}
+		else { goto finlay; }
+		goto nexti;
+	}
+	goto nexti
+}
+layers new LayName;
+finlay:
+
+selbyattr "IsAssign(\"FurnType\")" partly all done; 
+n=sysvar(61);
+//putmsg(n);
+if n>0
+{
+	macro protopath+"Arrobj.mac" n ObjFT;
+	nObjFT=n;
+	n_tree=0;
+
+	BeginFind:
+	nFObj=0; // Счетчик для массива с объектами нижнего уровня
+	i=0;
+	nextii:
+	i=i+1;
+	if i<=nObjFT
+	{
+		elem=ObjFT[i];
+		gosub FindObj; // Проверим объект на возможность записи
+		gosub CheckObj; // Проверим группа ли объект и заполним в массив
+		
+		goto nextii;
+	}
+	if nFObj>0
+	{
+		err=copyarray(ObjFT,1,ObjFst,1);
+		nObjFT=nFObj;
+		goto BeginFind;
+	}
+}
+
+//-- Записи про заготовки
+
+LastIDPiece=0;
+i=0;
+DetNext:
+i=i+1;
+if i<=NDet_i
+{
+	IDPiece=i;
+	UnitPos=UPDet[i];
+	UDetNumber=NDet[i];
+	PriceID=IDMatDet[i];
+	Amount=MaxNDet[i];
+	Length=LenDet[i];
+	Height=HDet[i];
+	Comment=CommDet[i];
+	Stock=StockA[i];
+	FTPi=FurnT[i];
+	
+	if DopPar[i]==1
+	{
+		if len(str(Length))>=3
+		{
+			Length=(Ceil(Length/1000))*1000;
+		}
+	}
+	if DopPar[i]==2
+	{
+		Length=Length/2;
+	}
+	if DopPar[i]>100 // Запас в %
+	{
+		// putmsg(Length)
+		// tmpst=val("1."+right(str(DopPar[i]),2))
+		tmpst=val("0."+right(str(DopPar[i]),2))
+		// Length=Length*tmpst;
+		Stock=Length*tmpst;
+		// putmsg(Length)
+	}
+	
+	LastIDPiece=IDPiece;
+	
+	gosub MakeRecPiece;
+	goto DetNext;
+}
+
+nf=sysvar(62);
+if nf>nstart
+{
+	delete last nf-nstart done;
+}
+
+MyRs=adbClose(MyRs);
+// MyConn=adbDisCon(MyConn);
+result=1;
+layers off LayName;
+exit;
+
+CheckObj:
+n_tree=GetCntObjG(elem); // число объектов первого уровня	
+//putmsg(n_tree)
+if n_tree>0
+{
+	nObj=GetArrObjG(elem,ObjFstt);
+	//putmsg(nObj)
+	/// Здесь можно сверочку на UnitCode, дабы меньше объектов уходило на проверку
+	err=copyarray(ObjFst,nFObj+1,ObjFstt,1);
+	nFObj=nFObj+nObj;
+}	
+
+return;
+
+FindObj:
+
+PriceID=GetAttr(elem,"PriceID",0);
+ExcSpec=PriceInfo(PriceID,"ExcSpec",0);
+if ExcSpec==1 { return; }
+
+//-- Здесь записываем все условия внесения
+FT=getattr(elem,"FurnType","000000");
+Posit=GetAttr(elem,"Posit",0);
+UnitCode=GetAttr(elem,"UnitCode","0000");
+// up=getattr(elem,"UnitPos","000000");
+// nameobj=getattr(elem,"ElemName","Без имени");
+// putmsg(up);
+// putmsg(i);
+// putmsg(ft);
+// putmsg(nameobj);
+// select partly stayblink elem;
+// :
+
+PriceID=GetAttr(elem,"PriceID",0);
+tmpvar=PriceInfo(PriceID,"UNITSNAME","");
+if len(str(tmpvar))>0
+{
+	TypeIzm=tmpvar;
+}
+
+//-- Панель
+if left(ft,3)=="010"&&IsAssign("Posit",elem)
+{
+	//putmsg(GetObjType(elem))
+	obj=elem;
+	res1=findinarray(FasWholeUC,UnitCode);
+	KeyFasad=0;
+	if res1>0 { KeyFasad=1; }
+
+	PriceID=GetAttr(obj,"PriceID",0);
+	Name=GetAttr(obj,"ElemName","");
+	
+	KeyTransp=0;
+	res=FindInArray(ArrTran,PriceID); // Прозрачность
+	if res
+	{
+		KeyTransp=1;
+		// Comment=GetAttr(elem,"Comment","");
+		// DecComm=GetAttr(elem,"GlassDopPar","");
+	}
+	
+	// CurLin=0; // Без анализа на криволинейность
+	CurLin=1; // Получать флаг криволинейности
+
+	gosub GetPanInfo;	// Чтение инфы о панели
+	
+	TypeP==2||TypeP==3
+	{
+		macro ProtoPath+ProtoArl+"A_PanSetMask.mac" obj, Mask, BandID;
+	}
+	
+	Comment="";
+	macro ProtoPath+ProtoArl+"A_PanDopInfo.mac"
+	obj,
+	Mask,
+	ByRef Comment,
+	ByRef IsEskis,
+	ByRef WorkComm,
+	ByRef length,
+	ByRef width;
+	
+	// Пишем сначала отделки для формирования примечания по отделкам
+	// putmsg("Out_Bands")
+	elem=obj;
+	// putmsg(Length)
+	// putmsg(Width)
+	panX=Length;
+	panY=Width;
+	
+	isWrite=1; // Делать запись
+	DecComm="";
+	macro ProtoPath+ProtoArl+"A_FuncDecor.mac" isWrite, elem, ByRef DecComm, MyConn;
+	// gosub FuncDecor;	// Отделки
+	
+	// putmsg("Out_GetDecorate")
+	
+	nullout=getvarinst(1,"IsFaceF",IsFaceF,0);
+	PriceID=matID;
+
+	gosub MakeRecPan;	// Пишем панель
+	// putmsg("Out_MakeRecPan")
+	WriteBand=1;		// Пишем кромку
+	gosub Bands;		
+	//gosub Fixes; // Читаем и делаем записи про крепеж
+	return;
+}
+
+//-- Ящик
+if left(ft,2)=="31"
+{
+	if Posit==63 // Группа ящиков
+	{
+		Comment="Группа ящиков";
+		Name=GetAttr(elem,"ElemName","");
+		gosub MakeRecElem;
+	}
+	if Posit==51 // Ящик
+	{
+		Comment="Ящик";
+		PriceID=GetAttr(elem,"GoodsID",0);
+		Name=PriceInfo(PriceID,"NAME","",2);
+		gosub MakeRecElem;
+	}
+	return;
+}	
+
+//-- Двери-купе
+// if left(ft,2)=="21"&&ft!="210999"
+if left(ft,2)=="21"
+{
+	// Comment="Дверь-купе";
+	Name=GetAttr(elem,"ElemName","");
+	PriceID=GetAttr(elem,"PriceID",0);
+	aFlap=elem;
+	NameScr="ScrFlat"
+	ScrMod=0;
+	NVst=0
+	if (isassign(Namescr,aFlap))
+	{
+		ScrMod=readscratch(Namescr,aFlap);
+	}
+	if (ScrMod==0) { goto MREfin; }
+	else
+	{
+		ParGroup="ВставкаМ";
+		gosub GetData;
+		Data1=Data;
+		
+		IDVst=0;
+		numpar=cntvarscr(ScrMod,ParGroup);
+		if numpar==1
+		{
+			numP=namevarscr(ScrMod,ParGroup,DSArr);
+			nullout=GetScratch(ScrMod,ParGroup,DSArr[1],CurIDM,Suname);
+			IDVst=CurIDM;
+		}
+		
+		ParGroup="Текстура";
+		gosub GetData;
+		Data1=Data1+Data;
+		
+		ParGroup="Профиль";
+		gosub GetData;
+		Data2=Data;
+		// putmsg(str(ParGroup)+" "+str(Data))
+		ParGroup="ID профиля ";
+		gosub GetData;
+		Data2=Data2+Data;
+		// putmsg(str(ParGroup)+" "+str(Data))
+		ParGroup="X начала";
+		gosub GetData;
+		Data3=Data3+Data;
+		// putmsg(str(ParGroup)+" "+str(Data))
+		ParGroup="Z начала";
+		gosub GetData;
+		Data3=Data3+Data;
+		// putmsg(str(ParGroup)+" "+str(Data))
+		ParGroup="X конца";
+		gosub GetData;
+		Data4=Data4+Data;
+		// putmsg(str(ParGroup)+" "+str(Data))
+		ParGroup="Z конца";
+		gosub GetData;
+		Data4=Data4+Data;
+		// putmsg(str(ParGroup)+" "+str(Data))
+		ParGroup="ОтделкаВс";
+		gosub GetData;
+		Data5=Data5+Data;
+		// putmsg(str(ParGroup)+" "+str(Data))
+		ParGroup="ОтделкаМЛ";
+		gosub GetData;
+		Data6=Data6+Data;
+		// putmsg(str(ParGroup)+" "+str(Data))
+		ParGroup="Вставка";
+		nullout=GetScratch(ScrMod,ParGroup,"Колво",NVst,Suname);
+		gosub GetData;
+		Data6=Data6+Data;
+	}
+	// Nulout=GetScratch(ScrMod,"ВставкаМ",NamV,CurIDM,Suname);
+	// Nulout=GetScratch(ScrMod,"Текстура",NamT,CurNSHP,Suname);
+	
+	MREfin:
+	
+	if NVst>1 { Comment=Comment+"/Комбо"; }
+	// else
+	// {
+		// Comment=Comment+PriceInfo(IDVst,"MATNAME","",1);
+	// }
+	PosNum=NVst;
+	
+	PrimM=GetAttr(elem,"PrimM","");
+	if len(PrimM)>0
+	{
+		Comment=Comment+"/"+PrimM;
+	}
+	
+	NumberDS=GetAttr(elem,"Number",0);
+	// PosNum=Number;
+	
+	gosub MakeRecElem;
+	return;
+}
+
+//-- Трек группа
+if left(ft,2)=="30"
+{
+	Name=GetAttr(elem,"ElemName","");
+	PriceID=GetAttr(elem,"PriceID",0);
+	PrimM=GetAttr(elem,"PrimM","");
+	// if len(PrimM)>0
+	// {
+		// Comment=Comment+"/"+PrimM;
+	// }
+	gosub MakeRecElem;
+	return;
+}
+
+//-- Фасады, двери
+if left(ft,2)=="23"
+{
+	dopPr=GetAttr(elem,"PrimM","");
+	if len(dopPr)==0 	{ Comment="Распашная дверь"; }
+	else	{ Comment=dopPr; }
+	Name=GetAttr(elem,"ElemName","");
+	gosub MakeRecElem;
+	return;
+}
+
+if left(ft,2)=="50"
+{
+	// примечание для петель
+	dopPr=GetAttr(elem,"PrimM","");
+	if len(dopPr)==0 	{ Comment="Фасад"; }
+	else	{ Comment=dopPr; }
+	PriceID=GetAttr(elem,"GoodsID",0);
+	// У compact в профиле храним принадлежность к типу фасада
+	nullout=getprotoval(elem,"PrMater",PrMater);
+	DefGood=PriceInfo(PrMater,"GoodID1",0,1);
+	if DefGood>0 { PriceID=DefGood; }
+	Name=PriceInfo(PriceID,"NAME","",2);
+	gosub MakeRecElem;
+	return;
+}
+
+if left(ft,5)=="10001"
+{
+	if right(ft,1)=="1"
+	{ Comment="МИНИ"; }
+	if right(ft,1)=="2"
+	{ Comment="ДУО"; }
+	if right(ft,1)=="3"
+	{ Comment="ТРИО"; }
+	PriceID=GetAttr(elem,"PriceID",0);
+	GoodsID=GetAttr(elem,"GoodsID",0);
+	PosNum=GoodsID;
+	// Name=PriceInfo(PriceID,"NAME","",2);
+	Name="Шкаф "+str(Comment);
+	gosub MakeRecElem;
+	return;
+}
+
+if ft=="654321" // Промежуточная группа
+{
+	Comment="";
+	Name="Группа вставки";
+	gosub MakeRecElem;
+	return;
+}
+
+//-- Линии крепежа
+if FT=="800400"
+{
+	Comment="";
+	gosub MakeRecFixLn;
+	return;
+}
+
+if FT=="800500" // Свободная линия крепежа
+{
+	Comment="Свободная линия крепежа";
+	gosub MakeRecFixLn;
+	return;
+}
+
+// До крепежа отдельно заполним таблицу для гардеробных систем
+if left(UnitCode,2)=="80" //-- 8000 - гардеробная система
+{
+	gosub MakeRecWSyst;
+	return;
+}
+//-- Крепеж
+if FT=="060000" // Деталь крепежа
+{
+	gosub MakeRecFix;
+	return;
+}	
+
+if left(FT,2)=="04" //-- Фурнитура
+{
+	// Возможные комплекты для списания
+	PrID=GetAttr(elem,"PriceID",0);
+	tmpvar=PriceInfo(PrID,"UNITSNAME","");
+	if len(str(tmpvar))>0
+	{
+		TypeIzm=tmpvar;
+	}
+	// putmsg("PrID="+str(PrID));
+	// compl=NPGetByWhere(1,"ParentID = "+str(PrID),"qwe")
+	// putmsg("compl="+str(compl));
+	// if compl>0
+	// {
+		// i1=0;
+		// loopi1:
+		// if i1<compl
+		// {
+			// i1=i1+1;
+			// TypeIzm=tmpvar;
+			// TopParentPos=GetAttr(elem,"TopParentPos",-1);
+			// ParentPos=GetAttr(elem,"ParentPos",-1);
+			// UnitPos=GetAttr(elem,"UnitPos",0);
+			// PriceID=qwe[i1];
+			// UnitCode=GetAttr(elem,"UnitCode","0000");
+			// FT=GetAttr(elem,"FurnType","000000");
+			// Name=priceinfo(qwe[i1],"MATNAME","Фурнитура")
+			// Article=str(PriceInfo(PriceID,"ARTICLE","",1));
+			// ManualRF=1;
+			// gosub MakeRecFurn;
+			// goto loopi1;
+		// }
+		// return;
+	// }
+	ManualRF=0;
+	
+	Name=GetAttr(elem,"ElemName","");
+	// Направляющие ящиков
+	if FT=="040300"
+	{
+		ParentID=PriceInfo(PrID,"ParentID",0);
+		if ParentID>0
+		{
+			ManualRF=1;
+			TopParentPos=GetAttr(elem,"TopParentPos",-1);
+			ParentPos=GetAttr(elem,"ParentPos",-1);
+			UnitPos=GetAttr(elem,"UnitPos",0);
+			PriceID=GetAttr(elem,"PriceID",0);
+			UnitCode=GetAttr(elem,"UnitCode","0000");
+			FT=GetAttr(elem,"FurnType","000000");
+			
+			// Читаем как списывать
+			if PriceInfo(ParentID,"toOrderNotComplect",0)
+			{
+				Name=PriceInfo(PrID,"MATNAME","Направляющая ящика");
+				Article=str(PriceInfo(PrID,"ARTICLE","",1));
+			}
+			else
+			{
+				TypeIzm="компл.";
+				Article=str(PriceInfo(ParentID,"ARTICLE","",1));
+			}
+		}
+	}
+	
+	gosub MakeRecFurn;
+	
+	NIDSpecFurn=PriceInfo(PrID,"NIDSpecFurn",0);
+	if NIDSpecFurn>0
+	{
+		ManualRF=1;
+		
+		TopParentPos=GetAttr(elem,"TopParentPos",-1);
+		ParentPos=GetAttr(elem,"ParentPos",-1);
+		UnitPos=GetAttr(elem,"UnitPos",0);
+		// PriceID=GetAttr(NIDSpecFurn,"PriceID",0);
+		PriceID=NIDSpecFurn;
+		UnitCode=GetAttr(elem,"UnitCode","0000");
+		FT=GetAttr(elem,"FurnType","000000");
+		Name=PriceInfo(NIDSpecFurn,"MATNAME","");
+		Article=str(PriceInfo(NIDSpecFurn,"ARTICLE","",1));
+		tmpvar=PriceInfo(NIDSpecFurn,"UNITSNAME","");
+		if len(str(tmpvar))>0
+		{
+			TypeIzm=tmpvar;
+		}
+		
+		gosub MakeRecFurn;
+	}
+	
+	return;
+}	
+
+if FT=="340201" //-- Обувные телескопические полки
+{
+	GdID=GetAttr(elem,"GoodsID",0);
+	PriceID=PriceInfo(GdID,"AccessID",0,2);
+	Name=PriceInfo(PriceID,"MatName","Обувная полка");
+	Length=GetAttr(elem,"XUnit",0);
+	Width=GetAttr(elem,"YUnit",0);
+	manualRF=1;
+	TopParentPos=GetAttr(elem,"TopParentPos",-1);
+	ParentPos=GetAttr(elem,"ParentPos",-1);
+	UnitPos=GetAttr(elem,"UnitPos",0);
+	UnitCode=GetAttr(elem,"UnitCode","0000");
+	
+	gosub MakeRecFurn;
+}
+
+if left(FT,2)=="07" //-- сетка полка
+{
+	Name=GetAttr(elem,"ElemName","");
+	Length=GetAttr(elem,"XUnit","");
+	Width=GetAttr(elem,"YUnit","");
+	gosub MakeRecFurn;
+
+	return;
+}
+
+if UnitCode=="3777" // штапик
+{
+	IDP=GetAttr(elem,"PriceID",0);
+	LenP=GetAttr(elem,"Length",0);
+	FInA=findinarray(IDMatDet,IDP);
+	if FInA>0
+	{
+		LenDet[FInA]=LenDet[FInA]+LenP;
+		IDPiece=FInA;
+	}
+	else
+	{
+		NDet_i=NDet_i+1;
+		IDMatDet[NDet_i]=IDP;
+		LenDet[NDet_i]=LenP;
+		MaxNDet[NDet_i]=1;
+		NDet[NDet_i]="";
+		HDet[NDet_i]=0;
+		CommDet[NDet_i]="";
+		StockA[NDet_i]=100;
+		FurnT[NDet_i]=FT;
+		IDPiece=NDet_i;
+	}
+
+	gosub MakeRecProf;
+	return;
+}
+
+//-- Профиль
+if left(FT,2)=="02"
+{
+	// putmsg("prof")
+	if UnitCode=="5900"||UnitCode=="6900"||UnitCode=="6100"||UnitCode=="6200"||UnitCode=="3115"||UnitCode=="3120"
+	{
+		//- 6100, 6200 - Ленты буферные
+		//- 5900 - уплотнитель Raum
+		//- 6900 - шлегель
+		//- 3115 - Силиконовый уплотнитель AGT д/стекла"Г"-образный
+		//- 3120 - Уплотнитель синтетический 30м черн. (SIR)
+		Stock=100;
+		
+		IDP=GetAttr(elem,"PriceID",0);
+		LenP=GetAttr(elem,"Length",0);
+		FInA=findinarray(IDMatDet,IDP);
+		if FInA>0
+		{
+			LenDet[FInA]=LenDet[FInA]+LenP;
+			IDPiece=FInA;
+		}
+		else
+		{
+			NDet_i=NDet_i+1;
+			IDMatDet[NDet_i]=IDP;
+			LenDet[NDet_i]=LenP;
+			MaxNDet[NDet_i]=1;
+			NDet[NDet_i]="";
+			HDet[NDet_i]=0;
+			CommDet[NDet_i]="";
+			if UnitCode=="6900"||UnitCode=="5900" { Stock=0; DopPar[NDet_i]=101; } // Признак запаса в %
+			// Stretch=PriceInfo(IDP,"Stretch",0);
+			// if Stretch==1 {	DopPar[NDet_i]=2; }
+			StockA[NDet_i]=Stock;
+			FurnT[NDet_i]=FT;
+			IDPiece=NDet_i;
+		}
+
+		gosub MakeRecProf;
+		return;
+	}
+	
+	if UnitCode=="5701"||UnitCode=="5802"
+	{
+		//- 5701 - Трек верхний
+		//- 5802 - Трек нижний
+		ManualRP=1; // Ручной ввод
+		TopParentPos=GetAttr(elem,"TopParentPos",-1);
+		ParentPos=GetAttr(elem,"ParentPos",-1);
+		UnitPos=GetAttr(elem,"UnitPos",0);
+		PriceID=GetAttr(elem,"PriceID",0);
+		Name=str(PriceInfo(PriceID,"MATNAME","",1));
+		Article=str(PriceInfo(PriceID,"ARTICLE","",1));
+		UnitCode=GetAttr(elem,"UnitCode","0000");
+		FT=GetAttr(elem,"FurnType","000000");
+		Length=GetAttr(elem,"Length",0);
+		Length=Length-1;
+	}
+	
+	IDColor=GetAttr(elem,"KID",0); // ID цвета из номенклатуры. В Дверных системах так храним.
+	ColorName=PriceInfo(IDColor,"MATNAME","",1)
+	gosub MakeRecProf;
+	return;
+}
+
+if FT=="999999" //-- Дополнительные элементы
+{
+	Count=0;
+	nomID=0;
+	if (IsAssign("SumCostInfo",elem))
+	{
+		ScrNum=readscratch("SumCostInfo",elem);
+		if (ScrNum==0)	{ return; }
+		num=CntGroupScr(ScrNum);
+		if num>0
+		{
+			NameGroupScr(ScrNum,ArrScr);
+			k=0;
+			nextk:
+			k=k+1;
+			if k<=num
+			{
+				numpar=CntVarScr(ScrNum,ArrScr[k])
+				if numpar>0
+				{
+					splitByDelim(ArrScr[k],"_",ArrD);
+					NameVarScr(ScrNum,ArrScr[k],ArrScrPar)
+					m=0;
+					nextm:
+					m=m+1;
+					if m<=numpar
+					{
+						// // putmsg(ArrScrPar[m])
+						// if ArrScrPar[m]=="Square"
+						// {
+							// NULLOUT=getscratch(ScrNum,ArrScr[k],ArrScrPar[m],Sqtemp,psc);
+							// if FindDopElem>0 { dSquare=Sqtemp; }
+							// else { Square=Sqtemp; }
+							// // putmsg(Sqtemp)
+							// // putmsg(Square)
+						// }
+						// if ArrScrPar[m]=="Length"
+						// {
+							// NULLOUT=getscratch(ScrNum,ArrScr[k],ArrScrPar[m],LenStemp,psc);
+							// if FindDopElem>0 { dlen=LenStemp; }
+							// else { LenS=LenStemp; }
+							// // putmsg(LenStemp)
+							// // putmsg(LenS)
+						// }
+						if ArrScrPar[m]=="Number"
+						{
+							NULLOUT=getscratch(ScrNum,ArrScr[k],ArrScrPar[m],Count,psc);
+						}
+						if ArrScrPar[m]=="NomID"
+						{
+							NULLOUT=getscratch(ScrNum,ArrScr[k],ArrScrPar[m],nomID,psc);
+						}
+						// if ArrScrPar[m]=="Cost"
+						// {
+							// NULLOUT=getscratch(ScrNum,ArrScr[k],ArrScrPar[m],Costtemp,psc);
+							// if FindDopElem>0 { dSC=Costtemp; }
+							// else { Cost=Costtemp; }
+							// //putmsg(Cost)
+						// }
+						// if ArrScrPar[m]=="SumCostMat"||ArrScrPar[m]=="SumCostElem"
+						// {
+							// NULLOUT=getscratch(ScrNum,ArrScr[k],ArrScrPar[m],SCMattemp,psc);
+							// if FindDopElem>0 { dSCMat=SCMattemp; }
+							// else { SCMat=SCMattemp; }
+						// }
+						// if ArrScrPar[m]=="SideNumber"
+						// {
+							// NULLOUT=getscratch(ScrNum,ArrScr[k],ArrScrPar[m],SideNumber,psc);
+						// }
+						
+						goto nextm;
+					}
+				}
+				goto nextk;
+			}	
+		}
+	}
+	
+	pFurnType=FT
+	pName=GetAttr(elem,"ElemName","");
+	pArticle=GetAttr(elem,"PrimM","");
+	pUType=GetAttr(elem,"UnitType",1);
+	pPriceID=0;
+	// Подумать куда кв/м и куб/м девать
+	if nomID>0 { pPriceID=nomID; }
+	// if pUType>0&&pUType<=nTA
+	// {
+		if pUType==2||pUType==3||pUType==4||pUType==9||pUType==10||pUType==11 //-- В фурнитуру
+		{
+			f=0;
+			nextf:
+			f=f+1;
+			if f<=Count
+			{
+				ManualRF=1;
+				// putmsg("Furn")
+				// "00289275"
+				Name=pName;
+				Article=pArticle;
+				// PosType=pPosType;
+				PriceID=pPriceID;
+				FT=pFurnType;
+				// TypeIzm=TypeArr[pUType];
+				TypeIzm=UnitsName[findinarray(UnitsID,pUType)]
+				
+				gosub MakeRecFurn;
+				PriceID=pPriceID;
+				NIDSpecFurn=PriceInfo(PriceID,"NIDSpecFurn",0);
+				if NIDSpecFurn>0
+				{
+					ManualRF=1;
+					
+					TopParentPos=GetAttr(elem,"TopParentPos",-1);
+					ParentPos=GetAttr(elem,"ParentPos",-1);
+					UnitPos=GetAttr(elem,"UnitPos",0);
+					PriceID=NIDSpecFurn;
+					UnitCode=GetAttr(elem,"UnitCode","0000");
+					FT=GetAttr(elem,"FurnType","000000");
+					Name=PriceInfo(NIDSpecFurn,"MATNAME","");
+					Article=str(PriceInfo(NIDSpecFurn,"ARTICLE","",1));
+					tmpvar=PriceInfo(NIDSpecFurn,"UNITSNAME","");
+					if len(str(tmpvar))>0
+					{
+						TypeIzm=tmpvar;
+					}
+					
+					gosub MakeRecFurn;
+				}
+	
+				goto nextf;
+				
+			}
+		}
+		
+		if pUType==1 //-- Профиль
+		{
+			Name=pName;
+			// Article=pArticle;
+			// PosType=pPosType;
+			PriceID=pPriceID;
+			FT=pFurnType;
+			// TypeIzm=TypeArr[pUType];
+			TypeIzm=UnitsName[findinarray(UnitsID,pUType)]
+			// putmsg("Prof")
+			Length=Count*1000;
+			// putmsg(Length);
+			ManualRP=1;
+			gosub MakeRecProf;
+		}
+	// }
+}
+
+return;
+
+
+
+GetPanInfo:
+//-- Подпрограмма определения криволинейной детали и чтение информации о панели
+//-- Входящие параметры obj - панель из массива для подсчета
+//-- Выходные параметры
+//-- matID - Материал панели
+//-- Type - Положение панели 11,12,13,14
+//-- length - длина панели
+//-- width - ширина панели
+//-- PanDir - поворот текстуры панели в градусах
+//-- PrFlag - панель с присадкой
+//-- Curline - "сложная" деталь
+
+// Найдем указатель на полотно панели
+selbyattr "FurnType==\"010000\"" partly child obj done;
+sel=sysvar(61);
+if sel==0
+{
+	UP=GetAttr(obj,"UnitPos","");
+	select stayblink partly obj done;
+	#ok_flag
+    alternative "Ошибка"
+    msgbox text "Отсутствет полотно у подсвеченной панели"
+	"Перестройте панель или элемент содержащий её"
+	"Часть информации будет передана не полностью"
+    done
+    "  OK  "
+    done;
+}
+polotno=getselnum(1);
+
+curline=0; // Обнулим флаг криволинейности
+FrezKey=0; // Флаг фрезеровки
+initarray(pan,0);
+//-- Инициализация
+pan[1]=obj;
+err=GetPan6Par(1,pan); 
+//-- Читаем материал панели
+pan[1]=0;
+Thickness=GetPan6Par(2,pan); // Толщина панели
+matID=pan[1];
+// Положение панели 11,12,13,14
+pan[1]=obj;
+err=GetPan6Par(22,pan);
+Type=pan[1];
+// Форма панели (прямоугольная, по контуру)
+pan[1]=0;
+err=GetPan6Par(11,pan);
+TypeP=pan[1];
+// Сейчас габариты пишутся в атрибуты полотна панели. Читаем оттуда
+TranspPan=0;
+KeyRadiusPan=0;
+if TypeP==4||TypeP==5
+{
+	KeyRadiusPan=1;
+	Transp=priceInfo(matID,"Transparency",0);
+	if Transp==1 { TranspPan=1; } else { TranspPan=0; }
+	Rad=pan[5];
+}
+else { KeyRadiusPan=0; }
+
+// length=GetAttr(obj,"Xunit",0);
+// width=GetAttr(obj,"Yunit",0);
+
+// macro ProtoPath+ProtoArl+"A_PanGabs.mac" obj, ByRef length, ByRef width;
+
+// Читаем фрезеровки.
+// Линии маркировки появятся при чтении вырезов
+Pan[1]=0; 
+nFrez=GetPan6Par(20,Pan); 
+if nFrez>0 { FrezKey=1; curline=1; }
+//putmsg(nFrez)
+
+j=0;
+freznext:
+j=j+1;
+if j<=nFrez
+{
+	pan[1]=j;
+	err=GetPan6Par(20,pan);
+	//putmsg(pan[2])
+	// Comment=PriceInfo(pan[2],"Comment","");
+	Name=PriceInfo(pan[2],"Alias","");
+	goto freznext;
+}
+
+if CurLin
+{
+	// Анализируем пропилы
+	Pan[1]=0; 
+	nProp=GetPan6Par(17,Pan); 
+	if nProp>0
+	{
+		curline=1;
+		if nProp==1
+		{
+			Pan[1]=1;
+			nullout=GetPan6Par(17,Pan);
+			shift_p=Pan[4]; // Сдвиг пропила
+			width_p=Pan[5]; // Ширина пропила
+			if round(shift_p,0.1)==12&&round(width_p,0.1)==4
+			{
+				PazFlag=1;
+				curline=0;
+			}
+		}
+	}
+
+	// Читаем углы
+	j=0;
+	anglnext:
+	j=j+1;
+	if j<=4
+	{
+		pan[1]=j;
+		err=GetPan6Par(4,pan);
+		if pan[2]>0 { curline=1; } // Есть обработка угла
+		// Заглушка от нулевых фасок
+		if pan[2]==1&&pan[3]==0&&pan[4]==0 
+		{
+			curline=0;
+		}
+		goto anglnext;
+	}
+	
+	// Торцевые обработки
+	TcD=0; TcC=0; TcE=0; TcB=0;
+	Pan[1]=0; 
+	nTrim=GetPan6Par(25,Pan); 
+	if nTrim>0&&!KeyFasad
+	{
+		curline=1;
+		// j=0;
+		// tornext:
+		// j=j+1;
+		// if j<=nTrim
+		// {
+			// Pan[1]=j;
+			// nullout=GetPan6Par(25,Pan);
+			// if Pan[2]==2 // Скос
+			// {
+				// //putmsg("Скос")
+				// // На весь контур
+				// NTorec=Pan[4];
+				// Ang=Pan[8];
+
+				// // if NTorec==-1 { Comment=str(Comment)+iif(len(trim(Comment))>0," ","")+"Скос "+str(abs(Ang))+"гр. по 4 сторонам"; }
+				// // if NTorec==1 { Comment=str(Comment)+iif(len(trim(Comment))>0," ","")+"Скос "+str(abs(Ang))+"гр. по стороне "+str(length); }
+				// // if NTorec==3 { Comment=str(Comment)+iif(len(trim(Comment))>0," ","")+"Скос "+str(abs(Ang))+"гр. по стороне "+str(width); }
+				// // if NTorec==5 { Comment=str(Comment)+iif(len(trim(Comment))>0," ","")+"Скос "+str(abs(Ang))+"гр. по стороне "+str(length); }
+				// // if NTorec==7 { Comment=str(Comment)+iif(len(trim(Comment))>0," ","")+"Скос "+str(abs(Ang))+"гр. по стороне "+str(width); }
+				// // if NTorec>=10 { Comment=str(Comment)+iif(len(trim(Comment))>0," ","")+"Скос 45"; }
+				// //putmsg(Comment)
+			// }
+			// goto tornext;
+		// }
+	}	
+	
+	if curline==0 // Если на углах отсутствует обработка, идем дальше
+	{
+		//Читаем вырезы
+		Pan[1]=0; 
+		nCut=GetPan6Par(7,Pan); // Количество контуров вырезов
+		if nCut>0 { curline=1; }	
+	}
+
+	if TypeP!=2
+	{
+		Pan[1]=1; // Основной контур
+		err=GetPan6Par(27,Pan); // Читаем контур
+		if Pan[3]!=4 { curline=1; } // Количество элементов в контуре
+	}
+}
+else { curline=0; }
+PrFlag=0; // Флаг наличия присадки для панели
+// standPan - Признак стандартности панели
+if curline { standPan=0; } // Сложная уже нестандартна
+else { standPan=1; } 
+
+
+// Это осталось. Возможно надо будет сделать вариант присвоения примечания
+// Ищем все отверстия в пласти
+// Если в разные пласти закончить
+// Проверить кол-во от 2 до 6 включительно
+// Исключить неоднозначность сторон
+// Проход по сторонам(по расстоянию от стороны эксцентрика)
+// Для каждой стороны свой массив
+// Сверка массивов смежных сторон с учетом направления текстуры
+
+
+Nholes=GetHoles(polotno);	
+if Nholes>0 // Есть сверловка в панели
+{
+	PrFlag=1;
+
+	// num=15; //-- Число записей про отверстия
+	// eps=0.001;
+	// KeySideA=0; KeySideF=0; // Ключи нахождения присадки в пласти
+	// null=GetHoles(polotno,"hObj");
+	// putmsg(Nholes)
+	// iH=0;
+	// loopiH:
+	// iH=iH+1;
+	// if iH<=Nholes
+	// {
+		// // Перебираем отверстия
+		// // 
+		// if (hObj[(iH-1)*num+6]<eps)&&(hObj[(iH-1)*num+10]<eps)
+		// {
+			// if hObj[(iH-1)*num+14]<0
+			// {
+				// putmsg("Отв. №"+str(iH)+"в пласть A")
+				// HSideA[iH]=1;
+				// KeySideA=1;
+			// }
+			// if hObj[(iH-1)*num+14]>0
+			// {
+				// putmsg("Отв. №"+str(iH)+"в пласть F")
+				// HSideF[iH]=1;
+				// KeySideF=1;
+			// }
+		// }
+		// if KeySideA==1&&KeySideF=1 // Есть сверловка в обе пласти
+		// {
+			// goto fingetpan; // Завершаем
+		// }
+		// select stayblink partly hObj[(iH-1)*num+3];
+		// :
+		// select ;
+		
+		
+		// //hObj[(iH-1)*num+3] - родитель
+		// goto loopiH;
+	// }
+	// putmsg(hObj)
+}
+
+
+// checkholes=0;
+// if checkholes
+// {
+// // Проверяем наличие присадки
+// y=0;
+// nexty:
+// y=y+1;
+// if y<=shole
+// {
+	// // pp=penetrate(obj,freel[y]); // пересечение тел
+	// pp=DistObjToObj(polotno,holes[y],sadd,fadd); // Любое пересечение(не только тела)
+	// if pp==-1 // Есть пересечение цилиндра с панелью
+	// {
+		// PrFlag=1;
+		// // Стандартна ли панель
+		// if !curline
+		// {
+			// ingr=FindObjHoldG(obj,holes[y]); // Проверим "своя" сверловка или "ответная"
+			// // Есть чужая "сверловка"
+			// if !ingr&&standPan // Проверять достаточно до первого нахождения
+			// {
+				// standPan=0; // В нестандарт
+			// }
+		// }
+	// }  
+	// goto nexty;
+// }
+// }
+// putmsg(PrFlag)
+// putmsg(standPan)
+
+return;
+
+Bands:
+// // Проверим на весь конутр
+// pan[1]=-1; // На весь контур
+// gosub GetBand;
+// KD=IDBand;
+// KDOneS=OneSCode;
+UDetNumber=str(GetAttr(obj,NameAtrPos,0));
+// UDetNumber=str(GetAttr(obj,"UDetNumber","-1"));
+ // putmsg(UDetNumber)
+//-- Инициализация
+pan[1]=obj;
+err=GetPan6Par(1,pan); 
+// Форма панели (прямоугольная, по контуру)
+pan[1]=0;
+err=GetPan6Par(11,pan);
+TypeP=pan[1];
+// Считаем кромки для параметрической панели
+if TypeP==2||TypeP==3
+{
+	k_i=0;
+	nextk_i:
+	k_i=k_i+1;
+	if k_i<=8
+	{
+		// pan[1]=k_i
+		
+		pan[1]=Mask[k_i];
+		
+		nullout=GetPan6Par(3,pan);
+		IDBand=0;
+		LenKrom=pan[5];
+		if LenKrom>0
+		{
+			IDBand=pan[2];
+		}
+		// putmsg(IDBand)
+		if IDBand>0
+		{
+			elem=obj;
+			Unit=k_i;
+			if WriteBand { gosub MakeRecBand; }
+			else { BandPP[k_i]=1; }
+		}
+		goto nextk_i;
+	}
+}
+
+if TypeP==1 // По замкнутому контуру
+{
+	pan[1]=0;
+	nullout=GetPan6Par(31,pan);
+	nKont=pan[2]; // Количество контуров в панели
+	// putmsg(nKont)
+	i_k=0;
+	nextkont:
+	i_k=i_k+1;
+	if i_k<=nKont
+	{
+		pan[1]=i_k; // Контур
+		pan[2]=0;
+		nullout=GetPan6Par(31,pan);
+		nElem=pan[3]; // Количество элементов контура
+		// putmsg(nElem)
+		
+		it=0;
+		looptor:
+		it=it+1;
+		if it<=nElem
+		{
+			if i_k==1
+			{
+				pan[2]=9+it;
+			}
+			else { pan[2]=it; }
+			OneSCode="";
+
+			nullout=GetPan6Par(10,pan);
+			// putmsg(pan[3])
+			IDBand=pan[3];
+			LenKrom=pan[6];
+			if IDBand>0&&LenKrom>0
+			{
+				elem=obj;
+				Unit=it;
+				gosub MakeRecBand;
+			}
+			goto looptor;
+		}
+		goto nextkont;
+	}
+}
+
+return;
+
+// GetKrepSub:
+// //-- Функция возвращает кол-во линий крепежа на торце, если больше 1, то ID крепежа
+// IDKrep=0;
+// Pan[1]=1; // Основной контур
+// Pan[2]=NTorez; // Сторона
+// Pan[3]=0; // Узнать кол-во линий крепежа
+// err=GetPan6Par(26,Pan);
+// nFL=Pan[4];
+// // putmsg(NTorez)
+// // putmsg(nFL)
+// if nFL==1 // Одна линия крепежа на стороне
+// {
+	// Pan[1]=1; // Основной контур
+	// Pan[2]=NTorez; // Сторона
+	// Pan[3]=1; // Номер линии крепежа
+	// err=GetPan6Par(26,Pan);
+	// IDKrep=Pan[4]; // ID крепежа
+	// Fz=0; // Направление оси крепежа по Z
+	// Code=Pan[5];
+
+	// gosub binary;
+	// ZC=mid(right(Sbin,3),2);
+	// SF=mid(right(Sbin,3),3);
+	// sum=ZC+SF;
+	// if sum=="11"||sum=="00" { Fz=1; }
+	// else { Fz=0; }
+// }
+// return;
+
+// FuncDecor:
+// // Читаем отделки
+// // Проверять тип объекта, который пришел: панель или профиль
+// //Decorflag=0;
+// initarray(Pan,0);
+// initarray(DecDec,"");
+// //-- Инициализация
+// pan[1]=obj;
+// err=GetPan6Par(1,Pan);
+// Pan[1]=0;
+// nDecor=GetPan6Par(28,Pan);
+
+// // Нужно выяснить есть ли свойство лицо по F
+// // putmsg(nDecor)
+// if nDecor>0
+// {
+	// q=0;
+	// KeyPVH=0; // Ключ наличия обработки пленкой ПВХ 
+	// //Decorflag=1; // Флаг нахождения отделки
+	// r=-2;
+	// nextr:
+	// r=r+1;
+	// if r<=12 // Проходим по всем секциям
+	// {
+		// if r==0 { goto nextr; }
+		// // putmsg("r="+str(r))
+		// doub=0;
+		// doubleget:
+		// Pan[1]=r;
+		// res=GetPan6Par(28,Pan); // Ищем в секции отделку
+		// if res>0
+		// {
+			// q=0;
+			// nextq:
+			// if q<res // Заполняем отделками массивы
+			// {
+				// TypeID=Pan[q*3+2]; // ID варианта отделки
+				// MaterialID=Pan[q*3+3]; // ID материала отделки
+				
+				// if r!=-1 { Map=r; } // Секция раскрашивания
+				// else { Map=iif(doub,5,6); }
+				
+				// gosub GetNameDec;
+				// gosub GetNameDecGr;
+				
+				// // Для ПЗ нужно иметь примечание с набором отделок панели.
+				// // Накапливаем здесь
+				// // Группа самокл. пленок=103 Примечание должно приходить на дверной, исключаем
+				// // inGr - выводимые в примечание, остальное см.малярное ПЗ
+				// TName=TypeName;
+				// if !findinarray(ExcGr,TypeID)
+				// {
+					// if !findinarray(inGr,TypeID)
+					// {
+						// TName="См. Малярное ПЗ"
+					// }
+					// if !findinarray(DecDec,TName)
+					// {
+						// DecDec[q+1]=TName;
+					// }
+				// }
+				
+				// // Отделка не является объектом, родителем ставим панель с которой читаем
+				// ParentPos=GetAttr(obj,"UnitPos",0);
+				// DecoratePos=q;
+				
+				// if MaterialID>0
+				// { CommentDec=priceinfo(MaterialID,"Alias",""); }
+				// gosub MakeRecDecor;
+				// q=q+1;
+				// goto nextq;
+			// }
+			
+			// if r==-1&&doub==0
+			// {
+				// doub=1;
+				// Map=6;
+				// goto doubleget;
+			// }
+		// }
+		
+		// goto nextr;
+	// }
+	// // Запись для малярного ПЗ в обработку
+	// nullout=getvarinst(1,"NeedEskisA",NeedEskisA,0);
+	// // putmsg(NeedEskisA)
+	// if NeedEskisA==1
+	// {
+		// ParentPos=GetAttr(obj,"UnitPos",0);
+		// DecoratePos=q+1;
+		// MaterialID=9410;
+		// TypeName="См."
+		// NameDec="эскиз";
+		// Map=5;
+		// // TypeID=-1;
+		// gosub MakeRecDecor;
+	// }
+	// nullout=getvarinst(1,"NeedEskisF",NeedEskisF,0);
+	// // putmsg(NeedEskisF)
+	// if NeedEskisF==1
+	// {
+		// ParentPos=GetAttr(obj,"UnitPos",0);
+		// DecoratePos=q+1;
+		// MaterialID=9410;
+		// TypeName="См."
+		// NameDec="эскиз";
+		// Map=6;
+		// TypeID=-1;
+		// gosub MakeRecDecor;
+	// }
+// }
+
+// err=getpan6par(999,pan);
+// return;
+
+
+MakeRecElem:
+
+ParentPos=GetAttr(elem,"ParentPos",-1);
+//putmsg(ParentPos)
+UnitPos=GetAttr(elem,"UnitPos",0);
+//putmsg(UnitPos)
+//select stayblink partly elem done;
+//:
+
+Width=GetAttr(elem,"XUnit",0);
+Length=GetAttr(elem,"YUnit",0);
+Height=GetAttr(elem,"ZUnit",0);
+
+Posit=GetAttr(elem,"Posit",0);
+//Name=GetAttr(elem,"ElemName","");
+//PriceID=GetAttr(elem,"PriceID",0);
+UnitCode=GetAttr(elem,"UnitCode","0000");
+FT=GetAttr(elem,"FurnType","000000");
+
+nullout=initarray(SQLarr,"");
+SQLarr[1]="INSERT INTO TElements (";
+SQLarr[2]="ParentPos, UnitPos, Posit, Name, IDPrice, UnitCode, FurnType, Length,"
+SQLarr[3]=" Width, Height, PosNum, NumberDS, PlaceType, Data1 ,Data2, ";
+SQLarr[4]=" Data3 ,Data4, Data5 ,Data6, Comment ) VALUES (";
+SQLarr[5]=str(ParentPos)+", ";
+SQLarr[6]=str(UnitPos)+", ";
+SQLarr[7]=str(Posit)+", '";
+SQLarr[8]=str(Name)+"', ";
+SQLarr[9]=str(PriceID)+", '";
+SQLarr[10]=str(UnitCode)+"', '";
+SQLarr[11]=str(FT)+"', ";
+SQLarr[12]=str(length)+", ";
+SQLarr[13]=str(Width)+", ";
+SQLarr[14]=str(Height)+", ";
+SQLarr[15]=str(PosNum)+", ";
+SQLarr[16]=str(NumberDS)+", ";
+SQLarr[17]=str(PlaceType)+", '";
+SQLarr[18]=str(Data1)+"', '";
+SQLarr[19]=str(Data2)+"', '";
+SQLarr[20]=str(Data3)+"', '";
+SQLarr[21]=str(Data4)+"', '";
+SQLarr[22]=str(Data5)+"', '";
+SQLarr[23]=str(Data6)+"', ' ";
+SQLarr[24]=str(Comment)+"' );";
+MyRs=adbModify(MyConn,SQLarr);
+// После записи обнулим переменные
+gosub ZeroTElem;
+return;
+
+
+MakeRecPan:
+TopParentPos=GetAttr(obj,"TopParentPos",-1);
+ParentPos=GetAttr(obj,"ParentPos",-1);
+UnitPos=GetAttr(obj,"UnitPos",0);	
+//Name=GetAttr(obj,"ElemName","");
+NameMat=PriceInfo(PriceID,"MATNAME","",1);
+// UDetNumber=GetAttr(obj,"UDetNumber","0");
+UDetNumber=str(GetAttr(obj,NameAtrPos,0));
+
+gosub FindLastUDN;
+
+dopPr=GetAttr(obj,"PrimM","");
+if len(dopPr)>0
+{
+	Comment=str(Comment)+iif(len(trim(Comment))>0," ","")+dopPr;
+}
+
+MDFPan=0;
+if findinarray(ArrMDF,PriceID)>0
+{
+	MDFPan=1;
+}
+
+ShponPan=0;
+if findinarray(ArrShpon,PriceID)>0
+{
+	ShponPan=1;
+}
+
+// // Название групп отделки в примечание
+// g=0;
+// DecComm="";
+// decloop:
+// g=g+1;
+// if g<=getdimarray(DecDec)
+// {
+	// if len(str(DecDec[g]))>0
+	// {
+		// if len(DecComm)==0
+		// {
+			// DecComm=str(DecDec[g])
+		// }
+		// else
+		// {
+			// DecComm=DecComm+"/ "+str(DecDec[g])
+		// }
+	// }
+	// goto decloop;
+// }
+
+ID=PriceID;
+gosub GetOneSCode;
+nullout=initarray(SQLarr,"");
+SQLarr[1]="INSERT INTO TPanels (";
+SQLarr[2]="TopParentPos, ParentPos, UnitPos, UDetNumber, Name, IDPiece, "
+SQLarr[3]="IDPrice, OneSCode, NameMat, UnitCode, Type, TypeP, "
+SQLarr[4]="Length, Width, Thickness, PanDir, Curline, PrFlag, PazFlag, Transparency, "
+SQLarr[5]="FrezKey, Comment, Eskis, WorkComm, DecComm, IsFaceF, MDF, Shpon) VALUES (";
+SQLarr[6]=str(TopParentPos)+", ";
+SQLarr[7]=str(ParentPos)+", ";
+SQLarr[8]=str(UnitPos)+", ";
+SQLarr[9]=str(UDetNumber)+", '";
+SQLarr[10]=str(Name)+"', ";
+SQLarr[11]=str(IDPiece)+", ";
+SQLarr[12]=str(PriceID)+", '";
+SQLarr[13]=str(OneSCode)+"', '";
+SQLarr[14]=str(NameMat)+"', '";
+SQLarr[15]=str(UnitCode)+"', ";
+SQLarr[16]=str(Type)+", ";
+SQLarr[17]=str(TypeP)+", ";
+SQLarr[18]=str(Length)+", ";
+SQLarr[19]=str(Width)+", ";
+SQLarr[20]=str(Thickness)+", ";
+SQLarr[21]=str(PanDir)+", ";
+SQLarr[22]=str(Curline)+", ";
+SQLarr[23]=str(PrFlag)+", ";
+SQLarr[24]=str(PazFlag)+", ";
+SQLarr[25]=str(KeyTransp)+", ";
+SQLarr[26]=str(FrezKey)+", '";
+SQLarr[27]=str(Comment)+"', '";
+SQLarr[28]=str(IsEskis)+"', '";
+SQLarr[29]=str(WorkComm)+"', '";
+SQLarr[30]=str(DecComm)+"', ";
+SQLarr[31]=str(IsFaceF)+", ";
+SQLarr[32]=str(MDFPan)+",";
+SQLarr[33]=str(ShponPan)+")";
+
+MyRs=adbModify(MyConn,SQLarr);
+// После записи обнулим переменные
+gosub ZeroTPanels;
+return;
+
+
+MakeRecFix:
+
+TopParentPos=GetAttr(elem,"TopParentPos",-1);
+ParentPos=GetAttr(elem,"ParentPos",-1);
+UnitPos=GetAttr(elem,"UnitPos",0);
+NameMat="";
+PriceID=GetAttr(elem,"PriceID",0);
+UnitCode=GetAttr(elem,"UnitCode","0000");
+FT=GetAttr(elem,"FurnType","000000");
+
+// Для одинакового крепежа, но с разной присадкой в моделях
+ParPrID=PriceInfo(PriceID,"UnitID",0);
+if ParPrID>0 { PriceID=ParPrID; }
+
+Comment=str(PriceInfo(PriceID,"ARTICLE","",1));
+Name=PriceInfo(PriceID,"MATNAME",GetAttr(elem,"ElemName",""));
+dopPr=GetAttr(elem,"PrimM","")
+if len(dopPr)>0
+{
+	Comment=Comment+iif(len(trim(Comment))>0," ","")+dopPr;
+}
+
+dopPr2=PriceInfo(PriceID,"Alias","");
+if len(dopPr2)>0
+{
+	Comment=Comment+iif(len(trim(Comment))>0," ","")+dopPr2;
+}
+
+ID=PriceID;
+gosub GetOneSCode;
+
+nullout=initarray(SQLarr,"");
+SQLarr[1]="INSERT INTO TFixes (";
+SQLarr[2]="TopParentPos, ParentPos, UnitPos, Name, NameMat, IDPrice, OneSCode, UnitCode, FurnType, Comment) VALUES (";
+SQLarr[3]=str(TopParentPos)+", ";
+SQLarr[4]=str(ParentPos)+", ";
+SQLarr[5]=str(UnitPos)+", '";
+SQLarr[6]=str(Name)+"', '";
+SQLarr[7]=str(NameMat)+"', ";
+SQLarr[8]=str(PriceID)+", '";
+SQLarr[9]=str(OneSCode)+"', '";
+SQLarr[10]=str(UnitCode)+"', '";
+SQLarr[11]=str(ft)+"', '";
+SQLarr[12]=str(Comment)+"')";
+MyRs=adbModify(MyConn,SQLarr);
+gosub ZeroTFixes;
+return;
+
+
+MakeRecBand:
+
+TopParentPos=GetAttr(elem,"TopParentPos",-1);
+ParentPos=GetAttr(elem,"UnitPos",-1);
+PriceID=IDBand;
+Name=PriceInfo(PriceID,"MATNAME","");
+Length=LenKrom;
+Thickness=PriceInfo(PriceID,"Dept",0);
+Width=PriceInfo(PriceID,"Height",0);
+Comment=PriceInfo(PriceID,"Article","");
+Curline=0;
+
+ID=PriceID;
+gosub GetOneSCode;
+
+nullout=initarray(SQLarr,"");
+SQLarr[1]="INSERT INTO TBands (";
+SQLarr[2]="TopParentPos, ParentPos, Unit, Name, IDPrice, OneSCode, Length, Width, Thickness, Curline, Comment) VALUES (";
+SQLarr[3]=str(TopParentPos)+", ";
+SQLarr[4]=str(ParentPos)+", ";
+SQLarr[5]=str(Unit)+", '";
+SQLarr[6]=str(Name)+"', ";
+SQLarr[7]=str(PriceID)+", '";
+SQLarr[8]=str(OneSCode)+"', ";
+SQLarr[9]=str(Length)+", ";
+SQLarr[10]=str(Width)+", ";
+SQLarr[11]=str(Thickness)+", ";
+SQLarr[12]=str(Curline)+", '";
+SQLarr[13]=str(Comment)+"')";
+MyRs=adbModify(MyConn,SQLarr);
+gosub ZeroTBands;
+return;
+
+
+MakeRecFixLn:
+
+ParentPos=GetAttr(elem,"ParentPos",-1);
+UnitPos=GetAttr(elem,"UnitPos",0);
+Name=GetAttr(elem,"ElemName","");
+FixSide=GetAttr(elem,"FixSide","");
+FixID=GetAttr(elem,"FixID",0);
+FT=GetAttr(elem,"FurnType","000000");
+dopPr=GetAttr(elem,"PrimM","")
+if len(dopPr)>0
+{
+	Comment=Comment+iif(len(trim(Comment))>0," ","")+GetAttr(elem,"PrimM","");
+}
+
+nullout=initarray(SQLarr,"");
+SQLarr[1]="INSERT INTO TFixLines (";
+SQLarr[2]="ParentPos, UnitPos, Name, FixSide, FixID, FurnType, Comment) VALUES (";
+SQLarr[3]=str(ParentPos)+", ";
+SQLarr[4]=str(UnitPos)+", '";
+SQLarr[5]=str(Name)+"', '";
+SQLarr[6]=str(FixSide)+"', ";
+SQLarr[7]=str(FixID)+", '";
+SQLarr[8]=str(FT)+"', '";
+SQLarr[9]=str(Comment)+"')";
+MyRs=adbModify(MyConn,SQLarr);
+gosub ZeroTFixLn;
+return;
+
+// MakeRecDecor:
+
+// Gab=(panX*panY)/1000000;
+
+// ID=MaterialID;
+// gosub GetOneSCode;
+
+// if TypeID==98
+// {
+	// CommentDec="-=Рисунок=-";
+// }
+
+// nullout=initarray(SQLarr,"");
+// SQLarr[1]="INSERT INTO TDecorates (";
+// SQLarr[2]="ParentPos, DecoratePos, MaterialID, OneSCode, Name, Map,"
+// SQLarr[3]="GabChange, TypeID, TypeName, Gab, Comment) VALUES (";
+// SQLarr[4]=str(ParentPos)+", ";
+// SQLarr[5]=str(DecoratePos)+", ";
+// SQLarr[6]=str(MaterialID)+", '";
+// SQLarr[7]=str(OneSCode)+"', '";
+// SQLarr[8]=str(NameDec)+"', ";
+// SQLarr[9]=str(Map)+", ";
+// SQLarr[10]=str(GabChange)+", ";
+// SQLarr[11]=str(TypeID)+", '";
+// SQLarr[12]=str(TypeName)+"', ";
+// SQLarr[13]=str(Gab)+",'";
+// SQLarr[14]=str(CommentDec)+"')";
+// MyRs=adbModify(MyConn,SQLarr);
+
+// // Здесь добавим дополнительные пленки
+// if TypeID==98
+// {
+	// // Пескоструй 
+	// MaterialID=12404; // ORASMASK 831 Трафаретная пленка 1,00*50м
+	// SQLarr[6]=str(MaterialID)+", '";
+	// ID=MaterialID;
+	// gosub GetOneSCode;
+	// SQLarr[7]=str(OneSCode)+"', '";
+	// TypeID=346;
+	// SQLarr[11]=str(TypeID)+", '";
+	// gosub GetNameDec;
+	// SQLarr[8]=str(NameDec)+"', ";
+	// gosub GetNameDecGr;
+	// SQLarr[12]=str(TypeName)+"', ";
+	// CommentDec="";
+	// SQLarr[14]=str(CommentDec)+"')";
+	// MyRs=adbModify(MyConn,SQLarr);
+// }
+
+// if TypeID==336
+// {
+	// // Фотопечать
+	// MaterialID=10475; // Пленка Ораджет 3640-000
+	// SQLarr[6]=str(MaterialID)+", '";
+	// ID=MaterialID;
+	// gosub GetOneSCode;
+	// SQLarr[7]=str(OneSCode)+"', '";
+	// TypeID=346;
+	// SQLarr[11]=str(TypeID)+", '";
+	// gosub GetNameDec;
+	// SQLarr[8]=str(NameDec)+"', ";
+	// gosub GetNameDecGr;
+	// SQLarr[12]=str(TypeName)+"', ";
+	// CommentDec=" -=Пленка для фотопечати=-";
+	// SQLarr[14]=str(CommentDec)+"')";
+	// MyRs=adbModify(MyConn,SQLarr);
+	
+	// MaterialID=10477; // Пленка Ораджет 3640-010
+	// SQLarr[6]=str(MaterialID)+", '";
+	// ID=MaterialID;
+	// gosub GetOneSCode;
+	// SQLarr[7]=str(OneSCode)+"', '";
+	// TypeID=346;
+	// SQLarr[11]=str(TypeID)+", '";
+	// gosub GetNameDec;
+	// SQLarr[8]=str(NameDec)+"', ";
+	// gosub GetNameDecGr;
+	// SQLarr[12]=str(TypeName)+"', ";
+	// CommentDec="-=Пленка фоновая=-";
+	// SQLarr[14]=str(CommentDec)+"')";
+	// MyRs=adbModify(MyConn,SQLarr);
+// }
+
+// gosub ZeroTDecor;
+
+// return;
+
+MakeRecFurn:
+
+if !ManualRF
+{
+	TopParentPos=GetAttr(elem,"TopParentPos",-1);
+	ParentPos=GetAttr(elem,"ParentPos",-1);
+	UnitPos=GetAttr(elem,"UnitPos",0);
+	PriceID=GetAttr(elem,"PriceID",0);
+	UnitCode=GetAttr(elem,"UnitCode","0000");
+	FT=GetAttr(elem,"FurnType","000000");
+	Article=str(PriceInfo(PriceID,"ARTICLE","",1));
+}
+
+dopPr=GetAttr(elem,"PrimM","");
+if len(dopPr)>0
+{
+	Comment=Comment+iif(len(trim(Comment))>0," ","")+dopPr;
+}
+
+dopPr2=PriceInfo(PriceID,"Alias","");
+if len(dopPr2)>0
+{
+	Article=Article+iif(len(trim(Article))>0," ","")+dopPr2;
+}
+
+ID=PriceID;
+gosub GetOneSCode;
+nullout=initarray(SQLarr,"");
+SQLarr[1]="INSERT INTO TFurn (";
+SQLarr[2]="TopParentPos, ParentPos, UnitPos, Name, IDPrice, OneSCode,"
+SQLarr[3]="UnitCode, FurnType, Length, Width, Type, Article, Comment) VALUES (";
+SQLarr[4]=str(TopParentPos)+", ";
+SQLarr[5]=str(ParentPos)+", ";
+SQLarr[6]=str(UnitPos)+", '";
+SQLarr[7]=str(Name)+"', ";
+SQLarr[8]=str(PriceID)+", '";
+SQLarr[9]=str(OneSCode)+"', '";
+SQLarr[10]=str(UnitCode)+"', '";
+SQLarr[11]=str(ft)+"',";
+SQLarr[12]=str(Length)+",";
+SQLarr[13]=str(Width)+",'";
+SQLarr[14]=str(TypeIzm)+"','";
+SQLarr[15]=str(Article)+"','";
+SQLarr[16]=str(Comment)+"')";
+MyRs=adbModify(MyConn,SQLarr);
+gosub ZeroTFurn;
+return;
+
+MakeRecPiece:
+
+//PriceID=GetAttr(elem,"PriceID",0);
+// Name="Заготовка "+str(PriceInfo(PriceID,"MATNAME","",1));
+Name=str(PriceInfo(PriceID,"MATNAME","",1));
+Width=PriceInfo(PriceID,"Thickness",0,1);
+Article=str(PriceInfo(PriceID,"ARTICLE","",1));
+
+UDetNumber=str(UDetNumber);
+//putmsg(UDetNumber)
+gosub FindLastUDN;
+
+ID=PriceID;
+gosub GetOneSCode;
+
+nullout=initarray(SQLarr,"");
+SQLarr[1]="INSERT INTO TPieces (";
+SQLarr[2]="IDPiece, UnitPos, UDetNumber, Name, IDPrice, OneSCode, Amount,"
+SQLarr[3]="Length, Height, Width, Stock, Article, FurnType, Comment) VALUES (";
+SQLarr[4]=str(IDPiece)+", ";
+SQLarr[5]=str(UnitPos)+", '";
+SQLarr[6]=str(UDetNumber)+"', '";
+SQLarr[7]=str(Name)+"', ";
+SQLarr[8]=str(PriceID)+", '";
+SQLarr[9]=str(OneSCode)+"', ";
+SQLarr[10]=str(Amount)+", ";
+SQLarr[11]=str(Length)+", ";
+SQLarr[12]=str(Height)+",";
+SQLarr[13]=str(Width)+",";
+SQLarr[14]=str(Stock)+",'";
+SQLarr[15]=str(Article)+"','";
+SQLarr[16]=str(FTPi)+"','";
+SQLarr[17]=str(Comment)+"')";
+MyRs=adbModify(MyConn,SQLarr);
+gosub ZeroTPiece;
+return;
+
+MakeRecWSyst:
+
+if !ManualRP // Для ручного добавления
+{
+	TopParentPos=GetAttr(elem,"TopParentPos",-1);
+	ParentPos=GetAttr(elem,"ParentPos",-1);
+	UnitPos=GetAttr(elem,"UnitPos",0);
+	PriceID=GetAttr(elem,"PriceID",0);
+	Name=str(PriceInfo(PriceID,"MATNAME","",1));
+	UnitCode=GetAttr(elem,"UnitCode","0000");
+	FT=GetAttr(elem,"FurnType","000000");
+	Length=GetAttr(elem,"Length",0);
+	Article=str(PriceInfo(PriceID,"ARTICLE","",1));
+}
+dopPr=GetAttr(elem,"PrimM","")
+if len(dopPr)>0
+{
+	Comment=Comment+iif(len(trim(Comment))>0," ","")+GetAttr(elem,"PrimM","");
+}
+
+ID=PriceID;
+gosub GetOneSCode;
+nullout=initarray(SQLarr,"");
+SQLarr[1]="INSERT INTO TWardSys (";
+SQLarr[2]="TopParentPos, ParentPos, UnitPos, Name, IDPrice, OneSCode,"
+SQLarr[3]=" UnitCode, FurnType, Length, IDPiece, Article, Comment) VALUES (";
+SQLarr[4]=str(TopParentPos)+", ";
+SQLarr[5]=str(ParentPos)+", ";
+SQLarr[6]=str(UnitPos)+", '";
+SQLarr[7]=str(Name)+"', ";
+SQLarr[8]=str(PriceID)+", '";
+SQLarr[9]=str(OneSCode)+"', '";
+SQLarr[10]=str(UnitCode)+"', '";
+SQLarr[11]=str(ft)+"',";
+SQLarr[12]=str(Length)+",";
+SQLarr[13]=str(IDPiece)+", '";
+SQLarr[14]=str(Article)+"','";
+SQLarr[15]=str(Comment)+"')";
+MyRs=adbModify(MyConn,SQLarr);
+gosub ZeroTWard;
+ManualRP=0;
+return;
+
+
+MakeRecProf:
+if !ManualRP // Для ручного добавления
+{
+	TopParentPos=GetAttr(elem,"TopParentPos",-1);
+	ParentPos=GetAttr(elem,"ParentPos",-1);
+	UnitPos=GetAttr(elem,"UnitPos",0);
+	PriceID=GetAttr(elem,"PriceID",0);
+	Name=str(PriceInfo(PriceID,"MATNAME","",1));
+	UnitCode=GetAttr(elem,"UnitCode","0000");
+	FT=GetAttr(elem,"FurnType","000000");
+	Length=GetAttr(elem,"Length",0);
+	Article=str(PriceInfo(PriceID,"ARTICLE","",1));
+}
+dopPr=GetAttr(elem,"PrimM","")
+if len(dopPr)>0
+{
+	Comment=Comment+iif(len(trim(Comment))>0," ","")+GetAttr(elem,"PrimM","");
+}
+
+ID=PriceID;
+gosub GetOneSCode;
+nullout=initarray(SQLarr,"");
+SQLarr[1]="INSERT INTO TProfiles (";
+SQLarr[2]="TopParentPos, ParentPos, UnitPos, Name, IDPrice, OneSCode,"
+SQLarr[3]=" UnitCode, FurnType, Length, IDPiece, ColorName, Article, Comment) VALUES (";
+SQLarr[4]=str(TopParentPos)+", ";
+SQLarr[5]=str(ParentPos)+", ";
+SQLarr[6]=str(UnitPos)+", '";
+SQLarr[7]=str(Name)+"', ";
+SQLarr[8]=str(PriceID)+", '";
+SQLarr[9]=str(OneSCode)+"', '";
+SQLarr[10]=str(UnitCode)+"', '";
+SQLarr[11]=str(ft)+"',";
+SQLarr[12]=str(Length)+",";
+SQLarr[13]=str(IDPiece)+", '";
+SQLarr[14]=str(ColorName)+"','";
+SQLarr[15]=str(Article)+"','";
+SQLarr[16]=str(Comment)+"')";
+MyRs=adbModify(MyConn,SQLarr);
+gosub ZeroTProf;
+ManualRP=0;
+return;
+
+ZeroTElem:
+//-- Обнуление переменных для TElements
+	ParentPos=0;
+	UnitPos=0;
+	Posit=0;
+	Name="";
+	PriceID=0;
+	UnitCode="0000";
+	FT="000000";
+	Length=0;
+	Width=0;
+	Height=0;
+	PosNum=0;
+	NumberDS=0;
+	PlaceType=-1;
+	Data1="";
+	Data2="";
+	Data3="";
+	Data4="";
+	Data5="";
+	Data6="";
+	Comment="";
+return;
+
+ZeroTPanels:
+//-- Обнуление переменных для TPanels
+	TopParentPos=0;
+	ParentPos=0;
+	UnitPos=0;
+	UDetNumber="0";
+	Name="";
+	IDPiece=0;
+	PriceID=0;
+	OneSCode="";
+	UnitCode="0000";
+	Type=0;
+	Length=0;
+	Width=0;
+	Thickness=0;
+	PanDir=0;
+	Curline=0;
+	PrFlag=0;
+	PazFlag=0;
+	// KB=0;
+	// KBOneS="";
+	// KC=0;
+	// KCOneS="";
+	// KD=0;
+	// KDOneS="";
+	// KE=0;
+	// KEOneS="";
+	KeyTransp=0;
+	FrezKey=0;
+	Comment="";
+	IsEskis="";
+	WorkComm="";
+	DecComm="";
+	IsFaceF=0;
+	MDFPan=0;
+	ShponPan=0;
+return;
+
+ZeroTBands:
+//-- Обнуление переменных для TBands
+	TopParentPos=0;
+	ParentPos=0;
+	Unit=0;
+	OneSCode="";
+	PriceID=0;
+	Name="";
+	Comment="";
+	Length=0;
+	Width=0;
+	Thickness=0;
+	
+return;
+
+ZeroTFixes:
+//-- Обнуление переменных для TFixes
+	TopParentPos=0;
+	ParentPos=0;
+	UnitPos=0;
+	Name="";
+	NameMat="";
+	PriceID=0;
+	UnitCode="0000";
+	FT="000000";
+	OneSCode="";
+	Comment="";
+return;
+
+ZeroTFixLn:
+//-- Обнуление переменных для TFixLines
+	TopParentPos=0;
+	UnitPos=0;
+	Name="";
+	FixSide="";
+	FixID=0;
+	FT="000000";
+	Comment="";
+	OneSCode="";
+return;
+
+// ZeroTDecor:
+// //-- Обнуление переменных для TDecorates
+	// ParentPos=0;
+	// DecoratePos=0;
+	// MaterialID=0;
+	// NameDec="";
+	// Map=0;
+	// GabChange=0;
+	// TypeID=0;
+	// TypeName="";
+	// Gab=0;
+	// CommentDec="";
+	// OneSCode="";
+// return;
+
+ZeroTFurn:
+//-- Обнуление переменных для TFurn
+	ParentPos=0;
+	UnitPos=0;
+	Name="";
+	PriceID=0;
+	UnitCode="0000";
+	FT="000000";
+	Length=0;
+	Height=0;
+	Width=0;
+	Comment="";
+	TypeIzm="шт."
+	Article="";
+	OneSCode="";
+return;
+
+ZeroTPiece:
+//-- Обнуление переменных для TPiece
+	IDPiece=0;
+	UnitPos=0;
+	UDetNumber="0";
+	Name="";
+	PriceID=0;
+	OneSCode="";
+	Amount=0;
+	Length=0;
+	Height=0;
+	Width=0;
+	Stock=0;
+	FTPi="000000";
+	Comment="";
+return;
+
+ZeroTProf:
+	TopParentPos=0
+	ParentPos=0;
+	UnitPos=0;
+	Name="";
+	PriceID=0;
+	OneSCode="";
+	UnitCode="0000";
+	FT="000000";
+	Length=0;
+	IDPiece=0;
+	ColorName="";
+	Article="";
+	Comment="";
+return;
+
+ZeroTWard:
+	TopParentPos=0
+	ParentPos=0;
+	UnitPos=0;
+	Name="";
+	PriceID=0;
+	OneSCode="";
+	UnitCode="0000";
+	FT="000000";
+	Length=0;
+	IDPiece=0;
+	Article="";
+	Comment="";
+return;
+
+GetNameDecGr:
+	zp1="SELECT ID, Name FROM TProtoParType WHERE ID="+str(TypeID);
+	rcd=adbOpen(con,zp1);
+	total_s1=aDbRecCount(rcd);
+	if total_s1>0
+	{
+		err=aDbMoveFirst(rcd);
+		TypeName=adbGetValue(rcd,"Name",0);
+	}
+	else { TypeName=""; }
+
+return;
+
+GetNameDec:
+	zp1="SELECT TValue FROM TProtoSubst WHERE ParType="+str(TypeID)+" AND Value="+str(MaterialID);
+	rcd=adbOpen(con,zp1);
+	total_s1=aDbRecCount(rcd);
+	if total_s1>0
+	{
+		err=aDbMoveFirst(rcd);
+		NameDec=adbGetValue(rcd,"TValue",0);
+	}
+	else { NameDec="ВЫВЕДЕН "+str(priceinfo(MaterialID,"MATNAME","",1)); }
+	
+return;
+
+GetOneSCode:
+//--- На входе ID номенклатуры
+//--- Выход 1С код
+OneSCode="";
+
+inarr=findinarray(OneSArrID,ID);
+if inarr>0
+{
+	OneSCode=OneSArrN[inarr];
+}
+else
+{
+	zp1="SELECT ID, NomenclatureETC FROM NNomenclature WHERE ID="+str(ID);
+	rcd=adbOpen(con,zp1);
+	total_s1=aDbRecCount(rcd);
+	if total_s1>0
+	{
+		err=aDbMoveFirst(rcd);
+		i1s=i1s+1;
+		nullout=setvarinst(1,"i1s",i1s);
+		OneSCode=adbGetValue(rcd,"NomenclatureETC",0);
+		//putmsg(ID)
+		//putmsg(OneSCode)
+		OneSArrID[i1s]=ID;
+		OneSArrN[i1s]=OneSCode;	
+	}
+}
+
+return;
+
+FindLastUDN:
+if len(str(UDetNumber))==0 { return; }
+spd=SplitByDelim(str(UDetNumber),"_",FlArr);
+if spd>1 { UDetNumber=FlArr[1]; }
+if val(str(UDetNumber))>LastUDN
+{
+	LastUDN=val(str(UDetNumber));
+}
+return;
+//selbyattr "UDetNumber==\"10\"" partly stayblink done;
+//=sysvar(61)
+
+//------------------------------------------------------------------------------
+//-- Подпрограмма формирует строку - двоичное представление числа
+//-- Входные параметры:
+//-- Code - число
+//-- Sbin - строка
+binary:
+Sbin="";
+loopb:
+NCode=Code-int(Code/2)*2;
+if (NCode==1)
+{
+  Sbin="1"+Sbin;
+}
+else
+{
+  Sbin="0"+Sbin;
+}
+Code=int(Code/2);
+if (Code==0)
+{
+  Sbin="0"*10+Sbin;
+  return;
+}
+goto loopb;
+
+
+GetData:
+// Чтение скрэйтча
+// -- ScrMod
+// -- ParGroup
+// Выход:
+// -- Data
+Data="";
+numpar=cntvarscr(ScrMod,ParGroup);
+if numpar>0
+{
+	numP=namevarscr(ScrMod,ParGroup,DSArr);
+	g=0;
+	nextg:
+	g=g+1;
+	if g<=numP
+	{
+		nullout=GetScratch(ScrMod,ParGroup,DSArr[g],CurIDM,Suname);
+		// putmsg(CurIDM)
+		Data=Data+"#"+str(CurIDM)
+		goto nextg;
+	}
+}
+return;
+
+// MaskOrient:
+// // Сдвигаем записи массива Маски
+// // -2 -- против часовой 90
+// // 2 -- по часовой 90
+// // 4 -- по часовой 180
+
+// copyarray(MaskTmp,1,Mask,1)
+
+// if Orient!=0
+// {
+	// iE=0;
+	// nxtE:
+	// iE=iE+1;
+	// if iE<=8
+	// {
+		// rn=iE-Orient;
+		// ind=rn;
+		// if rn<=0
+		// {
+			// ind=8+rn;
+		// }
+		// if rn>8
+		// {
+			// ind=rn-8;
+		// }
+		// Mask[iE]=MaskTmp[ind];
+		// goto nxtE;
+	// }
+// }
+
+// return;
+
+ErrCrBase:
+
+result=0;
+exit;

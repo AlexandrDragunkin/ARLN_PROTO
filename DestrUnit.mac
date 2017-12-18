@@ -1,0 +1,28 @@
+//-- Разобрать сборочную единицу на один уровень
+
+global ProtoPath;
+extrafilter=""; //-- Сюда указать дополнительный фильтр для неразбираемых соборочных единиц
+onerror final;
+selbyattr "((IsAssign(\"FurnType\")&&IsAssign(\"$ProtoInfo\")&&IsAssign(\"ProtoParams\")&&Posit!=10)||(IsAssign(\"FurnType\")&&Posit==0))"+extrafilter
+  prompt "Укажите разбираемые сборочные единицы:" wholly : ;
+offerror
+object_2=sysvar(61);
+if (object_2==0)
+{
+  exit;
+}
+defarr objs[object_2];
+macro ProtoPath+"Arrobj.mac" object_2, objs;
+
+//-- Смотрим про способ разбора
+NULLOUT=getvarinst(2,"DestrType",DestrType,2);
+if (DestrType==1) //-- По уровням разбора
+{
+  macro ProtoPath+"DestrUnitLevel.mac" objs;
+}
+if (DestrType==2) //-- По типам объектов
+{
+  macro ProtoPath+"DestrUnitFt.mac" objs;
+}
+final:
+exit;

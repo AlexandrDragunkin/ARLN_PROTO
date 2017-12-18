@@ -1,0 +1,75 @@
+//MirrorPrLn.mac
+//*********************************************
+//Создание зеркального аналога профильного длинномера
+//с сохранением внешнего контура габарита
+//              Драгункин А.Р.
+//              ГеоС 2008 г.
+//*********************************************
+
+
+defarr arr1[4] arr2[4] xm[6] bd[11];
+
+
+getpar pnt ;
+//objident :  pnt ;  // Обязательно длинномер
+//проверяем
+Result=GetAttr(pnt,"LongsType",-99);
+if Result<0 {
+   putmsg("Указанный объект не длинномер",0) ;
+   exit ;
+}
+
+Result=SetLongObj(pnt);
+Ltype=getlongtype()-1 ;
+Art=Val(GetAttr(pnt,"Article","-99"));
+//Leng=GetAttr(pnt,"Length",-99);
+Leng=GetLongLen(Pnt);
+SetLongObj(pnt) ;   //Считывем информацию о куске
+Result=GetBentProf(Bd) ; //заполняем Bd
+Result=GetLongCut(arr1);//углы подрезки
+k=ltype+1 ;
+SetLongType(k);     //Установили тип длинномера
+Xn=GetProfShift(Arr1[2],0); //смещения начала
+Xk=GetProfShift(Arr1[1],1); //смещения конца
+setucs lcs pnt ; //Переходим в ЛСК куска
+Xn=Xn-GetProfShift(Arr1[2],0); //смещения начала
+Xk=Xk-GetProfShift(Arr1[1],1); //смещения конца
+//======================
+Xgab=0
+Ygab=0
+plgYmax=0
+plgYmin=0
+LongPath=GetLongFile(Xgab,Ygab,plgYmax,plgYmin);
+plgYmin=-plgYmin
+//=========================
+
+err=Objgab3(pnt,xm) ;
+Ycen=(Xm[5]-xm[2])/2+xm[2];
+D_plg=(Xgab/2+plgYmin)*2
+=D_plg
+Zn=Sgn(bd[3]) ;
+Zn=iif(zn==0,-1,-Zn);
+//Setucs Leng Ycen*2 0 0 Ycen*2 0 Leng -Ycen*3 0;
+
+
+if bd[3]!=0 { Setucs Leng -1*Bd[2] 0 0 -1*Bd[2] 0 Leng -2*Bd[2] 0; }
+else { Setucs Leng D_plg 0 0 D_plg 0 Leng 2*D_plg 0;  }
+
+Arr2[1]=Arr1[2]
+Arr2[2]=Arr1[1]
+Arr2[3]=0
+Arr2[4]=0
+
+bd[3]=-1*(bd[3]-Sgn(bd[3])*zn*D_plg);
+bd[2]=bd[2]-zn*D_plg;
+Result=SetBentProf(Bd) ; //заполняем Bd
+Result=SetLongCut(arr2);//углы подрезки
+delete pnt ;
+if bd[3]!=0 {
+   if zn<0 { #pnt longcreate Leng 0 0 zn*D_plg 0 0 ; }
+   if zn>0 { #pnt longcreate Leng-D_plg -D_plg 0 0 -D_plg 0 ; }
+}
+else { #pnt longcreate Leng 0 0 0 0 0 ; }
+exit ;
+
+//============================

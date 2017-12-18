@@ -1,0 +1,38 @@
+//-- Создание Scratch с информацией по расчету элемента
+//-- На входе 2 массива с названием переменной и значением
+//-- Значения перемножаются, все что нужно сложить отдельной записью.
+//-- Вычитание исключено, остальная арифметика перед записью в массив 
+
+getpar obj, NmTpID, IDMat, AttrScrName, ScrName, SCountName, SCount, NCount, SumCostRes;
+
+SumCostRes=0;
+
+If isassign(AttrScrName,obj)
+{ ScrMod=ReadScratch(AttrScrName,obj);	}
+else
+{ ScrMod=InitScratch(); }
+
+ic=0;
+nextic:
+ic=ic+1;
+if ic<=Ncount
+{
+	if len(str(SCount[ic]))>0&&len(str(SCountName[ic]))
+	{
+		err=AddScratch(ScrMod,ScrName,SCountName[ic],SCount[ic]);
+		if ic==1 { SumCostRes=round(SCount[ic],0.001); }
+		else { SumCostRes=SumCostRes*round(SCount[ic],0.001); }
+	}
+	goto nextic;
+}
+
+if NmTpID>0 { MatName=PriceInfo(IDMat,iif(NmTpID==1,"MATNAME","NAME"),"",NmTpID); }
+else { MatName="None"; }
+
+err=AddScratch(ScrMod,ScrName,"Cost",SumCostRes);
+err=AddScratch(ScrMod,ScrName,"NomID",IDMat);
+err=AddScratch(ScrMod,ScrName,"MatName",MatName);
+
+nullout=writescratch(ScrMod,AttrScrName,obj);
+nullout=TermScratch(ScrMod);
+exit;

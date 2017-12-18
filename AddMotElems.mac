@@ -1,0 +1,67 @@
+//-- Макрос установки навесных элементов на раму.
+Global ProtoPath; 
+global DfElem; // Последняя установленная
+defarr tm[6];
+defarr arr[10], arrin[15];
+
+res=IsvarDef("DfElem");
+if (res==0) 
+{
+	NULLOUT=getvarinst(2,"MotElemType",DfElem,0);											 //-- Умолчание на элемент
+}
+DefElem=str(getyadsubst(79))+"#"+str(DfElem) ;			//-- Формируем строку умолчаний.
+
+NULLOUT=getsnap();
+NULLOUT=pushinst(1);
+#UndoOnBefore MacroMode Undo Off;
+onerror final;
+
+#ok_flag
+setvar
+"Установка навесных элементов"
+""
+left
+"Выберите навесной элемент"
+done
+string auto button 6 default DefElem 
+     "Тип навесного элемента:" NNoga
+done;
+if (ok_flag==0)
+{
+	exit;
+}
+splitbydelim(NNoga,"#",Arr);
+DfElem=Arr[2];
+//putmsg(DfElem);
+objdo=sysvar(60);
+accessory "042100" DfElem 0 yes ;
+objPosle=sysvar(60)-objdo;
+//putmsg(objPosle);
+if (objPosle==1)
+{
+ objident last 1 komplect;
+ #new gridlock move komplect :
+}
+if (objPosle>1)
+{
+ putmsg("В К3-файле комплектующего больше одного объекта");
+ goto final;
+}
+
+//---------------------------------------------------
+offerror;
+if UndoOnBefore==1 { MacroMode Undo On "AddMotElems" new; }
+NULLOUT=popinst(1);
+NULLOUT=resnap();
+exit;
+final:	//-- если было аварийное завершение
+objposle=sysvar(60)-objdo;
+offerror;
+NULLOUT=popinst(1);
+NULLOUT=resnap();
+if (objposle>0)
+{
+ delete last objposle;
+}
+if UndoOnBefore==1 { MacroMode Undo On; }
+exit;

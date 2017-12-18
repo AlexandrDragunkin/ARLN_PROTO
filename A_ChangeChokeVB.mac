@@ -1,0 +1,160 @@
+//-- Вывод диалога с умолчаниями
+//-- До и после вывода можно добавить свои действия
+global ProtoPath;
+defarr arr[2];
+
+// Все уникальные листовые материалы сцены
+nels=getlistmat(3,"arrbd");
+// putmsg(arrbd);
+defarr temparr[1000];
+defarr temparr2[1000];
+i=0;j=0;
+inext:
+i=i+1;
+if i<=nels
+{
+	tran=priceinfo(arrbd[i],"Transparency",0);
+	if tran>0 { goto inext; }
+	thic=priceinfo(arrbd[i],"Thickness",0);
+	ParentID=priceinfo(arrbd[i],"ParentID",0);
+	if ParentID>0	{ elem=ParentID; }
+	else	{ elem=arrbd[i]; }
+	if findinarray(temparr,elem)==0
+	{
+		j=j+1;
+		temparr[j]=elem;
+	}
+	if thic>14 { temparr2[j]=1; }
+	goto inext;
+}
+// putmsg(temparr,1,1,10)
+nun=j;
+defarr UnMat[nun], IsVB[nun];
+copyarray(UnMat,1,temparr,1);
+copyarray(IsVB,1,temparr2,1);
+// putmsg(UnMat)
+
+defarr ExMater[nun], ChMater[nun];
+initarray(ExMater,"");
+initarray(ChMater,"");
+defarr TypeE[nun], TypeCh[nun];
+initarray(TypeE,5449);
+initarray(TypeCh,-100);
+
+OrderUID="";
+k3ObjUID=0;
+// Проверка на наличие бокса с уникальным идентификатором заказа
+// В нём сохраним привязки цветов заглушек и эксцентриков
+macro ProtoPath+"A_Check_UID_Order.py" ByRef OrderUID, ByRef k3ObjUID;
+
+Suname="";
+AttrScrName="ScrBox";
+If isassign(AttrScrName,k3ObjUID)
+{
+	// putmsg("ReadScratch")
+	ScrMod=ReadScratch(AttrScrName,k3ObjUID);
+	num=cntgroupscr(ScrMod);
+	if num>0
+	{
+		defarray tArr[num];
+		nullout=namegroupscr(ScrMod,tArr);
+		i=0;
+		loop:
+		i=i+1;
+		if i<=nun
+		{
+			if findinarray(tArr,str(UnMat[i]),1,num)>0
+			{
+				err=GetScratch(ScrMod,str(UnMat[i]),"Choke",TypeCh[i],Suname);
+				err=GetScratch(ScrMod,str(UnMat[i]),"VBe",TypeE[i],Suname);
+			}
+			goto loop;
+		}
+	}
+}
+else
+{
+	// putmsg("InitScratch")
+	ScrMod=InitScratch();
+	i=0;
+	loop2:
+	i=i+1;
+	if i<=nun
+	{
+		err=AddScratch(ScrMod,str(UnMat[i]),"Choke",TypeCh[i]);
+		err=AddScratch(ScrMod,str(UnMat[i]),"VBe",TypeE[i]);
+		goto loop2;
+	}
+}
+
+writescratch(ScrMod,AttrScrName,k3ObjUID);
+termscratch(ScrMod);
+
+// resvb=NPGetByWhere(1,"ID>0","AVB",342);
+// resch=NPGetByWhere(1,"ID>0","AChoke",343);
+
+#aaa
+setvar
+"Изменить эксцентрики и заглушки"
+""
+center
+"Введите параметры"
+done
+
+let j=0
+loop3:
+let j=j+1
+
+string button 6 auto default "343#"+str(TypeCh[j]) 
+str(priceinfo(UnMat[j],"MatName",""))+" - заглушка" ChMater[j]
+if IsVB[j]==1
+{
+	string button 6 auto default "342#"+str(TypeE[j]) 
+	"Эксцентрик VB" ExMater[j]
+}
+
+if (j<nun)
+{
+	button " " var
+	goto loop3
+}
+
+button " " var
+logical default 0 "Игнорировать назначенные отдельно" ignore
+
+done;
+
+if (aaa==0) { exit; }
+
+i=0;
+nxti:
+i=i+1;
+if i<=nun
+{
+	initarray(Arr,0);
+	nullout=splitbydelim(ChMater[i],"#",Arr,1);
+	ChMater[i]=Arr[2];
+	initarray(Arr,0);
+	nullout=splitbydelim(ExMater[i],"#",Arr,1);
+	ExMater[i]=Arr[2];
+	goto nxti;
+}
+
+nullout=getvarinst(2,"ProtoArl",ProtoArl,"A__A.ar|");
+macro ProtoPath+ProtoArl+"Choke.mac" ChMater, ExMater, UnMat, ByRef ignore done;
+
+ScrMod=ReadScratch(AttrScrName,k3ObjUID);
+
+i=0;
+loop10:
+i=i+1;
+if i<=nun
+{
+	err=AddScratch(ScrMod,str(UnMat[i]),"Choke",ChMater[i]);
+	err=AddScratch(ScrMod,str(UnMat[i]),"VBe",ExMater[i]);
+	goto loop10;
+}
+writescratch(ScrMod,AttrScrName,k3ObjUID);
+termscratch(ScrMod);
+
+exit;

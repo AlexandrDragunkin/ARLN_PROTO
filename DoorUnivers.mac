@@ -1,0 +1,389 @@
+//-- Одна из основных Макропрограмм построения распашной двери
+
+global ProtoPath;
+global g_result;    //-- Размер по оси y гнутого фасада
+global g_FurnType;  //-- Тип мебельного объекта
+global g_liftR, g_liftL ; //-- ID правого и левого подъемника для двери
+global		// Для фасадов и дверей
+DoorKonst,  // Тип конструкции двери
+DoorPlace,	// Сторона открывания
+DoorDuble,	// Двойная/одинарная
+DoorOpen,	// Открытая/закрытая
+DoorType,	// Утопленная0/накладная1/Свободная2
+DoorHinge,	// Петля
+DoorKorp,   // Толщина материала корпуса ниши
+DoorAngle;  // Угол установки
+
+global		// Для фасадов и дверей
+DoorMater,	// Материал панелей двери
+DoorPict,	// тип фасада(рисунка)
+DoorBCol,	// Цвет кромки фасада
+DoorBand,	// Тип кромки фасада
+DoorMatVS1, // Материал вставки 1 фасада
+DoorMatVS2; // Материал вставки 2 фасада
+
+global		//-- Для ручек
+HandleType,	//-- Тип ручки
+HandleX,	//-- Сдвиг ручки по x
+HandleZ,	//-- Сдвиг ручки по z
+HandleA,	//-- Поворот ручки
+HandleD,	//-- Двойная или одиночная ручка
+HandleR;	//-- Тип положения ручки (0-свободно 1-по центру 3-сверху 4-снизу)
+
+global PanDir;	//-- Направление текстуры 1=D 2=B 0-игнорируется
+
+getpar
+x y z		//-- Правый нижний дальний угол
+w h     	//-- Размер по ширине и высоте
+  R_Fas         // Изменения фасада: справа
+  L_Fas         // Слева
+  U_Fas         // Сверху
+  D_Fas         // Снизу
+  Door_Zw       // Зазор по ширине
+;
+//-----------------------------------------------------------------
+//-- Ручки
+Handle=HandleType
+ARMX=HandleX
+ARMZ=HandleZ
+ARMA=HandleA
+// Петли
+AlPet=DoorAngle
+Rplace=DoorPlace;
+FasadType=DoorPict
+DOUD=DoorDuble;
+OpenD=DoorOpen;
+HaveCinP=0;	//-- признак того, что в комплектующих нет информации для движения
+//-----------------------------------------------------------------
+//defarr scarr[2];
+
+DoorKonstF=PriceInfo(DoorPict,"DoorConstr",0,2);  // По фасаду подобрать тип двери
+if (DoorKonstF>0) {     // Если в фасаде определен тип двери, меняем
+  DoorKonst=DoorKonstF
+}
+if (Rplace==3||Rplace==4)
+{
+  l=ARMX;
+  ARMX=ARMZ;
+  ARMZ=l;
+}
+s=w;
+if (AlPet!=0)
+{
+  S=S/abs(cos(radian(AlPet)));
+}
+x1=x;
+y1=y;
+z1=z;
+W_Pol=S;
+H_Pol=H;
+x0=0;
+ALOpen=60;
+object_0=sysvar(60);
+h_fas=16 // Для SetDoorCinema
+
+if (DOUD==1) //-- Двойная дверь
+{
+  	FasadType2=FasadType
+	err=getvarinst(1,"РисФас2",FasadType2,FasadType)
+
+  if (Rplace==1||Rplace==2||Rplace==0) //-- Дверь открывается справа, слева или не открывается
+  {
+    W1=((W_Pol-Door_Zw)/2);
+    WLR=int((W_Pol+L_Fas+R_Fas-Door_Zw)/2);
+    WL=WLR-L_Fas;
+    WR=WLR-R_Fas;
+    H1=H_Pol;
+    Variant=1;
+    //-- Строим первую дверь
+    object_1=sysvar(60);
+	DoorPict=FasadType2;
+    macro ProtoPath+"MakeDoorWing.mac"
+		x1,y1,z1, //-- Положение
+		WR, H1,   //-- Ширина и высота
+		R_Fas 0 U_Fas D_Fas //-- Увеличение фасада
+		Variant                 // вариант расположения
+		DoorKonst               //  Тип конструкции двери
+                DoorMater,              //-- Материал панелей двери
+                FasadType2,               // Тип фасада
+		Handle,ARMX,ARMZ,ARMA;  //-- Тип ручки и параметры положения
+     object_2=sysvar(60)-object_1;
+
+    if (object_2>0)
+    {
+			objDo=object_1
+			objPosle=sysvar(60);
+			macro ProtoPath+"SetCinemaFromObj.mac" byref HaveCinP byref ScrCinO1 DoorAngle objDo objPosle w 0 0 0 0;
+			if (object_2>0&&Variant!=0&&HaveCinP==0)
+			{
+				macro ProtoPath+"SetCinMain.mac" ByRef scarr, 0, 0, 10, 1; //-- Кто - независимый
+				macro ProtoPath+"SetCinRotate.mac" scarr,
+																					x1+iif(Variant==2,W1,0),y1,z1+iif(Variant==4,H1,0), 
+																					x1+iif(Variant==2,W1,0)+iif(Variant==4,W1,0)-iif(Variant==3,W1,0),y1,z1+iif(Variant==4,H1,0)+iif(Variant==1||Variant==2,W1,0),
+																					80, 0, 10, 0; 
+				macro ProtoPath+"SetCinemaByType.mac" objDo objPosle scarr "0000" ;
+				kol=CinemaScr(99,scarr);
+				macro ProtoPath+"SetCinMain.mac" ByRef scarr, 2, 0, 10, 1; //-- Кто - хозяин
+				macro ProtoPath+"SetCinRotate.mac" scarr,
+																					x1+iif(Variant==2,W1,0),y1,z1+iif(Variant==4,H1,0), 
+																					x1+iif(Variant==2,W1,0)+iif(Variant==4,W1,0)-iif(Variant==3,W1,0),y1,z1+iif(Variant==4,H1,0)+iif(Variant==1||Variant==2,W1,0),
+																					80, 0, 10, 0; 
+				macro ProtoPath+"SetCinemaByType.mac" objDo objPosle scarr "0406" ;
+				kol=CinemaScr(99,scarr);
+				macro ProtoPath+"SetCinMain.mac" ByRef scarr, 2, 0, 10, 1; //-- Кто - хозяин
+				macro ProtoPath+"SetCinRotate.mac" scarr,
+																					x1+iif(Variant==2,W1,0),y1,z1+iif(Variant==4,H1,0), 
+																					x1+iif(Variant==2,W1,0)+iif(Variant==4,W1,0)-iif(Variant==3,W1,0),y1,z1+iif(Variant==4,H1,0)+iif(Variant==1||Variant==2,W1,0),
+																					80, 0, 10, 0; 
+				macro ProtoPath+"SetCinemaByType.mac" objDo objPosle scarr "0408" ;
+				kol=CinemaScr(99,scarr);
+			}
+			if (object_2>0&&Variant!=0&&HaveCinP==1)
+			{
+				NULLOUT=AddScratch(ScrCinO1,"Main","Control",0);
+				macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0000" ;
+				NULLOUT=AddScratch(ScrCinO1,"Main","Control",2);
+				macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0406" ;
+				macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0408" ;
+			}
+    }
+    x1=W_Pol-WL;
+    Variant=2;
+
+    //-- Строим вторую дверь
+    object_1=sysvar(60);
+	DoorPict=FasadType;
+    macro ProtoPath+"MakeDoorWing.mac"
+		x1,y1,z1, //-- Положение
+		WL, H1,   //-- Ширина и высота
+		0 L_Fas U_Fas D_Fas //-- Увеличение фасада
+		Variant                 // вариант расположения
+		DoorKonst               //  Тип конструкции двери
+                DoorMater,              //-- Материал панелей двери
+                FasadType               // Тип фасада
+		Handle,ARMX,ARMZ,ARMA;  //-- Тип ручки и параметры положения
+     object_2=sysvar(60)-object_1;
+    if (object_2>0)
+    {
+			objDo=object_1
+			objPosle=sysvar(60);
+			macro ProtoPath+"SetCinemaFromObj.mac" byref HaveCinP byref ScrCinO1 DoorAngle objDo objPosle w 0 0 0 0;
+			if (object_2>0&&Variant!=0&&HaveCinP==0)
+			{
+				macro ProtoPath+"SetCinMain.mac" ByRef scarr, 0, 0, 10, 1; //-- Кто - независимый
+				macro ProtoPath+"SetCinRotate.mac" scarr,
+																					x1+iif(Variant==2,W1,0),y1,z1+iif(Variant==4,H1,0), 
+																					x1+iif(Variant==2,W1,0)+iif(Variant==4,W1,0)-iif(Variant==3,W1,0),y1,z1+iif(Variant==4,H1,0)+iif(Variant==1||Variant==2,W1,0),
+																					-80, 0, 10, 0; 
+				macro ProtoPath+"SetCinemaByType.mac" objDo objPosle scarr "0000" ;
+				kol=CinemaScr(99,scarr);
+				macro ProtoPath+"SetCinMain.mac" ByRef scarr, 2, 0, 10, 1; //-- Кто - хозяин
+				macro ProtoPath+"SetCinRotate.mac" scarr,
+																					x1+iif(Variant==2,W1,0),y1,z1+iif(Variant==4,H1,0), 
+																					x1+iif(Variant==2,W1,0)+iif(Variant==4,W1,0)-iif(Variant==3,W1,0),y1,z1+iif(Variant==4,H1,0)+iif(Variant==1||Variant==2,W1,0),
+																					-80, 0, 10, 0; 
+				macro ProtoPath+"SetCinemaByType.mac" objDo objPosle scarr "0406" ;
+				kol=CinemaScr(99,scarr);
+				macro ProtoPath+"SetCinMain.mac" ByRef scarr, 2, 0, 10, 1; //-- Кто - хозяин
+				macro ProtoPath+"SetCinRotate.mac" scarr,
+																					x1+iif(Variant==2,W1,0),y1,z1+iif(Variant==4,H1,0), 
+																					x1+iif(Variant==2,W1,0)+iif(Variant==4,W1,0)-iif(Variant==3,W1,0),y1,z1+iif(Variant==4,H1,0)+iif(Variant==1||Variant==2,W1,0),
+																					-80, 0, 10, 0; 
+				macro ProtoPath+"SetCinemaByType.mac" objDo objPosle scarr "0408" ;
+				kol=CinemaScr(99,scarr);
+			}
+			if (object_2>0&&Variant!=0&&HaveCinP==1)
+			{
+				NULLOUT=AddScratch(ScrCinO1,"Main","Control",0);
+				macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0000" ;
+				NULLOUT=AddScratch(ScrCinO1,"Main","Control",2);
+				macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0406" ;
+				macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0408" ;
+			}
+			if (OpenD==1) //-- Если открытая дверь
+			{
+				rotate last object_2 done 2points x1+W1 y1 0 x1+w1 y1 10 -ALOpen nocopy;
+			}
+    }
+  }
+  else //-- Дверь открывается сверху или снизу
+  {
+    W1=W_Pol;
+    H1=int((H_Pol-Door_Zw)/2);
+    Variant=4;
+    //-- Строим первую дверь (нижнюю)
+		//--Запоминаем глобальные переменные
+		LiftR=g_liftR;
+		LiftL=g_liftL;
+		HingD=DoorHinge;
+		g_liftR=0;
+		g_liftL=0;
+		// Эта петля для складного случая брать надо из лифта или подъемника
+		NULLOUT=getvarinst(1,"LfHinId",DoorHinge,DoorHinge);
+    object_1=sysvar(60);
+	
+	DoorPict=FasadType2;
+    macro ProtoPath+"MakeDoorWing.mac"
+		x1,y1,z1, //-- Положение
+		W1, H1,   //-- Ширина и высота
+		R_Fas L_Fas 0 D_Fas //-- Увеличение фасада
+		Variant                 // вариант расположения
+		DoorKonst               //  Тип конструкции двери
+                DoorMater,              //-- Материал панелей двери
+                FasadType2,               // Тип фасада
+		Handle,ARMX,ARMZ,ARMA;  //-- Тип ручки и параметры положения
+    object_2=sysvar(60)-object_1;
+    Z_Rot=z1+H_Pol // Z оси поворота
+    if (object_2>0)
+    {
+			objDo=object_1
+			objPosle=sysvar(60);
+			macro ProtoPath+"SetCinMain.mac" ByRef  scarr, 0, 0, 10, 1;
+			macro ProtoPath+"SetCinRotate.mac" scarr,x1,y1,z1+H_Pol/2, x1+1,y1,z1+H_Pol/2, -80, 0, 10, 0;
+			macro ProtoPath+"SetCinRotate.mac" scarr,x1,y1,Z_Rot, x1+1,y1,Z_Rot, 80, 0, 10, 0;
+			macro ProtoPath+"SetCinemaByType.mac" objDo objPosle scarr "0000";
+			kol=CinemaScr(99,scarr);
+			macro ProtoPath+"SetCinMain.mac" ByRef scarr, 2, 0, 10, 1;
+			macro ProtoPath+"SetCinRotate.mac" scarr,x1,y1,z1+H_Pol/2, x1+1,y1,z1+H_Pol/2, -80, 0, 10, 1;
+			macro ProtoPath+"SetCinRotate.mac" scarr,x1,y1,Z_Rot, x1+1,y1,Z_Rot, 80, 0, 10, 0;
+			macro ProtoPath+"SetCinemaByType.mac" objDo objPosle scarr "0406" ;
+			kol=CinemaScr(99,scarr);
+    }
+    z1=H1+Door_Zw;
+    Variant=4;
+		g_liftR=LiftR;
+		g_liftL=LiftL;
+		DoorHinge=HingD;
+    //-- Строим вторую дверь (верхнюю)
+    object_1=sysvar(60);
+	DoorPict=FasadType;
+    macro ProtoPath+"MakeDoorWing.mac"
+		x1,y1,z1, //-- Положение
+		W1, H1,   //-- Ширина и высота
+		R_Fas L_Fas U_Fas 0 //-- Увеличение фасада
+		Variant                 // вариант расположения
+		DoorKonst               //  Тип конструкции двери
+                DoorMater,              //-- Материал панелей двери
+                FasadType               // Тип фасада
+		0,ARMX,ARMZ,ARMA;  //-- Тип ручки и параметры положения
+     object_2=sysvar(60)-object_1;
+    if object_2>0
+    {
+			objDo=object_1
+			objPosle=sysvar(60);
+			macro ProtoPath+"SetCinMain.mac" ByRef scarr, 0, 0, 10, 1; //-- Кто - независимый
+			macro ProtoPath+"SetCinRotate.mac" scarr,x1,y1,Z_Rot, x1+1,y1,Z_Rot, 80, 0, 10, 0; 
+			macro ProtoPath+"SetCinemaByType.mac" objDo objPosle scarr "0000" ;
+			kol=CinemaScr(99,scarr);
+			macro ProtoPath+"SetCinMain.mac" ByRef scarr, 2, 0, 10, 1; //-- Кто - хозяин
+			macro ProtoPath+"SetCinRotate.mac" scarr,x1,y1,Z_Rot, x1+1,y1,Z_Rot, 80, 0, 10, 1;  //-- Ключ этого движения
+			macro ProtoPath+"SetCinemaByType.mac" objDo objPosle scarr "0406" ;
+			kol=CinemaScr(99,scarr);
+
+			macro ProtoPath+"SetCinMain.mac" ByRef scarr, 2, 0, 10, 1; //-- Кто - хозяин
+			macro ProtoPath+"SetCinRotate.mac" scarr,x1,y1,Z_Rot, x1+1,y1,Z_Rot, 80, 0, 10, 2;  //-- Ключ этого движения
+			macro ProtoPath+"SetCinemaByType.mac" objDo objPosle scarr "0408" ;
+			kol=CinemaScr(99,scarr);
+    }
+  }
+}
+else //-- Если дверь одинарная
+{
+  W1=W_Pol;
+  H1=H_Pol;
+  Variant=Rplace;
+  //-- Строим дверь
+	object_1=sysvar(60);
+	macro ProtoPath+"MakeDoorWing.mac"
+	x1,y1,z1, //-- Положение
+	W1, H1,   //-- Ширина и высота
+	R_Fas L_Fas U_Fas D_Fas		//-- Увеличение фасада
+	Variant										//-- Вариант расположения
+	DoorKonst									//-- Тип конструкции двери
+							DoorMater,    //-- Материал панелей двери
+							FasadType     //-- Тип фасада
+	Handle,ARMX,ARMZ,ARMA;		//-- Тип ручки и параметры положения
+	object_2=sysvar(60)-object_1;
+	objDo=object_1
+	objPosle=sysvar(60);
+	macro ProtoPath+"SetCinemaFromObj.mac" byref HaveCinP byref ScrCinO1 DoorAngle objDo objPosle w 0 0 0 0;		
+  if (object_2>0&&Variant!=0&&HaveCinP==0)
+  {
+		macro ProtoPath+"SetCinMain.mac" ByRef scarr, 0, 0, 10, 1; //-- Кто - независимый
+		macro ProtoPath+"SetCinRotate.mac" scarr,
+																			x1+iif(Variant==2,W1,0),y1,z1+iif(Variant==4,H1,0), 
+																			x1+iif(Variant==2,W1,0)+iif(Variant==4,W1,0)-iif(Variant==3,W1,0),y1,z1+iif(Variant==4,H1,0)+iif(Variant==1||Variant==2,W1,0),
+																			80, 0, 10, 0; 
+		macro ProtoPath+"SetCinemaByType.mac" objDo objPosle scarr "0000" ;
+		kol=CinemaScr(99,scarr);
+		macro ProtoPath+"SetCinMain.mac" ByRef scarr, 2, 0, 10, 1; //-- Кто - хозяин
+		macro ProtoPath+"SetCinRotate.mac" scarr,
+																			x1+iif(Variant==2,W1,0),y1,z1+iif(Variant==4,H1,0), 
+																			x1+iif(Variant==2,W1,0)+iif(Variant==4,W1,0)-iif(Variant==3,W1,0),y1,z1+iif(Variant==4,H1,0)+iif(Variant==1||Variant==2,W1,0),
+																			80, 0, 10, 0; 
+		macro ProtoPath+"SetCinemaByType.mac" objDo objPosle scarr "0406" ;
+		kol=CinemaScr(99,scarr);
+		macro ProtoPath+"SetCinMain.mac" ByRef scarr, 2, 0, 10, 1; //-- Кто - хозяин
+		macro ProtoPath+"SetCinRotate.mac" scarr,
+																			x1+iif(Variant==2,W1,0),y1,z1+iif(Variant==4,H1,0), 
+																			x1+iif(Variant==2,W1,0)+iif(Variant==4,W1,0)-iif(Variant==3,W1,0),y1,z1+iif(Variant==4,H1,0)+iif(Variant==1||Variant==2,W1,0),
+																			80, 0, 10, 0; 
+		macro ProtoPath+"SetCinemaByType.mac" objDo objPosle scarr "0408" ;
+	  kol=CinemaScr(99,scarr);
+  }
+  if (object_2>0&&Variant!=0&&HaveCinP==1)
+  {
+		NULLOUT=AddScratch(ScrCinO1,"Main","Control",0);
+		macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0000" ;
+		NULLOUT=AddScratch(ScrCinO1,"Main","Control",2);
+		macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0406" ;
+		macro ProtoPath+"SetCinemaByType.mac" objDo objPosle ScrCinO1 "0408" ;
+  }
+}
+object_3=sysvar(60)-object_0;
+if (AlPet>0)
+{
+  x0=w;
+  move last object_3 done w-s 0 0 nocopy;
+}
+if (Alpet!=0) //-- Если петли имеют ненулевой угол открывания
+{
+  rotate last object_3 done 2points  x0 y1-g_result 0 x0 y1-g_result 10 AlPet nocopy;
+}
+FurnType="230100";
+Namescr="ProtoParams";
+g_FurnType=FurnType;
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"S",w);
+err=AddScratch(ScrMod,FurnType,"Hd",H);
+err=AddScratch(ScrMod,FurnType,"G",y1);
+err=AddScratch(ScrMod,FurnType,"R_Fas",R_Fas);
+err=AddScratch(ScrMod,FurnType,"L_Fas",L_Fas);
+err=AddScratch(ScrMod,FurnType,"U_Fas",U_Fas);
+err=AddScratch(ScrMod,FurnType,"D_Fas",D_Fas);
+err=AddScratch(ScrMod,FurnType,"Door_Zw",Door_Zw);
+err=AddScratch(ScrMod,FurnType,"Nshp",PanDir);
+err=AddScratch(ScrMod,FurnType,"Door",DoorKonst);
+err=AddScratch(ScrMod,FurnType,"Rplace",Rplace);
+err=AddScratch(ScrMod,FurnType,"Fasrtype",DoorPict);
+err=AddScratch(ScrMod,FurnType,"PrMater",DoorMater);
+err=AddScratch(ScrMod,FurnType,"Band",DoorBand);
+err=AddScratch(ScrMod,FurnType,"Face_col",DoorBCol);
+err=AddScratch(ScrMod,FurnType,"HanType",HandleType);
+err=AddScratch(ScrMod,FurnType,"Rpl_r",HandleR);
+err=AddScratch(ScrMod,FurnType,"Doub_r",HandleD);
+err=AddScratch(ScrMod,FurnType,"rx",HandleX);
+err=AddScratch(ScrMod,FurnType,"rz",HandleZ);
+err=AddScratch(ScrMod,FurnType,"ra",HandleA);
+err=AddScratch(ScrMod,FurnType,"Double",DoorDuble);
+err=AddScratch(ScrMod,FurnType,"Open",DoorOpen);
+err=AddScratch(ScrMod,FurnType,"P_Type",DoorHinge);
+err=AddScratch(ScrMod,FurnType,"PrMatVs1",DoorMatVS1);
+err=AddScratch(ScrMod,FurnType,"PrMatVs2",DoorMatVS2);
+err=AddScratch(ScrMod,FurnType,"hdsp_k",DoorKorp);
+err=AddScratch(ScrMod,FurnType,"Lift",g_liftR);
+err=AddScratch(ScrMod,FurnType,"Angle",DoorAngle);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+
+exit;

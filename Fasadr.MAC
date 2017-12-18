@@ -1,0 +1,10 @@
+// Разбор объекта - Фасад
+
+global MacroSw  ; // Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+MacroSw=1
+
+ProtoPath=GetProtoMac("Shkaf.ptl")
+macro ProtoPath+"Fasad.mac" ;
+
+
+exit

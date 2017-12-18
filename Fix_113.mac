@@ -1,0 +1,54 @@
+// ћинификс
+
+global NumFixMac;   // ƒл€ передачи количества из пользовательского макро
+global NumComm;
+NumFixMac=0;        // надо расчитать здесь
+
+getpar
+Lengh   // ƒлина стороны 
+IDHol   //  ID отверсти€
+XHol    //  положение вдоль длины от начала
+YHol    //  положение поперек длины
+ZHol    //  положение внутрь панели ? может и не надо
+;
+Tip1=1114; //  онфирмат
+
+Lengh=round(Lengh,0.1);
+
+Dx=32;
+
+if (Lengh<=44)
+{
+	exit;
+}
+
+if (Lengh<=94)
+{
+	i=1;
+	IDHol[i]=Tip1
+	XHol[i]=Lengh/2
+	YHol[i]=0
+	zHol[i]=0
+	
+	NumFixMac=i;
+	NumComm=1;
+	exit;
+}
+	
+
+i=1;
+IDHol[i]=Tip1
+XHol[i]=Lengh-Dx
+YHol[i]=0
+zHol[i]=0
+
+
+i=i+1
+IDHol[i]=Tip1
+XHol[i]=Dx
+YHol[i]=0
+zHol[i]=0
+
+NumComm=2;
+NumFixMac=i
+exit

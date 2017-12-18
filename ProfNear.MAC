@@ -1,0 +1,78 @@
+//-- Установить профиль по двум линиям
+global ProtoPath;
+defarr first[3] second[3] otr[15];
+defarr arrin[28], Arr[15];
+
+NULLOUT=getvarinst(2,"DfProf",DfProf,0);   //-- ID текущего профиля
+onerror final;
+NULLOUT=FltrType("");
+NULLOUT=FltrType("Line");
+NULLOUT=InitArray(arrin,0);
+//============================================================================
+switch autosingle on;
+select prompt "Укажите 1-й отрезок" partly :
+switch autosingle off;
+NULLOUT=FltrType("");
+if (sysvar(61)==0)
+{
+  goto final;
+}
+line1=getselnum(1);
+=GetObjGeo(line1,otr);
+  arrin[13]=otr[1]  // 1 точка, 1
+  arrin[14]=otr[2]
+  arrin[15]=otr[3]
+  arrin[16]=otr[4]  // 2 точка,  1
+  arrin[17]=otr[5]
+  arrin[18]=otr[6]
+//============================================================================
+switch autosingle on;
+NULLOUT=FltrType("Line");
+select prompt "Укажите 2-й отрезок" partly :
+switch autosingle off;
+NULLOUT=FltrType("");
+if (sysvar(61)==0)
+{
+  goto final;
+}
+line2=getselnum(1);
+=GetObjGeo(line2,otr);
+
+  arrin[19]=otr[1]  // 1 точка, 1
+  arrin[20]=otr[2]
+  arrin[21]=otr[3]
+  arrin[22]=otr[4]  // 2 точка,  1
+  arrin[23]=otr[5]
+  arrin[24]=otr[6]
+//============================================================================
+  arrin[1]=DfProf  //  ID текущего профиля
+  arrin[2]=10  // Шаг
+  arrin[3]=90  // Угол
+  arrin[10]=line1   // hObj 1 линии
+  arrin[11]=line2  // hObj 2 линии
+  arrin[12]=1   // режим установки по умолчанию
+  arrin[26]=1   //  Вектор нормали к плоскости параллальности (для режима 2)
+  arrin[27]=1   //
+  arrin[28]=1   //
+onerror final1;
+NULLOUT=getsnap();
+mbget "Укажите положение:" 2segment arrin arr  :
+macromode undo off;
+macro ProtoPath+"SetEnam.mac" "Профиль";
+macro ProtoPath+"SetProf.mac" DfProf arr[4]+arr[5] arr[8]+arr[9] 0 0 0;
+macro ProtoPath+"SetProfD.mac" 0 0; // 27.07.11 Шубин ВП
+macro ProtoPath+"MakeProf.mac" 0 0 0  arr[1] 0 0;   // arr[1];   Длина
+objident last 1  hobj;
+macromode undo on "AddHandl.mac" hobj ;
+NULLOUT=ReSnap();
+exit;
+
+final1:
+NULLOUT=ReSnap();
+final:
+offerror;
+macromode undo on ;
+NULLOUT=FltrType("");
+switch autosingle off;
+exit;
+

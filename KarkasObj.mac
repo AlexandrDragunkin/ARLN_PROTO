@@ -1,0 +1,98 @@
+//-- Программа добавляет в сцену каркас для разбираемого объекта
+global ProtoPath;
+KarkasNumb=getcarcnumb(), g_MaxKarkas;
+global g_result;
+defarr BaseGab[5];
+defarr xm[6], FT[3];
+defarr arr[10];
+
+getpar obj;  //-- объект
+setucs lcs obj;
+FT[1]="0401";
+FT[2]="80";
+FT[3]="0104";
+NULLOUT=mebelgab(obj,xm,FT);
+X=xm[4];
+Y=xm[5];
+Z=xm[6];
+Top=getattr(obj,"PlaceType",0);
+if (Top!=1)
+{
+	Top=0;
+}
+macro ProtoPath+"TypeCont.mac" obj;
+NULLOUT=getarrinst(2,"BaseGab",BaseGab);
+NULLOUT=setcarcpar(1,arr);  //--Инициализация каркаса
+arr[1]=0;
+NULLOUT=setcarcpar(2,arr);  //--Устанавливаем форму каркаса
+arr[2]=X;
+arr[3]=Y;
+arr[4]=Z;
+NULLOUT=setcarcpar(3,arr);  //--Устанавливаем геометрию каркаса
+arr[1]=0;
+if (g_result==1)
+{
+  arr[1]=nbitset(arr[1],1);
+  arr[1]=nbitset(arr[1],2);
+}
+if (g_result==2)
+{
+  arr[1]=nbitset(arr[1],1);
+  arr[1]=nbitset(arr[1],4);
+}
+if (g_result==3)
+{
+  arr[1]=nbitset(arr[1],1);
+  arr[1]=nbitset(arr[1],2);
+  arr[1]=nbitset(arr[1],4);
+}
+if (g_result==4)
+{
+  arr[1]=nbitset(arr[1],1);
+  arr[1]=nbitset(arr[1],2);
+  arr[1]=nbitset(arr[1],3);
+}
+NULLOUT=setcarcpar(4,arr);  //--Устанавливаем схему контаков каркаса
+if (udgetentity("CarcasesAspect",ValType,ca,sVal)==0) //-- Менять ли ракурс у каркаса
+{
+  ca=0;
+}
+if (ca==1)
+{
+  udsetentity("CarcasesAspect",0);
+}
+#Karkas mbcarcase create 0 0 0;
+NULLOUT=setcarcpar(999,arr);  //--Чистим структуру каркаса
+NULLOUT=setarrinst(2,"BaseGab",BaseGab);
+setucs lcs obj;
+place Karkas;
+if (ca==1)
+{
+  udsetentity("CarcasesAspect",ca);
+}
+//KarkasNumb=g_MaxKarkas+1;
+//g_MaxKarkas=KarkasNumb;
+attrobj copy obj "ObjType", "AngleType", "PlaceType", "Article", "CutType", "Position", "GapValue" "FurnType" done record done;
+attrobj copy obj "$ProtoInfo" "Posit" done record done;
+//protoobj create "Shkaf.ptl" 10
+//"x" X
+//"y" Y
+//"z" Z
+//"Top" Top
+//"Ktype" g_result
+//done
+//0 0 0;
+//objident last 1 Karkas;
+HoldName=getattr(obj,"UnitName",getattr(obj,"ElemName"," "));
+if (len(HoldName)<1)
+{
+  HoldName=" ";
+}
+attrobj attach "UnitName" done Karkas HoldName;
+attrobj copy record "ObjType", "AngleType", "PlaceType", "Article", "CutType", "Position", "GapValue" "FurnType" done Karkas done;
+attrobj delete record "ObjType", "AngleType", "PlaceType", "Article", "CutType", "KarkasNumb", "Position", "GapValue" "FurnType" done;
+macro ProtoPath+"CreatePI.mac" 0 ;
+attrobj copy record "ProtoInfo" "PseudoPosit" done Karkas done;
+attrobj delete record "ProtoInfo" "PseudoPosit" done;
+//macro ProtoPath+"CurrentKarkas.mac" Karkas;
+exit;

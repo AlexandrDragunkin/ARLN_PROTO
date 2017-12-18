@@ -1,0 +1,24 @@
+//-- Установка группы крепежа
+global ProtoPath;
+global g_FixLine;         //свободная линия крепежа
+
+getpar
+Pnt	//-- Массив положений групп крепежа на линии
+Nfix    // Количество групп на линии
+;
+i=0;
+
+if (Nfix<1) { exit; }
+Fixing Fix Manual parameter g_FixLine[10] Free
+       g_FixLine[1] g_FixLine[2] g_FixLine[3]
+       g_FixLine[4] g_FixLine[5] g_FixLine[6]
+       g_FixLine[7] g_FixLine[8] g_FixLine[9]
+loop:
+       Pnt[i*3+1]  Pnt[i*3+2] Pnt[i*3+3]
+    let i=i+1
+    if (i<Nfix) { goto Loop }
+;
+
+// fixing fix edit last 1 g_FixLine[10] yes;
+
+exit;

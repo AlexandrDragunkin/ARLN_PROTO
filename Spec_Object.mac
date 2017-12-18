@@ -1,0 +1,104 @@
+//-- Создание отчета "Состав изделия"
+global ProtoPath;
+defarr obj1[1]; //-- Для экпорта
+//-- Направление вида в ВСК
+defarr vi[3];
+Project="Состав изделия";       //-- Имя отчета
+pref1="Reports\\";              //-- Имя папки внутри папки проекта для создания отчетов
+if (udgetentity("ReportType",ValType,ReportType,sVal)==0) //-- Тип создаваемых отчетов
+{
+  ReportType=0;
+}
+ProjPath=getfilepath(sysvar(2));
+ReportPath=mpathexpand("<Reports>\\");              //-- Метапуть к шаблонам отчетов
+BaseName=ProjPath+getfiletitle(sysvar(2))-3+".mdb"; //-- Имя будущей базы
+ProjPath=ProjPath+pref1;
+onerror final;
+selbyattr "left(FurnType,1)==\"1\"&&mid(FurnType,2,2)!=\"11\"" wholly
+  prompt "Укажите изделия:"  : ;
+offerror;
+if (sysvar(61)==0)
+{
+  goto final;
+}
+// putmsg(BaseName)
+szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+BaseName;
+Condcon=adbCon(szSrc);
+numun=sysvar(61);
+defarr UnPos[numun], obj[numun], CommonPos[numun], ElName[numun];
+macro ProtoPath+"Arrobj.mac" numun obj;
+view save "view";
+szSrc="DELETE FROM TDrawings";
+idRS=adbModify(Condcon,szSrc);
+i=0;
+loop:
+i=i+1;
+vi[1]=0;
+vi[2]=0;
+vi[3]=1;
+pnt=obj[i];
+UnPos[i]=getattr(pnt,"UnitPos",0);
+CommonPos[i]=getattr(pnt,"CommonPos",0);
+ElName[i]=getattr(pnt,"ElemName","");
+fnam=ProjPath+"WMF_Sketches\\"+Project+"_"+Str(UnPos[i])+".wmf";
+obj1[1]=pnt;
+setucs lcs pnt;
+view user cartesian none ucs 0.33, 0.87, 0.38 done;
+zoom byobject pnt done;
+vtranscs(1,3,vi[1],vi[2],vi[3],vi[1],vi[2],vi[3]);
+NULLOUT=exportvi(obj1,1,vi,fnam,1,4,1,1);
+zoom previous;
+szSrc="INSERT INTO TDrawings (UnitPos, DrawingName, SizeX, SizeY) ";
+szSrc=szSrc+"VALUES ("+str(UnPos[i])+", \""+pref1+"WMF_Sketches\\"+Project+"_"+str(UnPos[i])+".wmf\", 1000, 1000)";
+idRS=adbModify(Condcon,szSrc);
+if (i<numun)
+{
+  goto loop;
+}
+view restore "view";
+idRS=adbClose(idRS);
+Condcon=adbDisCon(Condcon);
+i=0;
+if (ReportType==1)  //-- Отчет FastReport
+{
+  NULLOUT=freport("FRClose","0","0","0"); //-- Закрываем все открытые отчеты, если такие есть
+}
+loopi:
+i=i+1;
+if (ReportType==0)  //-- Отчет Excel
+{
+  putmsg("Создается отчет. Пожалуйста, подождите.",1);
+  Params=ProtoPath+","+ProjPath+","+Project+"_("+ElName[i]+")"+"_"+Str(CommonPos[i])+","+BaseName+","+Str(UnPos[i]);
+  NULLOUT=fmdbscript(ReportPath+"Reports71.mdb","Состав изделия","Start",Params);
+}
+else  //-- Отчет FastReport
+{
+  Report=ReportPath+"detailsOfUnit.frx";
+  BaseParam1="ADODataBase1="+BaseName;
+  BaseParam2="ADODataBase2="+ProtoPath+"RParams71.mdb";
+  BaseParam=BaseParam1+","+BaseParam2;
+  ReportParam="prmPathProject='"+getfilepath(BaseName)+"',prmUnitPos="+str(UnPos[i]);
+  NULLOUT=freport(Report,ProjPath+Project+"_("+ElName[i]+")"+"_"+Str(CommonPos[i])+".fpx",BaseParam,ReportParam);
+}
+if (NULLOUT==1)
+{
+	regreport(iif(ReportType==0,16,15),UnPos[i],Project+"_("+ElName[i]+")"+"_"+Str(CommonPos[i]));
+}
+if (i<numun)
+{
+  goto loopi;
+}
+
+if (NULLOUT==0) //-- Если отчет не создан
+{
+  #ok_flag
+  alternative "Ошибка создания отчета"
+  msgbox picture 1 beep 1 text left
+  "В процессе создания отчета произошла ошибка"
+  "Отчет 'Состав изделия' не создан!"
+  done
+  "  OK  "
+  done;
+}
+final:
+exit;

@@ -1,0 +1,6 @@
+//-- Присвоить имя мебельному объекту для библиотеки стандартных объектов
+global UnitName;
+getpar Name;
+UnitName=Name;
+NULLOUT=setvarinst(1,"UnitName",UnitName);
+exit;

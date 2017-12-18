@@ -1,0 +1,47 @@
+//-- Установить параметры пропила панелей для библиотеки стандартных объектов
+global g_TorcPaz; //-- Торцевые пазы
+defarr g_TorcPaz[32];
+
+getpar
+Side    //-- Сторона 1 - B
+TypeFr  //-- Тип обработки торца 1 - паз, 2 - угол
+ShiftK  //-- Смещение от А в долях толщины
+Dept    //-- Глубина паза или смещение в мм для угла
+Width   //-- Ширина паза или угол в градусах
+Rz1     //-- Резерв
+Rz2     //-- Резерв
+Rz3;    //-- Резерв
+
+Side=Side-1;
+g_TorcPaz[Side*7+1]=TypeFr;
+g_TorcPaz[Side*7+2]=ShiftK;
+g_TorcPaz[Side*7+3]=Dept;
+g_TorcPaz[Side*7+4]=Width;
+g_TorcPaz[Side*7+5]=Rz1;
+g_TorcPaz[Side*7+6]=Rz2;
+g_TorcPaz[Side*7+7]=Rz3;
+if (Side==0)
+{
+  Sec=4;
+}
+if (Side==1)
+{
+  Sec=3;
+}
+if (Side==2)
+{
+  Sec=2;
+}
+if (Side==3)
+{
+  Sec=1;
+}
+NULLOUT=setvarinst(1,"g_Butt",TypeFr,Side*8+1);
+NULLOUT=setvarinst(1,"g_Butt",Sec,Side*8+2);
+NULLOUT=setvarinst(1,"g_Butt",ShiftK,Side*8+3);
+NULLOUT=setvarinst(1,"g_Butt",Dept,Side*8+4);
+NULLOUT=setvarinst(1,"g_Butt",Width,Side*8+5);
+NULLOUT=setvarinst(1,"g_Butt",Rz1,Side*8+6);
+NULLOUT=setvarinst(1,"g_Butt",Rz2,Side*8+7);
+NULLOUT=setvarinst(1,"g_Butt",Rz3,Side*8+8);
+exit;

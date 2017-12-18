@@ -1,0 +1,11 @@
+// Коррекция всех ниш по глубине
+global gb_xpn gb_ypn gb_zpn gb_xpk gb_ypk gb_zpk gb_KolNish; 			// Габариты Ниш
+getpar y1 y2 ;
+
+i=1
+Loop:
+gb_ypn[gb_KolNish]=gb_ypn[gb_KolNish]+y1;
+gb_ypk[gb_KolNish]=gb_ypk[gb_KolNish]-y2;
+i=i+1
+if i<gb_KolNish { goto Loop; }
+exit

@@ -1,0 +1,9 @@
+//-- ”становить текущий крепеж по углам панели
+//-- ¬ходные параметры:
+//-- “ипы корепежа по углам 1234
+getpar Fix1 Fix2 Fix3 Fix4;
+NULLOUT=setvarinst(1,"FixtPan",Fix1,5);
+NULLOUT=setvarinst(1,"FixtPan",Fix2,6);
+NULLOUT=setvarinst(1,"FixtPan",Fix3,7);
+NULLOUT=setvarinst(1,"FixtPan",Fix4,8);
+exit;

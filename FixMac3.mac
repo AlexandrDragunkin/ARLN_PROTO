@@ -1,0 +1,837 @@
+//-- Расстановка крепежа по кондуктору
+global ProtoPath;
+NULLOUT=GetVarInst(2,"g_eps",g_eps,0.01); // Погрешность округления
+global NumFixMac;   //-- Для передачи количества из пользовательского макро
+
+defarr aSpan[100], xm1[6], xm2[6], xm3[6] ;
+defarr XHole[100], YHole[100], ZHole[100];
+defarr hset[25];
+
+defarr arr[10];
+defarr matr2[9];
+defarr kand[100];
+defarr spl[6],li[6];
+NULLOUT=initarray(arr,0);
+NULLOUT=initarray(matr2,0);
+defarr error[10];
+NULLOUT=initarray(error,"");
+//defarr SQLSte[3];
+defarr CondParam[300];
+defarr CondNum[20];
+defarr matr[16],matr1[16];
+//-------------------------
+numc=16; // константа шага массива парметров линии контакта
+RPan=30; //-- Расчетное максимальное число панелей с пятном контакта
+Tolerance=0.5; //-- Надо где то брать из базы для конкретного крепежа
+Condcon=0;     //-- Номер кондуктора
+HOLLeft=0;     //-- Минимальный сдвиг слева
+HOLRight=0;    //-- Минимальный сдвиг справа
+HOLStep=100;   //-- Шаг "некондуктора"
+HOLMarg=0;     //-- Использование кондуктора
+MinSpot=200;   //-- Минимальная длина пятна, когда используем кондуктор
+MaxSpot=700;   //-- Максимальная длина пятна, когда используем кондуктор
+defarr Spans[RPan*numc];
+//-------------------------
+getpar
+Lengh   //-- Длина стороны
+hPanel	//-- Закрепляемая панель
+Poly    //-- ID контура в составе панели (1- главный контур)
+Side	  //-- Закрепляемая сторона   SIDE_D = 1, SIDE_C = 3, SIDE_E = 5, SIDE_B = 7
+IDHol   //-- ID отверстия
+XHol    //-- Положение вдоль длины от начала
+YHol    //-- Положение поперек длины
+ZHol    //-- Положение внуть панели
+;
+NumFixMac=0; //-- Пока число элементов крепежа равно нулю
+//-- Читаем все, что нам нужно знать о крепежа
+gosub GetFixes;
+if (Type==0)  //-- Крепежа нет
+{
+  exit;
+}
+//-------------------------
+//-- Определяем есть ли контакт стороны Side панели hPanel с другими панелями
+Npan=findSpotPan(hPanel,Poly,Side,Tolerance,aSpan);  //-- в масиив  aSpan помещаем ссылки на панели которые имеют контакт со стороной Side
+
+if (Npan==0)  //-- У этой панели пятен контакта нет
+{
+  exit;
+}
+//-- Ну раз уж с пятнами все в порядке, установим соединение с базой кондукторной сверловки
+tab_place=ProtoPath+"conductorSet.mdb";
+if (fileexist(tab_place)==0)
+{
+  error[1]="Возможно, неверно указано правило расстановки крепежа" ;
+  error[2]="или база данных удалена.";
+  error[3]=" ";
+  error[4]="Проверьте, верно ли указано правило расстановки крепежа."
+  error[5]="Проверьте наличие базы данных кондукторной сверловки.";
+  macro Protopath+"ShowSmartError.mac" "Отсутствует база данных кондуктора"
+  5 error;
+  exit;
+}
+szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+tab_place;
+Condcon=adbCon(szSrc);
+
+SQLSte="SELECT THoles.HoleNum, THoles.Length FROM THoles WHERE CondNum="+str(Conduct)+" ORDER BY THoles.HoleNum";
+Panrs=adbOpen(Condcon,SQLSte);
+ij=adbRecCount(Panrs);
+if (ij>0)
+{
+  NULLOUT=adbmovefirst(Panrs);
+  i1=0;
+  looohset:
+  i1=i1+1;
+  hset[i1]=adbgetvalue(Panrs,1,0);
+  if (i1<ij)
+  {
+    NULLOUT=adbmovenext(Panrs);
+    goto looohset;
+  }
+}
+PanRs=adbClose(PanRs);
+
+obj=hPanel;
+gosub FindPlane;
+NULLOUT=getsnap();
+objp1=objp;
+ss=0;
+looo:
+//-- А не сами ли с собой ее проверяем
+obj=aSpan[ss+1];
+obj1=obj;
+gosub FindPlane;
+NULLOUT=getlcsmatr1(obj,matr2);
+setucs matr2[1],matr2[2],matr2[3] matr2[4],matr2[5],matr2[6] matr2[7],matr2[8],matr2[9];
+NULLOUT=objgab3(objp1,xm1);
+NULLOUT=objgab3(objp,xm2);
+if (abs(xm1[1]-xm2[1])<Tolerance&&abs(xm1[2]-xm2[2])<Tolerance&&abs(xm1[3]-xm2[3])<Tolerance&&abs(xm1[4]-xm2[4])<Tolerance&&abs(xm1[5]-xm2[5])<Tolerance&&abs(xm1[6]-xm2[6])<Tolerance)
+{
+  //-- Сами с собой
+  goto nsss;
+}
+num=FindSpots(aSpan[ss+1],Tolerance,Spans);
+if (num>=RPan)
+{
+  error[1]="В сцене присутствуют панели, имеющие пятно контакта с более, чем "+str(RPan)+" панелями" ;
+  error[2]=" ";
+  error[3]="Проверьте корректность проекта.";
+  error[4]="Проверьте, верно ли указано правило расстановки крепежа."
+  error[5]="Увеличьте значение макимального числа панелей на большее.";
+  error[6]="(Для этого в увеличьте значение переменной 'RPan' макропрограмме 'FixMac3.mac' как минимум до "+str(num)+" .)";
+  error[7]="(Слишком большое значение снижает производительность.)";
+  macro Protopath+"ShowSmartError.mac" "Слишком много панелей."
+  7 error;
+  goto end;
+}
+if (num<1)  //-- Если у найденной панели пятен контакта нет
+{
+  goto nsss;
+}
+i=0;
+loop1:
+
+//-- А не та ли самая это панель
+obj=Spans[i*numc+8];
+gosub FindPlane;
+NULLOUT=objgab3(objp,xm3);
+if (abs(xm1[1]-xm3[1])<Tolerance&&abs(xm1[2]-xm3[2])<Tolerance&&abs(xm1[3]-xm3[3])<Tolerance&&abs(xm1[4]-xm3[4])<Tolerance&&abs(xm1[5]-xm3[5])<Tolerance&&abs(xm1[6]-xm3[6])<Tolerance)
+{
+  //-- Та самая панель
+  if (Spans[i*numc+9]==Poly&&Spans[i*numc+10]==Side)
+  {
+    //-- Проверяем, а может мы с этой панелью уже работали
+    objCP=getattr(obj1,"CommonPos",0);  //-- Номер проверяемой панели
+    panCP=getattr(hPanel,"CommonPos",0);  //-- Номер панели, по торцу которой ставим крепеж
+    stcheck=str(panCP)+","+str(objCP);
+    che=0;
+    looche:
+    che=che+1;
+    if (stcheck==left(str(CondParam[che]),len(stcheck)))  //-- C этой панелью мы уже работали
+    {
+      goto niii;
+    }
+    if (che<NumPar)
+    {
+      goto looche;
+    }
+    //-- Все, панель нашли. Ставим отверстия
+    NULLOUT=copyarray(spl,1,Spans,i*numc+1,6);
+    NULLOUT=copyarray(li,1,Spans,i*numc+11,6);
+    width=Spans[i*numc+7];
+    //-- Только сначала для гарантии проставим номера
+    // macro ProtoPath+"Num.mac" ;
+    gosub PutHoles;
+    if (nbittest(Bimp,3)==1)  //-- Если пятно контакта и так учитываем
+    {
+      goto end;
+    }
+  }
+}
+niii:
+i=i+1;
+if (i<num)
+{
+  goto loop1;
+}
+nsss:
+ss=ss+1;
+if (ss<Npan)
+{
+  goto looo;
+}
+end:
+NULLOUT=resnap();
+Condcon=adbdiscon(Condcon);
+exit;
+//------------------------------------------------
+//-- Все, что мы хотели знать о крепеже, но боялись спросить
+GetFixes:
+Conduct=0;  //-- Номер кондуктора
+arr[1]=hPanel;
+err=GetPan6Par(1,arr);
+arr[1]=Poly;
+arr[2]=Side;
+err=GetPan6Par(21,arr);
+Type=arr[3];
+Bimp=arr[4];
+Shp=arr[5];
+Lep=arr[6];
+err=GetPan6Par(22,arr);
+TypePan=arr[1];
+err=GetPan6Par(999,arr);
+
+con=adbCon(2);
+sss="select * from HLFix where HFID="+str(Type);
+rcd=adbopen(con,sss);
+total_s=adbreccount(rcd);
+if (total_s==0)  //-- Не нашли
+{
+  adbclose (rcd);
+  return;
+}
+defarr IDHolT[total_s], XHolt[total_s], YHolt[total_s], ZHolt[total_s];
+NULLOUT=adbmovefirst(rcd);		   //-- Нашли
+HF_IDH=adbgetvalue(rcd,1,501);
+HF_Order=adbgetvalue(rcd,5,8);
+IDHolT[1]=HF_IDH;
+FixHLY=Fixdetinfo(IDHolT[1],"Y",0);
+NHols=total_s;
+NULLOUT=adbclose(rcd);
+//-- Ищем название крепежа
+sss="select * from TProtoSubst where ParType=19 AND LibID=1 AND Value="+str(Type);
+rcd=adbopen(con,sss);
+total_s=adbreccount(rcd);
+if (total_s==0)  //-- Не нашли
+{
+  adbclose(rcd);
+  return;
+}
+NULLOUT=adbmovefirst(rcd);		   //-- Нашли
+HF_Name=adbgetvalue(rcd,3,"Конфирмат");
+NULLOUT=adbclose(rcd);
+//-- Ищем номер кондуктора. Он - в поле Numb в HLOrder
+sss="select * from HLOrder where HOID="+str(HF_Order);
+rcd=adbOpen(con,sss);
+total_s=adbreccount(rcd);
+if (total_s==0)  //-- Не нашли
+{
+  adbclose (rcd);
+  return;
+}
+NULLOUT=adbmovefirst(rcd);		   //-- Нашли
+HOLLeft=adbgetvalue(rcd,3,40);
+HOLRight=adbgetvalue(rcd,4,40);
+HOLStep=adbgetvalue(rcd,5,250);
+Conduct=adbgetvalue(rcd,6,1);
+HOLMarg=adbgetvalue(rcd,7,1);
+//putmsg(HOLMarg);
+//putmsg(HF_Order);
+NULLOUT=adbclose(rcd);
+HOLMarg=fmod(HOLMarg,10000);
+HOLMarg=fmod(HOLMarg,1000);
+HOLMarg=fmod(HOLMarg,100);
+HOLMarg=fmod(HOLMarg,10);
+rcd=-1;
+//-- Читаем атрибут сверловки. Он тоже может понадобиться
+NumPar=0; //-- Количество строк в атрибуте
+if (!isattrdef("CondParam"))
+{
+  attribute create "CondParam" "Параметры кондукторной сверловки" text 30 255 ;
+}
+if (isassign("CondParam",hPanel))  //-- Если атрибут уже присвоен, копируем в массив
+{
+  NumPar=getattrtext(hPanel,"CondParam",CondParam);
+}
+return;
+//------------------------------------------------------
+//-- Ищем полотно панели для панели Obj
+FindPlane:
+objp=obj;
+NULLOUT=scang(obj,kand);
+if (NULLOUT==0)
+{
+  return;
+}
+iiq=0;
+Loooq:
+iiq=iiq+1;
+pp=getattr(kand[iiq],"FurnType","");
+if (pp=="010000")  //-- Полотно панели
+{
+  objp=kand[iiq];
+  return;
+}
+if (iiq<NULLOUT)
+{
+  goto Loooq;
+}
+return;
+//---------------------------------------------------------
+//-- Расставляем отверстия
+//-- Входные параметры
+//-- hPanel - анализируемая панель
+//-- obj1 - смежная панель
+//-- Poly - номер контура
+//-- Side - номер стороны
+//-- spl[6] - координаты начала и конца пятна контакта
+//-- li[6] - координаты начала и конца стороны, по которой ищутся пятна контакта
+//-- width - ширина пятна контакта
+//-- xm1[] - габаритные координаты панели, торец которой мы смотрим в системе координат смежной панели
+//-- xm2[] - габаритные координаты смежной панели в собственной системе координат
+PutHoles:
+fnm=NumFixMac;
+errcode=0;    //-- Код ошибки
+//-- Пока просто расставим отверстия
+//-- Длина пятна
+
+SLine=sqrt((spl[1]-spl[4])*(spl[1]-spl[4])+(spl[2]-spl[5])*(spl[2]-spl[5])+(spl[3]-spl[6])*(spl[3]-spl[6]));
+Line=sqrt((li[1]-li[4])*(li[1]-li[4])+(li[2]-li[5])*(li[2]-li[5])+(li[3]-li[6])*(li[3]-li[6]));
+
+arr[1]=obj1;
+err=GetPan6Par(1,arr);
+err=GetPan6Par(6,arr);
+CutB=arr[4];
+CutD=arr[1];
+err=GetPan6Par(999,arr);
+if ((abs(spl[1]-spl[4])>g_eps)) //-- Пятно контакта вдоль оси X
+{
+  beg=xm2[1]-xm1[1];
+  if (nbittest(Bimp,1)==0)
+  {
+    sbeg=min(xm1[1],xm2[1])-spl[1];
+  }
+  else
+  {
+    sbeg=min(xm1[1],xm2[1])-spl[4];
+  }
+}
+if ((abs(spl[2]-spl[5])>g_eps)) //-- Пятно контакта вдоль оси Y
+{
+  beg=xm2[2]-xm1[2];
+  if (nbittest(Bimp,1)==0)
+  {
+    sbeg=min(xm1[2],xm2[2])-spl[2];
+  }
+  else
+  {
+    sbeg=min(xm1[2],xm2[2])-spl[5];
+  }
+}
+if (TypePan==14)
+{
+  errcode=errcode+8;
+}
+if ((Side==1||Side==5)&&HOLMarg==1) //-- Сторона D
+{
+  errcode=errcode+8;
+}
+if ((Side==3||Side==7)&&HOLMarg==2) //-- Сторона B
+{
+  errcode=errcode+8;
+}
+//-- Если очень короткие стороны
+if (SLine<MinSpot)
+{
+  errcode=errcode+8;
+}
+shiftspot=iif(beg>0,0,beg);
+if (errcode>0)
+{
+  gosub badcond;  //-- Если не по кондуктору
+}
+else
+{
+  //-- Ищем положение первого кондуктора
+//  if (abs(beg)<=20)
+//  {
+//       XHol[fnm+1]=shiftspot+hset[1];
+//    nu=int((abs(sbeg)-101)/40)+3;
+//    XHol[fnm+1]=shiftspot+hset[nu];
+//    XHol[fnm+1]=hset[nu]-abs(beg);
+//       XHol[fnm+1]=hset[1]-abs(beg);
+//       CondNum[fnm+1]=nu;
+//       goto rotv;
+//  }
+//  if (abs(beg)<=100)
+//  {
+//       XHol[fnm+1]=shiftspot+hset[2];
+//       XHol[fnm+1]=hset[2]-abs(beg);
+//       CondNum[fnm+1]=2;
+//       goto rotv;
+//  }
+//  else
+//  {
+    if ((abs(beg)+SLine)>690)
+    {
+      errcode=8;
+      gosub badcond;
+      gosub PutAttr;  //-- Проставляем атрибут со сверловкой
+      return;
+    }
+    nu=int((abs(sbeg)-101)/40)+3;
+//    XHol[fnm+1]=shiftspot+hset[nu];
+    XHol[fnm+1]=hset[nu]-abs(beg);
+    CondNum[fnm+1]=nu;
+    goto rotv;
+//  }
+
+  //-- Ищем номер последнего кондуктора
+  rotv:
+  cn=2;
+  if (SLine>=490)
+  {
+    cn=3;
+  }
+  NumFixMac=fnm+cn;
+  if ((abs(sbeg)+SLine)<=249)
+  {
+//       XHol[fnm+cn]=shiftspot+hset[3];
+       XHol[fnm+cn]=hset[3]-abs(beg);
+       CondNum[fnm+cn]=3;
+       goto eotv;
+  }
+  if ((abs(sbeg)+SLine)<=289)
+  {
+//       XHol[fnm+cn]=shiftspot+hset[4];
+       XHol[fnm+cn]=hset[4]-abs(beg);
+       CondNum[fnm+cn]=4;
+       goto eotv;
+  }
+  if ((abs(sbeg)+SLine)<=329)
+  {
+//       XHol[fnm+cn]=shiftspot+hset[5];
+       XHol[fnm+cn]=hset[5]-abs(beg);
+       CondNum[fnm+cn]=5;
+       goto eotv;
+  }
+  if ((abs(sbeg)+SLine)<=369)
+  {
+//       XHol[fnm+cn]=shiftspot+hset[6];
+       XHol[fnm+cn]=hset[6]-abs(beg);
+       CondNum[fnm+cn]=6;
+       goto eotv;
+  }
+  if ((abs(sbeg)+SLine)<=409)
+  {
+//       XHol[fnm+cn]=shiftspot+hset[7];
+       XHol[fnm+cn]=hset[7]-abs(beg);
+       CondNum[fnm+cn]=7;
+       goto eotv;
+  }
+  if ((abs(sbeg)+SLine)<=449)
+  {
+//       XHol[fnm+cn]=shiftspot+hset[8];
+       XHol[fnm+cn]=hset[8]-abs(beg);
+       CondNum[fnm+cn]=8;
+       goto eotv;
+  }
+  if ((abs(sbeg)+SLine)<=489)
+  {
+//       XHol[fnm+cn]=shiftspot+hset[9];
+       XHol[fnm+cn]=hset[9]-abs(beg);
+       CondNum[fnm+cn]=9;
+       goto eotv;
+  }
+  if ((abs(sbeg)+SLine)<=529)
+  {
+//       XHol[fnm+cn]=shiftspot+hset[10];
+       XHol[fnm+cn]=hset[10]-abs(beg);
+       CondNum[fnm+cn]=10;
+       goto eotv;
+  }
+  if ((abs(sbeg)+SLine)<=569)
+  {
+//       XHol[fnm+cn]=shiftspot+hset[11];
+       XHol[fnm+cn]=hset[11]-abs(beg);
+       CondNum[fnm+cn]=11;
+       goto eotv;
+  }
+  if ((abs(sbeg)+SLine)<=609)
+  {
+//       XHol[fnm+cn]=shiftspot+hset[12];
+       XHol[fnm+cn]=hset[12]-abs(beg);
+       CondNum[fnm+cn]=12;
+       goto eotv;
+  }
+  if ((abs(sbeg)+SLine)<=639)
+  {
+//       XHol[fnm+cn]=shiftspot+hset[13];
+       XHol[fnm+cn]=hset[13]-abs(beg);
+       CondNum[fnm+cn]=13;
+       goto eotv;
+  }
+  if ((abs(sbeg)+SLine)<=690)
+  {
+//       XHol[fnm+cn]=shiftspot+hset[14];
+       XHol[fnm+cn]=hset[14]-abs(beg);
+       CondNum[fnm+cn]=14;
+       goto eotv;
+  }
+  else
+  {
+      errcode=8;
+      gosub badcond;
+      gosub PutAttr;  //-- Проставляем атрибут со сверловкой
+      return;
+  }
+
+  eotv:
+  if (cn==3)
+  {
+       CondNum[fnm+2]=int((CondNum[fnm+3]+CondNum[fnm+1])/2);
+//       XHol[fnm+2]=shiftspot+hset[CondNum[fnm+2]];
+       XHol[fnm+2]=hset[CondNum[fnm+2]]-abs(beg);
+  }
+}
+gosub idh;
+gosub PutAttr;  //-- Проставляем атрибут со сверловкой
+return;
+//--------------------------------------------------------
+//-- Если сверловка ставится не по кондуктору
+
+//-- В таблице правил - HOLLeft, HOLRight - минимальный отступ для некондуктороной сверловки
+//-- HOLNumb - номер кондуктора
+//-- HOLStep - шаг для некондуктороной сверловки
+//-- HOLMarg - 0 - кондуктор везде, 1 - только вдоль B, 2 - вдоль D
+Badcond:
+//shiftspot=iif(beg<0,0,beg);
+shiftspot=0;
+if (SLine<=59)
+{
+    NumFixMac=fnm;
+    cn=0;
+    return;
+}
+if (SLine<=109)
+{
+    NumFixMac=fnm+1;
+    XHol[fnm+1]=shiftspot+abs(sbeg)-abs(beg)+int(SLine/2+0.1);
+    cn=1;
+    gosub idh;
+    return;
+}
+if (SLine<=149)
+{
+    NumFixMac=fnm+2;
+    XHol[fnm+1]=shiftspot+abs(sbeg)-abs(beg)+30;
+    XHol[fnm+2]=shiftspot+abs(sbeg)-abs(beg)+SLine-30;
+    cn=2;
+    gosub idh;
+    return;
+}
+if (SLine<=450)
+{
+    NumFixMac=fnm+2;
+    XHol[fnm+1]=shiftspot+abs(sbeg)-abs(beg)+50;
+    XHol[fnm+2]=shiftspot+abs(sbeg)-abs(beg)+SLine-50;
+    cn=2;
+
+    gosub idh;
+    return;
+}
+if (SLine<=1000)
+{
+    NumFixMac=fnm+3;
+    XHol[fnm+1]=shiftspot+abs(sbeg)-abs(beg)+50;
+    XHol[fnm+2]=shiftspot+abs(sbeg)-abs(beg)+int(SLine/2+0.1);
+    XHol[fnm+3]=shiftspot+SLine+abs(sbeg)-abs(beg)-50;
+    cn=3;
+    gosub idh;
+    return;
+}
+if (SLine<=1200)
+{
+    NumFixMac=fnm+4;
+    XHol[fnm+1]=shiftspot+abs(sbeg)-abs(beg)+130;
+    XHol[fnm+2]=shiftspot+abs(sbeg)-abs(beg)+410;
+    XHol[fnm+3]=shiftspot+SLine+abs(sbeg)-abs(beg)-410;
+    XHol[fnm+4]=shiftspot+SLine+abs(sbeg)-abs(beg)-130;
+    cn=4;
+    gosub idh;
+    return;
+}
+if (SLine<=1400)
+{
+    NumFixMac=fnm+4;
+    XHol[fnm+1]=shiftspot+abs(sbeg)-abs(beg)+130;
+    XHol[fnm+2]=shiftspot+abs(sbeg)-abs(beg)+490;
+    XHol[fnm+3]=shiftspot+SLine+abs(sbeg)-abs(beg)-490;
+    XHol[fnm+4]=shiftspot+SLine+abs(sbeg)-abs(beg)-130;
+    cn=4;
+    gosub idh;
+    return;
+}
+if (SLine<=1600)
+{
+    NumFixMac=fnm+4;
+    XHol[fnm+1]=shiftspot+abs(sbeg)-abs(beg)+130;
+    XHol[fnm+2]=shiftspot+abs(sbeg)-abs(beg)+530;
+    XHol[fnm+3]=shiftspot+SLine+abs(sbeg)-abs(beg)-530;
+    XHol[fnm+4]=shiftspot+SLine+abs(sbeg)-abs(beg)-130;
+    cn=4;
+    gosub idh;
+    return;
+}
+if (SLine<=1800)
+{
+    NumFixMac=fnm+4;
+    XHol[fnm+1]=shiftspot+abs(sbeg)-abs(beg)+130;
+    XHol[fnm+2]=shiftspot+abs(sbeg)-abs(beg)+610;
+    XHol[fnm+3]=shiftspot+SLine+abs(sbeg)-abs(beg)-610;
+    XHol[fnm+4]=shiftspot+SLine+abs(sbeg)-abs(beg)-130;
+    cn=4;
+    gosub idh;
+    return;
+}
+if (SLine<=2300)
+{
+    NumFixMac=fnm+5;
+    XHol[fnm+1]=shiftspot+abs(sbeg)-abs(beg)+130;
+    XHol[fnm+2]=shiftspot+abs(sbeg)-abs(beg)+610;
+    XHol[fnm+3]=shiftspot+abs(sbeg)-abs(beg)+int(SLine/2+0.1);
+    XHol[fnm+4]=shiftspot+SLine+abs(sbeg)-abs(beg)-610;
+    XHol[fnm+5]=shiftspot+SLine+abs(sbeg)-abs(beg)-130;
+    cn=5;
+    gosub idh;
+    return;
+}
+if (SLine<=2800)
+{
+    NumFixMac=fnm+6;
+    XHol[fnm+1]=shiftspot+abs(sbeg)-abs(beg)+130;
+    XHol[fnm+2]=shiftspot+abs(sbeg)-abs(beg)+610;
+    XHol[fnm+3]=shiftspot+abs(sbeg)-abs(beg)+610+int((SLine-1220)/3+0.1);
+    XHol[fnm+4]=shiftspot+SLine+abs(sbeg)-abs(beg)-610-int((SLine-1220)/3+0.1);
+    XHol[fnm+5]=shiftspot+SLine+abs(sbeg)-610;
+    XHol[fnm+6]=shiftspot+SLine+abs(sbeg)-abs(beg)-130;
+    cn=6;
+    gosub idh;
+    return;
+}
+else
+{
+    NumFixMac=fnm+7;
+    XHol[fnm+1]=shiftspot+abs(sbeg)-abs(beg)+130;
+    XHol[fnm+2]=shiftspot+abs(sbeg)-abs(beg)+610;
+    XHol[fnm+3]=shiftspot+abs(sbeg)-abs(beg)+610+int((SLine-1220)/4+0.1);
+    XHol[fnm+4]=shiftspot+abs(sbeg)-abs(beg)+int(SLine/2+0.1);
+    XHol[fnm+5]=shiftspot+SLine+abs(sbeg)-abs(beg)-610-int((SLine-1220)/4+0.1);
+    XHol[fnm+6]=shiftspot+SLine+abs(sbeg)-abs(beg)-610;
+    XHol[fnm+7]=shiftspot+SLine+abs(sbeg)-abs(beg)-130;
+    cn=7;
+    gosub idh;
+    return;
+}
+
+idh:
+idd=0;
+loopidh:
+idd=idd+1;
+IDHol[fnm+idd]=IDHolT[1];
+if (idd<cn)
+{
+  goto loopidh;
+}
+return;
+//--------------------------------------------------------
+//-- Создание и заполнение атрибута с кондукторной сверловкой
+//-- Структура атрибута:
+//-- 1. CommonPos панели, по торцу которой ставим отверстие
+//-- 2. CommonPos панели, примыкающей к торцу
+//-- 3. Сдвиг кондуктора
+//-- 4. Перпендикулярный сдвиг кондуктора
+//-- 5. Номер ошибки простановки кондуктора
+//-- 6. Номер отверстия кондуктора
+//-- 7. IDPoly торца
+//-- 8. IDLine торца
+//-- 9. Пласть (0 - А, 1 - F)
+//-- 10.Линейный сдвиг
+//-- 11.IDHole элемента
+//-- 12.XHole
+//-- 13.YHole
+//-- 14.ZHole
+PutAttr:
+if (fnm==NumFixMac)   //-- Если отверстий не проставили - выходим
+{
+  return;
+}
+
+//spl[1]=spl[1]+FixHLY*iif(spl[1]>spl[4],1,-1);
+//spl[4]=spl[4]+FixHLY*iif(spl[1]>spl[4],1,-1);
+//li[1]=li[1]+FixHLY*iif(li[1]>li[4],1,-1);
+//li[4]=li[4]+FixHLY*iif(li[1]>li[4],1,-1);
+
+defarr arra[10];
+defarr mir[7];
+arra[1]=hPanel;
+NULLOUT=getpan6par(1,arra);
+h_dsp=getpan6par(2,arra);
+arra[1]=1;
+arra[2]=1;
+NULLOUT=getpan6par(21,arra);
+Mir[1]=bittest(arra[4],2);
+arra[1]=1;
+arra[2]=3;
+NULLOUT=getpan6par(21,arra);
+Mir[3]=bittest(arra[4],2);
+arra[1]=1;
+arra[2]=5;
+NULLOUT=getpan6par(21,arra);
+Mir[5]=bittest(arra[4],2);
+arra[1]=1;
+arra[2]=7;
+NULLOUT=getpan6par(21,arra);
+Mir[7]=bittest(arra[4],2);
+NULLOUT=getpan6par(999,arra);
+if (HOLMarg==1) //-- Вдоль стороны B
+{
+  Sper=Spl[1];
+  Slin=Spl[2];
+}
+else
+//if (HOLMarg==2) //-- Вдоль стороны D
+{
+  Sper=Spl[2];
+  Slin=Spl[1];
+}
+ilk=fnm;
+if (FixHLY!=0)
+{
+  if (Side==3||Side==1)
+  {
+    Sper=Sper+h_dsp/2+FixHLY;
+  }
+  else
+  {
+    Sper=Sper-h_dsp/2-FixHLY;
+  }
+}
+loopat:
+NULLOUT=getsnap();
+setucs lcs partly hpanel;
+if (Side==3||Side==7)
+{
+  setucs rotate 2points 0,0,0 0,0,10 3points 0,0,0 10,0,0 0,10,0;
+}
+setucs move iif(beg<0,0,beg),0,0;
+ptranscs(0,3,XHol[ilk+1],YHol[ilk+1],ZHol[ilk+1],XHole[ilk+1],YHole[ilk+1],ZHole[ilk+1]);
+setucs lcs partly obj1;
+if (nbittest(Bimp,1)==0)
+{
+  setucs spl[1],spl[2],spl[3] spl[4],spl[5],spl[6] oz spl[1],spl[2],spl[3]+10;
+}
+else
+{
+  setucs spl[4],spl[5],spl[6] spl[1],spl[2],spl[3] oz spl[4],spl[5],spl[6]+10;
+}
+ptranscs(3,0,XHole[ilk+1],YHole[ilk+1],ZHole[ilk+1],XHol[ilk+1],YHol[ilk+1],ZHol[ilk+1]);
+YHol[ilk+1]=0;
+ZHol[ilk+1]=0;
+//setucs lcs obj1;
+//if (nbittest(Bimp,1)==0)
+//{
+//  setucs spl[1],spl[2],spl[3] spl[4],spl[5],spl[6] oz spl[1],spl[2],spl[3]+10;
+//}
+//else
+//{
+//  setucs spl[4],spl[5],spl[6] spl[1],spl[2],spl[3] oz spl[4],spl[5],spl[6]+10;
+//}
+
+//if ((abs(spl[1]-spl[4])>g_eps)) //-- Пятно контакта вдоль оси X
+//{
+//  setucs move iif(beg>0,0,beg),0,0;
+//}
+//if ((abs(spl[2]-spl[5])>g_eps)) //-- Пятно контакта вдоль оси Y
+//{
+//  setucs move 0,iif(beg>0,0,beg),0;
+//}
+//ptranscs(3,0,XHol[ilk+1],YHol[ilk+1],ZHol[ilk+1],XHol[ilk+1],YHol[ilk+1],ZHol[ilk+1]);
+
+//if (nbittest(Bimp,1)==0)
+//{
+//  setucs li[1],li[2],li[3] li[4],li[5],li[6] oz li[1],li[2],li[3]+10;
+//}
+//else
+//{
+//  setucs li[4],li[5],li[6] li[1],li[2],li[3] oz li[4],li[5],li[6]+10;
+//}
+ptranscs(0,3,XHol[ilk+1],YHol[ilk+1],ZHol[ilk+1],XHole[ilk+1],YHole[ilk+1],ZHole[ilk+1]);
+setucs lcs partly obj1;
+setucs move CutB, CutD, 0;
+ptranscs(3,0,XHole[ilk+1],YHole[ilk+1],ZHole[ilk+1],XHole[ilk+1],YHole[ilk+1],ZHole[ilk+1]);
+NULLOUT=resnap();
+
+if (FixHLY!=0)
+{
+  if (TypePan==11) //-- Если это стойка
+  {
+    if (Side==3||Side==1)
+    {
+      XHole[ilk+1]=XHole[ilk+1]-(h_dsp/2+FixHLY)*iif(Mir[Side]==1,1,-1);
+      YHole[ilk+1]=YHole[ilk+1]-(h_dsp/2+FixHLY)*iif(Mir[Side]==1,1,-1);
+    }
+    else
+    {
+      XHole[ilk+1]=XHole[ilk+1]+(h_dsp/2+FixHLY)*iif(Mir[Side]==1,1,-1);
+      YHole[ilk+1]=YHole[ilk+1]+(h_dsp/2+FixHLY)*iif(Mir[Side]==1,1,-1);
+    }
+  }
+  else
+  {
+    if (Side==3||Side==1)
+    {
+      XHole[ilk+1]=XHole[ilk+1]+(h_dsp/2+FixHLY)*iif(Mir[Side]==1,1,-1);
+      YHole[ilk+1]=YHole[ilk+1]+(h_dsp/2+FixHLY)*iif(Mir[Side]==1,1,-1);
+    }
+    else
+    {
+      XHole[ilk+1]=XHole[ilk+1]-(h_dsp/2+FixHLY)*iif(Mir[Side]==1,1,-1);
+      YHole[ilk+1]=YHole[ilk+1]-(h_dsp/2+FixHLY)*iif(Mir[Side]==1,1,-1);
+    }
+  }
+}
+
+currind=NumPar+ilk-fnm+1;
+CondParam[currind]=str(getattr(hPanel,"CommonPos",0));
+CondParam[currind]=CondParam[currind]+","+str(getattr(obj1,"CommonPos",0));
+CondParam[currind]=CondParam[currind]+","+str(beg);
+CondParam[currind]=CondParam[currind]+","+str(Sper);
+CondParam[currind]=CondParam[currind]+","+str(errcode);
+CondParam[currind]=CondParam[currind]+","+str(CondNum[ilk+1]);
+CondParam[currind]=CondParam[currind]+","+str(Poly);
+CondParam[currind]=CondParam[currind]+","+str(Side);
+CondParam[currind]=CondParam[currind]+","+iif(abs(spl[3])<g_eps,"0","1");
+CondParam[currind]=CondParam[currind]+","+str(Slin);
+CondParam[currind]=CondParam[currind]+","+str(IDHol[ilk+1]);
+CondParam[currind]=CondParam[currind]+","+str(XHol[ilk+1])+","+str(YHol[ilk+1])+","+str(ZHol[ilk+1]);
+CondParam[currind]=CondParam[currind]+","+str(XHole[ilk+1])+","+str(YHole[ilk+1])+","+str(ZHole[ilk+1]);
+CondParam[currind]=CondParam[currind]+","+HF_Name;
+CondParam[currind]=CondParam[currind]+","+str(sbeg);
+ilk=ilk+1;
+if (ilk<NumFixMac)
+{
+  goto loopat;
+}
+NULLOUT=TextByStr(hPanel,"CondParam",currind,CondParam);
+return;

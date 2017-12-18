@@ -1,0 +1,349 @@
+//-- Создание основы шкафа
+global ProtoPath;
+
+defarr BaseGab[5];
+NULLOUT=getarrinst(2,"BaseGab",BaseGab);          //-- Габариты каркаса
+NULLOUT=getvarinst(2,"PrMater",PrMater,281);      //-- Умолчание для материалов каркаса
+NULLOUT=getvarinst(2,"DfFixPol",DfFixPol,0);
+NULLOUT=getvarinst(2,"DfFixSt",DfFixSt,0);
+NULLOUT=getvarinst(2,"BPMater",BPMater,281);
+NULLOUT=getvarinst(2,"BUMater",BUMater,281);
+NULLOUT=getvarinst(2,"Typ_Kro",Typ_Kro,400);
+NULLOUT=getvarinst(2,"BackwardGaps",BackwardGaps,14);
+
+X=BaseGab[1];
+Y=BaseGab[2];
+Z=BaseGab[3];
+
+// thikR=BackwardGaps;			//-- Величина нахлеста накладной стенки
+// thikU=BackwardGaps;
+// thikD=BackwardGaps;
+// thikL=BackwardGaps;
+
+getpar
+Hcok 			//-- Высота цоколя
+Ycok			//-- Заглубление цоколя спереди
+ObrCok			//-- Заглубление цоколя от стены
+TopType			//-- Тип крышки (1 - накладная; 0 - врезная)
+Sfp				//-- Ширина фальпанели
+Rfp Lfp Ufp Dfp //-- Наличие фальшпанелей и коробов по сторонам
+dno				//-- Наличие опорного дна
+ObrDno 			//-- Обрезать дно сзади на
+I_fixdno		//-- крепеж дна
+h_korob			//-- Высота короба
+ShF;			//-- Свес для накладной крыши
+
+macro ProtoPath+"SetMat.mac" PrMater;
+h_dsp=PriceInfo(PrMater,"Thickness",16);
+h_korob=iif(h_korob>h_dsp,h_korob,50); // Проверим установку для короба
+
+nullout=getvarinst(2,"FixUgl",FixUgl,190);			 // Номер уголка в таблице крепежа и сверловки
+// nullout=getvarinst(2,"FixUglM",FixUglM,191);			// Номер металлического уголка в таблице крепежа и сверловки
+
+// При наличии слева или справа фальшкороба врезную крышу(фальшпанель) игнорируем
+if (Rfp==2||Lfp==2)&&(TopType==0)&&(Ufp==0||Ufp==1)
+{
+	Putmsg("Крыша при наличии фальшкоробов слева или справа не может быть врезной. Изменено на накладную.",0);
+	TopType=1;
+}
+// При наличии слева или справа фальшкороба врезное дно(фальшпанель) игнорируем
+if (Rfp==2||Lfp==2)&&(dno==0)&&(Dfp==0)
+{
+	Putmsg("Дно при наличии фальшкоробов слева или справа не может быть врезным. Изменено на сквозное",0);
+	dno=1;
+}
+
+//-- Если есть фальшпанель или фальшкороб снизу и опорное дно - последнее игнорируем
+if Dfp==2||Dfp==1 { HCok=0; }
+
+if dno==1 { dnor=1; dnol=1;} else { dnor=0; dnol=0; } 
+
+//---------------------------------------------------------------------------------------
+//-- Задание правил стыковки углов
+//
+//--	Lkr, Rkr - отступ для крыши по краям
+//--	Lst, Rst - отступ для стоек сверху (от крыши)
+//--	Ldno, Rdno - отступ для стоек снизу (от пола)
+//--	Значение 2 означает для всех сторон фальшкороб
+//--	dnor,dnol - 1=сквозное справа слева
+//---------------------------------------------------------------------------------------
+
+if Ufp==2 // Сверху короб
+{
+	// Правила для коробов стоек
+	Lst=(h_dsp+h_korob)*TopType;
+	Lkr=(h_dsp+h_korob)*(1-TopType);
+	Rst=(h_dsp+h_korob)*TopType;
+	Rkr=(h_dsp+h_korob)*(1-TopType);
+	// Правила для фальши
+	if Lfp==1 { Lkr=h_dsp*(1-TopType); }
+	if Rfp==1 { Rkr=h_dsp*(1-TopType); }
+	// Если слева или справа стойка, то она проходная
+	if Lfp==0 { Lst=0; Lkr=h_dsp; putmsg("Короб сверху на стыке с левой стенкой изменен на вкладной",0);} 
+	if Rfp==0 { Rst=0; Rkr=h_dsp; putmsg("Короб сверху на стыке с правой стенкой изменен на вкладной",0);}
+}
+else
+{
+	Lst=h_dsp*TopType;
+	Lkr=h_dsp*(1-TopType);
+	Rst=h_dsp*TopType;
+	Rkr=h_dsp*(1-TopType);
+	if Lfp==2 { Lkr=(h_korob+h_dsp)*(1-TopType); }
+	if Rfp==2 { Rkr=(h_korob+h_dsp)*(1-TopType); }
+}
+
+Ldno=h_dsp*(1-dnol);
+Rdno=h_dsp*(1-dnor);
+
+
+if Dfp==1 // Снизу фальшпанель, принудительно вкладная
+{
+	if Lfp==0 { dnol=0; putmsg("Нижняя фальшпанель на стыке с левой стенкой изменена на вкладную",0);}
+	if Rfp==0 { dnor=0; putmsg("Нижняя фальшпанель на стыке с правой стенкой изменена на вкладную",0);}
+	// Короба по бокам
+	if Lfp==2 { Ldno=(h_dsp+h_korob)*(1-dnol); }
+	if Rfp==2 { Rdno=(h_dsp+h_korob)*(1-dnor); }
+}
+// Отступы для дна. Меняются для коробов. Добавляется h_korob
+h_botr=(Hcok+h_dsp)*dnor; // высота дна для установки справа
+h_botl=(Hcok+h_dsp)*dnol; // высота дна для установки слева
+
+if Dfp==2 // Снизу короб
+{
+	// Правило для стыков с коробами
+	if Lfp==2 { Ldno=(h_dsp+h_korob)*(1-dnol); h_botl=(h_korob+h_dsp)*dnol; }
+	if Rfp==2 { Rdno=(h_dsp+h_korob)*(1-dnor); h_botr=(h_korob+h_dsp)*dnor; }
+	
+	if Lfp==1 { h_botl=(h_korob+h_dsp)*dnol; }
+	if Rfp==1 { h_botr=(h_korob+h_dsp)*dnor; }
+
+	// Если слева или справа стойка, то она проходная
+	if Lfp==0 { dnol=0; Ldno=h_dsp; h_botl=0; putmsg("Нижний короб на стыке с левой стенкой изменен на вкладной",0);}
+	if Rfp==0 { dnor=0; Rdno=h_dsp; h_botr=0; putmsg("Нижний короб на стыке с правой стенкой изменен на вкладной",0);}
+}
+
+// putmsg("dnor="+str(dnor))
+// putmsg("dnol="+str(dnol))
+// putmsg("TopType="+str(TopType))
+// putmsg("Rst="+str(Rst))
+// putmsg("Lst="+str(Lst))
+// putmsg("Rkr="+str(Rkr))
+// putmsg("Lkr="+str(Lkr))
+//---------------------------------------------------------------------
+//----- Построение боковых стенок -----
+
+//--- Правая
+SR=y;
+macro ProtoPath+"SetDir.mac" 1;
+macro ProtoPath+"SetKrom.mac" 0 Typ_Kro Typ_Kro*(1-TopType) Typ_Kro Typ_Kro;
+if Rfp!=2
+{
+	macro ProtoPath+"SetFix.mac"  DfFixSt*dnor DfFixSt*TopType 0 0;
+	macro ProtoPath+"SetEnam.mac" "Стойка";
+	macro ProtoPath+"SetECod.mac" "1101";
+	//// macro ProtoPath+"SetKCod.mac"	"DBXXX"	z-TopType*h_dsp-h_botr SR;
+	if (Rfp==1)  //-- Справа фальшпанель
+	{
+		SR=Sfp;
+		macro ProtoPath+"SetEnam.mac" "Фальшпанель";
+		macro ProtoPath+"SetFix.mac"  0 0 0 0;
+	}
+	macro ProtoPath+"MakePan.mac" 0 y-SR h_botr z-Rst-h_botr SR 11;
+}
+else
+{
+	SR=Sfp;
+	macro ProtoPath+"SetFix.mac"  0 0 FixUgl FixUgl;
+	macro ProtoPath+"SetECod.mac" "1101";
+	macro ProtoPath+"SetEnam.mac" "Основание фальшкороба";
+	macro ProtoPath+"MakePan.mac" 0 y-SR+h_dsp h_botr z-Rst*TopType-h_botr SR-2*h_dsp 11;
+	//--- Верх
+	macro ProtoPath+"SetFix.mac"  0 0 0 0;
+	macro ProtoPath+"SetEnam.mac" "Верх фальшкороба";
+	macro ProtoPath+"MakePan.mac" h_korob y-SR h_botr z-Rst*TopType-h_botr SR 11;
+	//--- Бока
+	macro ProtoPath+"SetKrom.mac" 0 Typ_Kro Typ_Kro 0 Typ_Kro;
+	macro ProtoPath+"SetECod.mac" "1104";
+	macro ProtoPath+"SetEnam.mac" "Бок фальшкороба";
+	macro ProtoPath+"MakePan.mac" 0 y-SR h_botr z-Rst*TopType-h_botr h_korob 14;
+	macro ProtoPath+"MakePan.mac" 0 y-h_dsp h_botr z-Rst*TopType-h_botr h_korob 14;
+}
+//--- Левая
+SR=y;
+macro ProtoPath+"SetDir.mac" 1;
+macro ProtoPath+"SetKrom.mac" 0 Typ_Kro Typ_Kro*(1-TopType) Typ_Kro Typ_Kro;
+
+if Lfp!=2
+{
+	macro ProtoPath+"SetFix.mac"  DfFixSt*dnol DfFixSt*TopType 0 0;
+	macro ProtoPath+"SetECod.mac" "1101";
+	macro ProtoPath+"SetEnam.mac" "Стойка";
+
+	if (Lfp==1)  //-- Слева фальшпанель
+	{
+		SR=Sfp;
+		macro ProtoPath+"SetEnam.mac" "Фальшпанель";
+		macro ProtoPath+"SetFix.mac"  0 0 0 0;
+	}
+	macro ProtoPath+"SetFixMask.mac" 2 2 0 0;
+	//macro ProtoPath+"SetFixOver.mac" 1;
+	macro ProtoPath+"SetECod.mac" "1101";
+	macro ProtoPath+"MakePan.mac" x-h_dsp y-SR h_botl z-Lst-h_botl SR 11;
+	macro ProtoPath+"SetFixMask.mac" 0 0 0 0;
+	//macro ProtoPath+"SetFixOver.mac" 0;
+}
+else
+{
+	SR=Sfp;
+	//macro ProtoPath+"SetFixOver.mac" 1;
+	macro ProtoPath+"SetFixMask.mac" 0 0 2 2;
+	macro ProtoPath+"SetFix.mac"  0 0 FixUgl FixUgl;
+	macro ProtoPath+"SetECod.mac" "1101";
+	macro ProtoPath+"SetEnam.mac" "Основание фальшкороба";
+	macro ProtoPath+"MakePan.mac" x-h_dsp y-SR+h_dsp h_botl z-Lst*TopType-h_botl SR-2*h_dsp 11;
+	//--- Верх
+	macro ProtoPath+"SetFix.mac"  0 0 0 0;
+	macro ProtoPath+"SetEnam.mac" "Верх фальшкороба";
+	macro ProtoPath+"MakePan.mac" x-h_dsp-h_korob y-SR h_botl z-Lst*TopType-h_botl SR 11;
+	//--- Бока
+	macro ProtoPath+"SetKrom.mac" 0 Typ_Kro Typ_Kro Typ_Kro 0;
+	macro ProtoPath+"SetECod.mac" "1104";
+	macro ProtoPath+"SetEnam.mac" "Бок фальшкороба";
+	macro ProtoPath+"MakePan.mac" x-h_korob y-SR h_botl z-Lst*TopType-h_botl h_korob 14;
+	macro ProtoPath+"MakePan.mac" x-h_korob y-h_dsp h_botl z-Lst*TopType-h_botl h_korob 14;
+	//macro ProtoPath+"SetFixOver.mac" 0;
+	macro ProtoPath+"SetFixMask.mac" 0 0 0 0;
+}
+
+//----- Крыша -----
+SR=y;
+putmsg(TopType)
+macro ProtoPath+"SetDir.mac" 1;
+macro ProtoPath+"SetKrom.mac" 0 Typ_Kro*(1-TopType) Typ_Kro*(1-TopType) Typ_Kro*(1-TopType) Typ_Kro;
+if Ufp!=2
+{
+	macro ProtoPath+"SetFix.mac"  DfFixPol*(1-TopType) DfFixPol*(1-TopType) 0 0;
+	macro ProtoPath+"SetEnam.mac" "Панель";
+	if (Ufp==1) //-- Сверху фальшпанель
+	{
+		SR=Sfp;
+		macro ProtoPath+"SetEnam.mac" "Фальшпанель";
+		macro ProtoPath+"SetFix.mac"  0 0 0 0;
+		ShF=0;
+	}
+	macro ProtoPath+"SetECod.mac" "1104" ;
+	macro ProtoPath+"MakePan.mac" Lkr-ShF*TopType y-SR Z-h_dsp x-Lkr-Rkr+2*ShF*TopType SR 12;
+}
+else
+{
+	SR=Sfp;
+	//--- Основание
+	macro ProtoPath+"SetFix.mac"  0 0 FixUgl FixUgl;
+	macro ProtoPath+"SetECod.mac" "1103";
+	macro ProtoPath+"SetEnam.mac" "Основание фальшкороба";
+	macro ProtoPath+"MakePan.mac" Rkr y-SR+h_dsp Z-h_dsp x-Rkr-Lkr SR-2*h_dsp 12;
+	//--- Верх
+	macro ProtoPath+"SetFix.mac"  0 0 0 0;
+	macro ProtoPath+"SetEnam.mac" "Верх фальшкороба";
+	macro ProtoPath+"MakePan.mac" Rkr y-SR Z-h_korob-h_dsp x-Rkr-Lkr SR 12;
+	//--- Бока
+	macro ProtoPath+"SetDir.mac" 2;
+	macro ProtoPath+"SetKrom.mac" 0 Typ_Kro 0 Typ_Kro Typ_Kro;
+	macro ProtoPath+"SetECod.mac" "1104";
+	macro ProtoPath+"SetEnam.mac" "Бок фальшкороба";
+	macro ProtoPath+"MakePan.mac" Rkr y-SR Z-h_korob  h_korob  x-Rkr-Lkr  14;
+	macro ProtoPath+"MakePan.mac" Rkr y-h_dsp Z-h_korob  h_korob  x-Rkr-Lkr  14;
+}
+//----- Дно -----
+
+SR=y;
+macro ProtoPath+"SetDir.mac" 1;
+macro ProtoPath+"SetKrom.mac" 0 Typ_Kro*(1-dnor) Typ_Kro*(1-dnol) 0 Typ_Kro;
+//macro ProtoPath+"SetFixOver.mac" 1;
+macro ProtoPath+"SetFixMask.mac" 2 2 2 2;
+if Dfp!=2
+{
+	macro ProtoPath+"SetFix.mac"  I_fixdno*(1-dnor) I_fixdno*(1-dnol) 0 0;
+	macro ProtoPath+"SetEnam.mac" "Панель";
+	if (Dfp==1) //-- Снизу фальшпанель
+	{
+	  SR=Sfp;
+	  macro ProtoPath+"SetEnam.mac" "Фальшпанель";
+	}
+	macro ProtoPath+"SetECod.mac" "1103";
+	//// macro ProtoPath+"SetKCod.mac"	"DPXXX"	x-h_dsp*(1-dnor)-h_dsp*(1-dnol)	SR;
+	macro ProtoPath+"MakePan.mac"	Rdno*(1-dnor)	y-SR+ObrDno	Hcok
+						x-Rdno*(1-dnor)-Ldno*(1-dnol)	SR-ObrDno	12;
+}
+else
+{
+	SR=Sfp;
+	macro ProtoPath+"SetDir.mac" 2;
+	macro ProtoPath+"SetFix.mac"  0 0 FixUgl FixUgl;
+	macro ProtoPath+"SetECod.mac" "1103";
+	macro ProtoPath+"SetEnam.mac" "Основание фальшкороба";
+	macro ProtoPath+"MakePan.mac" Rdno y-SR+h_dsp 0 x-Rdno-Ldno SR-2*h_dsp 12;
+	//--- Верх
+	macro ProtoPath+"SetFix.mac"  0 0 0 0;
+	macro ProtoPath+"SetEnam.mac" "Верх фальшкороба";
+	macro ProtoPath+"MakePan.mac" Rdno y-SR h_korob x-Rdno-Ldno SR 12;
+	// //--- Бока
+	macro ProtoPath+"SetECod.mac" "1104";
+	macro ProtoPath+"SetEnam.mac" "Бок фальшкороба";
+	macro ProtoPath+"MakePan.mac" Rdno y-SR 0  h_korob  x-Rdno-Ldno  14;
+	macro ProtoPath+"MakePan.mac" Rdno y-h_dsp 0  h_korob  x-Rdno-Ldno  14;
+}
+//macro ProtoPath+"SetFixOver.mac" 0;
+macro ProtoPath+"SetFixMask.mac" 0 0 0 0;
+//----- Цоколи -----					
+if (Hcok>0) //-- Если присутствует цоколь
+{
+	macro ProtoPath+"SetDir.mac" 2;
+	macro ProtoPath+"SetFix.mac"  0 FixUgl 0 0;
+	macro ProtoPath+"SetEnam.mac" "Цоколь";
+	
+//--- Задний
+	//macro ProtoPath+"SetFixOver.mac" 1;
+	macro ProtoPath+"SetKrom.mac" 0 Typ_Kro 0 0 0;
+	macro ProtoPath+"SetFixMask.mac" 2 2 2 2;
+	macro ProtoPath+"SetECod.mac" "1104";
+    macro ProtoPath+"MakePan.mac" h_dsp-h_dsp*dnor y-(y-ObrCok) 0
+					Hcok	x-2*h_dsp+h_dsp*dnol+h_dsp*dnor 14;
+	//macro ProtoPath+"SetFixOver.mac" 0;
+	macro ProtoPath+"SetFixMask.mac" 0 0 0 0;
+
+//--- Передний
+	macro ProtoPath+"SetKrom.mac" 0 Typ_Kro 0 0 0;
+	macro ProtoPath+"SetFix.mac"  0 FixUgl 0 0;
+	macro ProtoPath+"MakePan.mac"	h_dsp-h_dsp*dnor	y-Ycok-h_dsp	0
+					Hcok	x-2*h_dsp+h_dsp*dnol+h_dsp*dnor	14;
+
+//--- Правый и поперечные
+
+NPCok=1
+if (x>599) { NPCok=floor(x/600) } // Количество поперечных цоколей
+
+MPCOK=((x-h_dsp*2)/NPCok)-(h_dsp/NPCok)+(h_dsp/NPCok)*dnor+(h_dsp/NPCok)*dnol // Расстояние между поперечными цоколями
+//putmsg("MPCOK="+str(MPCOK))
+    macro ProtoPath+"SetFix.mac"  0 FixUgl FixUgl FixUgl;
+	macro ProtoPath+"SetKrom.mac" 0 Typ_Kro 0 0 0;
+	macro ProtoPath+"SetEnam.mac" "Цоколь поперечный";
+	macro ProtoPath+"SetECod.mac" "1101";
+	macro ProtoPath+"MakePan.mac" h_dsp-h_dsp*dnor y-(y-ObrCok)+h_dsp 0
+					Hcok	y-ObrCok-2*h_dsp-Ycok 11;
+
+move last 1 done MPCOK 0 0 copy NPCok-1;
+
+//--- Левый
+//macro ProtoPath+"SetFixOver.mac" 1;
+macro ProtoPath+"SetFixMask.mac" 2 2 2 2;
+macro ProtoPath+"MakePan.mac" MPCOK*(NPCok)+h_dsp*(1-dnor) y-(y-ObrCok)+h_dsp 0
+					Hcok	y-ObrCok-2*h_dsp-Ycok 11;
+}
+macro ProtoPath+"SetDir.mac" 1; // Вернем текстуру по длине
+macro ProtoPath+"SetEnam.mac" "";
+macro ProtoPath+"SetECod.mac" "";
+macro ProtoPath+"SetKrom.mac" 0 0 0 0 0;
+macro ProtoPath+"SetFix.mac"  0 0 0 0;
+macro ProtoPath+"SetFixMask.mac" 0 0 0 0;
+exit;

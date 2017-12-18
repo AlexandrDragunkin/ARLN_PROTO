@@ -1,0 +1,8 @@
+//-- Макропрограмма присваивает атрибут
+//-- FurnType (тип мебельного объекта)
+//-- Входные параметры:
+//-- obj - объект
+//-- FurnType - значение атрибута
+getpar obj, Furntype;
+attrobj attach "FurnType" done obj Furntype;
+exit;

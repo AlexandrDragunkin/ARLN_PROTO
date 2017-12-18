@@ -1,0 +1,66 @@
+//-- Создание обувной полки
+//-- Входные параметры:
+//-- SotID - ID обувной полки в справочнике сборочных единиц
+//-- xn, yn, zn - Координаты правого нижнего дальнего угла сотовой полки
+//-- xgab - Ширина секции
+//-- N_clypse - Количество клипс
+//-- N_Kron - Количество кронштейнов
+
+global ProtoPath;   //-- Путь к папке с макропрограммами
+
+getpar SotID, xn, yn, zn, xgab, N_clypse, N_Kron;
+//---------------------------------------------------------------
+position=154;  //-- Номер прототипа обувной полки
+Namescr="ProtoParams";
+FurnType="340200";    //-- Обувные полки
+width=PriceInfo(SotID,"Width",310,2);   //-- Размер прута
+
+NULLOUT=pushinst(1);
+NULLOUT=getsnap();
+FurnType=PriceInfo(SotID,"FurnType",FurnType,2);
+NULLOUT=setvarinst(1,"FurnType",FurnType);    //-- FurnType
+NULLOUT=getvarinst(2,"ShoesColor",col,158);   //-- Цвет обувной полки
+NULLOUT=getvarinst(2,"IsColorUse",icu,1);     //-- Использовать ли цвета
+
+object_1=sysvar(60);
+Sush_mac=PriceInfo(SotID,"MacroFile","",2) //-- Если обувная полка нестандартная, читаем макрос
+if (Sush_mac!="")
+{
+   macro Protopath+Sush_Mac xgab,yn,zn,SotID,N_clypse,N_Kron;
+}
+else
+{
+  macro ProtoPath+"shshelfl2.mac" xgab,yn,zn,SotID,N_clypse,N_Kron;
+}
+object_2=sysvar(60)-object_1;
+if (object_2==0) //-- Сотовую полку не создали
+{
+  goto end;
+}
+#sotp group last object_2 done;
+if (icu==1)
+{
+  chprop color sotp done col;
+}
+
+namesot=priceinfo(SotID,"NAME","",2);
+macro ProtoPath+"SetEnam.mac" namesot;
+attrobj attach "ElemName" done sotp namesot;
+
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"x",xgab);
+err=AddScratch(ScrMod,FurnType,"y",yn);
+err=AddScratch(ScrMod,FurnType,"z",zn);
+err=AddScratch(ScrMod,FurnType,"width",SotID);
+err=AddScratch(ScrMod,FurnType,"N_clypse",N_clypse);
+err=AddScratch(ScrMod,FurnType,"N_Kron",N_Kron);
+NULLOUT=writescratch(ScrMod,Namescr,sotp);
+NULLOUT=termscratch(ScrMod);
+NULLOUT=addattrpi(sotp,1,position);
+//-- Присваиваем атрибуты
+macro ProtoPath+"EndSot.mac" sotp position xgab width 0 SotID "";
+//----------------------------------------------------------------
+end:
+NULLOUT=resnap();
+NULLOUT=popinst(1);
+exit;

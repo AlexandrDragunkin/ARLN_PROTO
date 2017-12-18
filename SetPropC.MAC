@@ -1,0 +1,8 @@
+// ”становить PropCode дл€ фасадов
+
+global FasPropC;  // PropCode дл€ фасадов
+getpar  P1  ; // 
+
+FasPropC=P1 ,  // PropCode дл€ фасадов
+
+exit

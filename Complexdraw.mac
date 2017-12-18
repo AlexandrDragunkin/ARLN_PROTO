@@ -1,0 +1,410 @@
+// Монтажная схема
+global protopath g_osn;
+global DRWZPath;
+global g_h, g_w g_ik G_setDrw ;
+global g_KonsCode NaimenSB1 zagotdt Pl_SizeDet Bl_Zoom;
+global ProtoPath, g_osn, g_dorab, g_drawall, g_pict, g_scala, g_draw d_support l_support Pl_NumPan Pl_MatrZag g_name g_DrawTaile;
+global g_vidUnic ; // 0-объединять на один бланк 1-разносить на несколько бланков (как печатать чертеж если видов несколько например сторона А и F)
+global g_catNM;
+global
+	g_ItemName
+	G_numTxt
+	G_numWmf
+	PL_obozn
+;
+macro protopath+"addFolderToSysPath.py" ; // Расширяет список sys.path для поиска модулей Питон
+defarr aObjv[10] aObj[10] aLeg[10] aVid[100]; // массисв для ссылок на объекты чертежа и легеды
+defarr xm[6] aoLeg[100] adraw[100] objdraw[100] sobjdraw[100] vi[3] obj1[1] aDDr[20];
+g_DrawTaile=0 ;
+pathApp=MPathExpand("<appdata>")
+g_name="Общий вид"
+Bl_Zoom=0;
+g_catNM="";
+g_ItemName="."
+;
+keyBased=1 // выводить просмотрелку 1 нет 0
+vi[1]=0;
+vi[2]=1;
+vi[3]=0;
+
+#UndoOnBefore MacroMode Undo Off [Clear];
+select : 
+n=sysvar(61);
+if n==0 {
+	goto notselect;
+}
+else {
+	defarr aSelObj[n];
+	macro protopath+"arrobj.mac" n aSelObj ;
+}
+nullout=INITARRAY(adraw,0);
+ 
+g_vidUnic=iif(isvardef("g_vidUnic")==0,0,g_vidUnic);
+if (!IsAttrdef("IDRWN")) { Attribute Create "IDRWN" "Номер листа " Real 5 0  ; }
+ 
+NULLOUT=getSnap();
+macro L_support+"SetPlProjectA.mac" 1000;
+ 
+g_drawall=0;
+g_pict=3; //-- wmf файл по третьему виду
+g_h=297;
+g_w=210;
+g_ik=0;
+g_KonsCode="";
+G_setDrw=0;
+valcoeff absolute 1;
+grfcoeff 1;
+projname=sysvar(2);
+vName="Name;Number;Customer;Address;Phone;Date;ExpDate;Firm;Salon;Acceptor;Executor;AddInfo;ToWorking;NCurrency;Discount;Rate"
+nelm=splitByDelim(vName,";",aDDr)
+i=0
+labvn:
+if i<nelm {
+	i=i+1
+    Name="O"+aDDr[i]
+ 
+    if !isattrdef(Name) {
+        attribute create  Name Name string 30 255 ;
+	}
+    vv=getorderinfo(aDDr[i]) ;
+ 
+    if len(str(vv))>0 {
+		attrobj  attach Name done record str(vv) ;
+	}
+	goto labvn;
+}
+grfcoeff absolute 1;
+
+tprjname=projname-3+"t.k3";
+
+macro protopath+"\\drawprof\\Utilites_K3.py" "isorder" byref isORD  ;
+if isORD {
+	saveOrder;  //-- Записываем проект
+}
+else
+{
+	save all projname [ overwrite ];
+}
+onerror end;
+save all tprjname [ overwrite ] ;
+
+//#pnt group window :
+//#pnt group last n done;
+#pnt group aSelObj[1] done;
+iii=1;
+looo:
+iii=iii+1
+if (iii>n)
+{
+  goto eee;
+}
+#pnt add pnt aSelObj[iii] done;
+if (i<n)
+{
+  goto looo
+}
+eee:
+//<?python
+//import k3
+//pnt=k3.Var('pnt')
+//n=k3.Var('n')
+//print(n.value)
+//aSelObj=k3.VarArray(int(n.value),'aSelObj')
+//p=k3.group([a.value for a in aSelObj])
+//pnt.value=p[0]
+//?> 
+
+Xunit=getattr(pnt,"XUNIT",0);
+Yunit=getattr(pnt,"YUNIT",0);
+Zunit=getattr(pnt,"ZUNIT",0);
+CPos=getattr(pnt,"CommonPos",0);
+ 
+if CPos==0 {
+	//macro ProtoPath+"Num.mac";
+	//CPos=getattr(pnt,"CommonPos",0);
+}
+g_name=g_name+"-"+str(CPos)
+ProjPath=getfilepath(sysvar(2));
+title=getfiletitle(projname)-4+"_"+g_name
+numTxt=ProjPath+"\\Reports\\K3_Complex\\"+title+".k3";
+// putmsg(numTxt)
+numWmf=ProjPath+"\\Reports\\WMF_Complex\\"+title+".wmf";
+G_numTxt=numTxt;
+G_numWmf=numWmf;
+
+if sysvar(60)-sysvar(63)>1
+{
+	invisible all remove pnt;
+}
+// получаем картинку
+objects=sysvar(60);
+ 
+cur_v=sysvar(51);
+vport 4;
+if sysvar(58)==0 {
+hide_A=1
+}
+else {
+hide_A=0
+}
+vport cur_v;
+macro DRWZPath+"d_vid3get.mac"
+4 //NumVid=0 // 1 2 3 4  0-все 4   5-текущий
+1 //Nvid=4 // число выводимых видов
+hide_A //hideA=1  //невидимые выводить    1-да 0-нет
+1 //visA=1  //видимые выводить      1-да 0-нет
+done ;
+objects=sysvar(60)-objects;
+
+
+#g_draw group  all done ;
+err=objgab3(g_draw,xm);
+
+move g_draw done xm[1]+(xm[4]-xm[1])/2 xm[2]+(xm[5]-xm[2])/2 0
+
+explode g_draw done;
+#g_draw group  all  done ;
+attrobj attach "IDRWN" done g_draw 1 ;    // Присваиваем отличительный признак атрибут
+
+save all pathApp+"GFtmp.k3" [ overwrite ] ;
+new ;
+
+vport scheme 4 ;
+vport 3 ;
+
+append pathApp+"GFtmp.k3" 0 0 0  ;
+
+#g_draw group  all  done ;
+err=objgab3(g_draw,xm);
+save all tprjname [ overwrite ] ;
+
+iVid=0;
+foldername="Complex";
+macro DRWZPath+"drawsave73.mac" projname, adraw, byref iVid, aVid, numTxt, numWmf;
+// macro DRWZPath+"drawsave65.mac" projname adraw, foldername, byref iVid aVid;
+
+// Проверка положений текстов у полочек выносок
+macro Protopath+"\\complexlabeldraw\\Noteed.py";
+//Putmsg("Тут проблема");
+save select all done G_numTxt [ overwrite ]
+
+
+//------------------------------------------------------------------------------
+NULLOUT=ReSnap();
+//**************************************
+pi_name=mpathexpand("<AppData>")+"\\t_Dimp.dat"
+sfPi="UndoOnBefore;tprjname;g_clear;keyBased;numpan;g_vimDraws;iVid;" // контейнер переменных
+sfPiArr="sobjdraw;adraw;objdraw;obj1;vi"; // контейнер массивов
+gosub DumperPi;
+//**************************************
+//----------------------------------------------
+end:
+
+
+new ;
+offerror;
+loadorder last;
+//**************************************
+//----------------------------------------------
+keyBased=1
+pi_name=mpathexpand("<AppData>")+"\\t_Dimp.dat"
+gosub LoaderPi;
+final:
+fName=G_numWmf-3+"~wmf"; ;
+gosub sDelBackF;
+fName=G_numTxt-3+".~k3";
+adraw[1]=G_numTxt-3+"_1.k3";
+gosub sDelBackF;
+vport 1 zoom all;
+//**************************************
+//----------------------------------------------
+if keyBased==1 {
+	gosub BAsedEnd;
+}
+fName=G_numTxt-3+"_1.k3";
+gosub sDelBackF;
+notselect:
+If UndoOnBefore==1 { MacroMode Undo On; }
+exit;
+//----------------------------------------------------
+//----------------------------------------------------
+//----------------------------------------------------
+
+
+//--удаляет файл с именем fName
+sDelBackF:
+if FileExist(fName)
+{
+	Nullout=RemoveFile(fName)
+}
+return;
+sExpVI:
+	fnam="" //numTxt
+
+	i=0;
+	lbexpDrawA:
+	if i<numpan
+	{
+	   i=i+1;
+	   obj1[1]=objdraw[i]
+		zoom byobject objdraw[i] done;
+		CurGrk=Sysvar(76)
+
+		NULLOUT=exportvim(obj1,1,vi,str(i),0,iif(i==numpan,2,1),"Общий вид"); //,4,1,1
+		zoom previous;
+		goto  lbexpDrawA ;
+	}
+	i=0;
+	lbexpDraw:
+	if i<numpan
+	{
+	   i=i+1;
+	   delete objdraw[i] done;
+	   goto  lbexpDraw ;
+	}
+return;
+
+BAsedEnd:
+	If (!IsAttrdef("DrawObject"))
+	{
+	  Attribute Create "DrawObject" "Чертежный объект" Real 5 0 ;
+	}
+	else
+	{
+		selbyattr "DrawObject>"+str(0) partly all done;
+		if sysvar(61)>0
+		{
+		   delete partly previous done;
+		}
+	}
+	//defarr xm[6];
+	NULLOUT=GetSnap();
+	#gr1 group all done;
+	nulout=objgab3(gr1,xm);
+	explode gr1 done;
+
+	PtransCS(0,1,xm[1],xm[2],xm[3],xm[1],xm[2],xm[3]);
+	PtransCS(0,1,xm[4],xm[5],xm[6],xm[4],xm[5],xm[6]);
+	px=xm[1]-2000
+	py=xm[5]
+	pz=xm[3]
+	setucs vcs ;
+	numpan=iVid;
+	i=0;
+	lbDraw:
+	if i<numpan
+	{
+	   i=i+1;
+	   objects=sysvar(60);
+	   append adraw[i]  0 0 0 ;
+	   objects=sysvar(60)-objects;
+	   #gr1 group last objects done;
+	   objident last 1 objdraw[i];
+	   attrobj attach "DrawObject" done objdraw[i] 1 ;
+	   nobj=GetCntObjGA(objdraw[i]);
+	   nulout=ScanG(objdraw[i],sobjdraw);
+	   i_nb=0
+	   lb_nb:
+	   if i_nb<nobj
+	   {
+		 i_nb=i_nb+1
+		 attrobj attach "DrawObject" done partly sobjdraw[i_nb] 1 ;
+		 goto lb_nb;
+	   }
+
+	   nulout=objgab3(gr1,xm);
+	   rotate nocopy gr1 done 2point (xm[4]-xm[1])/2+xm[1] (xm[5]-xm[2])/2+xm[2] xm[3] (xm[4]-xm[1])/2+xm[1] (xm[5]-xm[2])/2+xm[2] xm[3]+1 180
+	   move nocopy gr1 done 2point xm[4] xm[2] xm[3] px py pz
+	   nulout=objgab3(gr1,xm);
+	   px=xm[1]
+	   py=xm[2]
+	   pz=xm[3]
+	   goto lbDraw;
+	}
+	NULLOUT=ReSnap();
+
+	gosub sExpVI;
+return;
+//==============================================================
+DumperPi:
+ 
+//PutMsg("Сохраняем переменные")
+<?python
+import k3
+from DrawingSupp import DumperPickle
+sfPi=k3.Var("sfPi")
+sfPiArr=k3.Var("sfPiArr")
+pi_name=k3.Var("pi_name")
+sfPi=sfPi.value
+sfPiArr=sfPiArr.value
+pi_name=pi_name.value
+l_sfPi = sfPi.split(';')
+l_sfPiArr = sfPiArr.split(';')
+d_vars = {}
+d_arrs = {}
+
+for v in l_sfPi:
+    if len(v)>0:
+        tm = k3.Var(v)
+        if k3.isvardef(v)>0:
+           d_vars[v] = tm.value
+for v in l_sfPiArr:
+    if len(v)>0.:
+        tm = k3.VarArray(2, v)
+        tm = k3.VarArray(int(k3.getdimarray(tm)), v)
+        d_arrs[v] = [a.value for a in tm]
+
+DumperPickle([d_vars, d_arrs], pi_name)
+?>
+//putmsg("---------------------------");
+return;
+
+//-----------------------------------------------------------------------
+LoaderPi:
+//PutMsg("Восстанавливаем переменные")
+<?python
+import k3
+from DrawingSupp import LoaderPickle
+pi_name=k3.Var("pi_name")
+pi_name=pi_name.value
+resFFile = int(k3.fileexist(pi_name)) # проверяем есть ли файл с результатом
+if resFFile==1: # Значит файл найден
+    t = LoaderPickle(pi_name)
+
+l_sfPii = t[0].keys()
+l_sfPiArri = t[1].keys()
+
+for v in l_sfPii:
+    if t[0][v] is not None:
+        tm = k3.Var(v)
+        tm.value = t[0][v]
+
+tt = {}
+for v in l_sfPiArri:
+    if len(t[1][v]) > 0:
+        tt[v]  = k3.VarArray(len(t[1][v]), v)
+        for i in range(len(t[1][v])):
+            tt[v][i].value = t[1][v][i]
+
+?>
+
+//putmsg("---------------------------------------");
+return;
+//--------------------------------------------------
+delDablFile:
+	numpan=iVid;
+	i=0;
+	lbDraws:
+	if i<numpan
+	{
+	   i=i+1;
+	   objects=sysvar(60);
+	   fName=adraw[i]-3+".~k3"; 
+	   gosub sDelBackF;
+	   goto lbDraws;
+	}	
+	fName=tprjname; 
+	gosub sDelBackF;
+	fName=tprjname-3+".~k3"; 
+	gosub sDelBackF;
+	return;

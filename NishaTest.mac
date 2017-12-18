@@ -1,0 +1,40 @@
+//-- Макропрограмма выбора ниши из возможных
+//-- Входные параметры:
+//-- xsek1, xsek2, ysek1, ysek2, zsek1, zsek2 - габаритные координаты ниши
+//-- ydept - массив из 4 значений глубины ниши
+//-- Выходны параметры:
+//-- ydept[1] - выбранная глубина ниши
+
+global xsek1,xsek2,ysek1,ysek2,zsek1,zsek2;
+getpar ydept;
+if (abs(ydept[1]-ydept[2])<.1) 
+{ 
+  exit;
+}
+#ok_flag
+setvar
+"Заполнение ниши" 
+""
+"Обнаружено несколько ниш: "
+" "
+"       Ширина:            "+str(int(xsek2-xsek1))
+"       Высота:            "+str(int(zsek2-zsek1))
+" "
+"Выберите одну из возможных глубин:"
+done
+str listonly
+     current str(ydept[1]-ysek1) //+" (Малиновая)"
+	           str(ydept[2]-ysek1) //+" (Красная)  "
+	           str(ydept[3]-ysek1) //+" (Бирюзовая)"
+	           str(ydept[4]-ysek1) //+" (Зеленая)  "
+done
+	            "Глубина ниши:" yg
+done;
+if (ok_flag==0) 
+{ 
+  ydept[1]=0;
+  exit;
+}
+ydept[1]=val(yg)+ysek1;
+//ydept[1]=val(yg-12)+ysek1;
+exit;

@@ -1,0 +1,155 @@
+// Мультиредактирование крепежа в составе комплектующих (Ручки , направляющие и т.п)
+
+// Драгункин Александр
+// 08.09.2015
+
+// Работает только в версии начиная с 8.09.2015
+
+
+global protopath; // путь к прото
+defarr TypeMat[3] Arr[2]; // нужные массивы
+onerror end; // включаем обработчик ошибок
+errstr="Работает только в версии начиная с 8.09.2015"
+vrb=1; // вариант выхода в случае ошибки в процедуре edfix 1 уходим 0 только ругаемся и не выходим
+// macro protopath+"Num.mac" done; // Мне нужны UnitPos, поэтому надо побеспокоиться, что бы они были
+err=renumerate(); // Присвоим UnitPos и TopParentPos
+gosub edfix; // Процедура выбора линии крепежа
+gaccid=accid; // gaccid сохраняем для сравнения
+
+// если дошли до сюда, то все нормально и крепеж и родитель соответствуют
+GrNum=getyadsubst(9);	//-- номер подстановки (Типы крепежа) смотри в параметрах F9 Использование/Подстановки
+
+// диалог замены
+#ok_flag
+setvar
+"Изменить свободный крепеж в комплектующих"
+""
+left
+"Выберете крепеж для замены"
+done
+	string button 6 default str(GrNum)+"#"+str(fixid)
+	"Заменять на крепеж :"  TypeMat[1]
+	logical default 1 "Без сверловки:" lHole
+	logical  default 1  "Применить только для таких же комплектующих"  forall
+		button " " var
+	str listonly
+	current	"По указанию"
+	"Все"
+	done
+		"Способ замены:"    S_zam
+done;
+if (ok_flag==0) {
+	putmsg("Прервано пользователем");
+	goto end;
+}
+splitbydelim(TypeMat[1],"#",Arr); // парсим строку отделяя ID крепежа для замены
+//  if fixid!=Arr[2] { // если у указанной линии ID крепежа отличается
+	// fixing fix edit hpnt1 Arr[2] // редактируем ID крепежа
+// } 
+
+
+if S_zam=="Все" {
+	a=fltrparamobj(1,71);  //-- Фильтр по линии крепежа
+	select partly  all; // выбрали все линии крепежа
+	a=fltrparamobj(0);     //-- Выключили фильтр по линии крепежа
+	n=sysvar(61);     // число выбраных линий
+	if n>0 {
+		defarr aObj[n] aup[n]; // определили масив для размещения линий
+		macro protopath+"Arrobj.mac" n aObj; // заполнили массив ссылками на линии крепежа
+		i=0
+		lab10:
+		if i<n {
+			i=i+1;
+			aup[i]=getattr(aObj[i],"UnitPos",0);
+			goto lab10;
+		}
+		i=0
+		lab1:
+		if i<n {
+			i=i+1;
+			selbyattr "UnitPos=="+str(aup[i]) partly all done;
+			if sysvar(61)>0 {
+				hpnt1=getselnum(1);
+				fixid=getattr(hpnt1,"FixID",-99);  // ищем ID крепежа в атрибуте
+				logh_h=getobjhold(hpnt1,H_hpnt1); // Ищем хозяина линии крепежа
+				if logh_h { // если хозяин есть
+					accid=getattr(H_hpnt1,"PriceID",-99); // определяем PriceID хозяина
+					gosub isforall; // Процедура анализа допустимости замены линии крепежа
+					if fixid!=Arr[2]&&lres  { // если у указанной линии ID крепежа отличается
+						fixing fix edit hpnt1 Arr[2] if lHole { yes } else { no }; // редактируем ID крепежа
+					}
+				}
+			}
+			goto lab1;
+		}
+	}
+}
+if S_zam=="По указанию" {
+	if fixid!=Arr[2] { // если у указанной линии ID крепежа отличается
+		fixing fix edit hpnt1 Arr[2] if lHole { yes } else { no }; // редактируем ID крепежа
+	}
+	lab2:
+	vrb=0; // вариант выхода в случае ошибки в процедуре edfix 1 уходим 0 только ругаемся и не выходим
+	gosub edfix; // Процедура выбора линии крепежа
+	gosub isforall; // Процедура анализа допустимости замены линии крепежа
+	if fixid!=Arr[2]&&lres { // если у указанной линии ID крепежа отличается и комплектующее соответствует условию "Применить этот вариант только для таких же комплектующих" 
+		fixing fix edit hpnt1 Arr[2] if lHole { yes } else { no }; // редактируем ID крепежа
+	}
+	goto lab2;
+}
+end:
+offerror;
+switch autosingle off;
+a=fltrparamobj(0);     //-- Выключили фильтр по линии крепежа
+if len(errstr) {
+	putmsg(errstr,0)
+}
+exit;
+//===================
+//-------------------
+// Процедура выбора линии крепежа
+edfix:
+	a=fltrparamobj(1,71);  //-- Фильтр по линии крепежа
+	//a=fltrparamobj(1,70);  //-- Фильтр по  группе крепежа для версии до 8.09.2015
+	switch autosingle on; // включаем одиночный выбор
+	hpnt1=0;
+	objident prompt "Укажите линию крепежа" partly : hpnt1 // указываем линию крепежа
+	//objident prompt "Укажите крепеж" partly : pnt1 // указываем линию крепежа до 8.09.2015
+	switch autosingle off;
+	a=fltrparamobj(0);     //-- Выключили фильтр по линии крепежа
+	errstr=""
+	//logh=getobjhold(pnt1,hpnt1); // этот вариант был до 8.09.2015 
+	logh_h=getobjhold(hpnt1,H_hpnt1); // Ищем хозяина линии крепежа
+	if logh_h { // если хозяин есть
+		fixid=getattr(hpnt1,"FixID",-99);  // ищем ID крепежа в атрибуте
+		accid=getattr(H_hpnt1,"PriceID",-99); // определяем PriceID хозяина
+		// if accid==-99||fixid==-99 { // если id  крепежа или хозяина отсутствуют ругаемся и уходим
+			// putmsg("У линии крепежа отсутствует объект-родитель(комплектующее) *",0);
+			// if vrb {
+				// goto end;
+			// }
+		// }
+	}
+	else { // если хозяина нет ругаемся и уходим
+		putmsg("У линии крепежа отсутствует объект-родитель(комплектующее)",0);
+		if vrb {
+			goto end;
+		}
+	}
+return;
+//-----------------
+// Процедура анализа допустимости замены линии крепежа
+isforall:
+	if forall {
+		if gaccid==accid {
+			lres=1;
+		}
+		else {
+			lres=0;
+		}
+	}
+	else {
+		lres=1;
+	}
+	lres=1;
+return;

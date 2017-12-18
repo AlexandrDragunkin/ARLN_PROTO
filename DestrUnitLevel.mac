@@ -1,0 +1,52 @@
+//-- Разобрать сборочную единицу на один уровень
+//-- Входные параметры:
+//-- objs - массив со списком разбираемых изделий
+
+global ProtoPath;
+
+getpar objs;
+
+#ok_flag
+setvar
+"Глубина разбора"
+""
+left "Введите глубину разбора сборочной единицы" done
+string listonly         "1"
+                        "2"
+                        "3"
+                        "4"
+                        "5"
+                        "6"
+                        "7"
+                        "8"
+                        "9"
+                        "10"
+     current            "До нижнего уровня" done
+"Уровень разбора" Depth
+done;
+if (ok_flag==0)
+{
+  exit;
+}
+if (Depth=="До нижнего уровня")
+{
+  Depth=-1;
+}
+else
+{
+  Depth=val(Depth);
+}
+defarr objs[object_2];
+macro ProtoPath+"Arrobj.mac" object_2, objs;
+i=0;
+loop:
+i=i+1;
+cinema close fast objs[i];
+objident last 1 objs[i];
+macro ProtoPath+"DestrOnUnitLevel.mac" objs[i] Depth;
+if (i<object_2)
+{
+  goto loop;
+}
+final:
+exit;

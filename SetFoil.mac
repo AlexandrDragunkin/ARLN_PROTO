@@ -1,0 +1,36 @@
+// Установить Пленка, модифицирующая цвет панели
+global g_FoilModef;     //-- Количестово отделок панели
+global g_FoilModAF;   //-- Массив отделок из 8 групп по 3 элемента
+                        // Первый - пласть (5 - А, 6 - F)
+                        // второй - тип отделки, третий - цвет отделки.
+defarr  g_FoilModAF[24];
+
+getpar FoilColor;
+Putmsg("SetFoil - устарела");
+exit;
+
+if (!IsVarDef("g_FoilModef")) {
+  g_FoilModef=0;
+}
+if (g_FoilModef>23) { exit }
+
+g_FoilModAF[g_FoilModef+1]=5;
+g_FoilModAF[g_FoilModef+2]=0; //FoilType;
+g_FoilModAF[g_FoilModef+3]=FoilColor;
+g_FoilModef=g_FoilModef+3;
+g_FoilModAF[g_FoilModef+1]=6;
+g_FoilModAF[g_FoilModef+2]=0; //FoilType;
+g_FoilModAF[g_FoilModef+3]=FoilColor;
+g_FoilModef=g_FoilModef+3;
+
+
+NULLOUT=setvarinst(1,"g_Decorates",1,1);
+NULLOUT=setvarinst(1,"g_Decorates",5,2);
+NULLOUT=setvarinst(1,"g_Decorates",0,3);
+NULLOUT=setvarinst(1,"g_Decorates",FoilColor,4);
+g_FoilModef=g_FoilModef+1;
+NULLOUT=setvarinst(1,"g_Decorates",2,5);
+NULLOUT=setvarinst(1,"g_Decorates",5,6);
+NULLOUT=setvarinst(1,"g_Decorates",0,7);
+NULLOUT=setvarinst(1,"g_Decorates",FoilColor,8);
+exit

@@ -1,0 +1,67 @@
+//-- Макрос проверяет, проставлена ли сверловка.
+//-- Логика работы:
+//-- Сначала мы смотрим, включен ли флаг "показывать крепеж"
+//-- Мы пытаемся найти хотя бы одну панель, у
+//-- которой есть крепеж, но нет сверловки.
+
+
+//-- Проверяем по-рабоче-крестьянски.
+select partly attribute "Left(FurnType,4)==\"8008\"" done;
+if (sysvar(61)==0)
+{
+  #ok_flag
+  alternative "Не проставлены крепеж и сверловка"
+  msgbox picture 3 beep 3 text "Чертежи и отчеты не будут содержать информацию об отверстиях."
+  " "
+  "Проставить крепеж и сверловку?"
+  done
+  "  Да " " Нет " "Отмена"
+  done;
+  if (ok_flag==3)
+  {
+    cancel;
+  }
+  if (ok_flag==2)
+  {
+    exit;
+  }
+  if (ok_flag==1)
+  {
+    //-- Проверяем крепеж.
+    if (getyadfixing()==0)
+    {
+      NULLOUT=setyadfixing(1);
+    }
+    fixing all done;
+    holes all done;
+    exit;
+  }
+}
+//-- Проверяем сверловку.
+//-- Проверяем по-рабоче-крестьянски.
+select partly attribute "Left(FurnType,4)==\"8006\"" done;
+if (sysvar(61)==0)
+{
+  #ok_flag
+  alternative "Не проставлена сверловка"
+  msgbox picture 3 beep 3 text "Чертежи и отчеты не будут содержать информацию об отверстиях."
+  " "
+  "Проставить сверловку?"
+  done
+  "  Да " " Нет " "Отмена"
+  done;
+  if (ok_flag==3)
+  {
+    cancel;
+  }
+  if (ok_flag==2)
+  {
+    exit;
+  }
+  if (ok_flag==1)
+  {
+    holes all done;
+    exit;
+  }
+}
+exit;

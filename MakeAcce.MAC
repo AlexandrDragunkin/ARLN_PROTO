@@ -1,0 +1,53 @@
+//-- Добавление комплектующего
+global ProtoPath;
+global g_AccPlace;        //Код типа размещения См. смойство AccPlace в номенклатуре
+
+getpar
+IdAcces         //-- Тип комплектующих
+FTAcces	        //-- FurnType
+xn yn zn	      //-- Положение начала локальной системы координат
+ax az ax1;	    //-- Углы поворота
+
+//------------------------------------------------
+if (IdAcces==0)
+{
+  exit;
+}
+KarkasNumb=getcarcnumb();    //-- Текущий номер каркаса
+
+//-- Если задан FurnType, то тип комплектующего определен
+//-- Иначе - это просто комплектующий ("040000")
+if (isvardef("FTAcces")!=6)
+{
+  FurnType="040000"
+}
+else
+{
+  FurnType=FTAcces
+}
+//-- Тип размещения комплектующего
+AccPlace=0;
+if (isvardef("g_AccPlace")==5)
+{
+  AccPlace=g_AccPlace
+}
+//------------------------------------------------
+
+NULLOUT=getsnap();
+object_1=sysvar(60); //-- Кол-во объектов
+accessory FurnType IdAcces 0 yes AccPlace;
+object_2=sysvar(60)-object_1; //-- Кол-во объектов
+if (object_2==1) //-- Должен быть только один комплектующий
+{
+  objident last 1 Elem;
+  move nocopy Elem done xn yn zn ;
+  rotate Elem done 2points xn yn zn xn+1 yn zn ax nocopy ;
+  rotate Elem done 2points xn yn zn xn yn zn+1 az nocopy ;
+  rotate Elem done 2points xn yn zn xn+1 yn zn ax1 nocopy ;
+}
+else
+{
+  putmsg("Должен быть только один комплектующий с ID="+str(IdAcces),0);
+}
+NULLOUT=resnap();
+exit;

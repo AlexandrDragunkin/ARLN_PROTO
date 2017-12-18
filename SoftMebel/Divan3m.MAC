@@ -1,0 +1,60 @@
+//-- Диван индивидуальный 3-х местный
+global ProtoPath;		//-- Путь к папке с макропрограммами общей библиотеке прототипов
+defarr col[14];
+mp="<K3Files>";
+north=mpathexpand(mp);
+
+//-- Читаем параметры
+mat1=DbVar("mat1",0);         //-- Основание
+mat2=DbVar("mat2",0);         //-- Спинка (неподвижная спинка)
+mat3=DbVar("mat3",0);         //-- Сиденье (левая часть)
+mat4=DbVar("mat4",0);         //-- Подлокотники
+mat5=DbVar("mat5",0);         //-- Накладка подлокотников
+mat6=DbVar("mat6",0);         //-- Ножки
+mat7=DbVar("mat7",0);         //-- Декоративный элемент 1
+mat8=DbVar("mat8",0);         //-- Декоративный элемент 2
+mat9=DbVar("mat9",0);         //-- Подушка спинки (левая часть)
+mat10=DbVar("mat10",0);       //-- Подголовник
+mat11=DbVar("mat11",0);       //-- Сиденье (правая часть)
+mat12=DbVar("mat12",0);       //-- Подушка спинки (правая часть)
+mat13=DbVar("mat13",0);       //-- Сиденье (средняя часть)
+mat14=DbVar("mat14",0);       //-- Подушка спинки (средняя часть)
+model=DbVar("model",2259);    //-- Модель
+
+//-- Читаем текстуру из свойства
+col[1]=PriceInfo(mat1,"Texture",1);
+col[2]=PriceInfo(mat2,"Texture",1);
+col[3]=PriceInfo(mat3,"Texture",1);
+col[4]=PriceInfo(mat4,"Texture",1);
+col[5]=PriceInfo(mat5,"Texture",1);
+col[6]=PriceInfo(mat6,"Texture",1);
+col[7]=PriceInfo(mat7,"Texture",1);
+col[8]=PriceInfo(mat8,"Texture",1);
+col[9]=PriceInfo(mat9,"Texture",1);
+col[10]=PriceInfo(mat10,"Texture",1);
+col[11]=PriceInfo(mat11,"Texture",1);
+col[12]=PriceInfo(mat12,"Texture",1);
+col[13]=PriceInfo(mat13,"Texture",1);
+col[14]=PriceInfo(mat14,"Texture",1);
+mod=PriceInfo(model,"K3File","divan1.k3");
+//-----------------------------------------------------------------------
+//-- Добавляем объект в сцену
+coldo=sysvar(60);
+append north+"\\"+mod 0 0 0;
+colpos=sysvar(60)-coldo;
+if (colpos==0)
+{
+ putmsg("К3 файл модели изделия отсутствует или пустой",0);
+ cancel;
+}
+if (colpos>1)
+{
+ group all done;
+}
+objident last 1 softmeb;
+//-- Раскрашиваем объект
+macro ProtoPath+"SoftMebColor.mac"
+col,					  //-- Массив с именами текстур
+14,					    //-- Размерность массива col
+softmeb;				//-- Объект для раскраски
+exit;

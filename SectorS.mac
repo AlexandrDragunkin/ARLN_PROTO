@@ -1,0 +1,27 @@
+//-- —оздание контура столешницы-сектора
+//-- ¬ходные параметры
+//-- r - радиус
+//-- begalpha - начальный угол
+//-- alpha - угол
+
+getpar r, begalpha, alpha;
+begalpha=180-begalpha;
+if (alpha==360)
+{
+  #pa circle 0 0 0 normal 0,0,1 r;
+}
+else
+{
+  alpha1=Radian(alpha);
+  begalpha1=Radian(begalpha);
+  #L1 line 0, 0, 0 r*cos(begalpha1), r*sin(begalpha1), 0 done;
+  line 0, 0, 0 r*cos(begalpha1-alpha1), r*sin(begalpha1-alpha1), 0 done;
+  arc r*cos(begalpha1),           r*sin(begalpha1),           0
+      r*cos(begalpha1-alpha1),    r*sin(begalpha1-alpha1),    0
+      r*cos((begalpha1-alpha1/2)) r*sin((begalpha1-alpha1/2)),0
+  #pa path select last 3 done L1 done;
+}
+#paa pline path pa;
+delete pa done;
+objident paa pa;
+exit;

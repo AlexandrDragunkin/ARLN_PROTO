@@ -1,0 +1,39 @@
+//-- Команда поиска объекта. По какому критерию производить поиск.
+global ProtoPath;
+
+#aaa
+setvar
+"Поиск объекта"
+""
+"Критерий поиска:"
+done
+string auto
+listonly
+current		"Пользовательскому номеру"
+					"Уникальному номеру"
+					"Названию"
+
+done
+"Искать объект по:" var
+done;
+if (aaa==0)
+{
+ exit;
+}
+
+if (var=="Уникальному номеру")
+{
+ macro ProtoPath+"RS_FindCommon.mac" ;
+}
+
+if (var=="Пользовательскому номеру")
+{
+ macro ProtoPath+"RS_FindNumb.mac" ;
+}
+
+if (var=="Названию")
+{
+ macro ProtoPath+"RS_FindName.mac" ;
+}
+
+exit;

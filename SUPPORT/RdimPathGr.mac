@@ -1,0 +1,30 @@
+//RdimPathGr.mac
+           ;
+//*********************************************
+//построение размеров радиусов для группы контуров
+//
+//              Драгункин А.Р.
+//              (с)ГеоС 2008 г.
+//*********************************************
+
+global L_SUPPORT            ;
+
+getpar pnt                ;
+
+NPnt=GetCntObjG(pnt)      ;
+
+defarr obj[NPnt]          ;
+
+NPnt=GetArrObjG(pnt,obj)  ;
+i=0
+met:
+if i<NPnt {
+   i=i+1
+   extract pnt obj[i]     ;
+   ;macro L_Support+"RdimPath656.mac" obj[i] ;
+   add pnt obj[i]  ;
+   goto met ;
+}
+
+
+exit;

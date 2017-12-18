@@ -1,0 +1,6 @@
+//-- Установить измененный групповой код панели
+global GrouPan;   //-- Групповой код для панелей
+getpar P1;
+GrouPan=P1;
+NULLOUT=setvarinst(1,"GroupID",getsubstyad(GrouPan));
+exit;

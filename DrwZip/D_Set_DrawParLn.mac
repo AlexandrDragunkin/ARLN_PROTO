@@ -1,0 +1,154 @@
+//D_Set_DrawParLn.mac
+//2008-04-17
+CurStat=SysVar(70) ;
+if CurStat==0 { CurStat=2  }
+ErrMsg=MsgLevel(1) ; // 2008/05/23
+//
+//*********************************************
+//         Установка параметров для
+//           чертежей длинномеров
+//
+//              Драгункин А.Р.
+//              (с)ГеоС 2008 г.
+//*********************************************
+//==============================================
+
+// Список параметров
+global
+g_DirDrawLn           //Все файлы чертежей длинномеров размещать в отдельной папке 0-нет 1-да
+g_DrawBlank           //Чертежи на бланках 0-нет 1-да
+g_DrawSpec            //Формировать спецификацию 0-нет 1-да
+g_DrawCod             //Способ обозначения чертежа 0-относительный по первому вхождению 1-абстрагированный код
+g_DrawStamp           //Ключ запроса информации для штампа бланка из файла stamp.dbf и из файла ZAKAZ.dbf =0 только stamp.dbf =1
+g_FormStamp           //Ключ запроса формы штампа 0-не запрашивать 1-регулярно
+g_PgFileDraw          //Каждый лист чертежа в отдельном файле 0-нет 1-да
+g_PgFileSpec          //Каждый лист спецификации в отдельном файле 0-нет 1-да
+g_GroupDoc            //Формировать групповой чертеж по всем документам 0-нет 1-да
+g_DrawTaile           //формировать деталировку 0-нет 1-да
+;
+
+//global Support
+;
+
+ProtoPath=MPathExpand("<Proto>")+"\\"; //+Support
+CurGrk=Sysvar(76) ;
+
+getpar
+auto
+;
+
+//ищем файл DrawParLn.dbf
+//Если такой файл существует присваиваем значения переменным из этого файла
+//Сохраняеем значения переменных в DrawParLn.dbf
+GoSub DefStamp ;
+if auto!=1 { Gosub dialog ; }
+ErrMsg=MsgLevel(CurStat) ;
+exit ;
+//==============================================
+
+Dialog:
+#ok_flag   //Если после setvar будет 0 - Нажали кнопку "Отмена"
+setvar
+"Параметры среды чертежей длинномеров"           // Заголовок окна
+""                  // Имя файла иллюстрации
+// Пояснительный текст
+center         //с выравниванием слева
+" Определите значения для " "чертежей длинномеров"
+done          // конец пояснительного текста
+
+logical  default g_DirDrawLn           "Файлы чертежей длинномеров в отдельной папке 0-нет 1-да"                                                    g_DirDrawLn
+logical  default g_DrawBlank           "Чертежи на бланках 0-нет 1-да"                                                                              g_DrawBlank
+logical  default g_DrawSpec            "Формировать спецификацию 0-нет 1-да"                                                                        g_DrawSpec
+logical  default g_DrawCod             "Обозначения чертежа 0-относительный 1-абстрагированный"                                                     g_DrawCod
+logical  default g_DrawStamp           "Ключ запроса информации для штампа бланка из файла stamp.dbf и из файла ZAKAZ.dbf =0 только stamp.dbf =1"   g_DrawStamp
+logical  default g_FormStamp           "Ключ запроса формы штампа 0-не запрашивать 1-регулярно"                                                     g_FormStamp
+logical  default g_PgFileDraw          "Каждый лист чертежа в отдельном файле 0-нет 1-да"                                                           g_PgFileDraw
+//logical  default g_PgFileSpec          "Каждый лист спецификации в отдельном файле 0-нет 1-да"                                                      g_PgFileSpec
+logical  default g_GroupDoc            "Формировать групповой чертеж по всем документам 0-нет 1-да"                                                 g_GroupDoc
+logical  default g_DrawTaile           "формировать деталировку 0-нет 1-да"                                                                         g_DrawTaile
+
+done  // Конец команды
+if ok_flag==0 { exit }
+gosub NewStData ;
+return ;
+
+//================
+DefStamp:
+//Умолчания из DrawParLn.dbf
+F_stamp=ProtoPath+"DrawParLn.dbf"
+FlagNew=1
+metdfst:
+if GetCount(f_stamp)!=0 {
+   DbOpen cst,f_stamp,""
+   if dbFldCount(cst)==10 { FlagNew=0  } //проверям число полей д.б.  10
+   dbclose cst ;
+}
+
+if FlagNew!=0 {
+   g_DirDrawLn=0         //Все файлы чертежей длинномеров размещать в отдельной папке 0-нет 1-да
+   g_DrawBlank=1         //Чертежи на бланках 0-нет 1-да
+   g_DrawSpec=1          //Формировать спецификацию 0-нет 1-да
+   g_DrawCod=0           //Способ обозначения чертежа 0-относительный по первому вхождению 1-абстрагированный код
+   g_DrawStamp=1         //Ключ запроса информации для штампа бланка из файла stamp.dbf и из файла ZAKAZ.dbf =0 только stamp.dbf =1
+   g_FormStamp=1         //Ключ запроса формы штампа 0-не запрашивать 1-регулярно
+   g_PgFileDraw=1        //Каждый лист чертежа в отдельном файле 0-нет 1-да
+   g_PgFileSpec=1        //Каждый лист спецификации в отдельном файле 0-нет 1-да
+   g_GroupDoc=1          //Формировать групповой чертеж по всем документам 0-нет 1-да
+   g_DrawTaile=0         //формировать деталировку 0-нет 1-да
+   DbCreate cst,F_stamp,
+   "DirDrawLn","L",1,0,
+   "DrawBlank","L",1,0,
+   "DrawSpec","L",1,0,
+   "DrawCod","L",1,0,
+   "DrawStamp","L",1,0,
+   "FormStamp","L",1,0,
+   "PgFileDraw","L",1,0,
+   "PgFileSpec","L",1,0,
+   "GroupDoc","L",1,0,
+   "DrawTaile","L",1,0
+   ;
+   DbAddNew cst;
+   GoSub ZapPole ;
+   DbUpdate cst ;
+   DbClose cst ;
+   metDefault=1 ;
+   goto metdfst ;
+   }
+else {
+     DbOpen cst,f_stamp,""
+     DbMoveFirst cst;
+     g_DirDrawLn=DbGetValue(cst,"DirDrawLn",0)
+     g_DrawBlank=DbGetValue(cst,"DrawBlank",0)
+     g_DrawSpec=DbGetValue(cst,"DrawSpec",0)
+     g_DrawCod=DbGetValue(cst,"DrawCod",0)
+     g_DrawStamp=DbGetValue(cst,"DrawStamp",0)
+     g_FormStamp=DbGetValue(cst,"FormStamp",0)
+     g_PgFileDraw=DbGetValue(cst,"PgFileDraw",0)
+     g_PgFileSpec=DbGetValue(cst,"PgFileSpec",0)
+     g_GroupDoc=DbGetValue(cst,"GroupDoc",0)
+     g_DrawTaile=DbGetValue(cst,"DrawTaile",0)
+   dbClose cst ;
+     }
+return;
+//================
+NewStData:
+//сохраняем новые данные в stamp.dbf
+DbOpen cst,f_stamp,""
+DbMoveFirst cst;
+   GoSub ZapPole ;
+   DbUpdate cst ;
+   DbClose cst ;
+return;
+//================
+ZapPole:
+   DbSetValue cst,"DirDrawLn", g_DirDrawLn  ;
+   DbSetValue cst,"DrawBlank", g_DrawBlank  ;
+   DbSetValue cst,"DrawSpec",  g_DrawSpec   ;
+   DbSetValue cst,"DrawCod",   g_DrawCod    ;
+   DbSetValue cst,"DrawStamp", g_DrawStamp  ;
+   DbSetValue cst,"FormStamp", g_FormStamp  ;
+   DbSetValue cst,"PgFileDraw",g_PgFileDraw ;
+   DbSetValue cst,"PgFileSpec",g_PgFileSpec ;
+   DbSetValue cst,"GroupDoc",  g_GroupDoc   ;
+   DbSetValue cst,"DrawTaile", g_DrawTaile  ;
+return;

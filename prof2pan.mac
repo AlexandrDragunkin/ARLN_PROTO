@@ -1,0 +1,47 @@
+//-- Программа установки профиля по панелям
+//-- У пользователя запрашиваются точки на объектах
+
+global ProtoPath;
+ProtoPath=GetProtoMac("Shkaf.ptl");
+NULLOUT=getvarinst(2,"DfProf",DfProf,0);   //-- ID текущего профиля
+
+defarr arr[10], arrin[10];
+
+NULLOUT=GetSnap();
+
+NULLOUT=SetProf6Par(1,arr)
+arr[1]=DfProf
+NULLOUT=SetProf6Par(2,arr);
+NULLOUT=GetProf6Par(6,arr);
+//-- Запрашиваем у пользователя точки нп объекте
+arrin[1]=0  // Объект
+arrin[2]=0  // Флаг фасада
+arrin[3]=90  // Угол
+arrin[4]=0  // Габариты
+arrin[5]=arr[1]
+arrin[6]=arr[2]
+arrin[7]=0    // Сдвиг 0
+arrin[8]=arr[3];//-10
+arrin[9]=arr[4];//-22.5
+mbget "Укажите точку установки профиля:" line arrin arr :
+
+//setucs arr[2] arr[3] arr[4]
+//       arr[5] arr[6] arr[7]
+//       oz   arr[2] arr[3] arr[4]+1 ;
+//:
+dx=((arr[5]-arr[2])*(arr[5]-arr[2]));
+dy=((arr[6]-arr[3])*(arr[6]-arr[3]));
+dz=((arr[7]-arr[4])*(arr[7]-arr[4]));
+d=sqrt(dx+dy+dz);
+
+MacroMode Undo Off;
+macro ProtoPath+"SetEnam.mac" "Профиль";
+macro ProtoPath+"SetProf.mac" DfProf 0 0 0 0 0;
+macro ProtoPath+"SetProfD.mac" 0 0; // 27.07.11 Шубин ВП
+macro ProtoPath+"MakeProf.mac" 0 0 0  d 0 0;   //   Длина
+ObjIdent last 1 hobj;
+MacroMode Undo On "Установить профиль" hobj;
+
+NULLOUT=ReSnap();
+exit
+

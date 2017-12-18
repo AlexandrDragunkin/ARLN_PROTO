@@ -1,0 +1,64 @@
+//-- Тестирование линии длинномера
+global TiLOs TyLos;
+defarr arr[6];
+NULLOUT=initarray(arr,0);
+fname=mpathexpand("<Tests>\\getprofline.txt");
+
+//objident prompt "Укажите профиль" : long;
+getpar long ArcBD LinBd1 LinBd2;
+
+ArcBD=0; LinBd1=0; LinBd2=0;
+beg=MaxUnObj2D();   //-- Максимальныей номер UnObj2d в хранилище
+num=getprofline(long);   //-- Количество Unobj2d в хранилище
+if (num==0)         //-- Ничего не создали
+{
+  exit;
+}
+
+i=0;
+type=0;
+putstr(fname,"case "+str(getattr(long,"PorNumber",0))+":",0);
+putstr(fname,"numob="+str(num)+";",0);
+loop:
+i=i+1;
+coun=GetUnObj2D(i+beg,type,arr);
+if (type==0)
+{
+  putstr(fname,"UN_PointXY(&unobjarr["+str(i-1)+"], "+str(arr[1])+", "+str(arr[2])+");",0);
+  UN_LineXY(&unobjarr[1], 301, -250, 301, -667.194);
+  point arr[1],arr[2],0;
+}
+if (type==1)
+{
+  putstr(fname,"UN_LineXY(&unobjarr["+str(i-1)+"], "+str(arr[1])+", "+str(arr[2])+", "+str(arr[3])+", "+str(arr[4])+");",0);
+  line arr[1],arr[2],0 arr[3],arr[4],0 done;
+  gosub aChTyl;
+  objident last 1 iif(i==1,LinBd1,LinBd2) ;
+}
+if (type==2)
+{
+  putstr(fname,"UN_ArcPPP(&unobjarr["+str(i-1)+"], "+str(arr[1])+", "+str(arr[2])+", "+str(arr[3])+", "+str(arr[4])+", "+str(arr[5])+", "+str(arr[6])+");",0);
+  #ArcBD arc arr[1],arr[2],0 arr[3],arr[4],0 arr[5],arr[6],0 ;
+  gosub aChTyl;
+}
+
+NULLOUT=initarray(arr,0);
+if (i<num)
+{
+  goto loop;
+}
+putstr(fname,"break;",0);
+i=0;
+loopi:
+i=i+1;
+FreeUnObj2D(i+beg)
+if (i<num)
+{
+  goto loopi;
+}
+exit;
+
+aChTyl:
+	chprop ltype last 1 done  TyLOs ; // Тип осевых линий
+	chprop lwidth last 1 done  TiLOs ; // Толщина осевых линий
+return;

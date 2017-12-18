@@ -1,0 +1,33 @@
+//-- Создание занавески для окна
+//global WindPath, TextLib;
+//global ProtoPath;
+getpar lw hw tjugle curtain  HGard;
+defarr  xm[6];
+//------------------------------------------------------------------------------
+fil=priceinfo(curtain,"K3File","");
+if (fil=="")
+{
+  exit;
+}
+FilePath=MPathExpand("<K3files>\\");
+//fil=Value;  //-- Имя файла занавески
+//------------------------------------------------------------------------------
+//CUR=Value; //-- Расстояние между центрами кронштейнов занавесок
+CUR=priceinfo(curtain,"Length",0);
+//------------------------------------------------------------------------------
+if (CUR==0)
+{
+  CUR=xm[5]-xm[2];
+}
+colob1=sysvar(60);
+append FilePath+fil 0,0,0;
+colob2=sysvar(60);
+colob=colob2-colob1;
+#Zan group last colob done ;
+rr=objgab3(Zan,xm);
+rotate last 1 done 2point 0,0,0 0,0,1 90 nocopy;
+move previous done 2point 0,0,0 (lw+CUR)/2,tjugle,HGard+hw-xm[6] nocopy;
+exit;
+//--------------------------------------------
+
+

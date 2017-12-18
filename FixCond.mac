@@ -1,0 +1,11 @@
+//-- Простановка кондукторной сверловки
+global ProtoPath;
+
+if (!isattrdef("CondParam"))
+{
+	attribute create "CondParam" "Параметры кондукторной сверловки" text 30 255 ;
+}
+//-- Удаляем атрибут с кондукторной сверловкой
+attrobj delete group all done "CondParam" done;
+NULLOUT=renumerate();
+exit;

@@ -1,0 +1,27 @@
+//-- Макпропрограмма установки профиля с креплениями "по ключам"
+global ProtoPath;
+#aaa alternative "Выберете способ установки профиля" 
+keys default 1 
+"По двум профилям" 
+"По двум линиям" 
+"В нишу"
+done :;
+
+//-- Установка профиля
+if (aaa==1)
+{
+	macro ProtoPath+"Prof_2Prof.mac";	//-- по двум профилям
+}
+if (aaa==2)
+{
+	macro ProtoPath+"Prof_Near.mac";	//-- по двум линиям
+}
+if (aaa==3)
+{
+	macro ProtoPath+"Prof_Nich.mac";	//-- в нишу
+}
+if (aaa==4)
+{
+	macro ProtoPath+"Prof_PanProf.mac";	//-- по панели и профилю
+}
+exit;

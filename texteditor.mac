@@ -1,0 +1,78 @@
+// вызов внешнего редактора для редактирования текста в к3
+//---------------------------------------------------------------------------------------
+// Module      : texteditor.mac
+// Автор       : Dragunkin Aleksandr  Алек(андр                   Дата: 10:39 13.12.2017
+// 
+// http://forum.k3info.ru/viewforum.php?f=7        
+// 
+//---------------------------------------------------------------------------------------
+err=getsnap()
+fn="";
+onerror errend;
+objident prompt "Укажите текст" : pnt ;
+global ProtoPath;
+
+defarr aObj[100]; // Массив для строк
+
+#Undo macromode undo off ;
+
+if getobjtype(pnt)!=0 {
+	// Если указанный объект не текст входим
+	PutMsg("Указанный объект не текст");
+	goto end;
+}
+
+n=GetTextLine(pnt,aObj); // определяем число строк
+
+// Формируем файл
+fn=mpathexpand("<appdata>")+"\\temp_ed.txt" // имя файла
+
+gosub sTempRem; // удаляем если с таким имененем есть
+
+i=1;
+err=PutStr(fn,aObj[i],-1); // Записываем первую строку в новый файл
+lab:
+if i<n {
+	i=i+1;
+	err=PutStr(fn,aObj[i],0); // Записываем следующие строки в  файл
+	goto lab;
+}
+execute "notepad.exe "+fn; // вызываем редактор файла
+wait;
+
+setucs lcs pnt;
+
+#npnt text file fn snap 3 0 0 0 normal 0 0 1000 1000 0 0;
+
+if (Undo==1) { 
+	macromode undo on "texteditor.mac" npnt pnt; 
+	Undo=0;
+}
+
+
+;end:
+gosub sTempRem;
+
+err=resnap()
+offerror;
+if (Undo==1) { macromode undo on ; Undo=0;}
+exit;
+
+errend:
+gosub sTempRem;
+err=resnap()
+offerror;
+if (Undo==1) { macromode undo on ; Undo=0;}
+exit;
+//------------------------------------------------------------------------
+sTempRem:
+if len(fn)>0 {
+	if fileexist(fn) {
+		err=removefile(fn)
+		if err==0 {
+			PutMsg("не удалось удалить файл "+fn);
+			goto end;
+		}
+	}
+}
+return;

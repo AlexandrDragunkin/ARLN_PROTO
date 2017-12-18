@@ -1,0 +1,38 @@
+//-- Макрос выбора типа двери для установки (накдалная или утопленная) 
+global ProtoPath;
+PicturesPath=ProtoPath+"Pictures\\"; //-- Папка с картинками
+defarr Ptype[10], altfl[10];
+
+altfl[1]=PicturesPath+"fas_N.jpg"
+altfl[2]=PicturesPath+"fas_U.jpg"
+
+Ptype[1]="Накладная";
+Ptype[2]="Утопленная";
+
+#altnum
+  alternative
+  "Установка дверей"
+  picbox
+  text
+  center
+  "Тип наложения фасада:"
+  done
+  default 1
+  Ptype[1]  altfl[1]
+  Ptype[2]  altfl[2]
+done;
+if altnum==0
+{
+  cancel;
+}
+NULLOUT=GetSnap();
+if (altnum==1) 
+{
+	macro ProtoPath+"Door_ran.mac" ;				//-- вызываем макро накладной двери
+}
+if (altnum==2) 
+{
+	macro ProtoPath+"Door_rau.mac" ;				//-- вызываем макро утопленной двери
+}
+NULLOUT=ReSnap();
+exit;

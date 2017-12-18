@@ -1,0 +1,33 @@
+// Разбор объекта - дверь распашная
+global MacroSw  ; // Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global x_Door y_Door z_Door H_Door W_Door ;
+MacroSw=1
+
+WMFPath=DbVar("WMFPath","")
+
+ProtoPath=GetProtoMac("Shkaf.ptl")
+macro ProtoPath+"global_s.mac" ;
+F2000=DbVar("F2000",0)
+W=DbVar("S",300)
+d=DbVar("G",450)
+H=DbVar("Hd",1870)
+macro ProtoPath+"Doorsl.mac" ;
+
+#Door group all done;
+
+	LDim 3DDim x_Door y_Door z_Door
+		 x_Door+W_Door y_Door z_Door
+	Horizontal x_Door y_Door z_Door-150 ;
+
+	LDim 3DDim x_Door+W_Door y_Door z_Door+H_Door
+		x_Door+W_Door y_Door z_Door
+	Vertical x_Door+W_Door+150 y_Door z_Door
+
+View None Gcs .33 .87 .38;
+Zoom all
+Hide
+
+If F2000 { Exp2d Wmf Yes WMFPath+"1.WMF" [ overwrite ] }
+Else     { Exp2d Wmf No WMFPath+"1.WMF" [ overwrite ] }
+
+exit

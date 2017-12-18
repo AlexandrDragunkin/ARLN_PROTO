@@ -1,0 +1,34 @@
+// Установить тек. Типы и Параметры гардеробного профиля 
+global ProtoPath;
+global
+PrfMater    
+PrfSd_X    
+PrfSd_Y   
+PrfAngle 
+PrfAng_1   
+PrfAng_2   
+PrfColor 
+;
+getpar  P1 P2 P3 P4 P5 P6 P7;
+
+NULLOUT=setvarinst(2,"PrfMater",P1);	// Материал профиля
+NULLOUT=setvarinst(2,"PrfSd_X",P2);	// Сдвиг по Х ЛСК
+NULLOUT=setvarinst(2,"PrfSd_Y",P3);	// Сдвиг по У ЛСК
+NULLOUT=setvarinst(2,"PrfAngle",P4);	// Угол поворота вокруг оси (град)
+NULLOUT=setvarinst(2,"PrfAng_1",p5);	// Угол подрезки 1 стороны
+NULLOUT=setvarinst(2,"PrfAng_2",p6);	// Угол подрезки 2 стороны
+NULLOUT=setvarinst(2,"PrfColor",p7);	// Цвет профиля из прайса
+AngDir1=0
+AngDir2=0
+if (abs(p5)>0) { AngDir1=2 }
+if (abs(p6)>0) { AngDir2=2 }
+macro ProtoPath+"SetProfD.mac" AngDir1 AngDir2;
+
+PrfMater=P1   
+PrfSd_X=P2  
+PrfSd_Y=P3  
+PrfAngle=P4 
+PrfAng_1=p5 
+PrfAng_2=p6
+PrfColor=p7
+exit ;

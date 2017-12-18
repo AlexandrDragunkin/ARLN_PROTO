@@ -1,0 +1,26 @@
+//-- Программа формирует атрибут с количеством петель
+//-- Входные параметры:
+//-- NHinges - необходимое количество петель
+//-- obj - объект, которому присваиваем атирбут
+//-- record - ==0 - атрибут присваивается объекту, иначе, записи
+//-- Выходны параметры:
+//-- Атрибут NHinges
+
+getpar NHinges, obj, record;
+If (!IsAttrdef("NHinges"))
+{
+  Attribute Create "NHinges" "Количество петель" real 2 0 ;
+}
+//If (!IsAssign("NHinges",obj))
+//{
+//  NHinges=0;
+//}
+if (record!=0)
+{
+  Attrobj Attach "NHinges" Done record NHinges;
+}
+else
+{
+  Attrobj Attach "NHinges" Done obj NHinges;
+}
+exit;	

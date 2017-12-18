@@ -1,0 +1,8 @@
+//-- Ќазначить (или сн€ть) признак врезной панели
+//-- ¬ходные параметры:
+//-- IsIncise=0 - панель не врезна€
+//-- IsIncise=1 - панель врезна€
+
+getpar IsIncise;
+NULLOUT=setvarinst(1,"IsIncise",IsIncise);
+exit;

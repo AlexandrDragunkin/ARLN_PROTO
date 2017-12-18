@@ -1,0 +1,68 @@
+//-- Создание колонны
+//-- Входные параметры:
+//-- xn,yn,zn - координаты правого нижнего дальнего угла фасада
+//-- dx,dz - размеры фасада по ширине и высоте
+//-- Глобальные переменные:
+//-- FsMater - материал фасада
+//-- DoorBCol - цвет кромки фасада
+//-- DoorBand - тип кромки фасада
+global ProtoPath;
+global FsMater;
+global DoorBCol,DoorBand;
+global DoorType;   //-- Утопленная/накладная
+global DoorPict;   //-- Рисунок фасада
+global g_FurnType;    //-- Тип мебельного объекта
+global g_FasPlas;
+global DoorKorp;             //-- Толщина материала корпуса ниши
+getpar xn,yn,zn,dx,dz;
+
+R_Fas=DoorKorp-g_FasPlas[1];
+L_Fas=DoorKorp-g_FasPlas[2];
+U_Fas=DoorKorp-g_FasPlas[3];
+D_Fas=DoorKorp-g_FasPlas[4];
+//-- Меняем координаты и размеры фасада, учитывая нахлесты фасада.
+xn=xn-R_Fas;
+zn=zn-D_Fas;
+dx=dx+R_Fas+L_Fas;
+dz=dz+U_Fas+D_Fas;
+NULLOUT=getvarinst(2,"IsBandCut",bmc,1);                //-- Кромку можно резать
+if (udgetentity("IsFasBandInside",ValType,bip,sVal)==0)
+{
+  bip=1;
+}
+macro ProtoPath+"SetMat.mac" FsMater ;
+macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+macro ProtoPath+"SetFix.mac" 0 0 0 0;
+macro ProtoPath+"SetBandMask.mac" bip+bmc*8;
+macro ProtoPath+"SetKrom.mac" DoorBCol DoorBand DoorBand DoorBand DoorBand ;
+macro ProtoPath+"SetECod.mac" "2101" ;
+macro ProtoPath+"SetKCod.mac" "ПЛДВ" dz dx ;
+macro ProtoPath+"SetEnam.mac" "Полотно фасада" ;
+macro ProtoPath+"SetGrPan.mac" 38 ;
+macro ProtoPath+"MakePan.mac" xn yn zn dz dx 14 ;
+macro ProtoPath+"SetECod.mac" "" ;
+//-- Восстановим маски для кромок
+NULLOUT=getvarinst(2,"IsBandCut",bmc,1);                //-- Кромку можно резать
+NULLOUT=getvarinst(2,"IsBandInside",bip,1);             //-- Кромка включена в размер панели
+macro ProtoPath+"SetBandMask.mac" bip+bmc*8;
+//-- Добавляем колонну
+IDColumn=priceinfo(DoorPict,"NomID1",0,2); //-- ID колонны
+NameCol=priceinfo(IDColumn,"MatName","",1); //-- имя колонны
+if (IDColumn==0)
+{
+ goto NEXT;
+}
+XC=priceinfo(IDColumn,"Width",90,1);		//-- ширина колонны
+YC=priceinfo(IDColumn,"Dept",90,1);			//-- глубина колонны
+ZC=priceinfo(IDColumn,"Height",840,1);  //-- высота колонны
+h_dsp=priceinfo(FsMater,"Thickness",16,1);  //-- толщина фасада
+if (dx+4<XC||dz+4<ZC)
+{
+ goto NEXT; 
+}
+macro ProtoPath+"SetEnam.mac" NameCol ;
+accessory "040000" IDColumn 0 yes ; 
+move last 1 done (dx-XC)/2-R_Fas h_dsp -D_Fas;
+next:
+g_FurnType="500501";
+exit ;

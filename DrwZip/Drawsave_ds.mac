@@ -1,0 +1,176 @@
+global DRWZPath g_osn, g_dorab, g_drawall, g_pict, g_scala, g_draw d_support l_support g_name;
+global g_vidUnic ; // 0-объединять на один бланк 1-разносить на несколько бланков (как печатать чертеж если видов несколько например сторона А и F);
+global G_numTxt G_numWmf g_ik g_cldraw;
+
+defarr aObjv[10] aObj[10] aLeg[10]; // массисв для ссылок на объекты чертежа и легеды
+defarr xm[6] aoLeg[100];
+
+getpar projname adraw iVid aVid;
+ProjPath=getfilepath(sysvar(2));
+title=g_name //title=getfiletitle(sysvar(2))-3+"_"+g_name
+numTxt=ProjPath+"Reports\\K3_Drafts\\"+title+".k3"
+numWmf=ProjPath+"Reports\\WMF_Drafts\\"+title+".wmf" 
+numJpg=ProjPath+"Reports\\WMF_Drafts\\"+title+".jpg"
+if (!IsAttrdef("Legend"))
+	{
+		Attribute Create "Legend" "Legenda" Real 12 5  ;
+	}
+G_numTxt=numTxt;
+G_numWmf=numWmf;
+nObj=GetArrObjG(g_draw,aObj); // Определяем сколько в составе g_draw элементов и суем их в массив
+	explode g_draw done;
+	i=0;
+	j=0;
+	k=0;
+	lab1:
+	if i<nobj
+	{
+		i=i+1;
+		TypObj=GetAttr(aObj[i],"IDRWN",-1);
+		TypLeg=GetAttr(aObj[i],"IDRWL",-1);
+		if TypLeg>0
+		{
+			j=j+1;
+			aLeg[j]=aobj[i];
+			if j==1
+			{
+				#legend group aLeg[j] done;
+			}
+			if j!=1
+			{
+				add legend aleg[j] done;
+			}
+		}
+		else
+		{
+			k=k+1;
+			aObjv[k]=aObj[i];
+		}
+		goto lab1;
+	}
+	nobj=k;
+
+	i=0;
+	lab2:
+	if i<nobj
+	{
+		i=i+1;
+
+			invisible all ; // гасит все кроме нужного процедура стыкует легенду к виду 
+			visible aobjv[i];
+
+			if (g_osn==1)			{
+				macro DRWZPath+"Win_PanelDw64.mac";
+			}
+
+			vnumTxt=numTxt-3+"_"+str(i)+".k3";
+			vnumJpg=numJpg-4+"_"+str(i)+".jpg";
+			vnumWmf=numWmf-4+"_"+str(i)+".wmf";
+		
+			pict g_pict yes ;
+			gosub subClDraw;
+			
+			save no select all done vnumTxt [ overwrite ] ;
+			
+			exp2d jpeg Mono  inscribe yes size, 2500, 1500, continue vnumJpg [ overwrite ] ;
+			
+			gosub toWmf;
+			//exp2d wmf yes optimized yes inscribe yes vnumWmf [ overwrite ] 
+			
+			iVid=iVid+1
+			aVid[iVid]=vnumTxt
+
+		goto lab2;
+	}
+	object_name=sysvar(2);
+	if g_vidUnic==100
+	{
+		// собираем виды в один чертеж
+		i=0;
+		object_name=sysvar(2);
+		new;
+		lab3:
+		if i<nobj
+		{
+			i=i+1;
+			namea=numTxt-3+"_"+str(i);
+			objects=sysvar(60);
+			append namea+".k3";
+			objects=sysvar(60)-objects;
+			#gr group last objects done;
+			nullout=objgab3(gr,xm);
+			if i>1
+			{
+				move nocopy gr done 2points xm[4] xm[2] xm[3] xb yb zb
+			}
+			explode gr done ;
+			xb=xm[1]; yb=xm[2]; zb=xm[3];
+			goto lab3;
+		}
+		gosub subdor;
+	}
+	
+exit;
+//----------------------------------
+extrLeg:
+	objectS=Sysvar(60);
+
+	if IsVardef("legend")!=16
+	{
+		return;
+	}
+	nLegend=Scang(legend,aoLeg);
+	il=0;
+	labil:
+	if il<nlegend
+	{
+		il=il+1;
+		labil1:
+		if GetObjHold(aoleg[il],obhold)
+		{
+			extract partly obhold aoleg[il];
+			goto labil1;
+		}
+		goto labil;
+	}
+	objects1=sysvar(60)-(objectS);
+	attrobj attach "legend" done group last objects1-1 done 1 
+return;
+//--------------
+subClDraw:
+	if !g_cldraw {
+		chprop color partly all done sysvar(40)
+	}
+return;
+subDor:
+//numTxt=object_name-3+"_"+g_name+".k3";
+	
+	g_ik=g_ik+1
+
+	adraw[g_ik]=namea;
+
+	pict g_pict yes ;
+	zoom all ;
+	gosub subClDraw;
+	
+	F2000=DbVar("F2000",0);
+	zoom all ;
+	If F2000 
+	{ 
+		exp2d wmf yes optimized yes inscribe yes numWmf [ overwrite ] 
+		
+	}   
+	else     
+	{ 
+		exp2d wmf yes  optimized yes inscribe yes numWmf [ overwrite ] 
+		
+	} 
+
+	
+return;	
+// Формирует чертежный вид без легенды
+// Требуется для некоторых отчетов
+toWmf:
+	 macro DRWZPath+"toWmf.py"  ByRef  vnumWmf;
+	 
+return;

@@ -1,0 +1,608 @@
+//-- Установка подъемника для двери
+//-- Входные параметры:
+//-- xn, yn, zn - координаты правого нижнего дальнего угла двери
+//-- dx, dz - ширина и высота двери соответственно
+//-- R_Fas - увеличение фасада справа
+//-- L_Fas - увеличение фасада слева
+//-- U_Fas - увеличение фасада сверху
+//-- D_Fas - увеличение фасада снизу
+//-- variant - вариант открываения ствоарки двери
+//--         = 1 - слева
+//--         = 2 - справа
+//--         = 3 - сверху
+//--         = 4 - снизу
+//--         = 0 - не отрывается (декоративная створка)
+global ProtoPath;
+global g_liftR, g_liftL;    //-- ID правого и левого Подъемников
+global DoorPict;
+putmsg("MakeLift")
+getpar xn,yn,zn,dx,dz,R_Fas,L_Fas,U_Fas,D_Fas,variant;
+
+defarr errArr[4]; initarray(errArr,"");
+MaxHeight=PriceInfo(g_liftR,"MaxHeight",500,1);
+MinHeight=PriceInfo(g_liftR,"MinHeight",200,1);
+KeyErr=0;
+if (dz>MaxHeight)
+{
+	errArr[3]="Высота проема для установки механизма ("+str(dz)+") больше допустимой ("+str(MaxHeight)+")";
+	KeyErr=1;
+}
+if (dz<MinHeight)
+{
+	errArr[4]="Высота проема для установки механизма фасада ("+str(dz)+") меньше допустимой ("+str(MinHeight)+")";
+	KeyErr=1;
+}
+
+if KeyErr
+{
+	#ok_flag
+	 alternative "Сообщение об подъемнике"
+	 msgbox picture 3 beep 3 text ""
+	 errArr[1]
+	 errArr[2]
+	 errArr[3]
+	 errArr[4]
+	 done
+	 "  OK  "
+	 done;
+}
+initarray(errArr,"");
+
+//-- Если дверка не открывается, выходим
+if (variant==0)
+{
+  exit;
+}
+
+if variant==3
+{
+	IDLift=priceinfo(g_liftR,"NomID3",0);
+}
+if variant==4
+{
+	IDLift=priceinfo(g_liftR,"NomID4",0);
+}
+putmsg(IDLift)
+if IDLift>0
+{
+	g_liftR=IDLift;
+}
+
+//-- Проверка на комплект
+EdizmR=priceinfo(g_liftR,"UNITS",0);	//-- единица измерения
+EdizmL=priceinfo(g_liftL,"UNITS",0);	//-- единица измерения
+if (EdizmR==10||EdizmL==10)						//-- если комплект
+{
+
+ ColKomp=npgetbywhere(1," [ParentID]="+str(g_liftR),"ArrKomp");
+ if (ColKomp!=0)
+ {
+		//-- Проверям какая запись в массиве является левой комплектующей, а какая правой
+		ItLeft=priceinfo(ArrKomp[1],"Accessory",-1);
+		if (ItLeft==1)	//-- если первый элемент - левый
+		{
+			LiftLeft=ArrKomp[1];
+			LiftRigth=ArrKomp[2];
+		}
+		else
+		{
+			LiftRigth=ArrKomp[1];
+			LiftLeft=ArrKomp[2];
+		}
+		LiftID=0;
+		L1=priceinfo(LiftRigth,"ShiftZ",84);      //-- Отступ до проема по вертикали
+		Type=PriceInfo(LiftRigth,"LyftType",9);   //-- Тип подъемника.
+		IsNew=1;	//-- часть комплекта
+		NAcces=2;	//-- левая часть
+		gosub AddLift;
+
+		L1=priceinfo(LiftLeft,"ShiftZ",84);      //-- Отступ до проема по вертикали
+		Type=PriceInfo(LiftLeft,"LyftType",9);   //-- Тип подъемника.
+		IsNew=0;	//-- часть комплекта
+		NAcces=1;	//-- правая часть
+		gosub AddLift;
+ }
+ else
+ {
+   exit;
+ }
+}
+if (EdizmR==0||EdizmL==0)		//-- скорее всего это "дети" комплекта. Пока не даем их ставить.
+{
+ exit;
+}
+
+//-- Устанавливаем подъемник
+L1=priceinfo(g_liftR,"ShiftZ",84);      //-- Отступ до проема по вертикали
+Type=PriceInfo(g_liftR,"LyftType",9);   //-- Тип подъемника
+LiftID=0;
+IsNew=1;	//-- не является частью комплекта (новый элемент)
+NAcces=0;	//-- самостоятельный механизм.
+if (Type==1||Type==2||Type==4||Type==5||Type==7||Type==8)
+{
+  LiftID=PriceInfo(g_liftR,"LiftID",0); //-- Второй подъемник (левый или правый)
+}
+gosub AddLift;
+exit;
+
+//////////////////////////////--УСТАНОВКА ЛИФТА--//////////////////////////////////
+AddLift:
+//-- Проверка, подходит ли тип лифта
+if (variant==3&&type<4) //-- Если дверь откидывается
+{
+  putmsg("Выбранный тип подъемного механизма не соответствует типу открывания",0)
+  exit;
+}
+if (variant==4&&type>3&&type<7) //-- Если дверь поднимается
+{
+  putmsg("Выбранный тип подъемного механизма не соответствует типу открывания",0)
+  exit;
+}
+
+//-----------------------------------------------------------------------
+//-- Подъемый механизм левый
+if (type==1)
+{
+	if (LiftID>0)
+	{
+	 object_1=sysvar(60);
+	 macro ProtoPath+"SetECod.mac" "7901" ;
+	 macro ProtoPath+"SetEnam.mac" "Подъемый правый" ;
+	 // macro ProtoPath+"SetKCod.mac" "PdmR" "" "";
+	 Macro ProtoPath+"SetAccPLace.mac" PriceInfo(LiftID,"AccPlace",0);
+   Macro ProtoPath+"MakeKomp.mac" LiftID "040800" NAcces IsNew xn  yn 0 0 0 0;
+	 object_2=sysvar(60)-object_1;
+	 if (object_2==0)
+	 {
+  	  exit;
+	 }
+	 rotate last object_2 done 2points xn  yn 0 xn  yn 1 -180 nocopy ;
+	 move last object_2 done 0 0 zn+dz+U_fas-L1 nocopy ;
+	}
+	object_1=sysvar(60);
+	macro ProtoPath+"SetECod.mac" "7901" ;
+	macro ProtoPath+"SetEnam.mac" "Подъемый левый" ;
+	// macro ProtoPath+"SetKCod.mac" "PdmR" "" "";
+	Macro ProtoPath+"SetAccPLace.mac"  PriceInfo(g_liftR,"AccPlace",0);
+  Macro ProtoPath+"MakeKomp.mac" g_liftR "040800" NAcces IsNew xn  yn 0 0 0 0;
+	object_2=sysvar(60)-object_1;
+	if (object_2==0)
+	{
+  	exit;
+	}
+	rotate last object_2 done 2points xn+dx/2  yn 0 xn+dx/2  yn 1 -180 nocopy ;
+	move last object_2 done 0 0 zn+dz+U_fas-L1 nocopy ;
+}
+//-----------------------------------------------------------------------
+//-- Подъемый механизм правый
+if (type==2)
+{
+	object_1=sysvar(60);
+	macro ProtoPath+"SetECod.mac" "7901" ;
+	macro ProtoPath+"SetEnam.mac" "Подъемый правый" ;
+	// macro ProtoPath+"SetKCod.mac" "PdmR" "" "";
+	Macro ProtoPath+"SetAccPLace.mac" PriceInfo(g_liftR,"AccPlace",0);
+	Macro ProtoPath+"MakeKomp.mac" g_liftR "040800" NAcces IsNew xn  yn 0 0 0 0;
+	object_2=sysvar(60)-object_1;
+	if (object_2==0)
+	{
+  	exit;
+	}
+	rotate last object_2 done 2points xn  yn 0 xn  yn 1 -180 nocopy ;
+	move last object_2 done 0 0 zn+dz+U_fas-L1 nocopy ;
+
+	if (LiftID>0)
+	{
+	 object_1=sysvar(60);
+	 macro ProtoPath+"SetECod.mac" "7901" ;
+	 macro ProtoPath+"SetEnam.mac" "Подъемый левый" ;
+	 // macro ProtoPath+"SetKCod.mac" "PdmR" "" "";
+	 Macro ProtoPath+"SetAccPLace.mac" PriceInfo(LiftID,"AccPlace",0);
+	 Macro ProtoPath+"MakeKomp.mac" LiftID "040800" NAcces IsNew xn  yn 0 0 0 0;
+	 object_2=sysvar(60)-object_1;
+	 if (object_2==0)
+	 {
+	  exit;
+	 }
+	 rotate last object_2 done 2points xn+dx/2  yn 0 xn+dx/2  yn 1 -180 nocopy ;
+	 move last object_2 done 0 0 zn+dz+U_fas-L1 nocopy ;
+	}
+
+}
+//-----------------------------------------------------------------------
+//-- Подъемый механизм правый и левый
+if (type==3)
+{
+	object_1=sysvar(60);
+	macro ProtoPath+"SetECod.mac" "7901" ;
+	macro ProtoPath+"SetEnam.mac" "Подъемый правый" ;
+	// macro ProtoPath+"SetKCod.mac" "PdmR" "" "";
+	Macro ProtoPath+"SetAccPLace.mac" PriceInfo(g_liftR,"AccPlace",0);
+	Macro ProtoPath+"MakeKomp.mac" g_liftR "040800" NAcces IsNew xn  yn 0 0 0 0;
+	object_2=sysvar(60)-object_1;
+	if (object_2==0)
+	{
+  	exit;
+	}
+	if (object_2==1)
+	{
+		objident last 1 LiftRC;
+		liftch=g_liftR;
+		gosub check;
+	}
+	rotate last object_2 done 2points xn  yn 0 xn  yn 1 -180 nocopy ;
+	move last object_2 done 0 0 zn+dz+U_fas-L1 nocopy ;
+
+	object_1=sysvar(60);
+	macro ProtoPath+"SetECod.mac" "7901" ;
+	macro ProtoPath+"SetEnam.mac" "Подъемый левый" ;
+	// macro ProtoPath+"SetKCod.mac" "PdmR" "" "";
+	Macro ProtoPath+"SetAccPLace.mac" PriceInfo(g_liftR,"AccPlace",0);
+	Macro ProtoPath+"MakeKomp.mac" g_liftR "040800" NAcces IsNew xn  yn 0 0 0 0;
+	object_2=sysvar(60)-object_1;
+	if (object_2==0)
+	{
+		exit;
+	}
+	rotate last object_2 done 2points xn  yn 0 xn  yn 1 -180 nocopy ;
+	move last object_2 done 0 0 zn+dz+U_fas-L1 nocopy ;
+	mirror last object_2 done 3points xn+dx/2  yn 0 xn+dx/2  yn 10 xn+dx/2  yn-10 0 nocopy;
+	if (object_2==1)
+	{
+		objident last 1 LiftRC;
+		ObjWithCin=LiftRC;
+		gosub NEXT1;
+		liftch=g_liftR;
+		gosub check;
+	}
+}
+//-----------------------------------------------------------------------
+//-- Подъемый механизм откидной левый
+if (type==4)
+{
+	if (LiftID>0)
+	{
+	 object_1=sysvar(60);
+	 macro ProtoPath+"SetECod.mac" "7901" ;
+	 macro ProtoPath+"SetEnam.mac" "Откидной правый" ;
+	 // macro ProtoPath+"SetKCod.mac" "PdmR" "" "";
+	 Macro ProtoPath+"SetAccPLace.mac" PriceInfo(LiftID,"AccPlace",0);
+	 Macro ProtoPath+"MakeKomp.mac" LiftID "040800" NAcces IsNew xn  yn 0 0 0 0;
+	 object_2=sysvar(60)-object_1;
+	 if (object_2==0)
+	 {
+	  exit;
+	 }
+	 rotate last object_2 done 2points xn  yn 0 xn  yn 1 -180 nocopy ;
+	 move last object_2 done 0 0 zn-D_fas+L1 nocopy ;
+	}
+
+	object_1=sysvar(60);
+	macro ProtoPath+"SetECod.mac" "7901" ;
+	macro ProtoPath+"SetEnam.mac" "Откидной левый" ;
+	// macro ProtoPath+"SetKCod.mac" "PdmR" "" "";
+	Macro ProtoPath+"SetAccPLace.mac" PriceInfo(g_liftR,"AccPlace",0);
+	Macro ProtoPath+"MakeKomp.mac" g_liftR "040800" NAcces IsNew xn  yn 0 0 0 0;
+	object_2=sysvar(60)-object_1;
+	if (object_2==0)
+	{
+	exit;
+	}
+	rotate last object_2 done 2points xn+dx/2  yn 0 xn+dx/2  yn 1 -180 nocopy ;
+	move last object_2 done 0 0 zn-D_fas+L1 nocopy ;
+}
+//-----------------------------------------------------------------------
+//-- Подъемый механизм откидной правый
+if (type==5)
+{
+	object_1=sysvar(60);
+	macro ProtoPath+"SetECod.mac" "7901" ;
+	macro ProtoPath+"SetEnam.mac" "Откидной правый" ;
+	// macro ProtoPath+"SetKCod.mac" "PdmR" "" "";
+	Macro ProtoPath+"SetAccPLace.mac" PriceInfo(g_liftR,"AccPlace",0);
+	Macro ProtoPath+"MakeKomp.mac" g_liftR "040800" NAcces IsNew xn  yn 0 0 0 0;
+	object_2=sysvar(60)-object_1;
+	if (object_2==0)
+	{
+	  exit;
+	}
+	rotate last object_2 done 2points xn  yn 0 xn  yn 1 -180 nocopy ;
+	move last object_2 done 0 0 zn-D_fas+L1 nocopy ;
+	if (LiftID)
+	{
+	 object_1=sysvar(60);
+	 macro ProtoPath+"SetECod.mac" "7901" ;
+	 macro ProtoPath+"SetEnam.mac" "Откидной левый" ;
+	 // macro ProtoPath+"SetKCod.mac" "PdmR" "" "";
+	 Macro ProtoPath+"SetAccPLace.mac" PriceInfo(LiftID,"AccPlace",0);
+	 Macro ProtoPath+"MakeKomp.mac" LiftID "040800" NAcces IsNew xn  yn 0 0 0 0;
+	 object_2=sysvar(60)-object_1;
+	 if (object_2==0)
+	 {
+	  exit;
+	 }
+	 rotate last object_2 done 2points xn+dx/2  yn 0 xn+dx/2  yn 1 -180 nocopy ;
+	 move last object_2 done 0 0 zn-D_fas+L1 nocopy ;
+	}
+
+}
+//-----------------------------------------------------------------------
+//-- Подъемник механизм откидной левый и правый
+if (type==6)
+{
+	object_1=sysvar(60);
+	macro ProtoPath+"SetECod.mac" "7901" ;
+	macro ProtoPath+"SetEnam.mac" "Откидной правый" ;
+	// macro ProtoPath+"SetKCod.mac" "PdmR" "" "";
+	Macro ProtoPath+"SetAccPLace.mac" PriceInfo(g_liftR,"AccPlace",0);
+	Macro ProtoPath+"MakeKomp.mac" g_liftR "040800" NAcces IsNew xn  yn 0 0 0 0;
+	object_2=sysvar(60)-object_1;
+	if (object_2==0)
+	{
+	  exit;
+	}
+	if (object_2==1)
+	{
+		objident last 1 LiftRC;
+		liftch=g_liftR;
+		gosub check;
+	}
+	rotate last object_2 done 2points xn  yn 0 xn  yn 1 -180 nocopy ;
+	move last object_2 done 0 0 zn-D_fas+L1 nocopy ;
+
+	object_1=sysvar(60);
+	macro ProtoPath+"SetECod.mac" "7901" ;
+	macro ProtoPath+"SetEnam.mac" "Откидной левый" ;
+	// macro ProtoPath+"SetKCod.mac" "PdmR" "" "";
+	Macro ProtoPath+"SetAccPLace.mac" PriceInfo(g_liftR,"AccPlace",0);
+	Macro ProtoPath+"MakeKomp.mac" g_liftR "040800" NAcces IsNew xn  yn 0 0 0 0;
+	object_2=sysvar(60)-object_1;
+	if (object_2==0)
+	{
+	  exit;
+	}
+	rotate last object_2 done 2points xn+dx/2  yn 0 xn+dx/2  yn 1 -180 nocopy ;
+	move last object_2 done 0 0 zn-D_fas+L1 nocopy ;
+	mirror last object_2 done 3points xn+dx  yn 0 xn+dx  yn 10 xn+dx  yn-10 0 nocopy;
+	if (object_2==1)
+	{
+		objident last 1 LiftRC;
+		ObjWithCin=LiftRC;
+		gosub NEXT1;
+		liftch=g_liftR;
+		gosub check;
+	}
+}
+//-----------------------------------------------------------------------
+//-- Подъемный механизм левый / откидной правый
+if (type==7)
+{
+   if (variant==3)
+   {
+	object_1=sysvar(60);
+	macro ProtoPath+"SetECod.mac" "7901" ;
+	macro ProtoPath+"SetEnam.mac" "Откидной правый" ;
+	// macro ProtoPath+"SetKCod.mac" "PdmR" "" "";
+	Macro ProtoPath+"SetAccPLace.mac" PriceInfo(g_liftR,"AccPlace",0);
+	Macro ProtoPath+"MakeKomp.mac" g_liftR "040800" NAcces IsNew xn  yn 0 0 0 0;
+	object_2=sysvar(60)-object_1;
+	if (object_2==0)
+	{
+	  exit;
+	}
+	rotate last object_2 done 2points xn  yn 0 xn  yn 1 -180 nocopy ;
+	rotate last object_2 done 2points xn  0 zn xn  1 zn -180 nocopy ;
+	move last object_2 done 0 0 zn-D_fas+L1 nocopy ;
+	if (LiftID>0)
+	{
+	 object_1=sysvar(60);
+	 macro ProtoPath+"SetECod.mac" "7901" ;
+	 macro ProtoPath+"SetEnam.mac" "Откидной левый" ;
+	 // macro ProtoPath+"SetKCod.mac" "PdmR" "" "";
+	 Macro ProtoPath+"SetAccPLace.mac"   PriceInfo(LiftID,"AccPlace",0);
+	 Macro ProtoPath+"MakeKomp.mac" LiftID "040800" NAcces IsNew xn  yn 0 0 0 0;
+	 object_2=sysvar(60)-object_1;
+	 if (object_2==0)
+	 {
+	  exit;
+	 }
+	 rotate last object_2 done 2points xn+dx/2  yn 0 xn+dx/2  yn 1 -180 nocopy ;
+	 rotate last object_2 done 2points xn+dx  0 zn xn+dx  1 zn -180 nocopy ;
+	 move last object_2 done 0 0 zn-D_fas+L1 nocopy ;
+	}
+
+   }
+
+   if (variant==4)
+   {
+	if (LiftID>0)
+	{
+	 object_1=sysvar(60);
+	 macro ProtoPath+"SetECod.mac" "7901" ;
+	 macro ProtoPath+"SetEnam.mac" "Подъемый правый" ;
+	 // macro ProtoPath+"SetKCod.mac" "PdmR" "" "";
+	 Macro ProtoPath+"SetAccPLace.mac" PriceInfo(LiftID,"AccPlace",0);
+	 Macro ProtoPath+"MakeKomp.mac" LiftID "040800" NAcces IsNew xn  yn 0 0 0 0;
+	 object_2=sysvar(60)-object_1;
+	 if (object_2==0)
+	 {
+	  exit;
+	 }
+	 rotate last object_2 done 2points xn  yn 0 xn  yn 1 -180 nocopy ;
+	 move last object_2 done 0 0 zn+dz+U_fas-L1 nocopy ;
+	}
+
+
+	object_1=sysvar(60);
+	macro ProtoPath+"SetECod.mac" "7901" ;
+	macro ProtoPath+"SetEnam.mac" "Подъемый левый" ;
+	// macro ProtoPath+"SetKCod.mac" "PdmR" "" "";
+	Macro ProtoPath+"SetAccPLace.mac" PriceInfo(g_liftR,"AccPlace",0);
+	Macro ProtoPath+"MakeKomp.mac" g_liftR "040800" NAcces IsNew xn  yn 0 0 0 0;
+	object_2=sysvar(60)-object_1;
+	if (object_2==0)
+	{
+	  exit;
+	}
+	rotate last object_2 done 2points xn+dx/2  yn 0 xn+dx/2  yn 1 -180 nocopy ;
+	move last object_2 done 0 0 zn+dz+U_fas-L1 nocopy ;
+   }
+}
+//-----------------------------------------------------------------------
+//-- Подъемный механизм правый / откидной левый
+if (type==8)
+{
+   if (variant==3)
+   {
+	if (LiftID>0)
+	{
+	 object_1=sysvar(60);
+	 macro ProtoPath+"SetECod.mac" "7901" ;
+	 macro ProtoPath+"SetEnam.mac" "Подъемник правый" ;
+	 // macro ProtoPath+"SetKCod.mac" "PdmR" "" "";
+	 Macro ProtoPath+"SetAccPLace.mac" PriceInfo(LiftID,"AccPlace",0);
+	 Macro ProtoPath+"MakeKomp.mac" LiftID "040800" NAcces IsNew xn  yn 0 0 0 0;
+	 object_2=sysvar(60)-object_1;
+	 if (object_2==0)
+	 {
+	  exit;
+	 }
+	 rotate last object_2 done 2points xn  yn 0 xn  yn 1 -180 nocopy ;
+	 rotate last object_2 done 2points xn  0 zn xn  1 zn -180 nocopy ;
+	 move last object_2 done 0 0 zn-D_fas+L1 nocopy ;
+	}
+
+	object_1=sysvar(60);
+	macro ProtoPath+"SetECod.mac" "7901" ;
+	macro ProtoPath+"SetEnam.mac" "Подъемник левый" ;
+	// macro ProtoPath+"SetKCod.mac" "PdmR" "" "";
+	Macro ProtoPath+"SetAccPLace.mac" PriceInfo(g_liftR,"AccPlace",0);
+	Macro ProtoPath+"MakeKomp.mac" g_liftR "040800" NAcces IsNew xn  yn 0 0 0 0;
+	object_2=sysvar(60)-object_1;
+	if (object_2==0)
+	{
+	  exit;
+	}
+	rotate last object_2 done 2points xn+dx/2  yn 0 xn+dx/2  yn 1 -180 nocopy ;
+	rotate last object_2 done 2points xn+dx  0 zn xn+dx  1 zn -180 nocopy ;
+	move last object_2 done 0 0 zn-D_fas+L1 nocopy ;
+	}
+
+   if (variant==4)
+   {
+	object_1=sysvar(60);
+	macro ProtoPath+"SetECod.mac" "7901" ;
+	macro ProtoPath+"SetEnam.mac" "Подъемник правый" ;
+	// macro ProtoPath+"SetKCod.mac" "PdmR" "" "";
+	Macro ProtoPath+"SetAccPLace.mac" PriceInfo(g_liftR,"AccPlace",0);
+	Macro ProtoPath+"MakeKomp.mac" g_liftR "040800" NAcces IsNew xn  yn 0 0 0 0;
+	object_2=sysvar(60)-object_1;
+	if (object_2==0)
+	{
+	  exit;
+	}
+	rotate last object_2 done 2points xn  yn 0 xn  yn 1 -180 nocopy ;
+	move last object_2 done 0 0 zn+dz+U_fas-L1 nocopy ;
+
+	if (LiftID>0)
+	{
+	 object_1=sysvar(60);
+	 macro ProtoPath+"SetECod.mac" "7901" ;
+	 macro ProtoPath+"SetEnam.mac" "Подъемник левый" ;
+	 // macro ProtoPath+"SetKCod.mac" "PdmR" "" "";
+	 Macro ProtoPath+"SetAccPLace.mac" PriceInfo(LiftID,"AccPlace",0);
+	 Macro ProtoPath+"MakeKomp.mac" LiftID "040800" NAcces IsNew xn  yn 0 0 0 0;
+	 object_2=sysvar(60)-object_1;
+	 if (object_2==0)
+	 {
+	  exit;
+	 }
+	 rotate last object_2 done 2points xn+dx/2  yn 0 xn+dx/2  yn 1 -180 nocopy ;
+	 move last object_2 done 0 0 zn+dz+U_fas-L1 nocopy ;
+	}
+   }
+}
+return;
+//-- Корректировка атрибута Cinema на подъемниках с левой базой
+NEXT1:
+
+// attrinfo info ObjWithCin
+ScrCin1=readscratch("$CinemaScr",ObjWithCin);	//-- записываем информацию из скретча в набор
+if (ScrCin1==0)
+{
+	goto END_NEXT1;
+}
+NULLOUT=WriteScratch(ScrCin1,"$CinemaScr",0);
+err=GetScratch(ScrCin1,"Main","MoveCount",MoveCount,SubstName);	//-- узнаем количество перемещений
+//-- Читаем движения из атрибута, перемножаем их на матрицу объекта в ПСК и записываем это в скретч.
+ip=0;
+secP:
+ip=ip+1;
+err=GetScratch(ScrCin1,"Move"+str(ip-1),"MoveType",MoveType,SubstName);	//-- узнаем тип перемещения
+if (MoveType==1)	//-- если перемещение поворот получаем координаты оси
+{
+  err=GetScratch(ScrCin1,"Move"+str(ip-1),"Axe1X",Axe1X,SubstName);	//-- начало по X
+  err=GetScratch(ScrCin1,"Move"+str(ip-1),"Axe2X",Axe2X,SubstName);	//-- конец по X
+	err=GetScratch(ScrCin1,"Move"+str(ip-1),"Angle",Angle1,SubstName);	//-- Angle
+	//-- Перезаписываем значение в скретче
+	NULLOUT=AddScratch(ScrCin1,"Move"+str(ip-1),"Axe1X",Axe1X*(-1));
+	NULLOUT=AddScratch(ScrCin1,"Move"+str(ip-1),"Axe2X",Axe2X*(-1));
+}
+if (ip<MoveCount)
+{
+	goto secP;
+} 
+NULLOUT=WriteScratch(ScrCin1,"$CinemaScr",ObjWithCin);
+END_NEXT1:
+return;
+
+check:
+// LiftRC - k3obj
+// liftch - ID лифта
+BokAcc=priceinfo(liftch,"AccessID",11430,1)
+FasAcc=priceinfo(liftch,"NomID1",11431,1)
+AFas=priceinfo(DoorPict,"AlumFas",0,2)
+if AFas
+{
+	FasAcc=priceinfo(liftch,"NomID2",11432,1)
+}
+
+// К фасаду
+selbyattr "FurnType==\"040001\"" partly child LiftRC;
+n=sysvar(61)
+if n>0
+{
+	i=0;
+	nn1:
+	i=i+1;
+	if i<=n
+	{
+		setattrvalg(getselnum(i),"PriceID",FasAcc)
+		setattrvalg(getselnum(i),"ElemName",priceinfo(FasAcc,"MATNAME","Крепление к фасаду",1))
+		goto nn1;
+	}
+}
+// К боковине
+selbyattr "FurnType==\"040002\"" partly child LiftRC;
+n=sysvar(61)
+if n>0
+{
+	i=0;
+	nn2:
+	i=i+1;
+	if i<=n
+	{
+		setattrvalg(getselnum(i),"PriceID",BokAcc)
+		setattrvalg(getselnum(i),"ElemName",priceinfo(BokAcc,"MATNAME","Крепление к фасаду",1))
+		goto nn2;
+	}
+}
+
+if AFas
+{
+	fixing fix replace nodc LiftRC done drill no 200 204 "FurnType==\"800500\""
+	objident last 1 LiftRC;
+	fixing fix replace nodc LiftRC done drill no 201 204 "FurnType==\"800500\""
+}
+
+return

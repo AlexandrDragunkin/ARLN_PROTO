@@ -1,0 +1,125 @@
+//DrawKrTabl.mac
+//Формируем объект таблицу с данными сцены по кромке столешницам
+global CBDpath RX;
+RX=0
+
+global
+IdKrom
+Ukas
+ElUkas
+CurentNum //текущий номер обрабатываемой столешницы
+CurentMat
+StUkas //Указатель на штриховку столешницы
+g_DrawTaile           //формировать деталировку 0-нет 1-да
+ProtoPath
+L_SUPPORT
+;
+
+defarr gr[20] xm[6] ArrSys[20] info[8] ;
+
+getpar NumVar;
+
+If (!IsAttrdef("StrihSt"))  { Attribute Create "StrihSt" "Указатель на штриховку столешницы" Real 5 0  ; }
+
+
+err=SysArr(43,ArrSys) ; // массив свойств созаваемого объекта
+hatchcoeff 1  //Масштаб штриховки  K - масштаб
+hatchangle 0  //Угол штриховки
+hatchunits 0 //k= 0 не учитывать или 1 учитывать графический коэффициент.
+
+
+
+
+
+flagNew=0
+fnk=CBDpath+"KromDb.dbf"
+if GetCount(fnk) {  DbOpen rcdCBD,fnk; } // ищем, есть ли такая база?
+DbFilter rcdCBD,"" ;
+err=DbRecCount(rcdcbd) ;//ОПРЕДЕЛИЛИ ЧИСЛО ЗАПИСЕЙ В ОТКРЫТОМ НАБОРЕ
+if err>0 {
+i=0
+met1:
+if g_DrawTaile!=1 { DbFilter rcdCBD,"PRIZ==0" ; }
+else              { DbFilter rcdCBD,"(NUM==CurentNum)&&(PRIZ==0)" ; }
+SummLn=0
+TextKr=""
+err=DbRecCount(rcdcbd) ;//ОПРЕДЕЛИЛИ ЧИСЛО ЗАПИСЕЙ В ОТКРЫТОМ НАБОРЕ
+if err==0 { goto metend ; }
+DbMoveFirst rcdcbd; // Встали на первую запись
+iD_CURR=DbGetValue(rcdcbd,"PRICEIDK",0) ;//считали из поля PRICEIDIK
+iD_ZNAK=DbGetValue(rcdcbd,"ZNAK",0) ;    //Считали номер значка
+wD_KROM=DbGetValue(rcdcbd,"WDKROM",0) ;    //Считали номер значка
+if g_DrawTaile!=1 { DbFilter rcdCBD,"(PRIZ==0)&&(PRICEIDK==iD_CURR)";                   } //Отфильтровали по этому полю
+else              { DbFilter rcdCBD,"(PRIZ==0)&&(PRICEIDK==iD_CURR)&&(NUM==CurentNum)"; }
+SunmmLen=0
+TextKr=""
+j=0
+met2:
+         If !DbEOF(rcdCBD) {
+            err=DbRecCount(rcdCBD) ;//ОПРЕДЕЛИЛИ ЧИСЛО ЗАПИСЕЙ В ОТКРЫТОМ НАБОРЕ
+            if err<1 { #ok_flag alternative "Внимание!!" msgbox text " Записи  в базе с именем "+fnk+" не обнаружены." done "Ок" done ; exit ; }
+            else {                // Встали на первую запись
+                 ValLen=DbGetValue(rcdCBD,"LENGTHKR",-99); //Определили длину кромки
+                 DbSetValue rcdCBD,"PRIZ",1 ; //Каждой обработанной записи в поле PRIZ поставили 1
+                 DbUpdate rcdCBD ;
+                 if j==0 { TextKr=TextKr+str(ValLen);   }
+                 else { TextKr=TextKr+"+"+str(ValLen);  }
+                 SummLn=SummLn+ValLen;
+                 DbMoveNext rcdCBD;
+                 j=j+1
+                 }
+                 goto met2 ;
+            }
+   //из поля длин сформировали запись Общая ****(мм) (**;**;**;**;)
+   TextWD=iif(wd_krom!=0,"S%%003(мм)%%004="+str(wd_krom)+" ","")
+   TextKr=TextWD+"Ls%%003(мм)%%004="+str(SummLn)+"  ("+TextKr+")" ;
+   //Формируем картинку группируем помещаем в бланк.
+   i=i+1
+    macro L_Support+"leader1auto.mac" iD_ZNAK 0 0+10*i*SYSvAR(76)*ArrSys[3] 0 0.01 10+10*i*SYSvAR(76)*ArrSys[3] 0 ;
+    objident last 1 pnt ;
+   //Определили наименование материала
+   name=PriceInfo(iD_CURR,"Matname",0)
+   #tx text name+" "+textkr done -10-10*SYSvAR(76) 0+10*i*SYSvAR(76) 0 @-10 0 0 ;
+   gosub EdЕtextNM ; //Редактируем параметры текста  присваиваем параметры Nmebel
+   Group last 2 done ;
+   objident last 1 gr[i] ;
+   flagNew=1
+   goto met1 ;
+   }
+//else { DbClose rcdcbd; exit ; }
+
+
+
+metend:
+if flagNew==1 {
+   text "%%uКромка. Условные обозначения" done 0 0 0  @-10 0 0 ;
+   group last i+1 done ;
+   Objident last 1 pnt;
+   Invisible pnt done ;
+   if g_DrawTaile!=1 { #gr1 group attribute "ChainLoc==1" done ; }
+   else { #gr1 group attribute "ChainLoc=="+str(CurentNum) done }
+   =objgab3(gr1,xm);
+   explode gr1  done
+   visible pnt done
+   Xc=Xm[4]
+   Yc=xm[5]+10*sysvar(76);
+   err=objgab3(pnt,xm);
+   move  pnt done  2point  Xm[4] Xm[2] 0 Xc Yc 0  nocopy ;
+   If (IsAttrdef("ChainLoc"))   { attrobj attach "ChainLoc" done pnt  NumVar  ; }   //     CurentNum
+}
+
+DbClose rcdcbd;
+exit;
+
+EdЕtextNM:
+//Редактируем параметры текста  присваиваем параметры Nmebel
+err=GetTextInfo(Tx,Info);
+Info[1]="Nmebel.shx" //1 Имя шрифта
+Info[2]=5            //2 Высота символа
+Info[3]=100          //3 Отношение ширины к высоте (в процентах)
+Info[4]=15           //4 Угол наклона шрифта (в градусах)
+Info[5]=0            //5 Разрядка  между  символами  по  горизонтали(в процентах)
+Info[6]=0            //6 Разрядка между символами по вертикали (в процентах)
+err=PutTextInfo(Tx,Info);
+
+return;

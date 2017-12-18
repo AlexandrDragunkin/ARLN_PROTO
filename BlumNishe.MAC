@@ -1,0 +1,62 @@
+//-- Макропрограмма заполняет нишу из Dynalog
+global ProtoPath;
+defarr basep[3];
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами
+onerror final;
+NULLOUT=getsnap();
+NULLOUT=pushinst(1);
+defarr arrin[3], arrout[14];
+defarr arr[10];
+
+mbget "Укажите нишу:" niche xgab ygab zgab :
+basep[1]=0;
+basep[2]=0;
+basep[3]=0;
+//-- Умолчания на параметры прототипа ( в дальнейшем спрашивать у пользователя)
+err=getvarinst(2,"FasDMat",FrontMat,0);								//-- материал фасада
+err=getvarinst(2,"DoorVsMater1",FsMater,0);						//-- материал вставки в фасад
+HandleType=2277;																			//-- тип ручки
+BandType=400;																					//-- тип кромки
+FasType=318;																					//-- тип фасада
+Rpl_r=3;																							//-- расположение ручки
+rx=20;																								//-- сдвиг ручки
+rz=30;																								//-- высота установки ручки
+ra=0;																									//-- угол поворота ручки
+FixCorp=0;																						//-- тип крепежа корпуса
+//-- Корректируем параметры ниши и её положение.
+xgab=xgab+2*16;
+ygab=ygab+4;
+zgab=zgab+2*16;
+basep[1]=basep[1]-16;
+basep[2]=basep[2]-4;
+basep[3]=basep[3]-16;
+//----------------------------------------------------------------------------------------------
+position=getprotoid("Shkaf","Ниша Dynaplan (Blum)","ProtoMacro","BlumNicheP");  //-- ID прототипа
+protoobj create "Shkaf.ptl" position
+   "W"							xgab						//-- габариты корпуса
+   "D"							ygab
+	 "H"							zgab
+   //"seitemat"				seitemat				//-- материал стенок
+	 //"basemat"				basemat					//-- материал основания
+	 //"backmat"				BackMat					//-- материал задней стенки
+	 "FrontMat"				FrontMat				//-- материал фасада
+	 "InnenFMat"			0								//-- неизвестный материал
+	 "FsMater"				FsMater					//-- материал вставки в фасад
+	 "HandleType"			HandleType			//-- тип ручки
+	 "BandType"				BandType				//-- тип кромки
+	 "FasType"				FasType					//-- тип фасада
+	 "Rpl_r"					Rpl_r						//-- расположение ручки
+	 "rx"							rx							//-- сдвиг ручки
+	 "rz"							rz							//-- высота установки ручки
+	 "ra"							ra							//-- угол поворота ручки
+	 //"KorpBlumType"		KorpBlumType		//-- тип корпуса
+	 "KorpusPan"			0								//-- создавать панели корпуса (не создаем)
+	 "FixCorp"				FixCorp					//-- тип крепежа корпуса
+   done
+basep[1], basep[2], basep[3];
+final:
+offerror;
+NULLOUT=resnap();
+NULLOUT=popinst(1);
+exit;

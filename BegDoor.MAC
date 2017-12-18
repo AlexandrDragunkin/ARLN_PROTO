@@ -1,0 +1,19 @@
+//-- Затычка для МП
+exit;
+global
+UnitCode, // Код изделия (текст)
+ULayer,  // массив номеров 1 уровня
+NUnit,   // Порядковый номер детали и узла
+LUnit,   // Текущий верхнего номер узла
+TLayer,   // тип текущего уровня
+CLayer;   // номер текущего уровня
+
+//getpar Code ;
+
+if CLayer==0 { exit ; }
+CLayer=CLayer+1
+NUnit=NUnit+1;
+LUnit[CLayer]=NUnit
+TLayer[CLayer]="2D" ; // тип Дверь
+
+exit

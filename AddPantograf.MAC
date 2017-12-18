@@ -1,0 +1,88 @@
+//-- Макропрограмма устанавливает пантограф
+global ProtoPath;
+global PantType;
+defarr basep[3];
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами
+res=IsvarDef("PantType");
+if (res==0) 
+{
+	NULLOUT=getvarinst(2,"PantType",PantType,0);				//-- Умолчание на пантограф
+}
+DefPant=str(getyadsubst(77))+"#"+str(PantType) ;			//-- Формируем строку умолчаний.
+onerror final;
+NULLOUT=getsnap();
+NULLOUT=pushinst(1);
+defarr arrin[3], arrout[14];
+defarr arr[10];
+
+mbget "Укажите положение пантографа:" niche xgab ygab zgab :
+basep[1]=0;
+basep[2]=0;
+basep[3]=0;
+
+NULLOUT=getvarinst(2,"pantShifyF",svy_u,ygab/2);			//-- Умолчание на отступ спереди
+NULLOUT=getvarinst(2,"pantShifyU",svz_u,80);				//-- Умолчание на отступ сверху
+
+#ok_flag
+setvar
+"Параметры пантографа"
+PicturesPath+"PantRas.jpg"
+center
+"Задайте параметры пантографа"
+done
+string auto button 6 default DefPant
+     "Тип пантографа:" PantType
+
+real     default svy_u	  "Отступ спереди:"      		svy
+real     default svz_u	  "Отступ сверху:"     			svz
+done;
+if (ok_flag==0)
+{
+  goto final;
+}
+splitbydelim(PantType,"#",Arr);
+typeP=Arr[2];
+PantType=typeP;
+H_pant=priceinfo(typeP,"Height",0,2);			//-- Высота пантографа
+D_pant=priceinfo(typeP,"Dept",0,2);			//-- Глубина пантографа
+
+//--Если пантограф не подходит по глубине
+if (ygab<D_pant)
+{
+  putmsg("Глубина ниши меньше глубины выбранного пантографа",0);
+  putmsg("Глубина ниши "+str(ygab),0);
+  putmsg("Глубина пантографа "+str(D_pant),0);
+  goto final;
+}
+//--Если пантограф не подходит по высоте
+if (zgab<H_pant)
+{
+ putmsg("Высота ниши меньше высоты выбранного пантографа",0);
+ putmsg("Высота ниши "+str(zgab),0);
+ putmsg("Высота пантографа "+str(H_pant),0);
+ goto final;
+}
+//--Если пантограф подходит по глубине, но отступ спереди слишком большой
+if (ygab>D_pant&&(D_pant/2+svy)>ygab)
+{
+  putmsg("Отспут спереди слишком большой",0);
+  goto final;
+}
+//--Если пантограф подходит по высоте, но отступ сверху слишком большой
+if (zgab>H_pant&&(H_pant+svz)>zgab)
+{
+  putmsg("Отспут сверху слишком большой",0);
+  goto final;
+}
+position=getprotoid("Shkaf","Пантограф","ProtoMacro","PantografP");  //-- ID прототипа
+protoobj create "Shkaf.ptl" position
+   "W"			 xgab
+   "typeP"		 typeP
+   done
+basep[1], basep[2]+ygab-svy, basep[3]+zgab-svz-H_pant;
+final:
+offerror;
+NULLOUT=resnap();
+NULLOUT=popinst(1);
+exit;

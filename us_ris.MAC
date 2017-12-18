@@ -1,0 +1,33 @@
+	// === рисунок дверки
+
+ProtoPath=GetProtoMac("Shkaf.ptl")
+LocalPath=GetProtoMac("kuhmeb.ptl");
+
+Getpar
+xn
+yn
+zn
+w
+h
+hp		//прогиб
+napr	//макрос направл.
+Prof
+Angle
+p1		//запасной параметр напр.
+;
+
+//===============
+if (Len(prof)==0) { prof="0" }
+prof="\\Prof\\"+prof
+	//=== »м€ файла с образующей
+#AAA Append LocalPath+Prof+".k3" xn	yn	zn;
+	//направл€юща€
+macro LocalPath+napr+".mac"	xn	yn	zn
+				w	h	hp	p1;
+	objident last 1 v ;
+pipe last 1 AAA xn yn zn  pereor Angle ;
+delete v AAA;
+
+//=====
+exit
+;

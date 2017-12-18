@@ -1,0 +1,81 @@
+//-- Подпрограмма редактирования Scratch параметров фасада в алюминиевой рамке
+global ProtoPath ;
+global g_Scratch;
+global DoorPict;   //-- Рисунок фасада
+defarr arr[3];
+
+getpar pnt, FasCode;
+
+Namescr="FasadPar";
+NoChange=PriceInfo(DoorPict,"NoChange",0,2)
+
+#res CalcVarScr g_Scratch FasCode;
+DefST_fas=str(getyadsubst(56))+"#"+str(RmMater); // Формируем строку умолчаний.
+DefDecor=str(getyadsubst(6))+"#"+str(RmGroup); // Формируем строку умолчаний.
+FlafDec=0  // Флаг смены отделки рамки
+if (RmColor>0) { FlafDec=1 }
+
+NST_fas=DefST_fas
+#ok_flag
+setvar
+"Фасад в алюминиевой рамке"
+""
+left
+"Выберите профиль из списка"
+done
+if (NoChange==0) {
+  string auto button 6 default DefST_fas "Профиль:" NST_fas
+}
+logical default FlafDec "Применяем отделку:" FlafDec
+
+string auto button 6 default DefDecor //"67#578"
+"Тип отделки рамки:" GrDecor
+done;
+
+if (ok_flag==0)
+{ 
+  NULLOUT=TermScratch(g_Scratch); 
+  cancel;
+}
+splitbydelim(NST_fas,"#",Arr);
+FasDTyp=Arr[2];
+splitbydelim(GrDecor,"#",Arr);
+DfDec=Arr[2];
+if (FlafDec==0) {
+   RmColor=0;
+}
+else {
+  if (RmColor==0) {
+    defarr yarr[1];
+    kol1=npgetbywhere(1,"","yarr",DfDec);
+    if (kol1>0) {
+      RmColor=yarr[1];
+    }                                       // В качестве умолчания берем первый из подстановки
+  }
+  DefDecor=str(DfDec)+"#"+str(RmColor) ;    // Формируем строку умолчаний.
+  #ok_flag
+  setvar
+  "Рамочный фасад"
+  ""
+  left
+  "Выберите отделку из списка"
+  done
+  string auto button 6 default DefDecor //"67#578"
+     "Отделка рамки:" Decor
+  done
+  if (ok_flag==0)
+  {
+    NULLOUT=TermScratch(g_Scratch);
+    cancel;
+  }
+  splitbydelim(Decor,"#",Arr);
+  RmColor=Arr[2];
+}
+FasCol=RmColor
+
+err=AddScratch(g_Scratch,FasCode,"RmMater",FasDTyp);
+err=AddScratch(g_Scratch,FasCode,"RmColor",FasCol);
+err=AddScratch(g_Scratch,FasCode,"RmGroup",DfDec);   //-- Группа подстановки материалов для конкретного типа отделки профилей
+WriteScratch(g_Scratch,Namescr,pnt);
+NULLOUT=TermScratch(g_Scratch);
+exit;

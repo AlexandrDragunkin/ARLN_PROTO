@@ -1,0 +1,245 @@
+//PrLenSt
+//Соединяет длинномеры находящиеся под углом
+//Добавил столешницы
+setucs save "UCS@TMPlst" ;
+defarr parr[4] vec[3] vec1[3] xm[6] karn[2] pGab[3] vector[6] ppn[6];
+//GetPar TZ  ;
+Tz=1
+parr[1]=0
+parr[2]=0
+parr[3]=0
+parr[4]=0
+If TZ==1 {
+//TypL=5
+layers new "predmets" ;
+layers new "Longst" ;
+        =Fltrlayer(0,"Longst");
+        =Fltrlayer(0,"predmets");
+select all remove attribute "LongsType!=-1" ;
+N=SysVar(61) ;
+If N>0 { chprop Layer Last N done "predmets" ; }
+select  attribute "LongsType!=-1" ;
+N=SysVar(61) ;
+if N>0 { chprop Layer Last N done "Longst" ; }
+
+=Fltrlayer(1,"Longst");
+
+        objident  : Karn[1]
+        objident  : Karn[2]
+        =Fltrlayer(0,"Longst");
+        =Fltrlayer(0,"predmets");
+}
+else {
+getpar  Karn[1] Karn[2] ;
+}
+
+TypL=GetAttr(Karn[1],"LongsType",-99) ; if TypL==-99 { exit ; }
+=TypL
+
+TypL=TypL+1 ;
+NameF="Dl_L"+Str(TypL) ;
+If (!IsAttrdef(NameF))
+ { Attribute Create NameF "Указатель родственника для левого" Real 5 0 ; }
+ NameF="Dl_R"+Str(TypL) ;
+If (!IsAttrdef(NameF))
+ { Attribute Create NameF "Указатель родственника для правого" Real 5 0 ; }
+If (!IsAttrdef("DLPred"))
+ { Attribute Create "DLPred" "Указатель родственника" Real 5 0 ; }
+If (!IsAttrdef("OpenDl_L"))
+ { Attribute Create "OpenDl_L" "Левый торец открыт" Real 5 0 ; }
+ If (!IsAttrdef("OpenDl_R"))
+ { Attribute Create "OpenDl_R" "Правый торец открыт" Real 5 0 ; }
+
+Err=GetAttr(Karn[1],"OpenDl_R",-99) ; if Err==-99 {  Attrobj Attach "OpenDl_R" Done Karn[1] 1; }
+Err=GetAttr(Karn[1],"OpenDl_L",-99) ; if Err==-99 {  Attrobj Attach "OpenDl_L" Done Karn[1] 1; }
+Err=GetAttr(Karn[2],"OpenDl_R",-99) ; if Err==-99 {  Attrobj Attach "OpenDl_R" Done Karn[2] 1; }
+Err=GetAttr(Karn[2],"OpenDl_L",-99) ; if Err==-99 {  Attrobj Attach "OpenDl_L" Done Karn[2] 1; }
+n=2
+Dsmax=120
+//If TZ==1 { DsMax=2000 }
+i=0
+lab3:
+if i<N {
+   i=i+1
+   setucs lcs Karn[i] ;
+
+   DsNom=100000
+   j=0
+   lab4:
+   if j<N {
+      j=j+1
+      =j
+      if i!=j { #ds dist 0 0 0 object karn[j] ;
+         if (Ds<=dsmax)&&(Ds<DsNom) { j1=j ;DsNom=Ds ; }     //
+       }
+       goto lab4 ;
+   }
+       =DS =DSNOM =DSmax
+
+       if (DsNom>DsMax)||(i==32) { goto lab3 ;
+       }
+
+       Gosub APrLenSt ;
+
+       if ang1>0.5 {
+
+          #p1 point intersect l1st l2st ;
+          #p2 point intersect l1ed l2ed ;
+          #dss1 Dist 0 ymax 0 intersect l1st l2st ;
+          #dss2 Dist 0 ymin 0 intersect l1ed l2ed ;
+          if ang>180 {   //dss1<dss2угол выпуклый
+             dss=dss1
+             Yzd=Ymax
+             ang2=ang/2
+             =ang2
+             if ang2>270 { ang2=270-ang2 }
+             if ang2>180 { ang2=180-ang2 }
+             if ang2>90  { ang2=90-ang2  }
+             =ang2
+
+          }
+          if ang<180 {      //dss1>dss2 угол вогнутый
+             dss=dss2
+             Yzd=Ymin
+             ang2=ang/2
+             =ang2
+
+             if ang2>270 { ang2=90-(270-ang2) }
+             if ang2>180 { ang2=90-(180-ang2) }
+             if ang2>90  { ang2=90-(90-ang2)  }
+             if ang2<90  { ang2=(90-ang2)  }
+             =ang2
+
+          }
+          Gosub PrLenSt         ;
+          delete L1st l2st p1 L1ed l2ed p2 done ;
+       }
+       else {
+            //объекты надо объединить
+            delete L1st l2st L1ed l2ed done ;
+
+               macro getfilePath(SysVar(7))+"UnionLang.mac" Karn[i] Karn[j1] ;
+               Objident last 1 Karn[i] ; goto labend ;
+               Objects=Objects-1 ; n=n-1
+               Select last Objects done;
+               k=0
+               lab5:
+               if k<Objects {
+                  k=k+1
+                  Karn[k]=GetSelNum(k);
+                  goto lab5 ;
+               }
+               i=0
+
+       }
+
+   goto lab3;
+}
+labend:
+setucs restore "UCS@TMPlst" ;
+exit;
+//========================================
+
+PrLenSt:
+NameL="Dl_L"+Str(TypL) ;
+NameR="Dl_R"+Str(TypL) ;
+=SetLongObj(Karn[i]) ;
+
+=GetLongCut(Parr)    ;
+
+Parr[1]=radian(ang2)*-1 ;    //было 2
+=parr[2];
+=parr[1]
+=parr[3]
+=parr[4]
+=SetLongCut(Parr);
+setucs save "UCS@TMP1" ;
+=GetObjGeo(p1,pGab) ;
+ptranscs(3,0,pGab[1],pGab[2],pGab[3],pGab[1],pGab[2],pGab[3]);
+if pGab[1]<0 { KfDSS=-1 }
+else { KfDSS=1 }
+Prov=Kfdss*dss
+if abs(len1-prov)<0.5 { return; }
+=len1
+=prov
+longcreate  len1 0 0 prov 0 0;
+
+attrobj copy Karn[i] "OpenDl_L" NameL NameR done last 1 ;
+delete Karn[i] ;
+objident last 1 Karn[i] ;
+Attrobj Attach "OpenDl_R" Done Last 1 0;
+
+setucs lcs Karn[i] ;
+
+ptranscs(0,3,0,yzd,0,vec[1],vec[2],vec[3]);
+setucs lcs Karn[j1] ;
+
+ptranscs(3,0,vec[1],vec[2],vec[3],vec[1],vec[2],vec[3]);
+=SetLongObj(Karn[j1]) ;
+GetLongCut(Parr) ;
+
+Parr[2]=radian(ang2) ; //было ang/2
+=parr[2];
+=parr[1]
+=parr[3]
+=parr[4]
+SetLongCut(Parr);
+if (ABS(vec[1])<0.5)&&(ABS(vec[2])<0) { return; }
+longcreate  vec[1] 0 0 0 0 0;
+
+attrobj copy Karn[j1] "OpenDl_R" NameL NameR done last 1 ;
+
+//:
+delete Karn[j1] ;
+objident last 1 Karn[j1] ;
+Attrobj Attach "OpenDl_L" Done Last 1 0;
+
+setucs restore "UCS@TMP1" ; ;
+return;
+//================
+//определение длины по базовой линии
+LengtLong:
+setucs lcs pst ;
+=getobjtype(pst) ;
+=objgab3(pst,xm) ;
+Y=0
+=xm[2]
+=xm[5]
+if ((xm[5]<=0.1)&&(Xm[2]<=0)) { Y=Xm[5]-0.01 }
+if ((xm[5]>=0)&&(Xm[2]>=0)) { Y=xm[2]+0.01  }
+ymax=xm[5]
+ymin=xm[2]
+LenObj=xm[4] ;
+=xm[5]
+
+//#cut1 Cut pst done 3points 0 Y 0 1 Y 0 0 Y 1 ;
+//=objgab3(cut1,xm) ;
+//LenObj=xm[4]-xm[1] ;
+//delete cut1 done ;
+
+setucs  previous ;
+return;
+
+//====================
+APrLenSt:
+       pst=Karn[i]  ; gosub LengtLong ; len1=lenobj;
+       pst=Karn[j1] ; gosub LengtLong ; len2=lenobj;
+       #l1st    Line  0 ymax 0 len1 ymax 0 done
+       #l1ed    Line  0 ymin 0 len1 ymin 0 done
+       setucs lcs Karn[j1] ;
+       #l2st    Line  0 ymax 0 len2 ymax 0 done    ;
+       #l2ed    Line  0 ymin 0 len2 ymin 0 done    ;
+
+       Ptranscs(0,3,len2,0,0,vec[1],vec[2],vec[3]) ;
+       Ptranscs(0,3,0,0,0,vec1[1],vec1[2],vec1[3]) ;
+       setucs previous ;
+       Ptranscs(3,0,vec[1],vec[2],vec[3],vec[1],vec[2],vec[3]) ;
+       Ptranscs(3,0,vec1[1],vec1[2],vec1[3],vec1[1],vec1[2],vec1[3]) ;
+       #ang angle vec[1] vec[2] vec[3] @100 0 0 vec1[1] vec1[2] vec1[3];
+       =ang
+
+       dss=dsnom
+       ang1=ABS(ang-180)
+       =ang1
+
+       return ;

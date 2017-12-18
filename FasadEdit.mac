@@ -1,0 +1,108 @@
+//-- Изменить фасад двери распашной двери
+selbyattr "Posit==10" child all done;
+karkas_kol=sysvar(61);
+karkas_num=GetCarcNumb();
+if (karkas_kol==0)
+{
+ putmsg("Сначала надо создать мебельный каркас",0);
+ exit;
+}
+if (karkas_kol==1)
+{
+ #karkas MBCarcase set yes;
+}
+if (karkas_kol>1&&karkas_num==0)
+{
+ #karkas MBCarcase set no yes :
+}
+
+global ProtoPath;
+global FasDTyp;
+global pnt, iPNT;
+defarr Arr[3];
+
+NULLOUT=getvarinst(2,"FasDTyp",FasDTyp,0);      //-- Запрос  переменной FasDTyp из пользовательских умолчаний
+DefE_Col=str(getyadsubst(15))+"#"+str(FasDTyp) ;
+
+#ok_flag
+setvar
+"Изменить тип фасада распашной двери"
+""
+left
+"Определите параметры замены"
+done
+string auto button 6 default DefE_Col         "Тип фасада:"          NE_Col
+str listonly
+	  current "По указанию"
+		"Все распашные двери"
+	done
+		"Способ замены:"    S_zam
+logical  default 0   "Открыть дверь"  Zflag
+done;
+
+if (ok_flag==0)
+{
+  exit;
+}
+macro Protopath+"ChgSel.mac" S_zam ;
+splitbydelim(NE_Col,"#",Arr);
+E_col=Arr[2];
+
+if (S_zam=="По указанию")
+{
+  Loop:
+  onerror final;
+  switch autosingle on;
+  selbyattr "Left(FurnType,2)==\"23\"||Left(FurnType,2)==\"50\""
+    prompt "Укажите распашную дверь:" wholly : ;
+  switch autosingle off;
+  if (sysvar(61)==0)
+  {
+    goto final;
+  }
+  pnt1=getselnum(1);
+  offerror;
+  err=1;
+  err=GetProtoVal(pnt1,"Fasrtype",FsTyp);
+  if (err==1)
+  {
+    err=GetProtoVal(pnt1,"Open",OPS);
+    if (err==1)
+    {
+      protoobj edit list pnt1 nodc "Fasrtype" E_col "Open"  Zflag;
+    }
+    else
+    {
+      protoobj edit list pnt1 nodc "Fasrtype" E_col ;
+    }
+  }
+  goto Loop;
+}
+else
+{
+  i=0;
+LoopAll:
+  if (i<iPNT)
+  {
+    i=i+1;
+    pnt1=pnt[i];
+    err=1;
+    err=GetProtoVal(pnt1,"Fasrtype",FsTyp);
+    if (err==1)
+    {
+      err=GetProtoVal(pnt1,"Open",OPS);
+      if (err==1)
+      {
+        protoobj edit list pnt1 nodc "Fasrtype" E_col "Open"  Zflag;
+      }
+      else
+      {
+        protoobj edit list pnt1 nodc "Fasrtype" E_col ;
+      }
+    }
+    goto LoopAll;
+  }
+}
+final:
+switch autosingle off;
+exit;

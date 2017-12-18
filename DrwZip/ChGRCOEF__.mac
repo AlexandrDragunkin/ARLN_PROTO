@@ -1,0 +1,27 @@
+// увеличиваем графический коэффициент
+
+global DRWZPath ProtoPath;
+CurGrk=Sysvar(76) 
+	if CurGrk==1 
+	{ 
+		nullout=Fltrtype(0);
+		nullout=Fltrtype("Dim");
+		nullout=Fltrtype("Text");
+		select partly all done ;
+		nsobj=sysvar(61);
+		defarr aObj[nsobj];
+		nullout=Fltrtype(0);
+		if nsobj>0
+		{
+			macro ProtoPath+"Arrobj.mac" nsobj aObj done ;
+		}
+		i=0;
+		lab1:
+		if i<nsobj
+		{
+			i=i+1;
+			chprop grfcoef partly aObj[i] done 9.6  
+			goto lab1;
+		}
+	}
+	exit;

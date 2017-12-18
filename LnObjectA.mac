@@ -1,0 +1,310 @@
+global ProtoPath;
+global PKM_SP ;
+if isvardef("PKM_SP")>0
+{
+   //Функция определяет, определена ли к данному моменту переменная, имя которой содержит строка variable. Функции возвращает:
+   //0  – переменная не определена;
+   //3  – переменная является массивом
+   //5  – переменная числового типа
+   //6  – переменная строкового типа
+   //16  – переменная является ссылкой на объект
+    macro ProtoPath+"Glob_Sp.mac" ; // Загружаем переменныые для макросов из   SUPPORT
+}
+//LnObject.mac
+//*********************************************
+//  установка длинномера на козырек, столешницу или предмет
+//              Драгункин А.Р.
+//              ГеоС 2007-08 г.
+//*********************************************
+
+global Xn Yn Zn Xk Yk Zk ;
+global UndoMode;
+
+defarr
+First[3]
+Vector[3]
+xmm[15]
+xm[6]
+lobj[200]
+bd[11]
+arr[4]
+aPanPar[20]
+;
+defarr ageo[15];
+Xn=0;
+Yn=0;
+Zn=0;
+Xk=0;
+Yk=0;
+Zk=0;
+dsn=999;
+dsk=999;
+ILc=0;
+Ltime=0;
+Result=SetLongCut(arr);
+err=GetBentProf(bd) ;
+
+getpar keyUp ; //параметр установки 0-на ближайшую 1-верхнюю 2-нижнюю   грань
+//#UndoMode Macromode Undo Off;
+next:
+setucs save "LnObject" ;
+keySaveUcs=1;
+nullout=getsnap()
+ILc=ILc+1;
+onerror metend;
+#panpnt MbGet "Укажите торец(или нажмите Esc для прекращения работы):" panel IdPoly IdLine band fix butt :
+offerror;
+setucs gcs ;
+//===================================
+LongType=GetLongType();
+aPanPar[1]=panpnt;
+nullout=GetPan6Par(1,aPanPar);
+aPanPar[1]=IdPoly;
+nullout=GetPan6Par(27,aPanPar);
+hPath=aPanPar[2];
+
+NULLOUT=ContNorm(hPath,Vector) ; //определяем нормаль контура
+	//1)Функция ContNorm возвращает нормализованный вектор построенный с точностью 1.e-6
+	//2) Плавающая арифметика никогда не была точной, поэтому ВСЕГДА надо учитывать погрешность вычисления
+	NULLOUT=GetVarInst(2,"g_eps",g_eps,0.01); // Погрешность округления
+	if (Abs(vector[3])<1-g_eps)
+	{
+	  //PutMsg("Vector Z="+str(vector[3]),1) ;
+	  PutMsg("Ошибка! Указанный контур не параллелен XOY ГСК",0) ;
+	  delete hPath;
+	  goto metend ;
+	}
+nObj=aPanPar[3];
+path polyline hPath ;
+objident last 1 hPath;
+
+selbyattr "$PolyAttr=="+str(idLine) child hPath done;
+if sysvar(61)>0
+{
+elem=getselnum(1);
+//nullout=getobjgeo(elem,ageo)
+}
+nullout=GetPan6Par(999,aPanPar);
+nullout=SetLongType(LongType);
+//===================================
+setucs save "LnObject" ;
+//setucs lcs  panpnt ;
+NULLOUT=Objgab3(panpnt,xm) ;         //габариты объекта
+Zc=xm[3]+(xm[6]-xm[3])/2;   //координата Z центра габаритов объекта
+
+If (keyUp==1)
+{
+   move hPath done 0 0 (xm[6])-(xm[3]) nocopy;
+   fl3a=xm[6]; //Установка всегда на верхнюю грань
+}
+If (keyUp==2)
+{
+   //move hPath done 0 0 (xm[3])-(fl3) nocopy;
+   fl3a=xm[3]; //Установка всегда на нижнюю грань
+}
+	objects=Sysvar(60);
+	#pnt1 move hpath done 0 0 0 copy 1 ;
+	//invisible pnt1 done ;
+	explode hpath done ;
+	savRM=sysvar(58);
+	Rendmode,,0
+	hpath=pnt1;
+	pnt1=elem;
+	objects=Sysvar(60)-objects;
+	delete last objects remove hpath elem done;
+
+
+//=================================================
+//macro ProtoPath+"LnTPath.mac"  1  fl1 fl2 fl3a;
+s_objs=sysvar(60);
+macro ProtoPath+"LnTPath.mac"  2  hPath elem IdPoly;
+s_objs=sysvar(60)-s_objs;
+if s_objs<0
+{
+	delete elem done; // 27.04.11 DAR
+	err=FltrType(0);
+	goto metend;
+}
+
+Objident last 1 LLobj;
+delete elem done; // 27.04.11 DAR
+err=FltrType(0);
+ARTvar=GetAttr(LLobj,"ARTICLE",-99);
+
+if (ILc>1)
+{
+  //Определяем ближайшие(на удалении 100 мм) в начале и конце
+  N=GetLongType();//текущий номер длинномера
+  N=N-1;
+  Select attribute "Longstype=="+str(N)+"&&Article==\""+ARTvar+"\"" Done ; // Исправлено 17.11.2008
+  N=sysvar(61);
+  i=0;
+  mets:
+  if (i<N)
+  {
+    i=i+1;
+    Lobj[i]=getselnum(i);
+    goto mets;
+  }
+  i=0;
+  mets1:
+  if (i<N-1)
+  {
+    i=i+1;
+    Ltime=Lobj[i];
+    if isVarDef("Ltime")!=16
+    {
+      putmsg("Ошибка программы. IsVarDef(/"Ltime/")!=16",0) ;
+      Result=SetBentProf(Bd);
+      Result=SetLongCut(arr);
+      goto metend ;
+    }
+    #dsN distance Xn Yn Zn object Lobj[i] ;   //Расстояние от точки ближней к ЛСК до заданного объекта
+    #dsK distance Xk Yk Zk object Lobj[i] ;   //Расстояние от точки дальней от ЛСК до заданного объекта
+
+    if (IsVarDef("LLobj")!=0)
+    {     //проверяем определен ли указатель
+      if compareobj(LLobj,Lobj[i])
+	  {
+		goto mets1;  //Сравниваем не указывают ли два указателя на один объект
+	  }
+    }
+    else
+    {  //выходим плавно , но с руганью
+      putmsg("Ошибка программы. IsVarDef(\"LLobj\")!=16",0) ;
+      Result=SetBentProf(Bd);
+      Result=SetLongCut(arr);
+      goto metend ;
+    }
+
+    If (dsk<=10)
+    {   //конечная точка
+      Setucs lcs LLobj ;  //запоминаем значение 0 ЛСК  для объекта у коорого ноль не изменится (правый)
+      PtransCS(0,3,0,0,0,Xng,Yng,Zng) ;
+      setucs gcs ;
+      if (IsVarDef("LLobj")!=16)
+      {
+        putmsg("Ошибка программы. IsVarDef(/"LLobj/")!=16",0) ;
+        Result=SetBentProf(Bd);
+        Result=SetLongCut(arr);
+        goto metend ;
+      }
+      //macro ProtoPath+"LBunion5.mac"  1 Lobj[i] LLobj ; //Соединяем
+	  objP1=sysvar(60);
+//    if UndoMode==1 { Macromode Undo on; }
+	  longsjoining Lobj[i] LLobj ;
+//    if UndoMode==1 { Macromode Undo off; }
+	  objP2=sysvar(60);
+	  if objp2!=objp1
+	  {
+		ILc=ILc-1;
+		//goto prevend ;
+	  }
+      KeyCutK=1;                                                                  //присваиваем значение ключу обработки конца
+      select last 2 done ;
+      KsD1=getselnum(1) ; // Lobj[i]
+      KsD2=getselnum(2) ;
+      Setucs lcs ksd2 ;
+      PtransCS(0,3,0,0,0,Xn2,Yn2,Zn2) ;
+      Setucs lcs ksd1 ;
+      PtransCS(0,3,0,0,0,Xn1,Yn1,Zn1) ;
+      setucs restore "LnObject" ;
+      if (Abs(xng-xn2)<0.5)&&(Abs(yng-yn2)<0.5)
+      {  // Значит ksd2=LLobj
+        LLobj=ksd2 ;  Lobj[i]=ksd1 ; Lobj[N]=LLobj
+      }
+      else
+      {
+        if (Abs(xng-xn1)<0.5)&&(Abs(yng-yn1)<0.5)
+        {  // Значит ksd1=LLobj
+          LLobj=ksd1;
+          Lobj[i]=ksd2;
+          Lobj[N]=LLobj;
+        }
+      }
+    }
+    If (dsn<=10)
+    {   //начальная точка
+		Setucs lcs Lobj[i] ; //запоминаем значение 0 ЛСК  для объекта у коорого ноль не изменится (правый)
+		PtransCS(0,3,0,0,0,Xng,Yng,Zng) ;
+		setucs gcs ;
+		if (IsVarDef("LLobj")!=16)
+		{
+			putmsg("Ошибка программы. IsVarDef(/"LLobj/")!=16",0) ;
+			Result=SetBentProf(Bd);
+			Result=SetLongCut(arr);
+			goto metend ;
+		}
+     // macro ProtoPath+"LBunion5.mac"  1   LLobj Lobj[i] ;  //Соединяем
+		objP1=sysvar(60);
+//    if UndoMode==1 { Macromode Undo on; }
+		longsjoining Lobj[i] LLobj ;
+//    if UndoMode==1 { Macromode Undo off; }
+		objP2=sysvar(60);
+		if objp2!=objp1
+		{
+			ILc=ILc-1;
+			//goto prevend ;
+		}
+		KeyCutN=1; //присваиваем значение ключу обработки начала
+		select last 2 done ;
+		KsD1=getselnum(1) ;
+		KsD2=getselnum(2) ;
+
+		Setucs lcs ksd2 ;
+		PtransCS(0,3,0,0,0,Xn2,Yn2,Zn2) ;
+		Setucs lcs ksd1 ;
+		PtransCS(0,3,0,0,0,Xn1,Yn1,Zn1) ;
+		setucs restore "LnObject" ;
+		if (Abs(xng-xn2)<0.5)&&(Abs(yng-yn2)<0.5)&&(Abs(zng-zn2)<0.5)
+		{  // Значит ksd1=LLobj
+			LLobj=ksd1;
+			Lobj[i]=ksd2;
+			Lobj[N]=LLobj;
+		}
+		else
+		{
+			if (Abs(xng-xn1)<0.5)&&(Abs(yng-yn1)<0.5)&&(Abs(zng-zn1)<0.5)
+			{  // Значит ksd2=LLobj
+				LLobj=ksd2;
+				Lobj[i]=ksd1;
+				Lobj[N]=LLobj;
+			}
+		}
+	}
+    goto mets1;
+  }
+  if keySaveUcs
+  {
+	  setucs restore "LnObject" ;
+	  setucs delete  "LnObject" ;
+	  keySaveUcs=0;
+  }
+}
+prevend:
+Result=SetBentProf(Bd);
+Result=SetLongCut(arr);
+nullout=resnap()
+Rendmode,,savRM
+redraw,,
+if keySaveUcs
+{
+  setucs restore "LnObject" ;
+  setucs delete  "LnObject" ;
+  keySaveUcs=0;
+}
+
+goto next ;
+
+metend:
+if keySaveUcs
+  {
+	  setucs restore "LnObject" ;
+	  setucs delete  "LnObject" ;
+	  keySaveUcs=0;
+  }
+redraw,,
+//if UndoMode==1 { MacroMode Undo On; }
+
+exit;
+

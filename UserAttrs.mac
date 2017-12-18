@@ -1,0 +1,79 @@
+//-- Определение пользовательских атрибутов.
+//-- Если шаблон атрибута используется исключительно в макропрограммах,
+//-- но не нужен в Mebel.exe, то его определение происходит здесь
+//-- Пользователи могут дописывать сюда опредение своих атрибутов.
+
+//-- Уважаемы пользователи, не создавайте слишком много атрибутов.
+//-- Это отрицательно сказывается на устойчивости системы
+
+//-----------------------------------------------------------------------
+//------------------------ ARLINE Attributes ----------------------------
+//-----------------------------------------------------------------------
+
+If (!IsAttrdef("ChokeID"))
+{	Attribute Create "ChokeID" "Цвет заглушки вручную" Real 5 0 ;	}
+If (!IsAttrdef("VBE"))
+{	Attribute Create "VBE" "Цвет эксцентрик VB" Real 5 0 ;	}
+
+AttrScrName="SumCostInfo";
+If (!IsAttrdef(AttrScrName)) { Attribute Create AttrScrName "Инфо по расчету стоимости" text 30 150 ; } 
+NULLOUT=setvarinst(2,"AttrScrName",AttrScrName);
+
+If (!IsAttrdef("UDetNumber"))
+{ Attribute Create "UDetNumber" "Номер для распиловки" real 5 3 ; } 
+
+If (!IsAttrdef("UnitType"))
+{
+	Attribute Create "UnitType" "ID еденицы измерения из TUnits" real 5 0 ;
+}
+
+If (IsAttrdef("CommonPos"))
+{
+	attribute edit "CommonPos" size 5 3;
+}
+
+if (!isattrdef("ScrFlat1"))
+{  attribute create "ScrFlat1" "SCR двери 1" text 30 150 ;	}
+if (!isattrdef("ScrFlat2"))
+{  attribute create "ScrFlat2" "SCR двери 2" text 30 150 ;	}
+if (!isattrdef("ScrFlat3"))
+{  attribute create "ScrFlat3" "SCR двери 3" text 30 150 ;	}
+
+if (!isattrdef("Scr_Door"))
+{  attribute create "Scr_Door" "SCR двери" string 40 20 ;	}
+If (!IsAttrdef("ExcSumCost")) // Признак исключения элемента из стоимости
+{	Attribute Create "ExcSumCost" "Признак исключения элемента из стоимости" real 5 0 ; }
+If (!IsAttrdef("Number"))
+	{ Attribute Create "Number" "Номер для отчета" real 5 0 ; }
+//-----------------------------------------------------------------------
+//-----------------------------------------------------------------------
+if (!isattrdef("RUnit"))
+{
+  attribute create "RUnit" "Радиус гнутых элементов" real 9 2 ;
+}
+if (!isattrdef("AngleUnit"))
+{
+  attribute create "AngleUnit" "Угол сектора гнутых элементов" real 9 2 ;
+}
+//-- Система дверей
+if (!isattrdef("NSysDoor"))
+{
+  attribute create "NSysDoor" "Дверная система" real 5 0 ;
+}
+if (!isattrdef("MoveDoor"))
+{
+  attribute create "MoveDoor" "Дверь сдвинута" real 5 0 ;
+}
+if (!isattrdef("FRZTRC"))
+{
+  attribute create "FRZTRC" "Торцевая обработка" string 40 20 ;
+}
+if (!isattrdef("CNPropil"))
+{
+  attribute create "CNPropil" "Пропил" string 40 20 ;
+}
+//-- Признак нестандартной панели
+if (!isattrdef("NestPan"))
+{
+  attribute create "NestPan" "Нестандартная панель" real 5 0 ;
+}

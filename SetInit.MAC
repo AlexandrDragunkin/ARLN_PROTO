@@ -1,0 +1,83 @@
+//-- Обнулить установки для построения объектов
+global ProtoPath;
+global GrouPan;   //-- Групповой код для панелей
+global FasPropC;  //-- PropCode для фасадов
+global ElemCode;  //-- Код мебельных элементов
+global UnitCode;  //-- Код изделия (текст)
+
+ElemCode="";
+FasPropC=" " ;
+GrouPan=17;
+UnitCode="";
+
+NULLOUT=setvarinst(1,"ElemCode",ElemCode);
+NULLOUT=setvarinst(1,"UnitCode",UnitCode);
+NULLOUT=setvarinst(1,"GroupID",getsubstyad(GrouPan));
+
+macro ProtoPath+"ScrFasInit.mac" ;  //-- Обнуление Scratch-параметров фасадов
+macro ProtoPath+"ScrBoxGet.mac" 0 ; //-- Обнуление Scratch-параметров ящиков
+
+
+
+macro ProtoPath+"SetMat.mac" 0 ;
+macro ProtoPath+"SetDir.mac" 1 ;
+macro ProtoPath+"SetIncise.mac" 0;
+macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+macro ProtoPath+"SetKrom.mac" 0 0 0 0 0 ;
+NULLOUT=getvarinst(2,"IsBandInside",bip,1);                //-- Кромка включена в размер панели
+NULLOUT=getvarinst(2,"IsBandCut",bmc,1);                //-- Кромку можно резать
+macro ProtoPath+"SetBandMask.mac" bip+bmc*8;
+macro ProtoPath+"SetFixNull.mac" ;
+macro ProtoPath+"SetFix.mac"  0 0 0 0 ;
+macro ProtoPath+"SetFixMask.mac" 3 0 0 3;
+macro ProtoPath+"SetFixOver.mac"  0  ;
+macro ProtoPath+"SetCuts.mac"  0 0 0 0 ;
+macro ProtoPath+"SetOfSet.mac"  0 0 0 0 ;
+macro ProtoPath+"SetBend.mac"  0 0 0 0 0 0 0 0 ;
+macro ProtoPath+"SetPropM.mac" " " " " 0 0 0 0 0;      // Пазы и пропилы
+macro ProtoPath+"SetTrNull.mac" ;                    // Занули торцевые пазы
+
+macro ProtoPath+"SetFasad.mac" 0 0 0 0 0 0 1;
+macro ProtoPath+"SetFasdN.mac" 0 0 0 0 0 0 ;
+macro ProtoPath+"SetFasdP.mac" 0  ;
+macro ProtoPath+"SetFasdV.mac" 1 ;
+macro ProtoPath+"SetRadius.mac" 250 ;
+macro ProtoPath+"SetDoorGapsInit.mac" ;
+macro ProtoPath+"SetCorpsCorButts.mac" 0, 0;
+
+macro ProtoPath+"SetFasPo.mac" 0  0  0 ;
+
+macro ProtoPath+"SetDoor.mac" 0 0 0 0 0 0 16;
+macro ProtoPath+"SetDoorK.mac" 0 ;
+
+macro ProtoPath+"SetParFas.mac" " ";
+
+macro ProtoPath+"SetTrack.mac"  0 0 0;
+//macro ProtoPath+"SetStvoR.mac" 0 0 0 0 0  0 0 0 0 0  0;
+//macro ProtoPath+"SetMarsh.mac" " ";
+macro Protopath+"SetLift.Mac"  0 0 ;
+macro Protopath+"SetHinge.Mac"  0 ;
+
+macro ProtoPath+"SetFasPM.mac" 0 0 0 0 0 ;
+macro ProtoPath+"SetHandl.mac" 0 0 0 0 ;
+macro ProtoPath+"SetHand.mac" 0 0 ;
+macro ProtoPath+"SetBox.mac" 0 0 0 0 ;
+macro ProtoPath+"SetOpenBox.mac" 0 ;
+macro ProtoPath+"SetBoxF.mac" 0 0 0 0 ;
+macro ProtoPath+"SetBoxKr.mac" 0 0 ;
+macro ProtoPath+"SetBoxD.mac" 1, 0;        //-- Устанавливаем тип дна ящика и отступ
+macro ProtoPath+"SetProfC.mac" 0 0 0 0 0 0 0 0 0;
+macro ProtoPath+"SetProfS.mac" 0 0;
+macro ProtoPath+"SetProfA.mac" 0 0 0 0;
+macro ProtoPath+"SetProfD.mac" 0 0; //[27.07.11 Шубин ВП] 2 2;        //  Направление угла подрезки  с 30-10-2009 в новый профиль
+macro ProtoPath+"SetUstl.mac" 100 100 0 0 0 0 0 0 0 0 0;
+macro ProtoPath+"SetFigur.mac" 300 350 0 45;
+
+macro ProtoPath+"SetEnam.mac" " " ;
+macro ProtoPath+"SetPanPo.mac" 0  0  0;
+macro ProtoPath+"SetFasPlas.mac"  0 0 0 0 ;
+
+//-- Параметры дверей К356
+macro ProtoPath+"SetStvor56.mac" 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0;
+macro ProtoPath+"SetStvorDir56.mac" 0 0 0 0 0 0;
+exit;

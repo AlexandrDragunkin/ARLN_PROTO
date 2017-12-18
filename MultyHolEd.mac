@@ -1,0 +1,39 @@
+//MultyHolEd.mac
+//
+//Мультиредактирование сверловки
+//
+
+n=sysvar(60) ;
+
+i=0
+lab1:
+if i<n {
+   i=i+1
+   pnt=getobjnum(i) ;
+   err=1;
+   err=GetProtoVal(pnt,"TypeS",TypeS);
+   if (err==1) {
+      if (TypeS==536) {
+      err=GetProtoVal(pnt,"h2",h2);
+      if h2==18 { protoobj edit list pnt nodc "h2" 16 ;  }
+      if h2==16 { protoobj edit list pnt nodc "h2" 18 ;  }
+      i=i-1
+      n=n-1
+      }
+      if (TypeS==535) {
+      err=GetProtoVal(pnt,"h2",h2);
+      // protoobj edit list pnt nodc "h2" 12 ;
+      //                        "h1" 20
+       protoobj edit list pnt nodc "d2" 8 ;
+       objident last 1 pnt;
+       protoobj edit list pnt nodc "d1" 8 ;
+      i=i-1
+      n=n-1
+      }
+        }
+
+   goto lab1 ;
+   }
+
+exit ;
+

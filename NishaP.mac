@@ -1,0 +1,19 @@
+//-- Указание ниши по точке
+//-- Габариты ниши
+global xsek1, xsek2, ysek1, ysek2, zsek1, zsek2;
+//-- Глубина для полок и стоек минимум и максимум
+global ysek2P, ysek2S ysek2PM, ysek2SM;
+
+onerror Err2;
+MbGet "Выберите нишу"  niche  xsek2 ysek2 zsek2 :
+offerror;
+xsek1=0;
+ysek1=0;
+zsek1=0;
+ysek2P=ysek2;
+ysek2S=ysek2;
+ysek2PM=ysek2;
+ysek2SM=ysek2;
+exit;
+Err2:
+cancel;

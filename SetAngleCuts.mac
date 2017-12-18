@@ -1,0 +1,50 @@
+//-- Задание параметров подрезки угла
+//-- Входные параметры:
+//-- Четыре набора по одному для угла
+//-- Type1 - тип угла:
+//-- [0] Без подрезки
+//-- [1] Фаска:               1 - Смещение по X, 2 - Смещение по Y
+//-- [2] Вырез прямоугольный: 1 - Смещение по X, 2 - Смещение по Y, 3 - Радиус
+//-- [3] Дуга:                1 - Смещение по X, 2 - Смещение по Y, 3 - Радиус
+//-- [4] Скругление:          1 - Радиус
+//-- [5] Голубница:           1 - Радиус
+//-- [6] Вырез произвольный:  1 - Смещение по Х, 2 - Смещение по Y, 3 - Смещение по X вершины выреза, 4 - Смещение по Y вершины выреза
+//-- Param11 - Param5 - параметры подрезки
+//-- (Param15 - будущий радиус сопряжения)
+
+defarr g_AngleCut[4,6];
+getpar Type1, Param11, Param12, Param13, Param14, Param15
+       Type2, Param21, Param22, Param23, Param24, Param25
+       Type3, Param31, Param32, Param33, Param34, Param35
+       Type4, Param41, Param42, Param43, Param44, Param45;
+
+g_AngleCut[1,1]=Type1;
+g_AngleCut[1,2]=Param11;
+g_AngleCut[1,3]=Param12;
+g_AngleCut[1,4]=Param13;
+g_AngleCut[1,5]=Param14;
+g_AngleCut[1,6]=Param15;
+
+g_AngleCut[2,1]=Type2;
+g_AngleCut[2,2]=Param21;
+g_AngleCut[2,3]=Param22;
+g_AngleCut[2,4]=Param23;
+g_AngleCut[2,5]=Param24;
+g_AngleCut[2,6]=Param25;
+
+g_AngleCut[3,1]=Type3;
+g_AngleCut[3,2]=Param31;
+g_AngleCut[3,3]=Param32;
+g_AngleCut[3,4]=Param33;
+g_AngleCut[3,5]=Param34;
+g_AngleCut[3,6]=Param35;
+
+g_AngleCut[4,1]=Type4;
+g_AngleCut[4,2]=Param41;
+g_AngleCut[4,3]=Param42;
+g_AngleCut[4,4]=Param43;
+g_AngleCut[4,5]=Param44;
+g_AngleCut[4,6]=Param45;
+
+NULLOUT=setarrinst(1,"g_AngleCut",g_AngleCut);
+exit;

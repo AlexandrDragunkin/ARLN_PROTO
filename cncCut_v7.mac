@@ -1,0 +1,76 @@
+//-- Подготовка программ для раскройных станков с ЧПУ
+
+global ProtoPath, clearCNC;
+
+pref1="CNC\\";                    //-- Имя папки внутри папки проекта для создания управляющих программ
+ProjPath=mpathexpand("<Projects>\\");
+pSettings=getcncdata();           //-- Папка с py файлами создания управляющих программ
+Cutdata=GetCutData()+"EXPORT\\";  //-- Путь с данными от Раскроя
+fname=ProtoPath+"attrlist.txt";   //-- Имя файла со списком атрибутов
+BaseName=ProjPath+getfiletitle(sysvar(2))-3+".mdb"; //-- Имя будущей базы
+pathCNC=ProjPath+"CNC\\";         //-- Папка, куда будут складываться управляющие программы
+CreatorPath=getcnc();
+if (udgetentity("CNCCutType",ValType,CNCType,sVal)==0) //-- Тип станка для управляющих программ
+{
+  CNCType=1;
+}
+//-------------------------------------------------------------------
+onerror endlab;
+#aaa
+setvar
+"Управляющие программы для станка с ЧПУ"
+""
+center
+"Введите параметры для управляющих программ"
+done
+string auto listonly
+let nt=udcombototal("CNCCutType")
+let i=0
+loop:
+let i=i+1
+let NULLOUT=udcombonext("CNCCutType",i,q,qq)
+if (q==CNCType)
+{
+  current
+}
+qq
+if (i<nt)
+{
+  goto loop
+}
+done
+"Выберите станок" var
+string button 2 size 50 default Cutdata "Укажите файл с экспортом К3-Раскрой" Cutdata
+string button 3 size 50 default ProjPath "Укажите папку с проектами К3-Мебель" ProjPath
+string button 3 size 50 default pathCNC "Укажите папку для управляющих программ" pathCNC
+Logical default 1
+"Очищать папку с управляющими программами" clearCNC
+done;
+
+if (aaa==0)
+{
+	goto endlab;
+}
+if (FolderExist(pathCNC)==0)
+{
+  err=CreateFolder(pathCNC);
+  if (err==0)
+  {
+    putmsg("Ошибка доступа. Не удается создать папку "+pathCNC,0);
+    exit;
+  }
+}
+if (clearCNC==1)
+{
+  err=EmptyFolder(pathCNC);
+  if (err==0)
+  {
+    putmsg("Ошибка доступа. Не удается очистить папку "+pathCNC,0);
+    exit;
+  }
+}
+sett="\""+pSettings+var+"_b_settings.py\"";
+comline=sett+" \""+Cutdata+"\" \""+ProjPath+"\" \""+pathCNC;
+execute wait prompt "Выгрузка данных в "+var "\""+creatorPath+"\" "+comline
+endlab:
+exit;

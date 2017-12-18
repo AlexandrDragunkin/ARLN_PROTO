@@ -1,0 +1,284 @@
+//-- Программа построения узора из палочек
+
+//-- Входные параметры:
+//-- trac_type - тип узора (всего 7 типов)
+//-- st_type - тип палочки узора (всего 10 типов)
+//-- trac_mat - материал узора
+//-- d - размер палочки узора
+//-- w,h - размеры узора по вертикали и по горизонтали
+//-- x,y - Координаты угла узора
+
+//-- Выходные параметры:
+//-- g_tracery - узор
+
+//-- Недостатки - все палочки одного типа, размера, материала и прямые;
+//-- контур узора - прямоугольный
+
+global ProtoPath;
+ProtoPath=GetProtoMac("Shkaf.ptl");
+global g_tracery,g_stick;
+getpar trac_type,st_type,trac_mat,d,w,h,x,y;
+//trac_type=7;
+//st_type=2;
+//trac_mat=25;
+//d=10;
+//w=900;
+//h=700;
+//x=10;
+//y=20;
+apc=sysvar(73);
+approximation meridians apc/2;
+n_obj=sysvar(60);    //-- Количество объектов в сцене
+
+//-- Начинаем рисовать узоры различных типов
+if (trac_type==1)
+{
+    mi=w;
+    ma=h;
+    if (mi>ma)
+    {
+	h=mi;
+	w=ma;
+    }	
+    x1=w/2;
+    y1=0;
+    x2=x1;
+    y2=(3*h-w)/6;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+
+    mirror g_stick done 3points 0,h/2,0 10,h/2,0 0,h/2,10 copy;
+
+    x1=0;
+    y1=h/2;
+    x2=w/3;
+    y2=y1;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+
+    mirror g_stick done 3points w/2,0,0 w/2,5,0 w/2,0,10 copy;
+
+    x1=w/2;
+    y1=(3*h-w)/6;
+    x2=w/3;
+    y2=h/2;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+
+    rotate g_stick done 2points x1,y1,0 x1,y1,10 -90 copy 1;
+
+    mirror last 2 done 3points x2,y2,0 w-x2,y2,0 x2,y2,10 copy;
+    if (mi>ma)
+    {
+	rotate last 8 done 2points 0,0,0 0,0,10 -90 nocopy;
+	move last 8 done 2points 0,0,0 0,ma,0 nocopy;
+    }	
+    goto fin;
+}
+if (trac_type==2)
+{
+    x1=w/2;
+    y1=0;
+    x2=x1;
+    y2=2*h/3;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+    x1=w/2;
+    y1=h;
+    x2=x1;
+    y2=2*h/3;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+    x1=0;
+    y1=2*h/3;
+    x2=w/2;
+    y2=y1;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+    mirror g_stick done 3points w/2,0,0 w/2,5,0 w/2,0,10 copy;
+    goto fin;
+}
+if (trac_type==3)
+{
+    x1=w/2;
+    y1=0;
+    x2=x1;
+    y2=h/2;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+    mirror g_stick done 3points 0,h/2,0 10,h/2,0 0,h/2,10 copy;
+    x1=0;
+    y1=h/2;
+    x2=w/2;
+    y2=y1;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+    mirror g_stick done 3points w/2,0,0 w/2,5,0 w/2,0,10 copy;
+    goto fin;
+}
+if (trac_type==4)
+{
+    x1=w/6;
+    y1=0;
+    x2=x1;
+    y2=h/6;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+    x1=w/6;
+    y1=h/2;
+    x2=x1;
+    y2=h/6;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+    x1=w/2;
+    y1=h/6;
+    x2=w/6;
+    y2=y1;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+    x1=0;
+    y1=h/6;
+    x2=w/6;
+    y2=y1;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+    mirror last 4 done 3points 0,h/2,0 10,h/2,0 0,h/2,10 copy;
+    mirror last 8 done 3points w/2,0,0 w/2,5,0 w/2,0,10 copy;
+    goto fin;
+}
+if (trac_type==5)
+{
+    x1=w/2;
+    y1=h/16;
+    x2=3*w/10;
+    y2=h/8;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+    mirror last done 3points 0,y2,0 5,y2,0 0,y2,10 copy;
+    x1=0;
+    y1=h/8;
+    x2=3*w/10;
+    y2=y1;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+    x1=0;
+    y1=3*h/4;
+    x2=w/3;
+    y2=y1;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+    x1=w/3;
+    y1=3*h/4;
+    x2=w/2;
+    y2=7*h/8;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+    mirror last done 3points 5,y1,0 0,y1,0 0,y1,10 copy;
+    mirror last 6 done 3points w/2,0,0 w/2,5,0 w/2,0,10 copy;
+    x1=w/2;
+    y1=0;
+    x2=x1;
+    y2=h/16;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+    x1=w/2;
+    y1=3*h/16;
+    x2=x1;
+    y2=5*h/8;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+    x1=w/2;
+    y1=7*h/8;
+    x2=x1;
+    y2=h;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+    goto fin;
+}
+if (trac_type==6)
+{
+    x1=0;
+    y1=h/3;
+    x2=w/4;
+    y2=y1;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+
+    x1=0;
+    y1=h/6;
+    x2=w/3;
+    y2=y1;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+
+    x1=w/2;
+    y1=h/12;
+    x2=w/3;
+    y2=h/6;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+
+    x1=x2;
+    y1=y2;
+    x2=w/2;
+    y2=h/4;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+
+    x1=x2;
+    y1=y2;
+    x2=3*w/4;
+    y2=h/3;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+
+    x1=x2;
+    y1=y2;
+    x2=x1;
+    y2=h/2;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+    mirror last 6 done 3points w/2,0,0 w/2,5,0 w/2,0,10 copy;
+
+    x1=w/2;
+    y1=0;
+    x2=x1;
+    y2=h/12;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+
+    mirror last 13 done 3points 0,h/2,0 10,h/2,0 0,h/2,10 copy;
+    goto fin;
+}
+if (trac_type==7)
+{
+    x1=w/2;
+    y1=0;
+    x2=x1;
+    y2=h/3;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+    x1=x2;
+    y1=y2;
+    x2=x1;
+    y2=2*h/3;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+    x1=x2;
+    y1=y2;
+    x2=x1;
+    y2=h;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+
+    x1=0;
+    y1=h/9;
+    x2=w/2;
+    y2=h/3;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+
+    x1=x2;
+    y1=y2;
+    x2=w;
+    y2=5*h/9;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+
+    x1=0;
+    y1=2*h/3;
+    x2=w/2;
+    y2=y1;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+
+    x1=7*h/18;
+    y1=5*h/6;
+    x2=w/2;
+    y2=y1;
+    macro ProtoPath+"stick.mac" st_type,d,x1,y1,x2,y2;
+    mirror last 2 done 3points w/2,0,0 w/2,5,0 w/2,0,10 copy;
+    goto fin;
+}
+//--------------------------------------------------------------------
+fin:
+n=sysvar(60)-n_obj
+boolean union full last n done;
+objident last 1 g_tracery;
+move g_tracery done x,y,0 nocopy;
+
+//Attrobj Attach "$Material"  "$TSmooth" "$TMix" "$TAngle" done g_tracery trac_mat 1 1 0;
+ChProp MapByPars g_tracery Done
+0,  -1        //Для всех секций
+1,  44    //Меняем код материала на  материал в таблице материалов
+;
+approximation meridians apc;
+exit;

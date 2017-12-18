@@ -1,0 +1,62 @@
+//-- Присвоение атрибутов мебельным панельным элементам
+//-- Входные параметры:
+//-- obj - объект
+//-- Posit - атрибут Posit
+//-- XUnit,YUnit,ZUnit - атрибуты XUnit,YUnit,ZUnit
+//-- PriceID - атрибут PriceID
+//-- ProtoParams - атрибут ProtoParams
+
+getpar obj, Posit, XUnit, YUnit, ZUnit, PriceID, ProtoParams;
+
+KarkasNumb=getcarcnumb();    //-- Текущий номер каркаса
+NULLOUT=getvarinst(1,"FurnType",FurnType,"000000");    //-- FurnType
+NULLOUT=getvarinst(1,"HoldName",HoldName," ");    //-- Имя хозяина элемента
+NULLOUT=getvarinst(1,"ElemName",ElemName," ");    //-- Имя элемента
+
+//-- Корректируем значения атрибутов
+if (len(FurnType)==0) { FurnType="000000"; }
+if (len(HoldName)==0) { HoldName=" "; }
+if (len(ElemName)==0) { ElemName=" "; }
+
+attrobj attach "Posit" done obj Posit;
+
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done obj done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done obj KarkasNumb;
+}
+if (isassign("ElemName",0))
+{
+  attrobj copy record "ElemName" done obj done;
+}
+else
+{
+  if (ElemName!=" ")
+  {
+    attrobj attach "ElemName" done obj ElemName;
+  }
+}
+if (isassign("HoldName",0))
+{
+  attrobj copy record "HoldName" done obj done;
+}
+else
+{
+  if (HoldName!=" ")
+  {
+    attrobj attach "HoldName" done obj HoldName;
+  }
+}
+attrobj attach "XUnit" "YUnit" "ZUnit" done obj XUnit YUnit ZUnit;
+attrobj attach "FurnType" done obj FurnType ;
+attrobj attach "PriceID" done obj PriceID ;
+attrobj attach "GroupID" done obj 2;      //-- 2 - YAD группа материалов панелей
+if (ProtoParams!="")
+{
+  attrobj copy record ProtoParams done obj done;
+}
+exit;

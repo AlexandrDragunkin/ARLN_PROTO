@@ -1,0 +1,1045 @@
+global g_colselect ;
+global ProtoPath;
+global prm1 prm2 ;
+
+global PKM_SP ;
+if (isvardef("PKM_SP")>0)
+{
+   //Функция определяет, определена ли к данному моменту переменная, имя которой содержит строка variable. Функции возвращает:
+   //0  – переменная не определена;
+   //3  – переменная является массивом
+   //5  – переменная числового типа
+   //6  – переменная строкового типа
+   //16  – переменная является ссылкой на объект
+    macro ProtoPath+"Glob_Sp.mac" ; // Загружаем переменныые для макросов из  SUPPORT
+}
+//AngArcSeg.mac
+//*****************************************************************************
+//     Обрезка дугового сегмента гнутого и линейного длинномера  линией
+//              Драгункин А.Р.
+//              ГеоС 2007-2011 г.
+//*****************************************************************************
+CurCollor=SysVar(40);
+
+defarr Bd[11] xm[6] xm1[6] xm2[6] xmm[15] arr[11] ob[4] fl[9] ob1[4] ob2[4] back[9];
+objects=SysVar(60);
+LinSite=0;
+setucs save "AngArcSeg" ;
+getpar auto ;
+if (auto==1) 
+{
+ getpar
+ plg         //длинномер
+ biz         //Линия  обрезки
+ site        //Сторона start end
+ ;
+}
+else 
+{
+  metst1:
+  objident prompt "Укажите длинномер"  : plg;
+  select stayblink plg done ;
+  if (GetAttr(Plg,"LongsType",-99)<0) 
+  { //Проверяем, является ли первый кусок длинномером
+    PutMsg("Указанный объект не является длинномером",0) ;
+    undo 1;
+    goto metst1;
+  }
+  objident prompt "Укажите линию"  : biz;
+  select stayblink biz done ;
+  get "Укажите обрезаемую сторону" point missing TrimX TrimY TrimZ :
+  select plg biz done  ;
+  //****Определяем  обрезаемый участок
+  PtransCS(0,3,TrimX,TrimY,TrimZ,TrimX,TrimY,TrimZ);
+  setucs lcs plg;
+  PtransCS(3,0,TrimX,TrimY,TrimZ,TrimX,TrimY,TrimZ);
+  NULLOUT=objgab3(biz,xm);
+  XcBiz=(Xm[4]-xm[1])/2+xm[1];
+  move biz done 0 0 -xm[6] copy 1
+  objident last 1 biz ;
+  Result=SetLongObj(Plg);
+  Result=GetBentProf(Bd);
+  gosub BalustrAnz;
+  if (bd[2]<abs(Bd[3])&&bd[1]<2*abs(Bd[3]))
+  {   // Если дуга
+    if (TrimX<XcBiz) { site="start"; }
+    else             { site="end"; }
+  }
+  else 
+  { //Если есть Линейные участки, то определение site происходит по принципу близости линейного участка
+            //Метаморфоза будет происходить с тем участком к которому ближе точка с координатами TrimX TrimY
+            //Определение site в этом случае в  GetLinSite
+    LinSite=1;
+  }
+}
+objectss=sysvar(60)
+TypSnap=SysVar(30);
+CurCollor=SysVar(40);
+err=SysArr(41,Back);
+CurColBack=Back[1];
+//color CurColback ;
+If (TypSnap==0)
+{
+   switch contosnap on;         //Выключаем привязку к продолжению
+}
+setucs lcs plg ;
+Result=SetLongObj(Plg);
+TypLong=GetLongType();
+//****Строим кусочек и измеряем максимумы по Y
+if (TypLong!=8) 
+{
+  goto glf;
+}
+arr[1]=radian(0);
+arr[2]=radian(0);
+arr[3]=0;
+Result=SetLongCut(arr);
+Result=SetBentProf(arr);
+lsx=0.1;
+
+metls:
+objls=sysvar(60);
+#fant longcreate lsx 0 0 0 0 0 ;
+objls=sysvar(60)-objls
+if (objls<1) 
+{ 
+  lsx=lsx+1;
+  goto metls;
+}
+NULLOUT=objgab3(fant,xm);
+plgYmin=xm[2];
+plgYmax=xm[5];
+delete fant done ;
+
+glf:
+Xgab=0;
+Ygab=0;
+plgYmax=0;
+plgYmin=0;
+LongPath=GetLongFile(Xgab,Ygab,plgYmax,plgYmin);
+plgYmin=-plgYmin;
+glf1:
+//*****
+Result=SetLongObj(Plg);
+Result=GetBentProf(Bd);
+gosub BalustrAnz;
+R=ABS(BD[3]);
+if (R==0) 
+{
+  Zn=1;
+  gosub BasePlin;
+  ob2[1]=ob[1];
+  ob2[2]=ob[1];
+  ob2[3]=ob[3];
+  ob2[4]=ob[4];
+  GoSub FindIntP;
+  PtransCS(3,0,px,py,pz,pxin,pyin,pzin);
+  if (LinSite==1) 
+  { 
+    gosub GetLinSite;
+  }
+  if (obi2!=3)
+  { 
+    gosub LinSrez;
+  }
+  Result=GetLongCut(arr);
+  if (site=="start")
+  {
+    arr[1]=radian(ang);
+  }
+  if site=="end" 
+  {
+    arr[2]=radian(ang);
+  }
+  Result=SetLongCut(arr);
+  DtK=GetProfShift(arr[1],1);
+  DtN=GetProfShift(arr[2],0);
+  objects=SysVar(60)-objects;
+  delete last objects done;
+  delete plg done;
+  color CurCollor ;
+  if (site=="end")    { longcreate pxin+dtn pyin 0 0 0 0 ;      }
+  if (site=="start")  { longcreate Ln pyin 0 pxin-dtk pyin 0 ;  }
+  goto metend;
+}  // C линейным кончено
+maxXYgab=2000;                       //максимальноразрешенный габарит гнутого по X Y
+Zn=1;
+if (BD[3]<0)
+{ 
+  Zn=-1;
+}                //коэффициент знака радиуса
+if ((2*R-bd[1])>=0)&&(bd[2]<0.1)  
+{ //линейных участков нет
+  gosub ArcSeg ;
+}
+else 
+{                            //линейные участки есть
+  GoSub BasePath ;
+  ob2[1]=ob[1];
+  ob2[2]=ob[2];
+  ob2[3]=ob[3];
+  ob2[4]=ob[4];
+  gosub FindIntP;
+  PtransCS(3,0,px,py,pz,pxin,pyin,pzin);
+  if (LinSite==1)
+  { 
+    gosub GetLinSite;
+  }
+  if (obi2!=3)
+  {
+    GoSub LinSrez;
+  }
+  if (obi2==3) 
+  {
+    Setucs Xarn Yarn 0 Xark Yark 0 @0 1 0 ;
+    GoSub RadSrez ;
+    Setucs lcs plg ;
+    PtransCS(3,0,xb1,yb1,zb1,pxin,pyin,zb1) ;
+  }
+  Result=SetLongObj(Plg);
+  Result=GetBentProf(Bd);
+  gosub BalustrAnz;
+  Result=GetLongCut(arr);
+  R=ABS(BD[3]);
+  if (site=="start")
+  {
+    arr[1]=radian(ang);
+  }
+  if (site=="end") 
+  { 
+    arr[2]=radian(ang)
+  }
+  Result=SetLongCut(arr);
+  DtK=GetProfShift(arr[1],1);
+  DtN=GetProfShift(arr[2],0);
+  objects=SysVar(60)-objects;
+  delete last objects done ;
+  delete plg done ;
+  color CurCollor ;
+  //************клюшка положительная c dx>R
+  if (bd[1]>=R)&&(bd[2]<R)&&(Bd[3]>0)
+  { //клюшка положительная c dx>R
+    if (obi2==1&&site=="end") 
+    {           //Превращается в линейный с стартом в Px Py
+      Bd[3]=0;
+      Result=SetBentProf(Bd);
+      Result=SetLongCut(arr);
+      longcreate pxin+dtn pyin 0 0 0 0 ;
+    }
+    if (obi2==1&&site=="start")
+    {   //Превращается в клюшку с концом в Px Py
+      longcreate Bd[1] 0 0 pxin-dtk pyin 0 ;
+    }
+    if (obi2==2&&site=="end")
+    {   //Превращается в бумер с стартом в Px Py
+      macro ProtoPath+"BendPrkar.mac"  1 bd[3] pxin pyin-dtn 0  0 0 0 100 0 0 0 ;
+    }
+    if (obi2==3&&site=="start")
+    {   //Превращается в сегмент с концом в Px Py
+      arr[1]=-arr[1];
+      Result=SetLongCut(arr);
+      Xna=bd[1]-R+sqrt(R*R-Pow((Abs(Bd[3])-Bd[2]),2));
+      macro ProtoPath+"BendPrkar.mac"  1 bd[3] Xna -bd[2] 0 pxin pyin 0  Xna -bd[2] 0 0 ;
+    }
+    if (obi2==3&&site=="end")
+    {   //Превращается в бумер с стартом в Px Py
+      macro ProtoPath+"BendPrkar.mac"  1 bd[3] pxin pyin 0  0 0 0 100 0 0 0 ;
+    }
+  }
+  //************клюшка положительная c dx<R
+  if (bd[2]>=R)&&(bd[1]<R)&&(Bd[3]>0)  
+  { //клюшка положительная c dx<R
+    if (obi2==2&&site=="start")
+    {   //Превращается в линейный с концом в Px Py
+      Bd[3]=0;
+      Result=SetBentProf(Bd);
+      Result=SetLongCut(arr);
+      longcreate bd[1] -bd[2] 0 pxin pyin+dtk 0;
+    }
+    if (obi2==1&&site=="start")
+    {   //Превращается в бумер  с концом в Px Py
+      macro ProtoPath+"BendPrkar.mac"  1 bd[3] bd[1] -1*(bd[2]) 0 pxin-dtk pyin 0 pxin+100 pyin 0 0 ;
+    }
+    if (obi2==2&&site=="end")
+    {   //Превращается в клюшку  с измененным линейным участком
+      bd[2]=Abs(pyin-dtn);
+      Result=SetBentProf(Bd);
+      longcreate Bd[1] 0 0 0 0 0 ;
+    }
+    if (obi2==3&&site=="start")
+    {   //Превращается в клюшку с концом в Px Py
+      arr[1]=-arr[1];
+      Result=SetLongCut(arr);
+      macro ProtoPath+"BendPrkar.mac"  1 bd[3] Bd[1] -bd[2] 0 pxin pyin 0  pxin+100 pyin 0 0 ;
+    }
+    if (obi2==3&&site=="end")
+    {   //Превращается в сегмент
+      Yna=R-sqrt(R*R-Pow((Abs(Bd[3])-Bd[1]),2));
+      macro ProtoPath+"BendPrkar.mac"  1 bd[3] pxin pyin 0  0 -Yna 0 pxin pyin 0 0 ;
+    }
+  }
+  //************клюшка отрицательная c dx>R
+  if (bd[1]>=R)&&(bd[2]<R)&&(Bd[3]<0)  
+  { //клюшка отрицательная c dx>R
+    if (obi2==2&&site=="start")
+    {   //Превращается в линейный с стартом в Px Py
+      Bd[3]=0;
+      Result=SetBentProf(Bd);
+      Result=SetLongCut(arr);
+      longcreate bd[1] -bd[2] 0 pxin-dtk pyin 0  ;
+    }
+    if (obi2==1&&site=="start")
+    {   //Превращается в бумер с концом в Px Py
+      macro ProtoPath+"BendPrkar.mac"  1 bd[3] bd[1] -bd[2] 0 pxin pyin+dtk 0  0 pyin-100 0 0 ;
+    }
+    if (obi2==2&&(site=="end"))
+    {   //Превращается в клюшку с концом в Px Py
+      longcreate pxin+dtn 0 0 0 0 0;
+    }
+    if (obi2==3&&site=="start")
+    {   //Превращается в клюшку с концом в Px Py
+      arr[1]=-arr[1];
+      Result=SetLongCut(arr);
+      macro ProtoPath+"BendPrkar.mac"  1 bd[3] Bd[1] -bd[2] 0 pxin pyin 0  pxin pyin-100 0 0 ;
+    }
+    if (obi2==3&&site=="end") 
+    {   //Превращается в сегмент
+      Xna=R-sqrt(R*R-Pow((Abs(Bd[3])-Bd[2]),2))
+      macro ProtoPath+"BendPrkar.mac"  1 bd[3] pxin pyin 0 xna 0 0 pxin pyin 0 0 ;
+    }
+  }
+  //************клюшка отрицательная c dx<R
+  if ((bd[2]>=R)&&(bd[1]<R)&&(Bd[3]<0))
+  { //клюшка отрицательная c dx<R
+    if (obi2==1&&site=="end")
+    {   //Превращается в линейный с стартом в Px Py
+      Bd[3]=0;
+      Result=SetBentProf(Bd);
+      Result=SetLongCut(arr);
+      longcreate 0 pyin-dtn 0 0 0 0 ;
+    }
+    if (obi2==1&&site=="start")
+    {   //Превращается в клюшку с концом в Px Py
+      bd[2]=bd[2]+pyin+dtk;
+      Result=SetBentProf(Bd);
+      longcreate bd[1] pyin+dtk 0 0 pyin+dtk 0 ;
+    }
+    if (obi2==2&&(site=="end")) 
+    {   //Превращается в бумер с началом в Px Py
+      macro ProtoPath+"BendPrkar.mac"  1 bd[3] pxin+dtn pyin 0 0 0 0 0 -100 0 0 ;
+    }
+    if (obi2==3&&site=="end") 
+    {   //Превращается в клюшку с концом в Px Py
+      macro ProtoPath+"BendPrkar.mac"  1 bd[3]  pxin pyin 0  0 0 0 0 -100 0 0 ;
+    }
+    if (obi2==3&&site=="start")
+    {   //Превращается в сегмент
+      arr[1]=-arr[1];
+      Result=SetLongCut(arr);
+      Yna=Bd[2]-R+sqrt(R*R-Pow((Abs(Bd[3])-Bd[1]),2));
+      macro ProtoPath+"BendPrkar.mac"  1 bd[3] Bd[1] -Yna 0 pxin pyin 0 0 1 0 0 ;
+    }
+  }
+  //************бумер положительный
+  if ((bd[2]>=R)&&(bd[1]>=R)&&(Bd[3]>0))
+  { //бумер положительный
+    if (obi2==1&&site=="start") 
+    {
+      macro ProtoPath+"BendPrkar.mac"  1 bd[3] bd[1] -1*(bd[2]) 0 pxin-dtk pyin 0 pxin+100 pyin 0 0 ;
+    }
+    if (obi2==2&&site=="end")
+    {
+      macro ProtoPath+"BendPrkar.mac"  1 bd[3] pxin pyin-dtn 0  0 0 0 100 0 0 0 ;
+    }
+    if (obi2==1&&site=="end")
+    {   //Превращается в линейный с стартом в Px Py
+      bd[1]=0 bd[2]=0 bd[3]=0;
+      Result=SetBentProf(Bd);
+      Result=SetLongCut(arr);
+      longcreate pxin+dtn pyin 0 0 0 0 ;
+    }
+    if (obi2==2&&site=="start") 
+    {   //Превращается в линейный с концом в Px Py
+      Bd[3]=0;
+      Result=SetBentProf(Bd);
+      Result=SetLongCut(arr);
+      longcreate bd[1] -bd[2] 0 pxin pyin+dtk 0;
+    }
+    if (obi2==3&&site=="start") 
+    {   //Превращается в клюшку с концом в Px Py
+      arr[1]=-arr[1];
+      Result=SetLongCut(arr);
+      macro ProtoPath+"BendPrkar.mac"  1 bd[3] Bd[1] -bd[2] 0 pxin pyin 0  pxin+100 pyin 0 0 ;
+    }
+    if (obi2==3&&site=="end")
+    {   //Превращается в клюшку с началом в Px Py
+      macro ProtoPath+"BendPrkar.mac"  1 bd[3] pxin pyin 0  0 0 0 100 0 0 0 ;
+    }
+  }
+  //************бумер отрицательный
+  if ((bd[2]>=R)&&(bd[1]>=R)&&(Bd[3]<0))
+  { //бумер отрицательный
+    if (obi2==1&&site=="start")
+    {
+      macro ProtoPath+"BendPrkar.mac"  1 bd[3] bd[1] -bd[2] 0 pxin pyin+dtk 0 pxin pyin-100 0 0 ;
+    }
+    if (obi2==2&&site=="end") 
+    {
+      macro ProtoPath+"BendPrkar.mac"  1 bd[3] pxin+dtn pyin 0 0 0 0 0 -100 0 0 ;
+    }
+    if (obi2==1&&site=="end")
+    {   //Превращается в линейный с стартом в Px Py
+      bd[1]=0;
+      bd[2]=0;
+      bd[3]=0;
+      Result=SetBentProf(Bd);
+      Result=SetLongCut(arr);
+      longcreate pxin pyin-dtn 0 0 0 0 ;
+    }
+    if (obi2==2&&site=="start")
+    {   //Превращается в линейный с концом в Px Py
+      Bd[3]=0;
+      Result=SetBentProf(Bd);
+      Result=SetLongCut(arr);
+      longcreate bd[1] -bd[2] 0 pxin-dtk pyin 0  ;
+    }
+    if (obi2==3&&site=="start")
+    {   //Превращается в клюшку с концом в Px Py
+      arr[1]=-arr[1];
+      Result=SetLongCut(arr);
+      macro ProtoPath+"BendPrkar.mac"  1 bd[3] Bd[1] -bd[2] 0 pxin pyin 0  pxin pyin-100 0 0 ;
+    }
+    if (obi2==3&&site=="end")
+    {   //Превращается в клюшку с началом в Px Py
+      macro ProtoPath+"BendPrkar.mac"  1 bd[3] pxin pyin 0  0 0 0 0 -100 0 0 ;
+    }
+  }
+  goto metend ;
+}
+metend:
+color CurCollor ;
+setucs restore "AngArcSeg" ;
+setucs delete  "AngArcSeg" ;
+bp 0 0 0 ;
+arr[1]=radian(0);
+arr[2]=radian(0);
+Result=SetLongCut(arr);
+exit;
+//************************************************************************Sub
+//
+//     ***  *  * ***  *****
+//     **    *    *     *
+//     *** *   * ***    *
+//
+//************************************************************************Sub
+ArcSeg: //линейных участков нет
+h=R-SQRT(R*R-BD[1]*BD[1]/4);
+#ArcBD Arc 0 0 0 BD[1] 0 0 BD[1]/2 Zn*h 0 ; //Строим дугу  на базе
+GoSub RadSrez ;
+setucs lcs plg ;
+PtransCS(3,0,xb1,yb1,zb1,xb1,yb1,zb1) ;
+Result=SetLongObj(Plg);
+Result=GetBentProf(Bd);
+gosub BalustrAnz;
+Result=GetLongCut(arr);
+R=ABS(BD[3]);
+color CurCollor ;
+objects=SysVar(60)-objects;
+delete last objects done ;
+//*******************************построение
+delete plg done ; // Удаляем старый карниз
+if (site=="end")
+{
+  if (abs(ang)>180)
+  {  
+    aang=abs(ang)-180;
+    if (ang<0) 
+    { 
+      ang=-aang;  
+    } 
+    else 
+    { 
+      ang=aang;
+    }
+  }
+  arr[2]=radian(ang);
+  macro ProtoPath+"CnAng.mac"  Arr[1] arr[2] ;
+  Arr[1]=prm1;
+  arr[2]=prm2;
+  Result=SetLongCut(arr);
+  macro ProtoPath+"BendPrkar.mac"  1 bd[3] xb1 yb1 0  0 0 0 xb1 yb1 0 0 ;
+}
+else 
+{
+  arr[1]=-radian(ang);
+  macro ProtoPath+"CnAng.mac"  Arr[1] arr[2] ;
+  Arr[1]=prm1;
+  arr[2]=prm2;
+  Result=SetLongCut(arr);
+  macro ProtoPath+"BendPrkar.mac"  1 bd[3] bd[1] bd[2] 0 xb1 yb1 0  bd[1] 0 0 0 ;
+}
+return ;
+//построение базовой линии гнутого длинномера  И линий габарита
+BasePath:
+Result=SetLongObj(Plg);
+Result=GetBentProf(Bd);
+gosub BalustrAnz;
+R=ABS(BD[3]);
+Zn=1;
+Ob[4]=0;  //Счетчик элементов
+if (BD[3]<0)
+{ 
+  Zn=-1;
+}
+if ((2*R-bd[1])>=0)&&(bd[2]<0.1)  
+{  //линейных участков нет
+  h=R-SQRT(R*R-BD[1]*BD[1]/4);
+  #ArcBD Arc 0 0 0 BD[1] 0 0 BD[1]/2 Zn*h 0 ;                                   //Строим дугу  на базе
+  Ob[4]=Ob[4]+1;
+  Objident last 1 Ob[Ob[4]] ;
+}
+else 
+{       //линейные участки есть
+  if (zn>0)
+  {
+    if  (bd[1]>=R)
+    {
+      #LinBd1 Line -maxXYgab+bd[1] 0 0 Bd[1]-R 0 0 done ;                      //Линейный участок в начале
+      Ob[4]=Ob[4]+1;
+      Objident last 1 Ob[Ob[4]] ;
+    }
+    if  (bd[1]<R)
+    {
+      #LinBd1 Line -maxXYgab+bd[1]-R 0 0 bd[1]-R 0 0 0 done ;                           //Линейный участок(вспомогательный) в начале
+      Ob[4]=Ob[4]+1;
+      Objident last 1 Ob[Ob[4]] ;
+    }
+    if  (bd[2]>=R)
+    {
+      #LinBd2 Line Bd[1] -R 0 Bd[1] -1*(maxXYgab) 0 done                       //Линейный участок в конце
+      Ob[4]=Ob[4]+1;
+      Objident last 1 Ob[Ob[4]] ;
+    }
+    if  (bd[2]<R)
+    {
+      #LinBd2 Line Bd[1] -R 0 Bd[1] -1*(maxXYgab) 0 done                       //Линейный участок(вспомогательный) в конце
+      Ob[4]=Ob[4]+1;
+      Objident last 1 Ob[Ob[4]] ;
+    }
+    if  (bd[1]<R)
+    {
+      #ArcBD Arc bd[1]-R 0 0 center bd[1]-R -R 0 angle -90 ;                   //Строим дугу  в начале
+      Ob[4]=Ob[4]+1;
+      Objident last 1 Ob[Ob[4]] ;
+      Xarn=bd[1]-R;
+      Yarn=0;
+      Xark=Bd[1];
+      Yark=-R;
+    }
+    if  (bd[2]<R)
+    {
+      #ArcBD Arc Bd[1]-R 0 0 center Bd[1]-R -R 0 angle -90 ;                    //Строим дугу  в конце
+      Ob[4]=Ob[4]+1;
+      Objident last 1 Ob[Ob[4]] ;
+      Xarn=Bd[1]-R;
+      Yarn=0;
+      Xark=Bd[1];
+      Yark=-R;
+    }
+    if (bd[1]>=R)&&(bd[2]>=R)
+    {
+      #ArcBD Arc Bd[1]-R 0 0 center Bd[1]-R -R 0 angle -90 ;                //строим дугу в середине
+      Ob[4]=Ob[4]+1;
+      Objident last 1 Ob[Ob[4]] ;
+      Xarn=Bd[1]-R;
+      Yarn=0;
+      Xark=Bd[1];
+      Yark=-R;
+    }
+  }
+  if (zn<0)
+  {
+    if  (bd[2]>=R)
+    {
+      #LinBd2 Line 0 maxXYgab-Bd[2] 0 0 R-Bd[2]  0 done;        //Линейный участок в начале
+      Ob[4]=Ob[4]+1; 
+      Objident last 1 Ob[Ob[4]] ;
+    }
+    if  (bd[2]<R)
+    {
+      #LinBd2 Line 0 maxXYgab-R 0 0 R-bd[2]  0 done;           //Линейный участок(вспомогательный) в начале
+      Ob[4]=Ob[4]+1;
+      Objident last 1 Ob[Ob[4]] ;
+    }
+    if  (bd[1]>=R)
+    {
+      #LinBd1 Line R -Bd[2] 0 maxXYgab -Bd[2] 0  done         //Линейный участок в конце
+      Ob[4]=Ob[4]+1;
+      Objident last 1 Ob[Ob[4]] ;
+    }
+    if  (bd[1]<R)
+    {
+      #LinBd1 Line R -Bd[2] 0 maxXYgab -Bd[2] 0  done          //Линейный участок(вспомогательный) в конце
+      Ob[4]=Ob[4]+1;
+      Objident last 1 Ob[Ob[4]] ;
+    }
+    if  (bd[2]<R)
+    {
+      #ArcBD Arc 0 R-bd[2] 0 center R R-bd[2] 0  angle 90 ;   //Строим дугу  в начале
+      Ob[4]=Ob[4]+1;
+      Objident last 1 Ob[Ob[4]] ;
+      Xarn=0;
+      Yarn=R-bd[2];
+      Xark=R;
+      Yark=-Bd[2];
+    }
+    if  (bd[1]<R)
+    {
+      #ArcBD Arc 0 -Bd[2]+R  0 center R -Bd[2]+R 0 angle 90 ;  //Строим дугу  в конце
+      Ob[4]=Ob[4]+1;
+      Objident last 1 Ob[Ob[4]] ;
+      Xarn=0;
+      Yarn=-Bd[2]+R;
+      Xark=R;
+      Yark=-Bd[2];
+    }
+    if (bd[1]>=R)&&(bd[2]>=R)  
+    {
+      #ArcBD Arc 0 -Bd[2]+R  0 center R -Bd[2]+R 0 angle 90 ;     //строим дугу в середине
+      Ob[4]=Ob[4]+1;
+      Objident last 1 Ob[Ob[4]] ;
+      Xarn=0;
+      Yarn=-Bd[2]+R;
+      Xark=R;
+      Yark=-Bd[2];
+    }
+  }
+}
+return;
+
+BasePlin:
+Ln=GetLongLen(PLG) ;                                                                //Линейный
+#LinBd1 Line Ln 0 0 0 0 0 done ;
+Ob[4]=Ob[4]+1;
+Objident last 1 Ob[Ob[4]] ;
+err=objgab3(LinBd1,xm1);
+ZArcmin=xm1[3];
+if (abs(xm1[3]-xm1[6])>0.1)
+{ 
+  goto metend;
+}
+err=objgab3(biz,xm1);
+Zbiz=xm1[3];
+if (abs(xm1[3]-xm1[6])>0.1)
+{ 
+  goto metend; 
+}
+move biz done 0 0 ZArcmin-Zbiz nocopy ;
+return;
+
+FindIntP:
+//**********************************//Ищем точку пересечения базовых линий  и линии biz
+obi1=0;                              //Указатель на номер элемента базовой линии  biz
+obi2=0;                              //Указатель на номер элемента базовой линии   куска
+dsmin1=99999*99999;                       //Значение минимального расстояния до первого куска
+dsmin2=99999*99999;                        //Значение минимального расстояния до второго куска
+N1=1;                                //Кол-во линий первого куска;
+N2=Ob2[4];                           //Кол-во линий второго куска
+ob1[1]=biz;
+i1=1;
+i2=0;
+met2:
+if (N2>i2)
+{
+  i2=i2+1;
+  N=intPoint(ob1[i1],ob2[i2],xm) ; //N-Кол-во точек пересечения  нужна ближайшая для обеих
+  If (N>0)
+  {
+    PtransCS(3,0,xm[1],xm[2],xm[3],xm[1],xm[2],xm[3]) ;
+    #Ds1 distance xm[1] xm[2] xm[3] object ob1[i1] ; //Расстояние от первой точки до biz
+    #Ds2 distance xm[1] xm[2] xm[3] object ob2[i2] ; //Расстояние от первой точки до второго объекта
+    if ((i2!=3)&&((ds1<dsmin1)||(ds2<dsmin2)))||((i2==3)&&(ds2<1)) 
+    {
+      px=xm[1];
+      py=xm[2];
+      pz=xm[3];
+      dsmin1=ds1;
+      dsmin2=ds2;
+      obi2=i2;
+    }
+    //PutMsg("Ds1="+str(ds1)+" Ds2="+str(ds2),1) ;
+    //PutMsg("Px="+str(Px)+" Py="+str(Py),1) ;
+    if (N>1)
+    {
+      PtransCS(3,0,xm[4],xm[5],xm[6],xm[4],xm[5],xm[6]) ;
+      #Ds10 distance xm[4] xm[5] xm[6] object ob1[i1] ; //Расстояние от второй точки до biz
+      #Ds20 Distance xm[4] xm[5] xm[6] object ob2[i2] ; //Расстояние от второй точки до второго объекта
+      if ((i2!=3)&&((ds10<dsmin1)||(ds20<dsmin2)))||((i2==3)&&(ds20<1)) 
+      {
+        px=xm[4];
+        py=xm[5];
+        pz=xm[6];
+        dsmin1=ds10;
+        dsmin=ds20;
+        obi2=i2;
+      }
+      //PutMsg("Ds10="+str(ds10)+" Ds20="+str(ds20),1) ;
+      //PutMsg("Px="+str(Px)+" Py="+str(Py),1) ;
+    }
+  }
+  goto met2 ;
+}
+if (obi1==0)&&(Obi2==0) 
+{
+   PutMsg("Общих точек нет",1) ;
+   objls=sysvar(60)-objectss
+   if objls>0 { delete last objls done; }
+   goto metend ; 
+}
+#ptint1   point px,py,pz ;
+PtransCS(0,3,px,py,pz,px,py,pz) ;
+return ;
+
+LinSrez:
+//Определение угла  среза линейного участка
+//Следует помнить мы в ЛСK карниза
+GoSub DBiz ;
+if (zn>0&&Obi2==1) 
+{
+  rx=0;
+  ry=100;
+}
+if (zn>0&&Obi2==2)
+{
+  rx=100;
+  ry=0;
+}
+if (zn<0&&Obi2==2)
+{
+  rx=0;
+  ry=100;
+}
+if (zn<0&&Obi2==1)
+{
+  rx=100;
+  ry=0;
+}
+#Ang Angle pxin pyin 0 pxin+Rx pyin+Ry 0 pxin-dx pyin-dy 0  done ;
+if (Ang>90&&Ang<=180)  { Ang=Ang-180; }
+if (Ang>180&&Ang<=270) { Ang=Ang-180; }
+if (Ang>270&&Ang<=360) { Ang=Ang-360; }
+//PutMsg("obi2="+str(obi2),1) ;
+//PutMsg("Ang="+str(Ang),1) ;
+//PutMsg("dx="+str(dx)+" dy="+str(dy),1) ;
+return;
+
+DBiz:
+// приращения по Biz
+Nel=GetObjGeo(Biz,xmm) ;
+PtransCS(3,0,xmm[1],xmm[2],xmm[3],Xln,Yln,Zln) ;
+PtransCS(3,0,xmm[4],xmm[5],xmm[6],Xle,Yle,Zle) ;
+if (yle>=yln)
+{ 
+  dX=Xle-Xln;
+  dY=Yle-Yln;
+}
+else 
+{ 
+  dX=Xln-Xle;
+  dY=Yln-Yle;
+}
+return;
+
+GetLinSite:
+//Определение Site
+if (bd[3]==0)
+{
+  if (Pxin>TrimX)
+  {
+    site="start";
+  }
+  if (Pxin<=TrimX)
+  {
+    site="end";
+  }
+}
+if (bd[3]>0)
+{
+  if (obi2==1) 
+  {
+    if (Pxin>TrimX) 
+    {
+      site="start";
+    }
+    if (Pxin<=TrimX)
+    {
+      site="end";
+    }
+  }
+  if (obi2==2)
+  {
+    if Pyin<TrimY 
+    {
+      site="start";
+    }
+    if (Pyin>=TrimY)
+    {
+      site="end";
+    }
+  }
+  if (obi2==3)
+  {
+    if (Pyin<TrimY||Pxin>TrimX)
+    {
+      site="start";
+    }
+    if (Pyin>=TrimY||Pxin<=TrimX)
+    {
+      site="end";
+    }
+  }
+}
+if (bd[3]<0) 
+{
+  if (obi2==1)
+  {
+    if (Pyin<TrimY)
+    {
+      site="start";
+    }
+    if (Pyin>=TrimY)
+    {
+      site="end";
+    }
+  }
+  if (obi2==2) 
+  {
+    if (Pxin>TrimX)
+    {
+      site="start";
+    }
+    if (Pxin<=TrimX)
+    {
+      site="end";
+    }
+  }
+  if (obi2==3)
+  {
+    if (Pyin>TrimY||Pxin<TrimX)
+    {
+      site="end";
+    }
+    if (Pyin<=TrimY||Pxin>=TrimX)
+    {
+      site="start";
+    }
+  }
+}
+return;
+
+RadSrez:
+//Определение угла  среза радиусного участка
+ZnR=1;
+if (bd[3]<0) //определяем смещения в зависимости от знак радиуса
+{
+  ZnR=-1;
+}                                                         
+macro ProtoPath+"ecvArc.mac" 1 ArcBD ZnR*plgYmin  ;  //Дуга на минимуме
+if (znr>0) 
+{ 
+  objident last 1 ArcMin;
+  Rmin=R+ZnR*plgYmin;
+}
+else
+{ 
+  objident last 1 ArcMax;
+}
+macro ProtoPath+"ecvArc.mac" 1 ArcBD ZnR*plgYmax  ;  //Дуга на максимуме
+if (znr<0) 
+{ 
+  objident last 1 ArcMin;
+  Rmin=R+ZnR*plgYmax 
+}
+else 
+{ 
+  objident last 1 ArcMax;
+}
+Nel=GetObjGeo(ArcBD,xmm) ;
+R=xmm[1];                      //радиус
+Xc=xmm[5];                     //координата центра
+Yc=xmm[6];                     //координата центра
+Zc=xmm[7];                     //координата центра
+Xn=xmm[8];                     //координата начала
+Yn=xmm[9];                     //координата начала
+Zn=xmm[10];                    //координата начала
+Xe=xmm[11];                    //координата конца
+Ye=xmm[12];                    //координата конца
+Ze=xmm[13];                    //координата конца
+PtransCS(3,0,xmm[5],xmm[6],xmm[7],Xc,Yc,Zc) ;
+setucs  xc yc zc xc+10 yc zc xc yc+ZnR zc ;    //Переносим ПСК в центр базовой дуги Ось Y направлена в сторону сегмента
+PtransCS(3,0,xmm[5],xmm[6],xmm[7],Xc,Yc,Zc) ;
+PtransCS(3,0,xmm[8],xmm[9],xmm[10],Xn,Yn,Zn) ;
+PtransCS(3,0,xmm[11],xmm[12],xmm[13],Xe,Ye,Ze) ;
+//**Определяем положение линии и дуги выравниваем по кординате Z
+err=objgab3(ArcMin,xm1);
+ZArcmin=xm1[3]; 
+if (abs(xm1[3]-xm1[6])>0.1)
+{ 
+  goto metend;
+}
+err=objgab3(biz,xm1);
+Zbiz=xm1[3];
+if (abs(xm1[3]-xm1[6])>0.1)
+{ 
+  goto metend;
+}
+move biz done 0 0 ZArcmin-Zbiz nocopy ;
+//*********
+N=intPoint(ArcMin,biz,xm1) ; //N-Кол-во точек пересечения 1
+PtransCS(3,0,xm1[1],xm1[2],xm1[3],xm1[1],xm1[2],xm1[3]) ;
+xmin=xm1[1];
+ymin=xm1[2];
+if (N==0)
+{
+   delete ArcMin ArcMax ArcBD done ;
+   goto metend ;
+}
+if (n>1)
+{
+  PtransCS(3,0,xm1[4],xm1[5],xm1[6],xm1[4],xm1[5],xm1[6]) ;
+  if (site=="end")
+  {  //отрезаем левую сторну удаленную от 0 ЛСК
+    #ang1 angle 0 0 0 xm1[1] xm1[2] 0 Xn Yn 0 ;
+    #ang2 angle 0 0 0 xm1[4] xm1[5] 0 Xn Yn 0 ;
+    #DSbiz1 distance xm1[1] xm1[2] 0 object biz ;
+    #DSbiz2 distance xm1[4] xm1[5] 0 object biz ;
+  }
+  else 
+  {            //отрезаем правую сторну ближнюю от 0 ЛСК
+    #ang1 angle 0 0 0 Xe Ye 0 xm1[1] xm1[2] 0 ;
+    #ang2 angle 0 0 0 Xe Ye 0 xm1[4] xm1[5] 0 ;
+    #DSbiz1 distance xm1[1] xm1[2] 0 object biz ;
+    #DSbiz2 distance xm1[4] xm1[5] 0 object biz ;
+  }
+  xmin=xm1[1];
+  ymin=xm1[2];
+  if (DSbiz2<DSbiz1)
+  { //Обработка в зависимости от ближайшего расстояния до biz
+    xmin=xm1[4];
+    ymin=xm1[5];
+  }
+}
+N=intPoint(ArcMax,biz,xm2) ; //N-Кол-во точек пересечения  2
+PtransCS(3,0,xm2[1],xm2[2],xm2[3],xm2[1],xm2[2],xm2[3]) ;
+xmax=xm2[1];
+ymax=xm2[2];
+if (N==0) 
+{
+  delete ArcMin ArcMax ArcBD done ;
+  goto metend ;
+}
+if (n>1)
+{
+  PtransCS(3,0,xm2[4],xm2[5],xm2[6],xm2[4],xm2[5],xm2[6]) ;
+  if (site=="end")
+  {  //изменяем левую сторну удаленную от 0 ЛСК
+    #ang1 angle 0 0 0 xm2[1] xm2[2] 0 Xn Yn 0 ;
+    #ang2 angle 0 0 0 xm2[4] xm2[5] 0 Xn Yn 0 ;
+    #DSbiz1 distance xm2[1] xm2[2] 0 object biz ;
+    #DSbiz2 distance xm2[4] xm2[5] 0 object biz ;
+  }
+  else 
+  {            //изменяем правую сторну ближнюю от 0 ЛСК
+    #ang1 angle 0 0 0 Xe Ye 0 xm2[1] xm2[2] 0 ;
+    #ang2 angle 0 0 0 Xe Ye 0 xm2[4] xm2[5] 0 ;
+    #DSbiz1 distance xm2[1] xm2[2] 0 object biz ;
+    #DSbiz2 distance xm2[4] xm2[5] 0 object biz ;
+  }
+  xmax=xm2[1];
+  ymax=xm2[2];
+  if (DSbiz2<DSbiz1)
+  { //Обработка в зависимости от ближайшего расстояния до biz
+    xmax=xm2[4];
+    ymax=xm2[5];
+  }
+}
+//Определяем Угол Biz
+GoSub DBiz ;  // Приращения Biz
+alpha=grad(acos(Ymin/Rmin)) ; //угол положения линии радиуса
+#Abiz angle Xmin Ymin 0 Xmin Ymin+10 0  Xmin+dx ymin+dy 0 ;//Xle Yle Zle  ;
+
+if (Abiz>180)
+{ 
+  abiz=360-abiz;
+}
+if (site=="end")
+{  //изменяем левую сторну удаленную от 0 ЛСК
+  #test angle 0 0 0  Xmax ymax 0 Xmin Ymin 0 ;
+}
+else 
+{
+  #test angle 0 0 0 Xmin Ymin 0 Xmax ymax 0 ;
+}
+if (test>180) 
+{
+// Определяющая малая дуга  Xmin Ymin Координаты точки пересечения
+  #l1 line 0 0 0 Xmin Ymin 0 done ;
+  #ang angle 0 0 0 dx dy 0 Xmin Ymin 0 ;
+  if (ang>90)
+  { 
+    ang=360-ang;
+  }
+}
+else 
+{                   // Определяющая большая дуга
+  #l1 line 0 0 0 Xmax Ymax 0 done ;
+  #ang angle 0 0 0 Xmax Ymax 0 dx dy 0 ;
+  if (ang>90)  
+  { 
+    ang=ang-360;
+  }
+  if (site!="end") 
+  { 
+    ang=-ang;
+  }
+}
+ang=ang*ZnR; //ZnR  знак радиуса
+N=intPoint(ArcBD,l1,xm1) ; //N-Кол-во точек хорды
+Xb1=xm1[1];
+Yb1=xm1[2];
+Zb1=Xm1[3];
+PtransCS(3,0,xb1,yb1,zb1,xb1,yb1,zb1) ;
+//point xb1 yb1 zb1  ;
+if (N==0) 
+{
+  delete ArcMin ArcMax ArcBD done ;
+  goto metend ;
+}
+if (N>1)
+{
+  Xb2=xm1[4];
+  Yb2=xm1[5];
+  Zb2=Xm1[6];
+  PtransCS(3,0,xb2,yb2,zb2,xb2,yb2,zb2) ;
+  #d1 distance xb1 yb1 zb1 object l1 ;
+  #d2 distance xb2 yb2 zb2 object l1 ;
+  If (d2<d1) 
+  {
+    xb1=xb2;
+    yb1=yb2;
+    zb1=zb2;
+  }
+}
+PtransCS(0,3,xb1,yb1,zb1,xb1,yb1,zb1);
+return;
+//===========================
+BalustrAnz:
+TypLong=GetLongType();
+if TypLong==8
+{
+   if bd[11]==0
+   {
+      bd[3]=0
+   }
+}
+return;

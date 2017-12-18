@@ -1,0 +1,38 @@
+//-- Создание объекта - шкаф трехсекционный верхний
+global MacroSw; //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global ProtoPath;		//-- Путь к папке с макропрограммами общей библиотеке прототипов
+global LocalPath;		//-- Путь к папке с макропрограммами локальной библиотеке прототипов
+ProtoPath=GetProtoMac("Shkaf.ptl");
+LocalPath=GetProtoMac("Kitchen.ptl");
+MacroSw=0;
+
+w=DbVar("Шир",330);			  //-- Ширина
+d=DbVar("Глуб",320);		  //-- Глубина
+h=DbVar("Выс",822);			  //-- Высота
+//----------------------------------------------------------
+ТипКонт=1;   //-- Прямой
+Верхний=1;   //-- Верхний
+ObjTyp=0;    //-- Мебельный
+PlcTyp=1;    //-- Верхний
+//BiblNum=139; //-- В библиотеке ID=139
+BiblNum=getprotoid("Kitchen","Шкаф трехсекционный верхний","ProtoMacro","aboadv3p");  //-- ID прототипа
+FurnType="100000";
+//----------------------------------------------------------
+
+
+Macro ProtoPath+"BegUnit.mac" "" ;
+macro ProtoPath+"ScrBoxGet.mac" 0; //-- Создание Scratch атрибута ящика
+macro LocalPath+"aboadv3.mac" ;
+
+//-- Ставим размеры
+macro ProtoPath+"aDimLine.mac" w d h ТипКонт Верхний;
+//-- Линии контакта
+macro ProtoPath+"aContLine.mac" w d d h 0 ТипКонт Верхний;
+#Boad group all done;
+macro ProtoPath+"SetEnam.mac" "Шкаф трехсекционный верхний";
+macro ProtoPath+"EndUnit.mac" w d h ;
+//-- Присваиваем атрибуты
+macro ProtoPath+"FurnAttr.mac" ObjTyp PlcTyp BiblNum FurnType;
+macro ProtoPath+"OldArtic.mac" ;
+macro ProtoPath+"Scrcopatr.mac" ; //-- Запись в объект Scratch атрибута
+exit;

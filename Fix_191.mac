@@ -1,0 +1,78 @@
+// Lex Железный уголок (Сверловка одной стороны объекта) без сверловки
+
+global NumFixMac;   // Для передачи количества из пользовательского макро
+NumFixMac=0;        // надо расчитать здесь
+defarr arr[10];
+
+getpar
+Lengh   // Длина пятна контакта
+hPanel	// закрепляемая панель
+Poly   // ID полилайна 1 - главный
+Side	// закрепляемая сторона   SIDE_D = 1, SIDE_C = 3, SIDE_E = 5, SIDE_B = 7
+IDHol   //  ID отверстия
+XHol    //  положение вдоль длины от начала
+YHol    //  положение поперек длины
+ZHol    //  положение внуть панели ? может и не надо
+;
+
+arr[1]=hPanel;
+err=GetPan6Par(1,arr);
+err=GetPan6Par(21,arr);
+Tip1=arr[3];
+
+// Tip1=1901; // Тип крепежа
+Dx=60; // Расстояние до первого и последнего крепежа
+Lengh=round(Lengh,0.1);
+if (Lengh<200) { Dx=30; }
+DDx=450; // Максимальное расстояние между крепежми теоретическое
+LenPan=600; // Минимальный размер панели, на который ставится больше 2х крепежей
+
+i=1;
+if (Lengh<100)
+{
+	IDHol[i]=Tip1 // Тип крепежа
+	XHol[i]=Lengh/2  // Положение первого крепежа
+	YHol[i]=0
+	zHol[i]=0
+
+	goto fin;
+}
+
+IDHol[i]=Tip1 // Тип крепежа
+XHol[i]=Lengh-Dx  // Положение первого крепежа
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip1 // Тип крепежа
+XHol[i]=Dx  // Положение последнего крепежа
+YHol[i]=0
+zHol[i]=0
+
+// "Серединные" крепежи
+if round(Lengh,0.1)>LenPan {
+
+	// Расчет количества и расстояний
+	FixNum=floor((Lengh-Dx*2)/DDx); // Количество крепежей исключая первый и последний
+	if FixNum==0 { goto fin; }
+	Dist=((Lengh-Dx*2)/(FixNum+1)); // Расстояние между крепежами расчетное
+
+	//-->
+	// alternative "FixMac_lex50.mac"
+	// msgbox "FixNum="+str(FixNum) "Dist="+str(Dist) done
+	//<--
+
+	cycle:
+	i=i+1
+	IDHol[i]=Tip1 // Тип крепежа эксцентрик
+	XHol[i]=XHol[i-1]+Dist  // Положение крепежа
+	YHol[i]=0
+	zHol[i]=0
+
+	if (i-2<FixNum) { goto cycle; }
+
+}
+
+fin:
+NumFixMac=i;
+exit;

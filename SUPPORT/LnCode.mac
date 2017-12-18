@@ -1,0 +1,120 @@
+//LnCode.mac
+//*****************************************************************************
+//     классификатор профильных длинномеров
+//              Драгункин А.Р.
+//              ГеоС 2008-14 г.
+//*****************************************************************************
+CurStat=SysVar(70) ;
+global L_SUPPORT                        //Устанавливаем статус вывода сообщений в зависимости от значения параметра
+       g_colselect;                   //ЦВЕТ ВЫБИРАЕМОГО ОБЪЕКТА
+//macro L_SUPPORT+"SaveParSp.mac" "ParSp2.cfg"  ;
+//=MsgLevel(4) ;
+global PKM_SP ;
+if isvardef("PKM_SP")==0 {
+   //Функция определяет, определена ли к данному моменту переменная, имя которой содержит строка variable. Функции возвращает:
+   //0  – переменная не определена;
+   //3  – переменная является массивом
+   //5  – переменная числового типа
+   //6  – переменная строкового типа
+   //16  – переменная является ссылкой на объект
+
+    //macro GetProtoMac("Shkaf.ptl")+"Glob_Sp.mac" ; // Загружаем переменныые для макросов из   L_SUPPORT
+}
+if CurStat==0 { CurStat=2  }
+defarr arr[4] bd[11] ;
+nullout=InitArray(arr,0) ;
+nullout=InitArray(bd,0) ;
+
+getpar pnt  ;
+
+// проверяем на соответствие условию
+Result=SetLongObj(pnt);
+if Result==0 { goto metend : }
+//считываем парметры
+N=GetLongType();
+Mat=GetLongMat();
+
+Result=GetBentProf(bd);
+//1. длина прямой или кривой по оси Х,
+//2. длина кривой по оси Y,
+//3. радиус скругления,
+//4. ширина обоих профилей,
+//5. общая высота профилей,
+//6. высота верхнего профиля,
+//7. высота нижнего профиля,
+//8. начальный сдвиг по длине,
+//9. конечный сдвиг по длине (не менее, до последнего),
+//10. сдвиг по длине между балясинами,
+//11. тип формы балюстрады: 0 - прямая; 1 – гнутая.
+
+Result=GetLongCut(arr);
+Length=GetLongLen(pnt);
+Article=GetAttr(pnt,"Article",-99)   ;
+Article=Val(article) ;
+
+if bd[3]!=0 { RadName=" гнутый" }
+else { RadName=" " }
+
+//составляем характеристический код
+
+if bd[3]<0 { RdCod="RN"+str(abs(int(bd[3]))) }
+else { RdCod="RP"+str(abs(int(bd[3]))) }
+XLcod=str(Round(bd[1]))
+if xlcod=="0" { xlcod=str(Round(length)) }
+YLcod=str(Round(bd[2]))
+balustercod=""
+if N==8 {
+balustercod="B"+str(int(bd[4]))+"."+str(int(bd[5]))+"."+str(int(bd[6]))+"."+str(int(bd[7]))+"."
+balustercod=balustercod+str(int(bd[8]))+"."+str(int(bd[9]))+"."+str(int(bd[10]))+"."
+}
+if arr[2]<0 { Lcutcod="N"+str(abs(Round(grad(arr[2]*10)))) }
+else        { Lcutcod="P"+str(abs(Round(grad(arr[2]*10)))) }
+if arr[1]<0 { Rcutcod="N"+str(abs(Round(grad(arr[1]*10)))) }
+else        { Rcutcod="P"+str(abs(Round(grad(arr[1]*10)))) }
+LnCod=Str(N)+"."+str(mat)+"."+RdCod+"."+XLcod+"."+YLcod+"."+balustercod+Lcutcod+"."+Rcutcod
+namemat="*"
+name1="*"
+mat1=mat
+namemat=GetLngMatN(mat1,nameprof);
+//if N==1 { nametyp="Столешница"  }
+//if N==2 { nametyp="Карниз"  }
+//if N==3 { nametyp="Стеновая панель"  }
+//if N==4 { nametyp="Водоотбойник"  }
+//if N==5 { nametyp="Профиль карниза"  }
+//if N==6 { nametyp="Цоколь"  }
+//if N==7 { nametyp="Нижний профиль"  }
+//if N==8 { nametyp="Балюстрада"  }
+If N!=8 { nametyp=GetLongsAI(N,1) ; }
+else { nametyp="Балюстрада" }
+NAME=nametyp+" "+"\""+Rtrim(nameprof)+"\""+RadName ;
+Name=Name+" L="+xlcod+";"
+if bd[2]>1 { Name=Name+" B="+YLcod+";" }
+if bd[3]!=0 { Name=Name+" R="+str(Round(bd[3]))+";"   }
+//Примечания куска
+PrimLn=" " ;
+if abs(grad(arr[2]))>1 {  PrimLn=LTrim(PrimLn+" Aлв="+str(Round(grad(arr[2]*10))/10)+";") }
+if abs(grad(arr[1]))>1 {  PrimLn=LTrim(PrimLn+" Aпр="+str(Round(grad(arr[1]*10))/10)+";") }
+if PrimLn==" " {  PrimLn=PrimLn+"." }
+
+//PutMsg(Lncod,0) ;
+//присваиваем
+   if (!IsAttrdef("LnCOD"))
+   { Attribute Create "LnCOD" "LnCOD" String 40 20  ; }
+   if lncod=="" { Lncod="." }
+   Attrobj Attach "LnCOD" Done PNT  Lncod  ;
+   if (!IsAttrdef("LnName"))
+   { Attribute Create "LnName" "LnName" String 40 20  ; }
+   if Name=="" { Name="." }
+   Attrobj Attach "LnName" Done PNT  Name  ;
+   if (!IsAttrdef("LnMat"))
+   { Attribute Create "LnMat" "LnMat" String 40 20  ; }
+   if namemat=="" { namemat="." }
+   Attrobj Attach "LnMat" Done PNT  namemat  ;
+   if (!IsAttrdef("LnPrim"))
+   { Attribute Create "LnPrim" "LnPrim" String 40 20  ; }
+   if PrimLn=="" { PrimLn="." }
+   Attrobj Attach "LnPrim" Done PNT  PrimLn  ;
+metend:
+//macro L_SUPPORT+"RestoreParSp.mac" "ParSp2.cfg" 0 ;
+//=MsgLevel(CurStat) ;
+exit ;

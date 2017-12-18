@@ -1,0 +1,665 @@
+//-- Макропрограмма построения прямого корпуса
+global ProtoPath;
+global g_FurnType;  //-- Тип мебельного объекта
+//-----------------------------------------------------------------
+w=DbVar("w",600);               //-- Ширина
+d=DbVar("d",600);               //-- Глубина
+h=DbVar("h",600);               //-- Высота
+h_c=DbVar("h_c",100);	          //-- Высота цоколя
+PrMater=DbVar("PrMater",0);	    //-- Материал корпуса
+MatBp=DbVar("MatBp",0);         //-- Материал задней стенки
+Widsth=DbVar("Widsth",100);     //-- Ширина стяжки
+TypeBp=DbVar("TypeBp",0);       //-- Тип задней стенки
+DepthBp=DbVar("DepthBp",0);     //-- Глубина установки задней стенки
+InCutBp=DbVar("InCutBp",0);     //-- Врезка\Нахлест задней стенки
+IsTop=DbVar("IsTop",0);         //-- Наличие крышки
+IsBottom=DbVar("IsBottom",0);   //-- Наличие сушилки
+BandColor=DbVar("BandColor",0); //-- Цвет кромки
+BandType=DbVar("BandType",0);   //-- Тип кромки
+FixCorp=DbVar("FixCorp",0);     //-- Тип крепежа корпуса
+FixBp=DbVar("FixBp",0);	        //-- Тип крепежа задней стенки
+Dno=DbVar("Dno",0);             //-- Накладное дно
+Dum=DbVar("Dum",120);           //-- Размер "уголка" задней стенки под мойку
+Dst=DbVar("Dst",60);            //-- Ширина дополнительной планки
+HasCok=DbVar("HasCok",0);       //-- Наличие цоколя
+ShiftCok=DbVar("ShiftCok",0);   //-- Сдвиг цоколя
+LongPost=DbVar("LongPost",0);   //-- Опорные стойки
+FasCok=DbVar("FasCok",0);       //-- Размер фасок под цоколь
+FixPlan=DbVar("FixPlan",0);	    //-- Наличие крепежной планки
+HasDuct=DbVar("HasDuct",0);     //-- Наличие короба
+ShiftDuct=DbVar("ShiftDuct",0); //-- Сдвиг короба
+WidthDuct=DbVar("WidthDuct",0); //-- Ширина короба
+DepthDuct=DbVar("DepthDuct",0); //-- Глубина короба
+//--------------------------------------------------------------------------
+FurnType="110101";
+Namescr="ProtoParams";
+ElemName="Корпус прямой"+iif(HasDuct!=0," с вырезом","");
+CutLeft=0;      //-- Подрезка дна и крышки слева
+CutRight=0;     //-- Подрезка дна и крышки справа
+CutTop=0;       //-- Подрезка боковых стоек сверху
+CutBottom=0;    //-- Подрезка боковых стоек снизу
+ConfDuct=0;     //-- Конфигурация выреза под короб по умолчанию.
+defarr error[10];
+NULLOUT=initarray(error,"");
+h_dsp=priceinfo(PrMater,"Thickness",DbVar("HDSP",16)); //-- Толщина материала корпуса
+h_dvp=priceinfo(MatBp,"Thickness",DbVar("HDVP",4));   //-- Толщина материала задней стенки
+if (TypeBp==1||TypeBp==-1||TypeBp==2)
+{
+  DepthBp=0;
+}
+if (TypeBp==3&&DepthBp<h_dsp&&FixPlan==1)
+{
+  error[1]="Невозможно установить крепежную планку.";
+  error[2]="При данном типе и глубине установки задней стенки крепежная планка не ставится";
+  error[3]=" ";
+  error[4]="Убедитесь, что значение глубины установки задней стенки указано корректно."
+  error[5]="Проверьте, тот ли тип задней стенки выбран."
+  error[6]="Проверьте, необходима ли крепежная планка."
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 6 error;
+  cancel;
+}
+if (LongPost==1&&Dno==1)
+{
+  error[1]="Невозможно построить корпус с опорными стойками и накладным дном.";
+  error[2]=" ";
+  error[3]="Проверьте правильность этих двух параметров. Хотя бы один из них должен быть выключен."
+  error[4]="Убедитесь, что выбран правильный тип корпуса"
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 4 error;
+  cancel;
+}
+if (FasCok>h_c)
+{
+  error[1]="Слишком большой размер фасок под плинтус.";
+  error[2]="Размер фасок под плинтус не должен превышать высоту цоколя, равную '"+str(h_c)+"' мм.";
+  error[3]=" ";
+  error[4]="Убедитесь, что значение высоты цоколя указано корректно."
+  error[5]="Проверьте, корректно ли заданы размеры фасок под плинтус."
+  error[6]="Убедитесь, что выбран правильный тип корпуса"
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 6 error;
+  cancel;
+}
+if (h_c>int(h/3))
+{
+  error[1]="Слишком большая высота цоколя.";
+  error[2]="Значение высоты цоколя не должно превышать '"+str(int(h/3))+"' мм.";
+  error[3]=" ";
+  error[4]="Убедитесь, что значение высоты цоколя указано корректно."
+  error[5]="Проверьте, корректно ли задано значение высоты стола или шкафа."
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 5 error;
+  cancel;
+}
+if (DepthBp>d/3)
+{
+  error[1]="Слишком большая глубина установки задней стенки.";
+  error[2]="Значение глубины задней стенки не должно превышать '"+str(int(d/3))+"' мм.";
+  error[3]=" ";
+  error[4]="Убедитесь, что значение глубины установки задней стенки указано корректно."
+  error[5]="Проверьте, корректно ли задано значение глубины стола или шкафа."
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 5 error;
+  cancel;
+}
+if (Widsth>int(d/3)&&IsTop==1)
+{
+  error[1]="Слишком большая ширина планки.";
+  error[2]="Значение ширины планки не должно превышать '"+str(int(d/3))+"' мм.";
+  error[3]=" ";
+  error[4]="Убедитесь, что значение ширины планки указано корректно."
+  error[5]="Проверьте, корректно ли задано значение глубины стола или шкафа."
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 5 error;
+  cancel;
+}
+if (Shiftcok>int(d/3))
+{
+  error[1]="Слишком большая величина сдвига цоколя.";
+  error[2]="Значение ширины сдвига цоколя не должно превышать '"+str(int(d/3))+"' мм.";
+  error[3]=" ";
+  error[4]="Убедитесь, что значение сдвига цоколя указано корректно."
+  error[5]="Проверьте, корректно ли задано значение глубины стола или шкафа."
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 5 error;
+  cancel;
+}
+if (HasDuct!=0&&(WidthDuct<=2*h_dsp||DepthDuct<=2*h_dsp))
+{
+  error[1]="Слишком маленький размер короба.";
+  error[2]="Значение ширины и/или глубины короба не должно быть меньше '"+str(2*h_dsp)+"' мм.";
+  error[3]=" ";
+  error[4]="Убедитесь, что значение ширины и/или глубины короба указаны корректно."
+  error[5]="Убедитесь, в данном изделии вырез под короб необходим."
+  error[6]="Проверьте, корректно ли задано значение глубины стола или шкафа."
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 6 error;
+  cancel;
+}
+if (HasDuct!=0&&(WidthDuct+ShiftDuct)>w)
+{
+  error[1]="Слишком большая ширина короба.";
+  error[2]="Значение ширины плюс сдвига короба не должно быть больше '"+str(w)+"' мм.";
+  error[3]=" ";
+  error[4]="Убедитесь, что значение ширины короба указано корректно."
+  error[5]="Убедитесь, что сдвиг короба указан корректно."
+  error[6]="Убедитесь, в данном изделии вырез под короб необходим."
+  error[7]="Проверьте, корректно ли задано значение ширины стола или шкафа."
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 7 error;
+  NULLOUT=popinst(1);
+  cancel;
+}
+if (HasDuct!=0&&DepthDuct>d-2*h_dsp)
+{
+  error[1]="Слишком большая глубина короба.";
+  error[2]="Значение глубины короба не должно быть больше '"+str(d-2*h_dsp)+"' мм.";
+  error[3]=" ";
+  error[4]="Убедитесь, что значение глубины короба указано корректно."
+  error[5]="Убедитесь, в данном изделии вырез под короб необходим."
+  error[6]="Проверьте, корректно ли задано значение глубины стола или шкафа."
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 6 error;
+  cancel;
+}
+if (HasDuct!=0&&TypeBp==3&&DepthBp>DepthDuct-2*h_dsp)
+{
+  error[1]="Слишком большая глубина установки врезной задней стенки.";
+  error[2]="Значение глубины взезной задней стенки не должно быть больше '"+str(DepthDuct-2*h_dsp)+"' мм.";
+  error[3]=" ";
+  error[4]="Убедитесь, что значение глубины врезной задней стенки указано корректно."
+  error[5]="Убедитесь, что значение глубины выреза под короб указано корректно."
+  error[6]="Убедитесь, в данном изделии вырез под короб необходим."
+  error[7]="Убедитесь, в данном изделии необходима именно врезная задняя стенка."
+  error[8]="Проверьте, корректно ли задано значение глубины стола или шкафа."
+  macro Protopath+"ShowSmartError.mac" "Ошибка параметров корпуса" 8 error;
+  cancel;
+}
+//--------------------------------------------------------------------------
+if (Dno==0) //-- Не опорное дно
+{
+  CutLeft=h_dsp;
+  CutRight=h_dsp;
+}
+else  //-- Опорное дно
+{
+  CutTop=0;
+  CutBottom=h_dsp;
+}
+if (LongPost==1)  //-- Опорные стойки
+{
+  CutBottom=-h_c;
+}
+else              //-- Если стойки не опорные, размер фасок равен нулю
+{
+  FasCok=0;
+}
+//-- Определяем конфигурацию выреза под короб
+if (HasDuct!=0)
+{
+  if (ShiftDuct<=h_dsp&&WidthDuct>=(w-2*h_dsp))
+  {
+    ConfDuct=1;  //-- Вырез на всю ширину корпуса
+  }
+  if (ShiftDuct<=h_dsp&&WidthDuct<(w-2*h_dsp))
+  {
+    ConfDuct=2;  //-- Вырез примыкает справа
+  }
+  if (ShiftDuct>h_dsp&&(WidthDuct+ShiftDuct)>=(w-2*h_dsp))
+  {
+    ConfDuct=3;  //-- Вырез примыкает слева
+  }
+  if (ShiftDuct>h_dsp&&(WidthDuct+ShiftDuct)<=(w-2*h_dsp))
+  {
+    ConfDuct=4;  //-- Вырез внутри корпуса
+  }
+}
+if (ConfDuct==1)  //-- Если короб на всю ширину, то просто уменьшаем глубину корпуса
+{
+  d=d-DepthDuct;
+  HasDuct=0;
+}
+//--------------------------------------------------------------------------
+//-- Рисуем контур выреза
+if (HasDuct!=0)
+{
+  #Pat rectangle 3points ShiftDuct,0,0 ShiftDuct+WidthDuct,0,0 ShiftDuct+WidthDuct,DepthDuct,0;
+  //-- Рисуем обрамление выреза
+  macro ProtoPath+"PutDuct.mac" ConfDuct, ShiftDuct, h_c+h_dsp, WidthDuct, DepthDuct, h-h_c-h_dsp-iif((TypeBp==-1||TypeBp==4)&&IsTop==0,0,h_dsp), PrMater, FixCorp, TypeBp, FixBp, DepthBp, InCutBp, MatBp;
+}
+macro ProtoPath+"SetConstrInit.mac" ;
+macro ProtoPath+"SetMat.mac" PrMater ;
+//-- Построение боковых стоек
+macro ProtoPath+"SetECod.mac" "1101" ;
+// macro ProtoPath+"SetKCod.mac" "СТЕН" h-h_c d;
+macro ProtoPath+"SetEnam.mac" "Стенка боковая правая" ;
+macro ProtoPath+"SetCuts.mac" CutBottom CutTop iif(HasDuct!=0&&(ConfDuct==2),DepthDuct,0) 0;
+if (FasCok>0)
+{
+	macro ProtoPath+"SetFilet.mac" 1 FasCok FasCok 0 0 0 0 0 0 0 0 0 ;
+}
+macro ProtoPath+"SetKrom.mac" BandColor iif(Dno==0&&LongPost==0,BandType,0)
+                              BandType 0 BandType ;
+macro ProtoPath+"SetFix.mac"  iif(Dno==0,0,FixCorp) 0
+                              iif((TypeBp==1||TypeBp==-1)&&ConfDuct!=2,FixBp,0) 0 ;
+//-- Если задняя стенка врезная - добавляем пропилы
+if (TypeBp==3)
+{
+  //-- Пропил в правой стойке
+  macro ProtoPath+"SetProp.mac" "F" "D" DepthBp-h_dvp h_dvp InCutBp ;
+}
+macro ProtoPath+"MakePan.mac" 0 0 h_c h-h_c d 11;
+macro ProtoPath+"SetPropNull.mac";
+macro ProtoPath+"SetECod.mac" "1102";
+// macro ProtoPath+"SetKCod.mac" "СТЕН" h-h_c d;
+macro ProtoPath+"SetEnam.mac" "Стенка боковая левая" ;
+macro ProtoPath+"SetFix.mac"  iif(Dno==0,0,FixCorp) 0
+                              iif((TypeBp==1||TypeBp==-1)&&ConfDuct!=3,FixBp,0) 0 ;
+macro ProtoPath+"SetCuts.mac" CutBottom CutTop iif(HasDuct!=0&&(ConfDuct==3),DepthDuct,0) 0;
+if (TypeBp==3)
+{
+  //-- Пропил в левой стойке
+  macro ProtoPath+"SetProp.mac" "A" "D" DepthBp-h_dvp h_dvp InCutBp ;
+}
+macro ProtoPath+"MakePan.mac" w-h_dsp 0 h_c h-h_c d 11;
+macro ProtoPath+"SetPropNull.mac";
+macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+if (IsBottom==0)
+{
+  //-- Построение дна
+  macro ProtoPath+"SetECod.mac" "1103" ;
+  // macro ProtoPath+"SetKCod.mac" "ДНО" w-2*h_dsp d;
+  macro ProtoPath+"SetEnam.mac" "Дно" ;
+  macro ProtoPath+"SetCuts.mac" CutRight CutLeft 0 0;
+  macro ProtoPath+"SetFixover.mac" 1;
+  macro ProtoPath+"SetFix.mac"      iif(Dno==0,FixCorp,0) iif(Dno==0,FixCorp,0)
+                                    iif(TypeBp==1||TypeBp==-1,FixBp,0) 0 ;
+  macro ProtoPath+"SetKrom.mac"     BandColor iif(Dno==0,0,BandType)
+                                    iif(Dno==0,0,BandType) 0 BandType ;
+  if (TypeBp==3)
+  {
+    //-- Пропил в дне
+    macro ProtoPath+"SetProp.mac" "A" "D" DepthBp-h_dvp  h_dvp InCutBp;
+  }
+  macro ProtoPath+"MakePan.mac" 0 0 h_c w d 12 ;
+  if (HasDuct!=0) //-- Если нужен вырез, добавляем его
+  {
+    objident last 1 Pan;
+    macro ProtoPath+"PutCutr.mac" Pan, Pat, 1, 0, 5;
+  }
+  macro ProtoPath+"SetPropNull.mac";
+  macro ProtoPath+"SetFixover.mac" 0;
+}
+macro ProtoPath+"SetCuts.mac" 0 0 0 0;
+//-- Построение задней стенки
+macro ProtoPath+"SetMat.mac" MatBp;
+macro ProtoPath+"SetECod.mac" "1106";
+if (h_dvp<h_dsp)
+{
+  macro ProtoPath+"SetECod.mac" "1206";
+}
+// macro ProtoPath+"SetKCod.mac" "ЗДНС" h-2*h_dsp-h_c w-2*h_dsp;
+macro ProtoPath+"SetEnam.mac" "Задняя стенка" ;
+macro ProtoPath+"SetKrom.mac" BandColor 0 0 0 0 ;
+if (TypeBp==0)     //-- Утопленная задняя стенка
+{
+	macro ProtoPath+"SetFix.mac"  FixCorp 0 FixCorp FixCorp ;
+  if (HasDuct==0)
+  {
+    macro ProtoPath+"MakePan.mac" h_dsp 0 h_c+h_dsp h-2*h_dsp-h_c w-2*h_dsp 14 ;
+  }
+  else
+  {
+    if (ConfDuct==2)
+    {
+      macro ProtoPath+"MakePan.mac" h_dsp+WidthDuct 0 h_c+h_dsp  h-2*h_dsp-h_c w-2*h_dsp-WidthDuct 14 ;
+    }
+    if (ConfDuct==3)
+    {
+      macro ProtoPath+"MakePan.mac" h_dsp 0 h_c+h_dsp h-2*h_dsp-h_c w-2*h_dsp-WidthDuct 14 ;
+    }
+    if (ConfDuct==4)
+    {
+      macro ProtoPath+"MakePan.mac" h_dsp 0 h_c+h_dsp h-2*h_dsp-h_c ShiftDuct-2*h_dsp 14 ;
+      macro ProtoPath+"MakePan.mac" h_dsp+WidthDuct+ShiftDuct 0 h_c+h_dsp  h-2*h_dsp-h_c w-2*h_dsp-WidthDuct-ShiftDuct 14 ;
+    }
+  }
+  macro ProtoPath+"SetPropNull.mac";
+}
+if (TypeBp==1)     //-- Накладная задняя стенка
+{
+  macro ProtoPath+"SetCuts.mac" -InCutBp -InCutBp -InCutBp -InCutBp;
+	macro ProtoPath+"SetFix.mac"  0 0 0 0 ;
+  if (HasDuct==0)
+  {
+    macro ProtoPath+"MakePan.mac" h_dsp 0 h_c+h_dsp h-2*h_dsp-h_c w-2*h_dsp 13 ;
+  }
+  else
+  {
+    if (ConfDuct==2)
+    {
+      macro ProtoPath+"MakePan.mac" h_dsp+WidthDuct 0 h_c+h_dsp h-2*h_dsp-h_c w-2*h_dsp-WidthDuct 13 ;
+    }
+    if (ConfDuct==3)
+    {
+      macro ProtoPath+"MakePan.mac" h_dsp 0 h_c+h_dsp h-2*h_dsp-h_c w-2*h_dsp-WidthDuct 13 ;
+    }
+    if (ConfDuct==4)
+    {
+      macro ProtoPath+"MakePan.mac" h_dsp 0 h_c+h_dsp  h-2*h_dsp-h_c ShiftDuct-2*h_dsp 13 ;
+      macro ProtoPath+"MakePan.mac" h_dsp+WidthDuct+ShiftDuct 0 h_c+h_dsp  h-2*h_dsp-h_c w-2*h_dsp-WidthDuct-ShiftDuct 13 ;
+    }
+  }
+  macro ProtoPath+"SetPropNull.mac";
+  macro ProtoPath+"SetCuts.mac" 0 0 0 0;
+}
+if (TypeBp==-1)     //-- Стенка для мойки
+{
+  if (HasDuct==0)
+  {
+    macro ProtoPath+"SetFix.mac" 0 0 0 0;
+    macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 1 dum dum 0 0 0 ;
+    macro ProtoPath+"MakePan.mac" h_dsp-InCutBp 0 h_c+h_dsp-InCutBp dum dum 13 ;
+
+    macro ProtoPath+"SetFilet.mac" 0 0 0 1 dum dum 0 0 0 0 0 0 ;
+    macro ProtoPath+"MakePan.mac" w-h_dsp+InCutBp-dum 0 h_c+h_dsp-InCutBp dum dum 13 ;
+
+    macro ProtoPath+"SetFilet.mac" 1 dum dum 0 0 0 0 0 0 0 0 0;
+    macro ProtoPath+"MakePan.mac" w-h_dsp+InCutBp-dum 0 h-h_dsp+InCutBp-dum dum dum 13;
+
+    macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 1 dum dum ;
+    macro ProtoPath+"MakePan.mac" h_dsp-InCutBp 0 h-h_dsp+InCutBp-dum dum dum 13;
+
+    //-- Дополнительная планка
+    macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+    macro ProtoPath+"SetECod.mac" "1109" ;
+    // macro ProtoPath+"SetKCod.mac" "ЗДНЦ" h-2*h_dsp-h_c w-2*h_dsp;
+    macro ProtoPath+"SetEnam.mac" "Задняя царга" ;
+    macro ProtoPath+"SetKrom.mac" BandColor BandType BandType 0 0 ;
+    macro ProtoPath+"SetMat.mac" PrMater ;
+    macro ProtoPath+"SetFix.mac"  0 0 FixCorp FixCorp ;
+    macro ProtoPath+"MakePan.mac" h_dsp 0 h-dst-iif(IsTop==1,h_dsp,0) dst w-2*h_dsp 14 ;
+  }
+  else
+  {
+    if (ConfDuct==2)
+    {
+      macro ProtoPath+"SetFix.mac" 0 0 0 0;
+      macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 1 dum dum 0 0 0 ;
+      macro ProtoPath+"MakePan.mac" h_dsp-InCutBp+WidthDuct 0 h_c+h_dsp-InCutBp dum dum 13 ;
+
+      macro ProtoPath+"SetFilet.mac" 0 0 0 1 dum dum 0 0 0 0 0 0 ;
+      macro ProtoPath+"MakePan.mac" w-h_dsp+InCutBp-dum 0 h_c+h_dsp-InCutBp dum dum 13 ;
+
+      macro ProtoPath+"SetFilet.mac" 1 dum dum 0 0 0 0 0 0 0 0 0;
+      macro ProtoPath+"MakePan.mac" w-h_dsp+InCutBp-dum 0 h-h_dsp+InCutBp-dum dum dum 13;
+
+      macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 1 dum dum ;
+      macro ProtoPath+"MakePan.mac" h_dsp-InCutBp+WidthDuct 0 h-h_dsp+InCutBp-dum dum dum 13;
+
+      //-- Дополнительная планка
+      macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+      macro ProtoPath+"SetECod.mac" "1109" ;
+      // macro ProtoPath+"SetKCod.mac" "ЗДНЦ" h-2*h_dsp-h_c w-2*h_dsp;
+      macro ProtoPath+"SetEnam.mac" "Задняя царга" ;
+      macro ProtoPath+"SetKrom.mac" BandColor BandType BandType 0 0 ;
+      macro ProtoPath+"SetMat.mac" PrMater ;
+      macro ProtoPath+"SetFix.mac"  0 0 FixCorp FixCorp ;
+      macro ProtoPath+"MakePan.mac" h_dsp+WidthDuct 0 h-dst-iif(IsTop==1,h_dsp,0) dst w-2*h_dsp-WidthDuct 14 ;
+    }
+    if (ConfDuct==3)
+    {
+      macro ProtoPath+"SetFix.mac" 0 0 0 0;
+      macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 1 dum dum 0 0 0 ;
+      macro ProtoPath+"MakePan.mac" h_dsp-InCutBp 0 h_c+h_dsp-InCutBp dum dum 13 ;
+
+      macro ProtoPath+"SetFilet.mac" 0 0 0 1 dum dum 0 0 0 0 0 0 ;
+      macro ProtoPath+"MakePan.mac" w-h_dsp+InCutBp-dum-WidthDuct 0 h_c+h_dsp-InCutBp dum dum 13 ;
+
+      macro ProtoPath+"SetFilet.mac" 1 dum dum 0 0 0 0 0 0 0 0 0;
+      macro ProtoPath+"MakePan.mac" w-h_dsp+InCutBp-dum-WidthDuct 0 h-h_dsp+InCutBp-dum dum dum 13;
+
+      macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 1 dum dum ;
+      macro ProtoPath+"MakePan.mac" h_dsp-InCutBp 0 h-h_dsp+InCutBp-dum dum dum 13;
+
+      //-- Дополнительная планка
+      macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+      macro ProtoPath+"SetECod.mac" "1109" ;
+      // macro ProtoPath+"SetKCod.mac" "ЗДНЦ" h-2*h_dsp-h_c w-2*h_dsp;
+      macro ProtoPath+"SetEnam.mac" "Задняя царга" ;
+      macro ProtoPath+"SetKrom.mac" BandColor BandType BandType 0 0 ;
+      macro ProtoPath+"SetMat.mac" PrMater ;
+      macro ProtoPath+"SetFix.mac"  0 0 FixCorp FixCorp ;
+      macro ProtoPath+"MakePan.mac" h_dsp 0 h-dst-iif(IsTop==1,h_dsp,0) dst w-2*h_dsp-WidthDuct 14 ;
+    }
+    if (ConfDuct==4)
+    {
+      macro ProtoPath+"SetFix.mac" 0 0 0 0;
+      macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 1 dum dum 0 0 0 ;
+      macro ProtoPath+"MakePan.mac" h_dsp-InCutBp 0 h_c+h_dsp-InCutBp dum dum 13 ;
+      macro ProtoPath+"MakePan.mac" h_dsp-InCutBp+WidthDuct+ShiftDuct 0 h_c+h_dsp-InCutBp dum dum 13 ;
+
+      macro ProtoPath+"SetFilet.mac" 0 0 0 1 dum dum 0 0 0 0 0 0 ;
+      macro ProtoPath+"MakePan.mac" w-h_dsp+InCutBp-dum 0 h_c+h_dsp-InCutBp dum dum 13 ;
+      macro ProtoPath+"MakePan.mac" ShiftDuct-h_dsp+InCutBp-dum 0 h_c+h_dsp-InCutBp dum dum 13 ;
+
+      macro ProtoPath+"SetFilet.mac" 1 dum dum 0 0 0 0 0 0 0 0 0;
+      macro ProtoPath+"MakePan.mac" w-h_dsp+InCutBp-dum 0 h-h_dsp+InCutBp-dum dum dum 13;
+      macro ProtoPath+"MakePan.mac" ShiftDuct-h_dsp+InCutBp-dum 0 h-h_dsp+InCutBp-dum dum dum 13;
+
+      macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 1 dum dum ;
+      macro ProtoPath+"MakePan.mac" h_dsp-InCutBp 0 h-h_dsp+InCutBp-dum dum dum 13;
+      macro ProtoPath+"MakePan.mac" h_dsp-InCutBp+WidthDuct+ShiftDuct 0 h-h_dsp+InCutBp-dum dum dum 13;
+
+      //-- Дополнительная планка
+      macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+      macro ProtoPath+"SetECod.mac" "1109" ;
+      // macro ProtoPath+"SetKCod.mac" "ЗДНЦ" h-2*h_dsp-h_c w-2*h_dsp;
+      macro ProtoPath+"SetEnam.mac" "Задняя царга" ;
+      macro ProtoPath+"SetKrom.mac" BandColor BandType BandType 0 0 ;
+      macro ProtoPath+"SetMat.mac" PrMater ;
+      macro ProtoPath+"SetFix.mac"  0 0 FixCorp FixCorp ;
+      macro ProtoPath+"MakePan.mac" h_dsp 0 h-dst-iif(IsTop==1,h_dsp,0) dst ShiftDuct-2*h_dsp 14 ;
+      macro ProtoPath+"MakePan.mac" h_dsp+WidthDuct+ShiftDuct 0 h-dst-iif(IsTop==1,h_dsp,0) dst w-2*h_dsp-WidthDuct-ShiftDuct 14 ;
+    }
+  }
+}
+if (TypeBp==3)      //-- Врезная задняя стенка
+{
+  macro ProtoPath+"SetFix.mac"  0 0 0 0 ;
+  if (HasDuct==0)
+  {
+    macro ProtoPath+"MakePan.mac" h_dsp-InCutBp  DepthBp  h_c+h_dsp-InCutBp
+                  h-h_c-2*(h_dsp-InCutBp)  w-2*(h_dsp-InCutBp) 13 ;
+  }
+  else
+  {
+    if (ConfDuct==2)
+    {
+      macro ProtoPath+"MakePan.mac" h_dsp-InCutBp+WidthDuct DepthBp  h_c+h_dsp-InCutBp
+                      h-h_c-2*(h_dsp-InCutBp) w-2*(h_dsp-InCutBp)-WidthDuct 13 ;
+    }
+    if (ConfDuct==3)
+    {
+      macro ProtoPath+"MakePan.mac" h_dsp-InCutBp  DepthBp  h_c+h_dsp-InCutBp
+                    h-h_c-2*(h_dsp-InCutBp) w-2*(h_dsp-InCutBp)-WidthDuct 13 ;
+    }
+    if (ConfDuct==4)
+    {
+      macro ProtoPath+"MakePan.mac" h_dsp-InCutBp  DepthBp  h_c+h_dsp-InCutBp
+                  h-h_c-2*(h_dsp-InCutBp) ShiftDuct-2*(h_dsp-InCutBp) 13 ;
+      macro ProtoPath+"MakePan.mac" h_dsp+WidthDuct+ShiftDuct-InCutBp DepthBp h_c+h_dsp-InCutBp
+                  h-h_c-2*(h_dsp-InCutBp) w-2*(h_dsp-InCutBp)-WidthDuct-ShiftDuct 13 ;
+    }
+  }
+  //-- Крепежная планка
+  if (FixPlan==1)
+  {
+    macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+    macro ProtoPath+"SetECod.mac" "1109" ;
+    // macro ProtoPath+"SetKCod.mac" "ЗДНЦ" h-2*h_dsp-h_c w-2*h_dsp;
+    macro ProtoPath+"SetEnam.mac" "Задняя царга" ;
+    macro ProtoPath+"SetKrom.mac" BandColor BandType BandType 0 0 ;
+    macro ProtoPath+"SetMat.mac" PrMater ;
+    macro ProtoPath+"SetFix.mac"  0 0 FixCorp FixCorp ;
+    if (HasDuct==0)
+    {
+      macro ProtoPath+"MakePan.mac" h_dsp 0 h-dst-h_dsp dst w-2*h_dsp 14 ;
+    }
+    else
+    {
+      if (ConfDuct==2)
+      {
+        macro ProtoPath+"MakePan.mac" h_dsp+WidthDuct 0 h-dst-h_dsp dst w-2*h_dsp-WidthDuct 14 ;
+      }
+      if (ConfDuct==3)
+      {
+        macro ProtoPath+"MakePan.mac" h_dsp 0 h-dst-h_dsp dst w-2*h_dsp-WidthDuct 14 ;
+      }
+      if (ConfDuct==4)
+      {
+        macro ProtoPath+"MakePan.mac" h_dsp 0 h-dst-h_dsp dst ShiftDuct-2*h_dsp 14 ;
+        macro ProtoPath+"MakePan.mac" h_dsp+WidthDuct+ShiftDuct 0 h-dst-h_dsp dst w-2*h_dsp-WidthDuct-ShiftDuct 14 ;
+      }
+    }
+  }
+}
+if (TypeBp==4)  //-- Жесткая планка
+{
+  macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+  macro ProtoPath+"SetECod.mac" "1109" ;
+  // macro ProtoPath+"SetKCod.mac" "ЗДНЦ" h-2*h_dsp-h_c w-2*h_dsp;
+  macro ProtoPath+"SetEnam.mac" "Задняя царга" ;
+  macro ProtoPath+"SetKrom.mac" BandColor BandType BandType 0 0 ;
+  macro ProtoPath+"SetFix.mac"  0 0 FixCorp FixCorp ;
+  if (HasDuct==0)
+  {
+    macro ProtoPath+"MakePan.mac" h_dsp 0 (h-h_c-dst)/2+h_c dst w-2*h_dsp 14 ;
+  }
+  else
+  {
+    if (ConfDuct==2)
+    {
+      macro ProtoPath+"MakePan.mac" h_dsp+WidthDuct 0 (h-h_c-dst)/2+h_c dst w-2*h_dsp-WidthDuct 14 ;
+    }
+    if (ConfDuct==3)
+    {
+      macro ProtoPath+"MakePan.mac" h_dsp 0 (h-h_c-dst)/2+h_c dst w-2*h_dsp-WidthDuct 14 ;
+    }
+    if (ConfDuct==4)
+    {
+      macro ProtoPath+"MakePan.mac" h_dsp 0 (h-h_c-dst)/2+h_c dst ShiftDuct-2*h_dsp 14 ;
+      macro ProtoPath+"MakePan.mac" h_dsp+WidthDuct+ShiftDuct 0 (h-h_c-dst)/2+h_c dst w-2*h_dsp-WidthDuct-ShiftDuct 14 ;
+    }
+  }
+}
+macro ProtoPath+"SetMat.mac" PrMater;
+macro ProtoPath+"SetFix.mac"  FixCorp FixCorp 0 0;
+//-- Если задняя стенка накладная, крепим ее крепежом задней стенки
+if (TypeBp==1)
+{
+  macro ProtoPath+"SetFix.mac" FixCorp FixCorp FixBp 0 ;
+}
+//-- Если нет крышки, рисуем планки
+macro ProtoPath+"SetCuts.mac" h_dsp h_dsp 0 0;
+if (IsTop==0)
+{
+  macro ProtoPath+"SetECod.mac" "1105" ;
+  // macro ProtoPath+"SetKCod.mac" "ПЛНК" w-2*h_dsp Widsth;
+  macro ProtoPath+"SetEnam.mac" "Планка" ;
+  macro ProtoPath+"SetKrom.mac" BandColor  0 0 0 BandType ;
+  //-- Если тип задней стенки не "под мойку" и не "жесткая планка", ставим заднюю планку
+  if (TypeBp!=-1&&TypeBp!=4)
+  {
+    if (TypeBp==3)
+    {
+      //-- Пропил
+      macro ProtoPath+"SetProp.mac" "F" "D" DepthBp-h_dvp  h_dvp InCutBp;
+    }
+    if (d>2*Widsth+DepthDuct+2*h_dsp) //-- Если глубина корпуса больше, чем глубина двух стяжек, рисуем заднюю стяжку
+    {
+      macro ProtoPath+"MakePan.mac" 0 0 h-h_dsp	w iif(HasDuct==0,Widsth,max(Widsth,DepthDuct+2*h_dsp)) 12 ;
+    }
+    if (HasDuct!=0) //-- Если нужен вырез, добавляем его
+    {
+      objident last 1 Pan;
+      macro ProtoPath+"PutCutr.mac" Pan, Pat, 1, 0, 5;
+    }
+    macro ProtoPath+"SetPropNull.mac";
+    macro ProtoPath+"SetKrom.mac" BandColor 0 0 BandType BandType ;
+    macro ProtoPath+"SetFix.mac"  FixCorp FixCorp 0 0 ;
+    macro ProtoPath+"MakePan.mac" 0 d-Widsth h-h_dsp w Widsth 12 ;
+  }
+  else
+  {
+    macro ProtoPath+"SetPropNull.mac";
+    macro ProtoPath+"SetKrom.mac" BandColor BandType BandType 0 0 ;
+    macro ProtoPath+"SetFix.mac"  0 0 FixCorp FixCorp ;
+    macro ProtoPath+"SetCuts.mac" 0 0 h_dsp h_dsp ;
+    macro ProtoPath+"MakePan.mac" 0 d-h_dsp h-Widsth Widsth w 14 ;
+    macro ProtoPath+"SetCuts.mac" 0 0 0 0;
+  }
+}
+else //-- Крышка есть
+{
+  macro ProtoPath+"SetECod.mac" "1106" ;
+  // macro ProtoPath+"SetKCod.mac" "КРШК" w-2*h_dsp d;
+  macro ProtoPath+"SetEnam.mac" "Крышка" ;
+  macro ProtoPath+"SetKrom.mac" BandColor 0 0 0 BandType;
+  if (TypeBp==3)
+	{
+		//-- Пропил
+		macro ProtoPath+"SetProp.mac" "F" "D" DepthBp-h_dvp  h_dvp InCutBp;
+	}
+  macro ProtoPath+"MakePan.mac" 0 0 h-h_dsp w d 12;
+  if (HasDuct!=0) //-- Если нужен вырез, добавляем его
+  {
+    objident last 1 Pan;
+    macro ProtoPath+"PutCutr.mac" Pan, Pat, 1, 0, 5;
+  }
+  macro ProtoPath+"SetPropNull.mac";
+}
+//-- Наличие цоколя
+if (HasCok!=0)
+{
+  macro ProtoPath+"SetCuts.mac" 0 0 iif(LongPost==1,h_dsp,0)
+                                    iif(LongPost==1,h_dsp,0);
+  macro ProtoPath+"SetFix.mac"  0 FixCorp
+                                  iif(LongPost==1,FixCorp,0)
+                                  iif(LongPost==1,FixCorp,0) ;
+  macro ProtoPath+"SetECod.mac" "1107" ;
+  // macro ProtoPath+"SetKCod.mac" "ЦОКЛ" w-2*h_dsp d;
+  macro ProtoPath+"SetEnam.mac" "Цоколь" ;
+  macro ProtoPath+"SetKrom.mac" BandColor 0 0 iif(LongPost==0,BandType,0)
+                                iif(LongPost==0,BandType,0);
+  macro ProtoPath+"MakePan.mac" 0 d-h_dsp-Shiftcok 0 h_c w 14 ;
+}
+macro ProtoPath+"SetCuts.mac" 0 0 0 0;
+if (HasDuct!=0) //-- Если есть вырез, удаляем контур выреза. Он нам больше не нужен
+{
+  delete Pat done;
+}
+g_FurnType=FurnType;
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"w",w);
+err=AddScratch(ScrMod,FurnType,"d",d);
+err=AddScratch(ScrMod,FurnType,"h",h);
+err=AddScratch(ScrMod,FurnType,"h_c",h_c);
+err=AddScratch(ScrMod,FurnType,"PrMater",PrMater);
+err=AddScratch(ScrMod,FurnType,"MatBp",MatBp);
+err=AddScratch(ScrMod,FurnType,"Widsth",Widsth);
+err=AddScratch(ScrMod,FurnType,"TypeBp",TypeBp);
+err=AddScratch(ScrMod,FurnType,"DepthBp",DepthBp);
+err=AddScratch(ScrMod,FurnType,"InCutBp",InCutBp);
+err=AddScratch(ScrMod,FurnType,"IsTop",IsTop);
+err=AddScratch(ScrMod,FurnType,"IsBottom",IsBottom);
+err=AddScratch(ScrMod,FurnType,"BandColor",BandColor);
+err=AddScratch(ScrMod,FurnType,"BandType",BandType);
+err=AddScratch(ScrMod,FurnType,"FixCorp",FixCorp);
+err=AddScratch(ScrMod,FurnType,"FixBp",FixBp);
+err=AddScratch(ScrMod,FurnType,"Dno",Dno);
+err=AddScratch(ScrMod,FurnType,"Dum",Dum);
+err=AddScratch(ScrMod,FurnType,"Dst",Dst);
+err=AddScratch(ScrMod,FurnType,"HasCok",HasCok);
+err=AddScratch(ScrMod,FurnType,"ShiftCok",ShiftCok);
+err=AddScratch(ScrMod,FurnType,"LongPost",LongPost);
+err=AddScratch(ScrMod,FurnType,"FasCok",FasCok);
+err=AddScratch(ScrMod,FurnType,"FixPlan",FixPlan);
+err=AddScratch(ScrMod,FurnType,"HasDuct",HasDuct);
+err=AddScratch(ScrMod,FurnType,"ShiftDuct",ShiftDuct);
+err=AddScratch(ScrMod,FurnType,"WidthDuct",WidthDuct);
+err=AddScratch(ScrMod,FurnType,"DepthDuct",DepthDuct);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+exit;

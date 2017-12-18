@@ -1,0 +1,18 @@
+//////////////////////////////////
+//Подстановка в размеры допусков//
+//    по ГОСТ 6449.1-82         //
+//   (C) Драгункин А.Р.         //
+//        Дубна 2006 г.         //
+//////////////////////////////////
+global ProtoPath;
+NULLOUT=GetVarInst(2,"TolceVar",TolceVar,0);
+
+get "Первая точка размера" point missing  x1 y1 z1 :
+get "Вторая  точка размера" point x1 y1 z1 x2 y2 z2  :
+
+#dst distance x1 y1 z1  x2 y2 z2   ;
+if tolcevar!=3 { macro ProtoPath+"ToleranS.mac"   dst ; }
+
+ldim 3ddim ^x1 y1 z1 ^x2 y2 z2 :
+dimtext 0 "<> " ;
+exit ;

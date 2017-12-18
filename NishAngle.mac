@@ -1,0 +1,11 @@
+// Установить тип угла ниши
+global gb_xpn gb_ypn gb_zpn gb_xpk gb_ypk gb_zpk gb_KolNish; 			// Габариты Ниш
+global gb_annT, gb_annX, gb_annY;                                     // Типы углов ниш
+getpar Nish, NAngl, Type, Xa, Ya;
+
+if (Nish>gb_KolNish) { exit ; }
+
+gb_annT[NAngl,Nish]=Type;
+gb_annX[NAngl,Nish]=Xa;
+gb_annY[NAngl,Nish]=Ya;
+exit

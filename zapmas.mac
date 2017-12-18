@@ -1,0 +1,86 @@
+//-- Макропрограмма меняет параметр прототипа на новое значение
+//-- Используется при групповой замене параметров
+//-- Входные данные:
+//-- pnt - ссылка на объект-прототип
+//-- nid - ID материала для замены
+//-- IdGroup - ID группы подстановки
+
+global ProtoPath;
+getpar nid IdGroup pnt;
+//kol=getdimarray(IDGroup);
+//-- Получаем путь до библиотеки прототипов
+q=protolib(pnt);
+id=protoid(pnt);
+if (len(q)==0||id==0)
+{
+  exit;
+}
+Pat=GetProtoMac(q);
+//-- Получаем путь до описание параметров прототипов
+q=q-4;
+//-----------------------------------------------------------------------------
+total_s=GetProtoPar(id,q,nid,IdGroup,"parname","parvalue");
+//------------------------------------------------------------------------------
+//-- Устанавливаем соединение со справочником
+//fn=Pat1;
+//res=adbopen(adbcon(2),"SELECT * FROM TProtoPar WHERE ProtoID="+str(id)+" AND LibID=(SELECT LibID FROM TProtoLib //WHERE ProtoLibName='"+q+"')");
+//if (res==0)
+//{
+//  exit;
+//}
+//total_s=adbRecCount(res);
+//defarr parname[total_s];
+//defarr parvalue[total_s];
+//adbmovefirst(res);
+//p=1;
+//d=0;
+///LC:
+//ll=1;
+//ll:
+//if (IdGroup[ll]==aDbGetValue(res,4))
+//{
+//  d=d+1;
+//  parname[d]=aDbGetValue(res,2);
+///  parvalue[d]=nid[ll];
+//}
+//if (ll<kol)
+//{
+//  ll=ll+1;
+//  goto ll;
+//}
+//if (p<total_s)
+//{
+//  p=p+1;
+//  adbmovenext(res);
+//  goto LC;
+//}
+//res=adbclose(res);
+
+//------------------------------------------------------------------------------
+//-- Меняем значение параметра
+d=total_s;
+if (d==0) { exit; }				//--Не надо изменять прототип, если не меняли параметр Митин
+protoobj create Pat+q ;
+p=1;
+LCC:
+if (p<=d)
+{
+   if (parname[p]=="ЗСтМат")			//---Проверка, чтобы не менялась задняя стенка----------- R.S.
+ {
+  p=p+1;
+  goto LCC;
+ }
+
+ err=GetProtoVal(pnt,parname[p],ParPro);	//--Проверка, чтобы не ставить фасад, ручку и пр. если их не было--------- R.S.
+   if (ParPro==0)
+ {
+  p=p+1;
+  goto LCC;
+ }
+//----------------------------------------------------------------------------------------------------
+  err=ChangePInfo(pnt,parname[p],parvalue[p]);
+  p=p+1;
+  goto LCC;
+}
+smart edit list pnt nodc;
+exit;

@@ -1,0 +1,67 @@
+//--Добавление в базу типа крепежа под номером 70
+global ProtoPath;
+tab_place=ProtoPath+"\\..\\tmguidesV7.mdb";
+szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+tab_place;
+//--Подключаемся к базе
+K3BaseConn=adbCon(szSrc);
+//---------------------------------------------------------Параметры крепежа.---------------------------------------------
+//--Таблица THHLFIX--типы крепежа (Крепеж)
+HFID=70;
+HFNAME="Винт 4х22";
+HFIDH=800;
+HFX=0;
+HFY=0;
+HFZ=0;
+HFB=1;
+//--Таблица THHLHOLE--детали крепежа (Отверстия)
+HLID=800;
+HLNAME="Винт 4х22";
+HLKy=0;
+HLY=0;
+HLKz=0;
+HLZ=0;
+HLAlf=0;
+HLFIX=809;
+
+//--Проверка, есть ли уже записи о крепеже
+Zap1=adbOpen(K3BaseConn,"SELECT * FROM THHLHOLE WHERE HLID=800");
+prov1=adbRecCount(Zap1);
+//putmsg(str(prov1),1);
+close1=adbclose(Zap1);
+
+Zap2=adbOpen(K3BaseConn,"SELECT * FROM THHLFIX WHERE HFID=70");
+prov2=adbRecCount(Zap2);
+//putmsg(str(prov2),1);
+close2=adbclose(Zap2);
+
+if (prov1>0&&prov2==0)			//--Если деталь крепежа с этим номером существует, но типа крепежа нет, добавляем новую деталь.
+{
+ ZApr1=adbOpen(K3BaseConn,"SELECT MAX(HLID) AS MID FROM THHLHOLE");
+ IDL=adbgetvalue(Zapr1,"MID",800);
+ HFIDH=IDL+1;
+ HLID=IDL+1;
+}
+if (prov2==0)			//--Если детали и типа крепежа нет, добавим их
+{
+Zapros1=adbModify(K3BaseConn,"INSERT INTO THHLHOLE (HLID,HLNAME,HLKy,HLY,HLKz,HLZ,HLAlf,HLFIX) VALUES ("+str(HLID)+",\""+HFNAME+"\","+str(HLKy)+","+str(HLY)+","+str(HLKz)+","+str(HLZ)+","+str(HLAlf)+","+str(HLFIX)+")");
+res1=adbUpdate(Zapros1);
+clos1=adbclose(Zapros1);
+}
+if (prov2==0)				//--Если типа крепежа нет, добавим его
+{
+ Zapros2=adbModify(K3BaseConn,"INSERT INTO THHLFIX (HFID,HFNAME,HFIDH,HFX,HFY,HFZ,HFB) VALUES ("+str(HFID)+",\""+HFNAME+"\","+str(HFIDH)+","+str(HFX)+","+str(HFY)+","+str(HFZ)+","+str(HFB)+")");
+ res2=adbUpdate(Zapros2);
+ zapros3=adbopen(K3BaseConn,"SELECT MAX(ID) AS MTID FROM TPROTOSUBST")
+ ID3=adbgetvalue(zapros3,"MTID",800);
+ ID3=ID3+1;
+ zapros4=adbModify(K3BaseConn,"INSERT INTO TPROTOSUBST (ParType,[Value],TValue,SubstSort,LibID) VALUES (19,"+str(HFID)+",\""+HFNAME+"\","+str(HFID)+",1)");
+ res4=adbUpdate(Zapros4);
+ clos2=adbclose(Zapros2);
+ clos3=adbclose(zapros3);
+ clos4=adbclose(zapros4);
+}
+//--Отключаемся от базы.
+K3BaseConn=adbdiscon(K3BaseConn);
+exit;
+
+

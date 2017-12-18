@@ -1,0 +1,14 @@
+//-- Программа по номеру группы, в которой находится элемент
+//-- возвращает имя макропрограммы для установки
+//-- Входные парамеры:
+//-- GroupID - номер группы
+//-- Выходные параметры:
+//-- g_result - имя макропрограммы
+global g_result;
+getpar GroupID;
+if (GroupID==67) { g_result="MakeLeg.mac";   exit; } //-- Ножки
+if (GroupID==32) { g_result="MakeHing.mac";  exit; } //-- Петли
+if (GroupID==23) { g_result="MakeHand.mac";  exit; } //-- Ручки
+if (GroupID==24) { g_result="MakeFixer.mac"; exit; } //-- Крепеж
+if (GroupID==33) { g_result="MakeAcce.mac";  exit; } //-- Комплектующий
+exit;

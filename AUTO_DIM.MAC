@@ -1,0 +1,238 @@
+//-- Авторазмер
+global ProtoPath;
+defarr first[3], second[3], next[3];
+defarr xm[6] ;
+defarr arr[14];
+NULLOUT=GetVarInst(2,"TolceVar",TolceVar,0);
+
+mindim=1;   //-- Минимальный проставляемый размер
+IsWholly=0  //-- Смотрим панели на всех уровнях (1 - только на верхнем)
+
+get "Первая точка" point missing  first[1] first[2] first[3]  :
+get "Следующая точка" point first[1] first[2] first[3]
+second[1] second[2] second[3]  :
+
+get "Положение размерной линии" point first[1] first[2] first[3]
+next[1] next[2] next[3]  :
+
+dx=second[1]-first[1];
+dy=second[2]-first[2];
+dz=second[3]-first[3];
+
+if ((abs(dx)>abs(dy))&&(abs(dx)>abs(dz))) //-- размер по X
+{
+  code=1;
+}
+else
+{
+  if ((abs(dy)>abs(dx))&&(abs(dy)>abs(dz))) //-- размер по Y
+	{
+    code=2;
+  }
+  else
+	{
+    if ((abs(dz)>abs(dy))&&(abs(dz)>abs(dx))) //-- размер по Z
+		{
+      code=3;
+    }
+  }
+}
+
+if (IsWholly==0)
+{
+  selbyattr "(Left(FurnType,2)==\"01\"&&FurnType!=\"010000\")||Posit==11||Posit==12||Posit==13||Posit==14"
+    partly all done ;
+}
+else
+{
+  selbyattr "(Left(FurnType,2)==\"01\"&&FurnType!=\"010000\")||Posit==11||Posit==12||Posit==13||Posit==14"
+    wholly all done ;
+}
+object_2=sysvar(61);
+if (object_2==0)
+{
+  goto END_P;
+}
+defarr panels[object_2];
+defarr xm1[object_2] xm2[object_2];
+NULLOUT=initarray(xm1,999999);
+NULLOUT=initarray(xm2,999999);
+macro ProtoPath+"Arrobj.mac" object_2, panels;
+
+i=0;
+j=0;
+
+NEXT1:
+i=i+1;
+If (i<=object_2)
+{
+  point=panels[i];
+  Ft=getattr(point,"FurnType","");
+  if (len(ft)==0)
+  {
+    name=getattr(point,"Posit",-1);
+    if (name==12)
+    {
+      Ft="0101";
+    }
+    if (name==11)
+    {
+      Ft="0102";
+    }
+    if (name==13||name==14)
+    {
+      Ft="0103";
+    }
+  }
+  Ft=left(ft,4);
+	//-- Получаем информацию о текущем положении объекта
+  gosub FindPlane;
+	rr=objgab3(objp,xm);
+	xmn1=xm[1];
+	ymn1=xm[2];
+	zmn1=xm[3];
+	xmn2=xm[4];
+	ymn2=xm[5];
+	zmn2=xm[6];
+	if (code==1) //-- Размер по оси X
+	{
+    //-- Игнорируем стенки и полки
+    if (Ft=="0103"||Ft=="0101"||Ft=="0104")
+    {
+      goto NEXT1;
+    }
+		//-- Если координата Z первой точки пересекает объект
+		if (first[3]>zmn1)&&(first[3]<zmn2)
+		{
+			//-- Берем объект в рассмотрение (заносим в массив его габариты)
+			j=j+1;
+		  xm1[j]=xmn1;
+			xm2[j]=xmn2;
+		}
+	}
+	if (code==2) //-- Размер по оси Y
+	{
+    //-- Игнорируем стойки и полки
+    if (Ft=="0102"||Ft=="0101")
+    {
+      goto NEXT1;
+    }
+		//-- Если координата Z первой точки пересекает объект
+		if (first[3]>zmn1)&&(first[3]<zmn2)
+		{
+	    //-- Берем объект в рассмотрение (заносим в массив его габариты)
+			j=j+1;
+			xm1[j]=ymn1;
+			xm2[j]=ymn2;
+		}
+	}
+	if (code==3) //-- Размер по оси Z
+	{
+    //-- Игнорируем стойки и стенки
+    if (Ft=="0102"||Ft=="0103"||Ft=="0104")
+    {
+      goto NEXT1;
+    }
+		//-- Если координата X первой точки пересекает объект
+		if (first[1]>xmn1)&&(first[1]<xmn2)
+		{
+			//-- Берем объект в рассмотрение (заносим в массив его габариты)
+			j=j+1;
+			xm1[j]=zmn1;
+			xm2[j]=zmn2;
+		}
+	}
+  goto NEXT1;
+}
+//-- Если объектов не нашлось, выходим
+if (j<2)
+{
+	goto END_P;
+}
+//--------------------------------------------
+NULLOUT=SortArray(xm1);
+NULLOUT=SortArray(xm2);
+i=0;
+NULLOUT=sysarr(43,arr);
+grfcur=arr[3];    // Текущий граф.коэффициент
+if (arr[3]<6)
+{
+  grfcoeff 6;
+  grfcur=6;
+}
+NewLoop:
+i=i+1;
+x1=xm2[i];
+x2=xm1[i+1];
+if (x1<min(first[code],second[code])||x2>max(first[code],second[code]))
+{
+  goto next2;
+}
+//-- Ставим размеры
+if (code==1)
+{
+	fr1=x1;
+	fr2=first[2];
+	fr3=first[3];
+	to1=x2;
+	to2=first[2];
+	to3=first[3];
+	wh1=x1;
+	wh2=next[2];
+	wh3=next[3];
+}
+if (code==2)
+{
+	fr1=first[1];
+	fr2=x1;
+	fr3=first[3];
+	to1=first[1];
+	to2=x2;
+	to3=first[3];
+	wh1=next[1];
+	wh2=x1;
+	wh3=next[3];
+}
+if (code==3)
+{
+	fr1=first[1];
+	fr2=first[2];
+	fr3=x1;
+	to1=first[1];
+	to2=first[2];
+	to3=x2
+	wh1=next[1];
+	wh2=next[2];
+	wh3=x2;
+}
+dst=sqrt((to1-fr1)*(to1-fr1)+(to2-fr2)*(to2-fr2)+(to3-fr3)*(to3-fr3));
+if (dst<mindim)
+{
+  goto NewLoop;
+}
+if (tolcevar!=3)
+{
+	macro ProtoPath+"ToleranS.mac" dst ;
+}
+
+#Hdim LDim 3DDim fr1,fr2,fr3 to1,to2,to3 parallel wh1,wh2,wh3;
+attrobj attach  "AutoPlace"  done last 1 1;
+dimtext 0 "<> " ;
+next2:
+if (i<j-1)
+{
+  goto NewLoop;
+}
+END_P:
+grfcoeff arr[3];
+exit;
+//------------------------------------------------------
+//-- Ищем полотно панели для панели Point
+FindPlane:
+objp=Point;
+selbyattr "FurnType==\"010000\"" child point;
+if (sysvar(61)>0)
+{
+  objp=getselnum(1);
+}
+return;

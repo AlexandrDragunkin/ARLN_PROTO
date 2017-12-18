@@ -1,0 +1,47 @@
+//-- Создание объекта - стол пятиугольный двухдверный
+global MacroSw; //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global ProtoPath;		//-- Путь к папке с макропрограммами общей библиотеке прототипов
+global LocalPath;		//-- Путь к папке с макропрограммами локальной библиотеке прототипов
+
+MacroSw=0;
+ProtoPath=GetProtoMac("Shkaf.ptl");
+LocalPath=GetProtoMac("Kitchen.ptl");
+
+w=DbVar("Шир",600);			    //-- Ширина
+d=DbVar("Глуб",544);			  //-- Глубина
+h=DbVar("Выс",820);			    //-- Высота
+wr=DbVar("ШирС",346);			  //-- Ширина торцевого фасада
+dl=DbVar("ШирГ",302);			  //-- Глубина глухой секции
+WallAngle=DbVar("WallAngle",90);//-- Пристенный угол
+Orient=dbvar("Orient",1);       //-- Ориентация
+ШирГлух=DbVar("ШирС",100);		  //-- Ширина торцевого фасада
+MinDepth=DbVar("ШирГ",100);		  //-- Глубина глухой секции
+//----------------------------------------------------------------------
+ТипКонт=1;   //-- Пятиугольный
+Верхний=0;   //-- Нижний
+ObjTyp=0;    //-- Мебельный
+PlcTyp=0;    //-- Нижний
+BiblNum=185; //-- В библиотеке ID=185
+FurnType="100005";
+//----------------------------------------------------------------------
+Ang=radian(WallAngle-90);   //-- Пристенный угол
+ws=(w-d*sin(Ang))/cos(Ang); //-- Пристенная ширина
+ds=(d-w*sin(Ang))/cos(Ang); //-- Пристенная глубина
+
+Macro ProtoPath+"BegUnit.mac" "" ;
+macro ProtoPath+"ScrBoxGet.mac" 0; //-- Создание Scratch атрибута ящика
+macro LocalPath+"aboad5U_2dver.mac" ;
+
+//-- Ставим размеры
+Macro ProtoPath+"aDimLine.mac" ws dl h ТипКонт Верхний;
+//-- Линии контакта
+Macro ProtoPath+"aContLine.mac" ws dl ds h WallAngle-90 ТипКонт Верхний;
+#Boad group all done;
+macro ProtoPath+"SetEnam.mac" "Стол пятиугольный двухдверный";
+macro ProtoPath+"EndUnit.mac" w d h ;
+//-- Присваиваем атрибуты
+macro ProtoPath+"FurnAttr.mac" ObjTyp PlcTyp BiblNum FurnType;
+macro ProtoPath+"aCutAtr.mac" iif(Orient==1,0,1) 1 w-ШирГлух d-MinDepth;
+macro ProtoPath+"OldArtic.mac" ;
+macro ProtoPath+"Scrcopatr.mac" ; //-- Запись в объект Scratch атрибута
+exit;

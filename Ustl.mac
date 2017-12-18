@@ -1,0 +1,50 @@
+//-- Создание объекта - уголовое покрытие
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами 
+
+PrMater=DbVar("PrMater",0); 		//-- Материал панели
+Band=DbVar("BAND",0); 			    //-- Материал кромки
+LLK=DbVar("LLK",1500);					//-- Длина
+LRK=DbVar("LRK",1500);					//-- Ширина
+SLK=DbVar("SLK",800);					  //-- Ширина левого крыла
+SRK=DbVar("SRK",800);					  //-- Ширина правого крыла
+VAR=DbVar("VAR",0);						  //-- Вариант стыковки крыльев
+SLF=DbVar("SLF",300);					  //-- Фаска слева
+SRF=DbVar("SRF",300);					  //-- Фаска справа
+RU1=DbVar("RU1",0);						  //-- Радиус скругления №1
+RU2=DbVar("RU2",0);						  //-- Радиус скругления №2
+RU3=DbVar("RU3",0);						  //-- Радиуc скругления №3
+RU4=DbVar("RU4",0);						  //-- Радиус скругления №4
+RU5=DbVar("RU5",0);						  //-- Радиус скругления №5
+RVU=DbVar("RVU",0);						  //-- Радиус на внутренних углах
+Face_col=DbVar("Face_col",0);   //-- Цвет кромки
+//--------------------------------------------------------------------------
+FurnType="011000";
+Namescr="ProtoParams";
+NULLOUT=setvarinst(1,"FurnType",FurnType);
+//--------------------------------------------------------------------------
+ElemName="Угловое покрытие";
+macro ProtoPath+"SetEnam.mac" ElemName;
+macro ProtoPath+"UstlForm.mac" LLK,	LRK, SLK,	SRK, VAR,	SLF, SRF, RU1, RU2, RU3, RU4,	RU5,
+RVU,	PrMater, Face_col, Band;
+
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"PrMater",PrMater);
+err=AddScratch(ScrMod,FurnType,"Band",Band);
+err=AddScratch(ScrMod,FurnType,"LLK",LLK);
+err=AddScratch(ScrMod,FurnType,"LRK",LRK);
+err=AddScratch(ScrMod,FurnType,"SLK",SLK);
+err=AddScratch(ScrMod,FurnType,"SRK",SRK);
+err=AddScratch(ScrMod,FurnType,"VAR",VAR);
+err=AddScratch(ScrMod,FurnType,"SLF",SLF);
+err=AddScratch(ScrMod,FurnType,"SRF",SRF);
+err=AddScratch(ScrMod,FurnType,"RU1",RU1);
+err=AddScratch(ScrMod,FurnType,"RU2",RU2);
+err=AddScratch(ScrMod,FurnType,"RU3",RU3);
+err=AddScratch(ScrMod,FurnType,"RU4",RU4);
+err=AddScratch(ScrMod,FurnType,"RU5",RU5);
+err=AddScratch(ScrMod,FurnType,"RVU",RVU);
+err=AddScratch(ScrMod,FurnType,"Face_col",Face_col);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+exit;

@@ -1,0 +1,32 @@
+//--Макро расширителя для рамки AT
+global ProtoPath;
+KarkasNumb=getcarcnumb();
+getpar shag	ID
+;
+// -- Габариты
+W=priceinfo(ID,"Height",0);		
+H=priceinfo(ID,"Width",0);				
+K3FilePath=mpathexpand("<K3Files>\\");			//-- Папка K3File
+PantPath="VIBO\\Frame\\";
+//-- Умолчания на К3 файлы для создания расширителя
+
+boxP="AT_Ras.k3";
+
+objDo=sysvar(60);	
+//-- Добавляем элементы 
+objDo1=sysvar(60);
+#box append K3FilePath+PantPath+boxP 0 0 0;
+objPosle1=sysvar(60)-ObjDo1;
+rotate last 1 done 2points 0, -shag/2, 32, 1, -shag/2, 32, 180 copy 1;
+objPosle=sysvar(60)-objDo;
+group last objPosle done;
+
+//--Присваиваем атрибуты
+macro ProtoPath+"CompAttr.mac" ID 1;
+attrobj attach "PriceID" done last 1 ID; 
+attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 w shag H ;
+attrobj attach "FurnType" done last 1 "041700";
+attrobj attach "GroupID" done last 1 33;
+
+exit;

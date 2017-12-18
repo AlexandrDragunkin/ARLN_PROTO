@@ -1,0 +1,40 @@
+//-- Закончить изделие
+global
+UnitCode	//-- Код изделия (текст)
+NUnit		  //-- Порядковый номер детали и узла
+LUnit		  //-- Текущий номер узла число
+TLayer	  //-- Тип текущего уровня
+CLayer;	  //-- Номер текущего уровня
+
+global ProtoPath;
+
+global ElemName; //-- Имена мебельных элементов
+NULLOUT=setvarinst(1,"g_scrinit",1);
+
+getpar x y z ;
+
+if (ElemName!=" ")
+{
+  attrobj attach "ElemName" done last 1 ElemName;
+}
+else
+{
+  attrobj attach "ElemName" done last 1 "Изделие";
+}
+ElemName=" ";
+
+attrobj attach "UnitCode" done last 1 "0000" ;
+attrobj attach "GroupID" done last 1 0 ; //-- 0 - группа материалов детали
+attrobj attach "PriceID" done last 1 0 ; //-- Материал детали
+attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 x y z ; //-- Размеры изделия
+
+attrobj attach "NUnit" "ULayers" done last 1 1 0 ; //-- Номер и вложенность
+
+if (isassign("GapValue",0))
+{
+  attrobj copy record "GapValue" done last 1 done;
+}
+CLayer=0;
+UnitCode="";
+setposition on;
+exit;

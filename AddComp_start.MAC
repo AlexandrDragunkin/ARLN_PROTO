@@ -1,0 +1,122 @@
+//-- Добавление комплектующих в сцену
+ProtoPath=GetProtoMac("Shkaf.ptl");
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+
+defarr altxt[15], altfl[15];
+karkas_kol=GetMCarcNumb();
+karkas_num=GetCarcNumb();
+if (karkas_kol==0)
+{
+ putmsg("Сначала надо создать мебельный каркас",0);
+ cancel;
+}
+if (karkas_kol==1)
+{
+ #karkas MBCarcase set yes;
+}
+if (karkas_kol>1&&karkas_num==0)
+{
+ #karkas MBCarcase set no yes :
+}
+
+altfl[1]=PicturesPath+"sotkorz.jpg"
+altfl[2]=PicturesPath+"sotshelf1.jpg"
+altfl[3]=PicturesPath+"shshelf.jpg"
+altfl[4]=PicturesPath+"CompShelfPick.jpg"
+altfl[5]=PicturesPath+"RackPic.jpg"
+altfl[6]=PicturesPath+"VeshPick.jpg"
+altfl[7]=PicturesPath+"LegPic.jpg"
+altfl[8]=PicturesPath+"AccesPic.jpg"
+altfl[9]=PicturesPath+"Pantograf.jpg"
+altfl[10]=PicturesPath+"motframe.jpg"
+altfl[11]=PicturesPath+"elemframe.jpg"
+altfl[12]=PicturesPath+"MotFlas.jpg"
+altfl[13]=PicturesPath+"MotHang.jpg"
+
+defarr Ptype[20];
+
+Ptype[1]="Корзины сотовые";
+Ptype[2]="Полки сотовые";
+Ptype[3]="Полки обувные";
+Ptype[4]="Полки выдвижные";
+Ptype[5]="Вешалки продольные";
+Ptype[6]="Вешалки поперечные";
+Ptype[7]="Опоры";
+Ptype[8]="Комплектующие";
+Ptype[9]="Пантографы";
+Ptype[10]="Выдвижные рамки";
+Ptype[11]="Наполнение рамки";
+Ptype[12]="Выдвижные корзинки/полки";
+Ptype[13]="Выдвижные вешала";
+Ktypes=5;
+
+#altnum
+  alternative
+  "Установка аксессуаров"
+  picbox
+  text
+  center
+  "Выберите нужный"
+  done
+  default 1
+  Ptype[1]  altfl[1]
+  Ptype[2]  altfl[2]
+  Ptype[3]  altfl[3]
+  Ptype[4]  altfl[4]
+  Ptype[5]  altfl[5]
+  Ptype[6]  altfl[6]
+  Ptype[7]  altfl[7]
+  Ptype[8]  altfl[8]
+  Ptype[9]  altfl[9]
+  Ptype[10]  altfl[10]
+	Ptype[11]  altfl[11]
+	Ptype[12]  altfl[12]
+  Ptype[13]  altfl[13]
+done;
+
+if altnum==0
+{
+  cancel;
+}
+NULLOUT=GetSnap();
+if (altnum==1) {
+  macro ProtoPath+"ZapKorz.mac";
+}
+if (altnum==2) {
+  macro ProtoPath+"Sushilka.mac";
+}
+if (altnum==3) {
+  macro ProtoPath+"Obuvalka.mac" ;
+}
+if (altnum==4) {
+  macro ProtoPath+"CompPol.mac" ;
+}
+if (altnum==5) {
+  macro ProtoPath+"Rackon.mac" ;
+}
+if (altnum==6) {
+  macro ProtoPath+"Vesh.mac" ;
+}
+if (altnum==7) {
+  macro ProtoPath+"AddLeg.mac" ;
+}
+if (altnum==8) {
+  macro ProtoPath+"AddFich.mac" ;
+}
+if (altnum==9) {
+  macro ProtoPath+"AddPantograf.mac" ;
+}
+if (altnum==10) {
+  macro ProtoPath+"AddMotFrame.mac" ;
+}
+if (altnum==11) {
+  macro ProtoPath+"AddMotElems.mac" ;
+}
+if (altnum==12) {
+  macro ProtoPath+"AddMotFlas.mac" ;
+}
+if (altnum==13) {
+  macro ProtoPath+"AddMotHang.mac" ;
+}
+NULLOUT=ReSnap();
+exit;

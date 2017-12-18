@@ -1,0 +1,621 @@
+// Сверловка одной стороны объекта
+
+global NumFixMac;   // Для передачи количества из пользовательского макро
+NumFixMac=0;        // надо расчитать здесь
+
+getpar
+Lengh   // Длина стороны
+hPanel	// закрепляемая панель
+Poly   // ID полилайна 1 - главный
+Side	// закрепляемая сторона   SIDE_D = 1, SIDE_C = 3, SIDE_E = 5, SIDE_B = 7
+IDHol   //  ID отверстия
+XHol    //  положение вдоль длины от начала
+YHol    //  положение поперек длины
+ZHol    //  положение внутрь панели ? может и не надо
+;
+
+dbg=0; // 1 - с отладочными печатями
+if (dbg==1) {
+	//putmsg("Lengh="+str(Lengh));
+	//putmsg("Poly="+str(Poly));
+	//putmsg("Side="+str(Side));
+}
+//Tip=530;   //тип крепежа  530- уголок метал.25х25
+Tip=504;   //тип крепежа  504- уголок метал
+if (Side==1) {
+	Torec="D"
+} else {
+if (Side==3) {
+	Torec="C"
+} else {
+if (Side==5) {
+	Torec="E"
+} else {
+	Torec="B"
+}}}
+if (IsAssign("Posit",hPanel)) {
+	Pantip=getattr(hPanel,"Posit",-1);
+} else {
+	FurnType=getattr(hPanel,"FurnType","");
+	if (dbg==1) { putmsg("FurnType="+str(FurnType)); }
+	if (FurnType=="010200") {
+		Pantip=11;
+	} else {
+		if (FurnType=="010100") {
+			Pantip=12;
+		} else {
+			if (FurnType=="010300") {
+				Pantip=13;
+			} else {
+				if (FurnType=="010400") {
+					Pantip=14;
+				} else {
+					Pantip=-1;
+				}
+			}
+		}
+	}
+}
+if (dbg==1) { putmsg("Pantip="+str(pantip)); }
+if (Lengh<30) {
+  NumFixMac=0;
+  exit;
+}
+
+i=0;
+if (Lengh>=30)&&(Lengh<35) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=15 // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+if (Lengh>=35)&&(Lengh<50) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=20  // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+if (Lengh>=50)&&(Lengh<70) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=25  // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+if (Lengh>=70)&&(Lengh<90) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=45 // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+if (Lengh>=90)&&(Lengh<120) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=65   // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+if (((Pantip==11)||(Pantip==12))&&((Torec=="B")||(Torec=="C"))&&(Lengh>=120)&&(Lengh<601))||((Pantip==11)&&((Torec=="E")||(Torec=="D"))&&(Lengh>=120)&&(Lengh<601)) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=65  // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+
+
+Dl=Lengh-65;  // Оставшаяся длина
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Dl  // Положение 2стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+if (Pantip==11)&&((Torec=="B")||(Torec=="C"))&&(Lengh>=601)&&(Lengh<950) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=65  // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+
+
+Dl=Lengh-65;  // Оставшаяся длина
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Dl  // Положение 2стяжки
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Lengh/2  // Положение 3стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+if (Pantip==11)&&((Torec=="E")||(Torec=="D"))&&(Lengh>=601)&&(Lengh<800) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Lengh/3-50  // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=(Lengh/3)*2+100  // Положение 2стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+if (Pantip==11)&&((Torec=="E")||(Torec=="D"))&&(Lengh>=800)&&(Lengh<1250) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Lengh/4-50  // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=(Lengh/4)*3+100  // Положение 2стяжки
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Lengh/2  // Положение 3стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+if (Pantip==11)&&((Torec=="E")||(Torec=="D"))&&(Lengh>=1250)&&(Lengh<1900) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=75  // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+
+Dl=Lengh-75;  // Оставшаяся длина
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Dl // Положение 2стяжки
+YHol[i]=0
+zHol[i]=0
+
+Nd=Lengh-180;
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Nd/3+90  // Положение 3стяжки
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=(Nd/3)*2+90  // Положение 4стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+if (Pantip==11)&&((Torec=="E")||(Torec=="D"))&&(Lengh>=1900) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=75  // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+
+Dl=Lengh-75;  // Оставшаяся длина
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Dl // Положение 2стяжки
+YHol[i]=0
+zHol[i]=0
+
+Nd=Lengh-180;
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Nd/4+90  // Положение 3стяжки
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=(Nd/4)*3+80  // Положение 4стяжки
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Lengh/2  // Положение 5стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+if ((Pantip==11)||(Pantip==12))&&((Torec=="B")||(Torec=="C"))&&(Lengh>=950)&&(Lengh<1500) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=65  // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+
+
+Dl=Lengh-65;  // Оставшаяся длина
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Dl  // Положение 2стяжки
+YHol[i]=0
+zHol[i]=0
+
+Nd=Lengh-160;
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Nd/3+80  // Положение 3стяжки
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=(Nd/3)*2+80  // Положение 4стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+if ((Pantip==11)||(Pantip==12))&&((Torec=="B")||(Torec=="C"))&&(Lengh>=1500) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=65  // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+
+
+Dl=Lengh-65;  // Оставшаяся длина
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Dl  // Положение 2стяжки
+YHol[i]=0
+zHol[i]=0
+
+Nd=Lengh-160;
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Nd/4+80  // Положение 3стяжки
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=(Nd/4)*2+80  // Положение 4стяжки
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=(Nd/4)*3+80  // Положение 5стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+if (Pantip==14)&&((Torec=="B")||(Torec=="C"))&&(Lengh>=120)&&(Lengh<600) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Lengh/2  // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+if (Pantip==14)&&((Torec=="B")||(Torec=="C"))&&(Lengh>=600)&&(Lengh<950) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Lengh/3  // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=(Lengh/3)*2  // Положение 2 стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+if (Pantip==14)&&((Torec=="E")||(Torec=="D"))&&(Lengh>=120)&&(Lengh<750) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=75  // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+
+Dl=Lengh-75;  // Оставшаяся длина
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Dl  // Положение 2 стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+if (Pantip==14)&&((Torec=="E")||(Torec=="D"))&&(Lengh>=750)&&(Lengh<1200) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=75  // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+
+Dl=Lengh-75;  // Оставшаяся длина
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Dl  // Положение 2 стяжки
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Lengh/2  // Положение 3 стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+if (Pantip==14)&&((Torec=="B")||(Torec=="C"))&&(Lengh>=950)&&(Lengh<1200) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=75  // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+
+Dl=Lengh-75;  // Оставшаяся длина
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Dl  // Положение 2 стяжки
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Lengh/2  // Положение 3 стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+if ((Pantip==14)&&((Torec=="B")||(Torec=="C"))&&(Lengh>=1200)&&(Lengh<1800))||((Pantip==14)&&((Torec=="E")||(Torec=="D"))&&(Lengh>=1200)&&(Lengh<1800)) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=75  // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+
+Dl=Lengh-75;  // Оставшаяся длина
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Dl  // Положение 2 стяжки
+YHol[i]=0
+zHol[i]=0
+
+Nd=Lengh-180;
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Nd/3+90  // Положение 3 стяжки
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=(Nd/3)*2+90  // Положение 4 стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+if ((Pantip==14)&&((Torec=="B")||(Torec=="C"))&&(Lengh>=1800)&&(Lengh<2400))||((Pantip==14)&&((Torec=="E")||(Torec=="D"))&&(Lengh>=1800)&&(Lengh<2400)) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=75  // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+
+Dl=Lengh-75;  // Оставшаяся длина
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Dl  // Положение 2 стяжки
+YHol[i]=0
+zHol[i]=0
+
+Nd=Lengh-180;
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Nd/4+90  // Положение 3 стяжки
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=(Nd/4)*2+90  // Положение 4 стяжки
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=(Nd/4)*3+90  // Положение 5 стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+if ((Pantip==14)&&((Torec=="B")||(Torec=="C"))&&(Lengh>=2400))||((Pantip==14)&&((Torec=="E")||(Torec=="D"))&&(Lengh>=2400)) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=75  // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+
+Dl=Lengh-75;  // Оставшаяся длина
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Dl  // Положение 2 стяжки
+YHol[i]=0
+zHol[i]=0
+
+Nd=Lengh-180;
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Nd/5+90  // Положение 3 стяжки
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=(Nd/5)*2+90  // Положение 4 стяжки
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=(Nd/5)*3+90  // Положение 5 стяжки
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=(Nd/5)*4+90  // Положение 6 стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+if (Pantip==12)&&((Torec=="E")||(Torec=="D"))&&(Lengh>=120)&&(Lengh<800) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Lengh/2  // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+if (Pantip==12)&&((Torec=="E")||(Torec=="D"))&&(Lengh>=800)&&(Lengh<1200) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Lengh/3  // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=(Lengh/3)*2  // Положение 2стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+if (Pantip==12)&&((Torec=="E")||(Torec=="D"))&&(Lengh>=1200)&&(Lengh<1800) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Lengh/4  // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=(Lengh/4)*3  // Положение 2стяжки
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Lengh/2  // Положение 3стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+if (Pantip==12)&&((Torec=="E")||(Torec=="D"))&&(Lengh>=1800)&&(Lengh<2400) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Lengh/5  // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=(Lengh/5)*4  // Положение 2стяжки
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=(Lengh/5)*2  // Положение 3стяжки
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=(Lengh/5)*3  // Положение 4стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+if (Pantip==12)&&((Torec=="E")||(Torec=="D"))&&(Lengh>=2400) {
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Lengh/6  // Положение 1 стяжки
+YHol[i]=0
+zHol[i]=0
+
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=(Lengh/6)*4  // Положение 2стяжки
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=(Lengh/6)*2  // Положение 3стяжки
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=(Lengh/6)*5  // Положение 4стяжки
+YHol[i]=0
+zHol[i]=0
+
+i=i+1
+IDHol[i]=Tip // уголок метал 25х25
+XHol[i]=Lengh/2  // Положение 5стяжки
+YHol[i]=0
+zHol[i]=0
+}
+
+NumFixMac=i;
+if (dbg==1) {
+//putmsg("NumFixMac="+str(i));
+i=1;
+mmm:
+if (i<=NumFixMac) {
+	//putmsg("IDHol["+str(i)+"]="+str(IDHol[i]));
+	i=i+1;
+	goto mmm;
+}
+}
+exit

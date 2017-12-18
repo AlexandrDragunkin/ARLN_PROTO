@@ -1,0 +1,43 @@
+//-- Разобрать изделие по типам объектов
+//-- Входные параметры:
+//-- objs - массив со списком разбираемых изделий
+global ProtoPath;
+
+getpar objs;
+
+#ok_flag
+setvar
+"Глубина разбора"
+""
+left "Введите глубину разбора изделия" done
+string listonly current "До дверей, ящиков"
+                        "До фасадов"
+                        "До нижнего уровня" done
+"Уровень разбора" Depth
+done;
+if (ok_flag==0)
+{
+  exit;
+}
+if (Depth=="До нижнего уровня")
+{
+  Depth="";
+}
+if (Depth=="До дверей, ящиков")
+{
+  Depth="left(FurnType,1)==\"2\"||left(FurnType,2)==\"30\"||(left(FurnType,2)==\"31\"&&mid(FurnType,3,2)!=\"00\")";
+}
+if (Depth=="До фасадов")
+{
+  Depth="left(FurnType,1)==\"5\"";
+}
+object_2=getdimarray(objs);
+i=0;
+loop:
+i=i+1;
+macro ProtoPath+"DestrOnObjFt.mac" objs[i] Depth;
+if (i<object_2)
+{
+  goto loop;
+}
+exit;

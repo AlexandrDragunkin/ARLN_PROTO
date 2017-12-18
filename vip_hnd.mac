@@ -1,0 +1,306 @@
+//-- Установка ручки на дверь распашную с выпуклым фасадом
+//-- Входные параметры:
+//-- dx, G, dz - базовый угол двери
+//-- dwx, dwz - ширина и высота двери соответственно
+//-- Rplace - сторона открывания двери
+//-- Handle - тип ручки из прайс-листа
+//-- ARMX, ARMZ, ARMA	- сдвиги и угол поворота ручки
+
+global ProtoPath;
+global
+FsMater             // Материал фасада
+HandleD,	    //-- Двойная или одиночная ручка
+HandleR	,	    //-- Тип положения ручки 0-свободно 1-центр 3-сверху 4-снизу
+DoorDuble,
+;        //-- Размер по оси y гнутого фасада
+global g_FasPlas;       // массив со значениями текущих +ов по сторонам фасада
+defarr arr[7],arrout[5];
+
+getpar dx,dy,dz,   //-- Базовый угол двери
+dwx,Dwy, dwz,          //-- Ширина, прогиб, высота
+Rplace,           //-- Cторона открывания двери
+HandleType,           //-- Тип ручки и параметры положения
+ARMX,ARMZ,ARMA;
+
+if (HandleType==0) //-- Если нет ручки - выходим
+{
+  exit;
+}
+
+HandleX=ARMX
+HandleZ=ARMZ
+HandleA=ARMA
+
+if (HandleType==0||(HandleR!=0&&HandleR!=1&&HandleR!=3&&HandleR!=4))
+{
+  exit;
+}
+ARMA=ARMA+90;
+//-- Размеры ручки
+dRucUp=PriceInfo(HandleType,"Height",50);
+dRucR=PriceInfo(HandleType,"Length",0);
+h_fas=PriceInfo(FsMater,"Thickness",16) ;
+
+arr[1]=dwx;
+arr[2]=Dwy;
+arr[3]=0.5;
+NULLOUT=Param2DFunc(1,arr,arrout);
+Length=arrout[1];
+dwx=Length;
+DZn=dRucUp/2;				                     //-- Смещение ручки по ширине
+DXn=dRucR/2;				                     //-- Смещение ручки по высоте
+
+//-- Вычисляем положение ручки
+//-- Расположение ручки-свободно, дверь одна
+if (HandleR==0&&DoorDuble==0)
+{
+  if (HandleA==0||HandleA==180)
+  {
+    if (HandleX>dwx-DXn)  { HandleX=dwx-DXn; }
+    if (HandleX<DXn)      { HandleX=DXn;     }
+    if (HandleZ>dwz-DZn)  { HandleZ=dwz-DZn; }
+    if (HandleZ<DZn)      { HandleZ=DZn;     }
+  }
+  if (HandleA==90||HandleA==270)
+  {
+    if (HandleX>dwx-DZn)  { HandleX=dwx-DZn; }
+    if (HandleX<DZn)      { HandleX=DZn;     }
+    if (HandleZ>dwz-DXn)  { HandleZ=dwz-DXn; }
+    if (HandleZ<DXn)      { HandleZ=DXn;     }
+  }
+  Xh=dx+HandleX;
+  Zh=dz+HandleZ;
+}
+//--Расположение ручки-свободно, двери две
+if (HandleR==0&&DoorDuble==1)
+{
+  if (Rplace==1||Rplace==2)  //-- Открывание слева или справа
+  {
+    HandleX2=HandleX/2;
+    HandleZ2=HandleZ;
+    if (HandleA==0||HandleA==180)
+    {
+      if (HandleX2>dwx-DXn) { HandleX2=dwx-DXn; }
+      if (HandleX2<DXn)     { HandleX2=DXn;     }
+      if (HandleZ2>dwz-DZn) { HandleZ2=dwz-DZn; }
+      if (HandleZ2<DZn)     { HandleZ2=DZn;     }
+    }
+    if (HandleA==90||HandleA==270)
+    {
+      if (HandleX2>dwx-DZn) { HandleX2=dwx-DZn; }
+      if (HandleX2<DZn)     { HandleX2=DZn;     }
+      if (HandleZ2>dwz-DXn) { HandleZ2=dwz-DXn; }
+      if (HandleZ2<DXn)     { HandleZ2=DXn;     }
+    }
+  }
+  if (Rplace==3||Rplace==4)  //-- Открывание сверху или снизу
+  {
+    HandleX2=HandleX;
+    HandleZ2=HandleZ/2;
+    if (HandleA==0||HandleA==180)
+    {
+      if (HandleX2>dwx-DXn) { HandleX2=dwx-DXn; }
+      if (HandleX2<DXn)     { HandleX2=DXn;     }
+      if (HandleZ2>dwz-DZn) { HandleZ2=dwz-DZn; }
+      if (HandleZ2<DZn)     { HandleZ2=DZn;     }
+    }
+    if (HandleA==90||HandleA==270)
+    {
+      if (HandleX2>dwx-DZn) { HandleX2=dwx-DZn; }
+      if (HandleX2<DZn)     { HandleX2=DZn;     }
+      if (HandleZ2>dwz-DXn) { HandleZ2=dwz-DXn; }
+      if (HandleZ2<DXn)     { HandleZ2=DXn;     }
+    }
+  }
+  Xh=dx+HandleX2;
+  if (Rplace==1)
+  {
+    Xh=dwx-Xh+2*dx;
+  }
+
+  Zh=dz+HandleZ2;
+  if (Rplace==3)
+  {
+    Zh=dwz-Zh+2*dz;
+  }
+}
+//-----------------------------------------------------------------------------
+if (HandleR==0) //-- Расположение ручки - свободно
+{
+  if (Rplace==0)
+  {
+    HandleA=HandleA+90;
+    Xh=dx+HandleX+DZn;
+    Zh=dz;
+  }
+  //goto SHAN;
+}
+if (Rplace==0) //-- Для ящиков (двери не открываются)
+{
+  Xh=dx+dwx/2;
+  HandleA=HandleA+90;
+}
+if (Rplace==3)||(Rplace==4)
+{
+  HandleA=HandleA+90;
+}
+if (HandleA==90)||(HandleA==270)
+{
+  DXn=dRucUp/2;
+  DZn=dRucR/2;
+}
+
+if (HandleR==1) { Zh=dz+dwz/2;            } //-- Ручка по центру
+if (HandleR==3) { Zh=dz+dwz-HandleZ-DZn;  } //-- Ручка сверху
+if (HandleR==4) { Zh=dz+HandleZ+DZn;      } //-- Ручка снизу
+
+if (Rplace==1) { Xh=dx+dwx-HandleX-DXn;              } //-- Открывание слева
+if (Rplace==2) { Xh=dx+HandleX+DXn;                  } //-- Открывание справа
+
+if (Rplace==3)  //-- Открывание сверху
+{
+ if (HandleR==1)             //-- Ручка по центру
+  {
+    Xh=dx+dwx/2;
+  }
+ if (HandleR==3)             //-- Ручка сверху/справа
+  {
+      Xh=dx+HandleX+DXn;
+  }
+ if (HandleR==4)            //-- Ручка снизу/слева
+  {
+      Xh=dx+dwx-HandleX-DXn;
+  }
+  Zh=dz+dwz-HandleZ-DZn;
+}
+
+if (Rplace==4)  //-- Открывание снизу
+{
+  if (HandleR==1)             //-- Ручка по центру
+  {
+    Xh=dx+dwx/2;
+  }
+  if (HandleR==3)             //-- Ручка сверху/справа
+  {
+     Xh=dx+HandleX+DXn;
+  }
+   if (HandleR==4)            //-- Ручка снизу/слева
+  {
+     Xh=dx+dwx-HandleX-DXn;
+  }
+  Zh=dz+HandleZ+DZn;
+}
+//-------- Проверка для одной ручки ---------------------
+if (HandleD==0)
+{
+  if (Rplace==1||Rplace==2)
+  {
+    if (dwz<dRucUp+HandleZ)
+    {
+	    error[1]="Возможно, длина ручки превышает высоту двери.";
+	    error[2]="Минимальная высота двери: '"+str(2*dRucUp+2*HandleZ)+"' мм";
+	    error[3]=" ";
+	    error[4]="Проверьте длину ручки."
+	    error[5]="Убедитесь, что высота установки ручки и длина ручки не превышают высоту двери.";
+	    macro Protopath+"ShowSmartError.mac" "Несоответствие параметров."
+	    5 error;
+//	    cancel;
+    }
+  }
+  if (Rplace==3||Rplace==4)
+  {
+    if (dwx<dRucUp+HandleX)
+    {
+	    error[1]="Возможно, длина ручки превышает ширину двери.";
+	    error[2]="Минимальная ширина двери: '"+str(2*dRucUp+2*HandleZ)+"' мм";
+	    error[3]=" ";
+	    error[4]="Проверьте длину ручки."
+	    error[5]="Убедитесь, что высота установки ручки и длина ручки не превышают ширину двери.";
+	    macro Protopath+"ShowSmartError.mac" "Несоответствие параметров."
+	    5 error;
+//	    cancel;
+    }
+  }
+}
+if (HandleD==1) //-- Две ручки
+{
+  if (Rplace==0)
+  {
+    Xh=dx+HandleX+DXn;
+//    HandleA=HandleA;
+  }
+  if (Rplace==1||Rplace==2)
+  {
+
+    if (dwz<2*dRucUp+2*HandleZ)
+    {
+	    error[1]="Возможно, длина ручки превышает высоту двери.";
+	    error[2]="Минимальная высота двери: '"+str(2*dRucUp+2*HandleZ)+"' мм";
+	    error[3]=" ";
+	    error[4]="Проверьте длину ручки."
+	    error[5]="Убедитесь, что высота установки ручки и длина ручки не превышают высоту двери.";
+	    macro Protopath+"ShowSmartError.mac" "Несоответствие параметров."
+	    5 error;
+//	    cancel;
+    }
+    Zh=dz+HandleZ+DZn;
+  }
+  if (Rplace==3||Rplace==4)
+  {
+    if (dwx<2*dRucUp+2*HandleX)
+    {
+	    error[1]="Возможно, длина ручки превышает ширину двери.";
+	    error[2]="Минимальная ширина двери: '"+str(2*dRucUp+2*HandleZ)+"' мм";
+	    error[3]=" ";
+	    error[4]="Проверьте длину ручки."
+	    error[5]="Убедитесь, что высота установки ручки и длина ручки не превышают ширину двери.";
+	    macro Protopath+"ShowSmartError.mac" "Несоответствие параметров."
+	    5 error;
+//	    cancel;
+    }
+    Xh=dx+HandleX+dRucUp/2;
+  }
+}
+
+
+//------------------------------------------------------------------------------
+//DZn=dRucUp/2;				//-- Смещение ручки по ширине
+//DXn=-dRucR/2;				//-- Смещение ручки по высоте
+//---------------------------------------------------------------------------------------
+//Zh=ARMZ-g_FasPlas[4];
+//if (HandleR==1) { Zh=dz+dwz/2; }
+//if (HandleR==3) { Zh=dz+dwz-(ARMZ-g_FasPlas[3]); }
+Xh=ARMX-g_FasPlas[1];
+if (Rplace==1) { Xh=Length-(ARMX-g_FasPlas[2]); }
+if (Rplace==0) { Xh=dx+Length/2 ARMA=ARMA+90 }           // Для ящиков (Нет)
+
+
+arr[3]=Xh/Length;
+NULLOUT=Param2DFunc(1,arr,arrout);
+
+NULLOUT=getsnap();
+setucs  arrout[2]  arrout[3] Zh  oy  arrout[4]  arrout[5] Zh ;
+macro ProtoPath+"SetECod.mac" "7202" ;
+macro ProtoPath+"SetKCod.mac" "РУЧК" 0 0;
+macro ProtoPath+"SetEnam.mac" "Ручка мебельная" ;
+Macro ProtoPath+"MakeHand.mac" HandleType 1 0 dy+iif(Dwy<0,-h_fas,h_fas) 0 0 iif(Dwy<0,180,0) 0;
+if (abs(ARMA)>0)
+{
+  rotate last 1 done 2points  0 0 0 0 h_fas 0 ARMA nocopy ;
+}
+NULLOUT=resnap();
+//-- Двойная ручка
+if (HandleD==1&&(Rplace==1||Rplace==2))
+{
+  move last 1 done 0 0 -zh+dwz-HandleZ-dRucUp/2 copy 1;
+}
+if (HandleD==1&&(Rplace==3||Rplace==4||Rplace==0))
+{
+  move last 1 done -xh+dwx-HandleX-dRucUp/2 0 0 copy 1;
+}
+exit;
+//--------------------------------------------------------------------------------------
+
+
+
+exit;

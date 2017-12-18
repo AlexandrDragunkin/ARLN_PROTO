@@ -1,0 +1,20 @@
+//-- Программа создания отчета кромки изделия
+global ProtoPath;
+global g_BoutTbl,g_LbOutTbl;
+Protopath=GetProtoMac("Shkaf.ptl");
+BinPath=sysvar(1)-1;
+macro ProtoPath+"Sp_Karkas.mac"; //-- Запросим номер каркаса
+ProjPath=GetFilePath(SysVar(2));
+ProjName=GetFileTitle(SysVar(2))-3+"K.xls";
+res=fmdbscript(ProtoPath+"PKMScrLib.mdb","FileSystem","FsoIsFileExist",ProtoPath+"Hell.xls");
+if (res==1)
+{
+  script MDB ProtoPath+"PKMScrLib.mdb" "FileSystem" "FsoDeleteFile" ProtoPath+"Hell.xls" ;
+}
+aaa=BinPath+","+ProtoPath-1+",Zakaz.dbf,Shkaf.ptm,"+g_BOutTbl+",1" //-- Кромка по-новому По длинам сторон с учетом шпона
+//aaa=BinPath+","+ProtoPath-1+",Zakaz.dbf,Shkaf.ptm,"+g_BOutTbl+",0" //-- Кромка по-старому (по сторонам B, C, D, E)
+script MDB ProtoPath+"PKMScrLib.mdb" "ТаблОкантовки" "Report1" aaa;
+script MDB ProtoPath+"PKMScrLib.mdb" "FileSystem" "FsoCopyFile" ProtoPath+"Hell.xls,"+ProjPath+ProjName ;
+script MDB ProtoPath+"PKMScrLib.mdb" "FileSystem" "FsoRunExcel"  ProjPath+ProjName ;
+exit;
+

@@ -1,0 +1,74 @@
+//-- Добавление библиотечных вырезов в сцену v7.1
+ProtoPath=GetProtoMac("Shkaf.ptl");
+
+defarr altxt[15], altfl[15];
+
+altfl[1]=ProtoPath+"contour\\Pictures\\Скругления.jpg"
+altfl[2]=ProtoPath+"contour\\Pictures\\Фаска со скруглениями.jpg"
+altfl[3]=ProtoPath+"contour\\Pictures\\Вырез со скруглениями.jpg"
+altfl[4]=ProtoPath+"contour\\Pictures\\Вырез произвольный.jpg"
+altfl[5]=ProtoPath+"contour\\Pictures\\Вырез универсальный.jpg"
+//putmsg(altfl[1])
+
+defarr Ptype[20];
+
+Ptype[1]="Три дуги (угловой)";
+Ptype[2]="Фаска со скруглениями (угловой)";
+Ptype[3]="Прямоугольный со скруг. (угловой)";
+Ptype[4]="Произвольный со скруг. (угловой)";
+Ptype[5]="Универсальный (угловой)";
+
+Ktypes=1;
+
+#altnum
+  alternative
+  "Вырезы панели"
+  picbox
+  text
+  center
+  "Выберите нужный"
+  done
+  default 1
+  Ptype[1]  altfl[1]
+  Ptype[2]  altfl[2]
+  Ptype[3]  altfl[3]
+  Ptype[4]  altfl[4]
+  Ptype[5]  altfl[5]
+done;
+
+if altnum==0
+{
+  cancel;
+}
+NULLOUT=GetSnap();
+if (altnum==1) {
+protoobj create "Contour.ptl" 218
+  "R1" 130
+  "R2" 120
+  done
+  0,0,0 ;
+}
+if (altnum==2) {
+protoobj create "Contour.ptl" 217
+
+  done
+  0,0,0 ;
+}
+if (altnum==3) {
+protoobj create "Contour.ptl" 220
+
+  done
+  0,0,0 ;
+}if (altnum==4) {
+protoobj create "Contour.ptl" 221
+
+  done
+  0,0,0 ;
+}if (altnum==5) {
+protoobj create "Contour.ptl" 222
+
+  done
+  0,0,0 ;
+}
+NULLOUT=ReSnap();
+exit;

@@ -1,0 +1,5 @@
+//-- Перенумерация мебельных элементов, заданных своим номером в рамках сборочной единицы
+
+NULLOUT=renumerate();
+NULLOUT=attrcopy("DetailPos","CommonPos");
+exit;

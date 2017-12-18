@@ -1,0 +1,20 @@
+//-- Макропрограмма устанавливает один элемент в сцену.
+//-- Входные парамеры:
+//-- MakeName - имя макропрограммы установки
+//-- IdAcces - ID элемента
+//-- xn yn zn	- положение нуля локальной системы координат
+//-- ax az ax1 - углы поворота элемента относительно осей
+global ProtoPath;
+getpar MakeName, IdAcces, xn, yn, zn, ax, az, ax1;
+
+macro ProtoPath+"SetENam.mac" priceinfo(IdAcces,"MATNAME","Фурнитура");
+if (MakeName=="MakeFixer.mac") //-- Единственное (пока, по крйней мере) исключение
+{
+	//-- Халтура, конечно. Надо подумать, как синусами и косинусами это все перевести
+	//-- в углы поворота. А пока пусть работает.
+	macro ProtoPath+MakeName xn,yn,zn,0,0,1,1,0,0,IdAcces;
+	exit;
+}
+macro ProtoPath+MakeName IdAcces,0,xn,yn,zn,ax,az,ax1;      // Митин исправил второй параметр на 0
+macro ProtoPath+"SetENam.mac" "";
+exit;

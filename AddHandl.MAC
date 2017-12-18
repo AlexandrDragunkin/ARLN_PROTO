@@ -1,0 +1,67 @@
+Global ProtoPath;
+global DfHand; // Последняя установленная
+global g_result;
+
+defarr arr[15], arrin[15];
+
+res=IsvarDef("DfHand");
+if (res==0) {
+  NULLOUT=getvarinst(2,"DfHandl",DfHand,0);      //-- Умолчание на ручки
+}
+if (DfHand==0) {                // Если умолчание нулевое
+  kol1=npgetbywhere(1,"","yarr",getyadsubst(12));     // Возьмем первую в подстановке
+  if (kol1>0) {
+    DfHand=yarr[1];                                       // В качестве умолчания берем первый из подстановки
+  }
+}
+DefAcce=str(getyadsubst(12))+"#"+str(DfHand) ;                    // Формируем строку умолчаний.
+//-- 12 - зашитая в коде подстановка для ручек
+#ok_flag
+setvar
+"Установка ручки"
+""
+left
+"Выберите тип ручки"
+done
+string auto button 6 default DefAcce //"67#578"
+     "Тип ручки:" NAcce
+done;
+if ok_flag==0 { exit }
+
+splitbydelim(NAcce,"#",Arr);
+DfHand=Arr[2];
+
+NULLOUT=GetSnap();
+macromode undo off;
+Macro ProtoPath+"MakeHand.mac" DfHand 0   0 0 0 0 0 0;
+
+objident last 1  hobj;
+onerror nend;
+
+arrin[1]=hobj;
+arrin[2]=1
+arrin[3]=45;   // Угол кратного поворота
+arrin[4]=0; //30
+arrin[5]=0; //15
+arrin[6]=0; //100
+arrin[7]=0
+arrin[8]=0
+arrin[9]=0
+arrin[10]=0
+arrin[11]=1
+arrin[12]=0
+
+mbget "точка:" point arrin arr :
+
+place  hobj ;
+//attrobj attach "AccPlace" done hobj 1+512 ;    // Видимая пласть +У +фасад
+macromode undo on "AddHandl.mac" hobj ;
+
+NULLOUT=ReSnap();
+exit;
+nend:
+delete hobj;
+macromode undo on  ;
+NULLOUT=ReSnap();
+exit;
+

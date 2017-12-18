@@ -1,0 +1,8 @@
+global gs_Nfasad,         //-- Счетчик фасадов в объекте
+       gs_Kfasad;         //-- Количество фасадов (будет расчет после редактирования)
+
+gs_Nfasad=0;
+gs_Kfasad=0;
+NULLOUT=setvarinst(1,"gs_Nfasad",gs_Nfasad);
+NULLOUT=setvarinst(1,"gs_Kfasad",gs_Kfasad);
+exit;

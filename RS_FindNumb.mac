@@ -1,0 +1,100 @@
+//-- Макро находит и выделяет объект по номеру
+
+NULLOUT=getvarinst(2,"FailColor",FailColor,12);      //-- Цвет объектов, не прошедших провеору
+
+#aaa
+setvar
+"Поиск объектов по номеру"
+""
+""
+done
+real auto default 1
+"Введите номер объекта" var
+
+string auto
+listonly
+		      "Изделия"
+current		"Панели"
+		      "Комплектующие"
+		      "Профили"
+		      "Сборочные единицы"
+		      "Крепежи"
+		      "Длинномеры"
+		      "Техника"
+done
+"Тип объекта:" type
+done;
+
+if (aaa==0)       // Если "Отмена"
+{
+ exit;
+}
+
+if (type=="Изделия")
+{
+  Furn="left(FurnType,4)==\"1000\"";
+}
+if (type=="Панели")
+{
+  Furn="left(FurnType,2)==\"01\"";
+}
+if (type=="Комплектующие")
+{
+  Furn="left(FurnType,2)==\"04\"";
+}
+if (type=="Профили")
+{
+  Furn="left(FurnType,2)==\"02\"";
+}
+if (type=="Сборочные единицы")
+{
+  Furn="(left(FurnType,1)==\"2\"||left(FurnType,1)==\"3\"||left(FurnType,1)==\"5\")";
+}
+if (type=="Крепежи")
+{
+  Furn="left(FurnType,2)==\"06\"";
+}
+if (type=="Длинномеры")
+{
+  Furn="left(FurnType,2)==\"03\"";
+}
+if (type=="Техника")
+{
+  Furn="left(FurnType,2)==\"10\"";
+}
+
+select stayblink partly attribute "CommonPos=="+str(var)+"&&"+Furn done;
+obj=sysvar(61);
+if (obj==0)		//-- Если объектов нет
+{
+	#bbb alternative
+	"Поиск объектов по номеру"
+  msgbox picture 3 beep 3
+	text left
+	type+" с номером "+str(var)+" не найдены"
+  "Возможно, необходимо выполнить перенумерацию объектов"
+  done
+	"ОК"
+	done;
+  exit;
+}
+//-- Если объекты нашли
+#ok_flag
+alternative "Поиск объектов по номеру"
+msgbox picture 4 beep 4 text left
+type+" с номером "+str(var)+" выделены мерцанием"
+"Всего найдено "+str(obj)+" объектов"
+""
+"Отключить мерцание найденных объектов?"
+done
+"Да"  "Нет" "Изменить цвет"
+done;
+if (ok_flag==1)
+{
+  select all done;
+}
+if (ok_flag==3)
+{
+  chprop color partly previous done FailColor ;
+}
+exit;

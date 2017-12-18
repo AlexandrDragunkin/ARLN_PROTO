@@ -1,0 +1,63 @@
+//ScrFlapMEDn.mac
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+putmsg("DOORS63\ScrFlapMEDn.mac")
+//Установить раскладку по линиям в несколько створок
+nullout=getvarinst(2,"Doors63",Doors63,"Doors63.zmc|");
+global ProtoPath;
+defarr obj[100] alinxn[30] alinzn[30] alinxk[30] alinzk[30];
+
+//PutMsg("Укажите створки",1);
+select prompt "Укажите створки" :
+
+N=SysVAr(61);
+i=0
+lab1:
+if i<N
+{
+   i=i+1
+   Obj[i]=getselnum(i)
+   goto lab1;
+}
+nl=SysVAr(60);
+i=0
+lab2:
+'osnap autosnap
+onerror nextlb;
+key=0;
+get "Укажите первую точку оси" point missing  PointLXn pp PointLZn   :
+get "Укажите вторую точку оси" point PointLXn pp PointLZn  PointLXk pp PointLZk  :
+//#ds dist PointLXn pp PointLZn PointLXk pp PointLZk ;
+
+key=1;
+nextlb:
+offerror;
+//ds=iif(key,ds,0);
+if key   // ds<100
+{
+  i=i+1
+  alinxn[i]=PointLXn; alinzn[i]=PointLZn;
+  alinxk[i]=PointLXk; alinzk[i]=PointLZk;
+  line PointLXn pp PointLZn PointLXk pp PointLZk;
+  goto lab2;
+}
+
+Nlin=i
+//putmsg(str(nlin),0);
+delete last Nlin done;
+i=0
+lab3:
+if i<N
+{
+   i=i+1
+
+      ;macro ProtoPath+Doors63+"ScrFlapMed.mac" 1 Obj[i] Nlin alinxn alinzn alinxk alinzk ;
+
+   goto lab3;
+}
+
+exit;

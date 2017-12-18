@@ -1,0 +1,44 @@
+// Построение несиммитричного эллипса
+// 
+// Xc=1400 // X координата центра эллипса
+// Yc=400  // Y координата центра эллипса
+// Xposl=600 // полуось эллипса в X слева
+// YposD=385  // полуось эллипса в Y снизу
+// XposR=1330 // полуось эллипса в X справа
+// YposU=385  // полуось эллипса в Y сверху
+
+getpar Xc Yc XposL YposD XposR YposU;
+
+
+GradSeg=10   //  градусов в сегменте (10 соответствующего 36 * 10) Желательно не менять
+
+Xp=Xc 
+Yp=Yc-YposD
+i=0
+lab1:
+if i<(360/GradSeg)
+{
+	i=i+1
+	Xpos=iif(i<(360/GradSeg)/2,XposL,XposR)
+	Ypos=iif(i<(360/GradSeg)/4||i>3*(360/GradSeg)/4,YposD,YposU)
+	X=Xc-Xpos*SIN(radian(i*GradSeg)) 
+	Y=Yc-Ypos*COS(radian(i*GradSeg))  
+	S1=Pow(SIN(radian((i-0.5)*GradSeg)),2)
+	C1=Pow(COS(radian((i-0.5)*GradSeg)),2)
+	R=Pow(Xpos,2)*Pow(Ypos,2)*Pow((S1/Pow(Xpos,2))+(C1/Pow(Ypos,2)),1.5)
+	gosub sArc;
+	goto lab1;
+}
+path select last i done last 1 done;
+exit;
+//----------------------------------
+//----------------------------------
+sArc:
+arc Xp Yp 0 X Y 0 negative Radius R ;
+//putmsg("-------------------------");
+//putmsg(R);
+//putmsg(Xp);putmsg(Yp);putmsg(X);putmsg(Y);
+Xp=X
+Yp=Y
+return;
+

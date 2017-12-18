@@ -1,0 +1,98 @@
+
+global DoorHinge  // Петля тип
+       DoorInOu;  // Утопл, накл.
+// Параметры для расчета распашных дверей
+
+global ProtoPath WMFPath ;
+
+GETPAR
+xn
+yn
+zn
+dx
+dz
+R_Fas L_Fas U_Fas D_Fas // Увел. фасада
+variant
+;
+if (variant==0)
+{
+  exit;
+}
+
+object_1=sysvar(60); // Кол-во объектов
+macro ProtoPath+"SetECod.mac" "7401" ;
+// macro ProtoPath+"SetKCod.mac" "petly" "" 0;
+macro ProtoPath+"SetEnam.mac" "Петля" ;
+Macro ProtoPath+"MakeHing.mac" DoorHinge 1 xn yn 0 0 0 0;
+kray=100; //-- Минимальный отступ петли от края створки
+
+object_2=sysvar(60)-object_1; // Кол-во объектов
+if object_2<=0
+{
+  exit;
+}
+if (variant<3)
+{
+  hd=dz;
+}
+else
+{
+  hd=dx;
+}
+rhd=hd-kray*2;
+irhd=int(rhd/32)*32;
+if (irhd<10)
+{
+  kray=int(hd/3);
+}
+else
+{
+  kray=(hd-irhd)/2;
+}
+s1=kray;
+s2=hd-kray;
+If (IsAttrdef("NHinges"))
+{
+  If (IsAssign("NHinges",0))
+  {
+    KHin=getattr(0,"NHinges",0);
+    if (KHin>1)
+    {
+      KHin=KHin-1;
+      goto MDoors;
+    }
+  }
+}
+if (hd<=900)             {KHin=1;}
+if (hd>900)&&(hd<=1600)  {KHin=2;}
+if (hd>1600)&&(hd<=2000) {KHin=3;}
+if (hd>2000)             {KHin=4;}
+//------------------------------------------------------------------------------
+
+MDoors:
+sdz=sdz=int((s2-s1)/KHin+.1);
+if (variant==1)
+{
+  move last object_2 done 0 0 s1+zn nocopy ;
+  move last object_2 done 0 0 sdz copy KHin ;
+}
+if (variant==2)
+{
+  rotate last object_2 done 2points xn  yn 0 xn  yn+1 0 180 nocopy ;
+  move last object_2 done dx 0 s1+zn nocopy ;
+  move last object_2 done 0 0 sdz copy KHin ;
+}
+//if (variant==3)
+//{
+//  rotate last object_2 done 2points xn  yn 0 xn  yn+1 0 -90 nocopy ;
+//  move last object_2 done s1 0 zn+D_Fas nocopy ;
+//  move last object_2 done sdz 0 0 copy KHin ;
+//}
+//if (variant==4)
+//{
+//  s2=dx-64
+//  rotate last object_2 done 2points xn  yn 0 xn  yn+1 0 90 nocopy ;
+//  move last object_2 done s1 0 zn+dz-U_Fas nocopy ;
+//  move last object_2 done sdz 0 0 copy KHin ;
+//}
+exit;

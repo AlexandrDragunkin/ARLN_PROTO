@@ -1,0 +1,29 @@
+//-- Прототип углового покрытия
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами
+//------------------------------------------------------------------------
+PrMater=DbVar("PrMater",0); 		//-- Материал панели
+LLK=DbVar("LLK",1500);					//-- Длина
+LRK=DbVar("LRK",1500);					//-- Ширина
+
+D=priceinfo(PrMater,"Thickness",16); //-- Толщина углового покрытия
+position=84;
+Namescr="ProtoParams";
+ElemName="Угловое покрытие";
+//----------------------------------------------------------------------
+NULLOUT=pushinst(1);
+macro ProtoPath+"SetEnam.mac" ElemName;
+sy=sysvar(60);
+macro ProtoPath+"Ustl.mac" ;
+sy=sy-sysvar(60);
+if (sy==0)
+{
+  exit;
+}
+#obj group all done;
+objident last 1 obj;
+macro ProtoPath+"SetEnam.mac" ElemName;
+//-- Присваиваем атрибуты
+macro ProtoPath+"EndPanel.mac" obj position LLK LRK D PrMater Namescr;
+NULLOUT=popinst(1);
+exit;

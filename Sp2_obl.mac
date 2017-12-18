@@ -1,0 +1,216 @@
+ProtoPath=GetProtoMac("Shkaf.ptl");
+global TXT_cut;
+FixStt=".";
+object_name=SysVar(2);
+visible all;
+txtname=SysVar(2)-3;
+/////////////////////////////////////////////////////////////////////////////////
+get "Имя файла экспорта раскроя:" filename "Файл экспорта (.dbf)|*.dbf" "d:\\PKMProjects73\\ExportImport\\310115\\" yes idcfg ;
+
+if (idcfg=="")
+{
+  exit;
+}
+fn0=idcfg;
+
+Ptxt=GetFilePath(fn0);
+
+DbOpen rcd0,fn0,"NUMLST!=0";
+DbMoveLast rcd0 ;
+DbMoveFirst rcd0 ;
+Zap=DbRecCount(rcd0);
+putmsg(Zap);
+if (Zap==0) { 
+	DbClose rcd0;
+	exit; 
+}
+
+defarr nums[Zap] CustNum[Zap] G3[Zap] CroB[Zap] CroC[Zap] CroD[Zap] CroE[Zap] Cust[Zap] Komm[Zap];
+defarr CustID[Zap] Mat[Zap] UTK[Zap] NDet[Zap] NameDet[Zap] D[Zap] W[Zap] KElem[Zap] Nshp[Zap] UTKT[Zap];
+defarr KrB[Zap] KrC[Zap] KrD[Zap] KrE[Zap];
+DbMoveFirst rcd0;
+
+PrMater=0;
+im=1;
+Met:
+if !DbEOF(rcd0) {
+ CustNum[im]=DbGetValue(rcd0,12);            //Строка 1 номер заказа
+ Mat[im]=DbGetValue(rcd0,9);                //Строка 2 материал
+ G3[im]=DbGetValue(rcd0,7);                //Строка 3 толщина
+ D[im]=DbGetValue(rcd0,14);                  //Строка 4 длина
+ W[im]=DbGetValue(rcd0,15);                  //Строка 5 ширина
+
+ KrB[im]=DbGetValue(rcd0,32);
+ KrC[im]=DbGetValue(rcd0,33);
+ KrD[im]=DbGetValue(rcd0,34);
+ KrE[im]=DbGetValue(rcd0,35);
+ 
+// D[im]=D[im]-(KrB[im]+KrC[im]);
+// W[im]=W[im]-(KrD[im]+KrE[im]);
+
+ CustID[im]=DbGetValue(rcd0,42);
+ 
+ if CustID[im]==0 {Cust[im]=1;}
+ if CustID[im]==1 {Cust[im]=1;}
+ if CustID[im]==2 {Cust[im]=0;}           //Строка 6 текстура
+ 
+ KElem[im]=DbGetValue(rcd0,22);             //Строка 7 кол-во
+ CroB[im]=DbGetValue(rcd0,32);
+  CroC[im]=DbGetValue(rcd0,33);
+   CroD[im]=DbGetValue(rcd0,34);
+    CroE[im]=DbGetValue(rcd0,35);
+ CroB[im]=Str(CroB[im])+" "+DbGetValue(rcd0,36);       //Строка 8 кромка B
+  CroC[im]=Str(CroC[im])+" "+DbGetValue(rcd0,37);      //Строка 9 кромка C
+   CroD[im]=Str(CroD[im])+" "+DbGetValue(rcd0,38);     //Строка 10 кромка D
+    CroE[im]=Str(CroE[im])+" "+DbGetValue(rcd0,39);    //Строка 11 кромка E
+ NameDet[im]=DbGetValue(rcd0,23);                      //Строка 12 наименование детали
+ NDet[im]=DbGetValue(rcd0,13);                          //Строка 13 номер позиции
+  UTK[im]=DbGetValue(rcd0,40);                          //Строка 14 криволинейность
+
+  Ntxt=CustNum[im];
+
+  if UTK[im]=="1" {
+             UTKT[im]="Ф";
+             }
+  else       {
+             UTKT[im]="П";
+             }
+  Komm[im]=DbGetValue(rcd0,41);                         //Строка 15 комментарий
+
+ DbMoveNext rcd0;
+ im=im+1;
+ goto met;
+                 }
+ im=im-1;
+DbClose rcd0;
+
+/////////////////////////////////////////////////////////////////////////////////
+fn=ProtoPath+"k3Selc.dbf"
+
+DbCreate rcd, fn,
+"CustNum","C",50,0,
+"Mat","C",100,0,
+"G3","N",10,0,
+"D","N",10,2,
+"W","N",10,2,
+"KrB","N",10,2,
+"KrC","N",10,2,
+"KrD","N",10,2,
+"KrE","N",10,2,
+"CustID","N",10,2,
+"KElem","N",10,2,
+"CroB","C",50,0,
+"CroC","C",50,0,
+"CroD","C",50,0,
+"CroE","C",50,0,
+"NameDet","C",30,0,
+"NDet","N",10,2,
+"UTK","C",30,0,
+"Komm","C",120,0;
+
+j=1;
+
+Loop23:
+
+DbAddNew rcd;
+
+DbSetValue rcd,0,CustNum[j];
+DbSetValue rcd,1,Mat[j];
+DbSetValue rcd,2,G3[j];
+DbSetValue rcd,3,D[j];
+DbSetValue rcd,4,W[j];
+DbSetValue rcd,5,KrB[j];
+DbSetValue rcd,6,KrC[j];
+DbSetValue rcd,7,KrD[j];
+DbSetValue rcd,8,KrE[j];
+DbSetValue rcd,9,Cust[j];
+DbSetValue rcd,10,KElem[j];
+DbSetValue rcd,11,CroB[j];
+DbSetValue rcd,12,CroC[j];
+DbSetValue rcd,13,CroD[j];
+DbSetValue rcd,14,CroE[j];
+DbSetValue rcd,15,NameDet[j];
+DbSetValue rcd,16,NDet[j];
+DbSetValue rcd,17,UTKT[j];
+DbSetValue rcd,18,Komm[j];
+DbUpdate rcd;
+
+  j=j+1
+
+  if (j<=Zap) { goto Loop23; }
+
+DbClose rcd;
+/////////////////////////////////////////////////////////////////////////////////
+fn="k3Selc";
+Defarr SQLArray[5];
+
+SQLArray[1]="SELECT Sum(KElem) as AAA,";
+SQLArray[2]=" CustNum, Mat, G3, D, W, KrB, KrC, KrD, KrE,";
+SQLArray[3]=" CustID, CroB, CroC, CroD, CroE, NameDet, NDet, UTK, Komm";
+SQLArray[4]=" FROM "+fn+" GROUP BY CustNum, Mat, G3, D, W, KrB, KrC, KrD, KrE,";
+SQLArray[5]=" CustID, CroB, CroC, CroD, CroE, NameDet, NDet, UTK, Komm ORDER BY NDet";
+
+szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+GetProtoMac("Shkaf.ptl")+";Extended Properties=dBase IV";
+KarkasCon=adbCon(szSrc);
+
+Karkasrs=adbOpen(KarkasCon,SQLArray);
+Colvo=adbRecCount(Karkasrs);
+//PutMsg(Str(Colvo),0);
+NULLOUT=adbMoveFirst(Karkasrs);
+
+//save auto :;
+object_name=SysVar(2);
+visible all;
+txtname=SysVar(2)-3;
+
+//get "Имя файла выгрузки:" filename "Файл выгрузки на станок (.selc)|*.selc" txtname no idcfg ;
+//txtfile=idcfg;
+
+//txtname+" Selco"+".selc";
+txtfile=Ptxt+Ntxt+".selc";
+gosub Clean;
+//KSt=GetCount(txtfile);        //=================
+//KStt=KSt;
+//Loop1:                          Вариант простого
+//DelStr(txtfile,KStt);           обнуления позиций
+//KStt=KStt-1;
+//if (KStt>0) {goto Loop1;}     //=================
+j=1;
+Loop3:
+
+  sCustNum=adbGetValue(Karkasrs,"CustNum");
+  sMat=adbGetValue(Karkasrs,"Mat");
+  sG3=adbGetValue(Karkasrs,"G3");
+  sD=adbGetValue(Karkasrs,"D");
+  sW=adbGetValue(Karkasrs,"W");
+  sCust=adbGetValue(Karkasrs,"CustID");
+  sKElem=adbGetValue(Karkasrs,"AAA");
+  sCroB=adbGetValue(Karkasrs,"CroB");
+  sCroC=adbGetValue(Karkasrs,"CroC");
+  sCroD=adbGetValue(Karkasrs,"CroD");
+  sCroE=adbGetValue(Karkasrs,"CroE");
+  sNameDet=adbGetValue(Karkasrs,"NameDet");
+  sNDet=adbGetValue(Karkasrs,"NDet");
+  sUTKT=adbGetValue(Karkasrs,"UTK");
+  sKomm=adbGetValue(Karkasrs,"Komm");
+
+  txtstr=Str(sCustNum)+";"+Str(sMat)+";"+Str(sG3)+";"+Str(sD)+";";
+  txtstr=txtstr+Str(sW)+";"+Str(sCust)+";"+Str(sKElem)+";"+Str(sCroB)+";";
+  txtstr=txtstr+Str(sCroC)+";"+Str(sCroD)+";"+Str(sCroE)+";"+Str(sNameDet)+";";
+  txtstr=txtstr+Str(sNDet)+";"+Str(sUTKT)+";"+Str(sKomm);
+  aaa=putstr(txtfile,txtstr,0);
+  j=j+1
+  if (j<=Colvo) {
+                 NULLOUT=adbMoveNext(Karkasrs);
+                 goto Loop3;
+                }
+
+NULLOUT=adbClose(Karkasrs);
+NULLOUT=adbDisCon(KarkasCon);
+exit;
+
+Clean:
+res=fmdbscript(ProtoPath+"PKMScrLib.mdb","FileSystem","FsoIsFileExist",txtfile);
+if (res==1) {script MDB ProtoPath+"PKMScrLib.mdb" "FileSystem" "FsoDeleteFile" txtfile;}
+script MDB ProtoPath+"PKMScrLib.mdb" "FileSystem" "FsoCopyFile"+txtfile+","+txtfile;
+Return;

@@ -1,0 +1,34 @@
+//-- Добавление нового пропила
+//-- Входные параметры
+//-- Plane - Пласть пропила (1 - А, 0 - F)
+//-- Side -  Привязка пропила
+//--          1 - сторона D;
+//--          3 - сторона C;
+//--          5 - сторона E;
+//--          7 - сторона B;
+//--          9 - свободная привязка;
+//--          0 - удалить все пропилы
+//-- Shift - Отступ от стороны
+//-- Width - Ширина
+//-- Depth - Глубина
+//-- Beg - Отсуп от начала
+//-- Length - Длина. 0 - для бесконечного, -1 - для полусквозного
+//-- Angle - Угол
+//-- Map - Номер секции раскрашивания
+
+getpar Plane,Side,Shift,Width,Depth,Beg,Length,Angle,Map;
+//-- Читаем число пропилов
+NumP=0;
+NULLOUT=getvarinst(1,"g_Slots",NumP,1,1);
+NumP=NumP+1;
+NULLOUT=setvarinst(1,"g_Slots",NumP,1);
+NULLOUT=setvarinst(1,"g_Slots",Plane,(NumP-1)*9+2);
+NULLOUT=setvarinst(1,"g_Slots",Side,(NumP-1)*9+3);
+NULLOUT=setvarinst(1,"g_Slots",Shift,(NumP-1)*9+4);
+NULLOUT=setvarinst(1,"g_Slots",Width,(NumP-1)*9+5);
+NULLOUT=setvarinst(1,"g_Slots",Depth,(NumP-1)*9+6);
+NULLOUT=setvarinst(1,"g_Slots",Beg,(NumP-1)*9+7);
+NULLOUT=setvarinst(1,"g_Slots",Length,(NumP-1)*9+8);
+NULLOUT=setvarinst(1,"g_Slots",Angle,(NumP-1)*9+9);
+NULLOUT=setvarinst(1,"g_Slots",Map,(NumP-1)*9+10);
+exit;

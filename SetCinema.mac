@@ -1,0 +1,29 @@
+global ProtoPath ;
+//*********************************************
+// присвоение атрибута Синема объектам с objDo до objPosle
+//              МСВ
+//              ГеоС 2012 г.
+//*********************************************
+getpar
+objDo		//К-во старых объектов
+objPosle	//Общее
+Cinema		// атрибут
+;
+i=objDo;
+lab_0:
+i=i+1
+If (i<=objPosle) 
+{
+  OBJ1=getobjnum(i);
+  n=getattr(OBJ1,"Furntype","000000");
+  if ((n-2!="0406")&&(n-2!="0403")&&(n-2!="0413")&&(n-2!="0408"))||(n=="210000") 
+  {
+    attrobj attach "$Cinema" done OBJ1 str(0)+", "+Cinema ;  // Обычный
+  }
+  else 
+  {
+    attrobj attach "$Cinema" done OBJ1 str(2)+", "+Cinema ;  // Хозяин
+  }
+  goto lab_0;
+}
+exit;

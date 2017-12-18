@@ -1,0 +1,19 @@
+//--Макро создания регулируемой ножки для трубчатой системы Komandor.
+global ProtoPath;
+getpar GoodsID;
+//--Читаем свойства сборочной единицы
+IDKom1=PriceInfo(GoodsID,"NomID1",1,2);		//-- Ножка регулированная		..54-0131..
+NameKom1=PriceInfo(IDKom1,"MatName","",1);	//-- Название	
+
+obj_do=sysvar(60); 
+//-- Добавляем ножку
+macro ProtoPath+"MakeAcce.mac" IDKom1 "040000" 0 0 0 0 0 0;
+attrobj attach "ElemName" Done last 1 NameKom1;
+obj_posle=sysvar(60);
+kol=obj_posle-obj_do;
+group last kol done;
+FurnType=PriceInfo(GoodsID,"FurnType","350000",2);
+NameEl=PriceInfo(GoodsID,"Name","",2);
+attrobj attach "FurnType" done last 1 FurnType;
+attrobj attach "ElemName" Done last 1 NameEl;
+exit;

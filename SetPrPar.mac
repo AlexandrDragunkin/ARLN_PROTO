@@ -1,0 +1,83 @@
+////////////////////////////////////////////////////////////////////////////////
+//		К3
+//		ПРОФИЛЬНЫЕ СИСТЕМЫ
+//		SetPrPar
+//		определение параметров профильной системы
+//		Ограничение
+//		номера параметров в базе в диапазоне 1-6
+//
+//////////////////////////////////////////////////////////////////////////
+//
+global ProfBuf;						//	этот буфер использует SearchPP
+global PrMnBuf;
+global PrStBuf;
+Defarr ProfBuf[60,16];		//	кэш для парметров профилей
+Defarr PrMnBuf[300,16];		//	кэш для парметров установки профилей
+Defarr PrStBuf[200,16];		//	кэш для парметров стыковки профилей
+//		глобальные переменные
+global ProtoPath ;
+////////////////////////////////////////////////////////////////////////////////
+//	очистка кэша
+If (!IsAttrdef("BufPr")) {  	// Если определен атрибут
+															// Значит буфера уже расисаны 0
+	Attribute Create "BufPr" "кэш профилей" Real 14 7 ;
+	i=0;
+	v1:	i=i+1
+	if (i<=60)	{
+		j=0;
+		v2: j=j+1;
+		if (j<=16)	{
+			ProfBuf[i,j]=0;
+			goto v2;
+			}
+		goto v1;
+		}
+	i=0;
+	m1:	i=i+1
+	if (i<=300)	{
+		j=0;
+		m2: j=j+1;
+		if (j<=16)	{
+			PrMnBuf[i,j]=0;
+			goto m2;
+			}
+		goto m1;
+		}
+	i=0;
+	s1:	i=i+1
+	if (i<=200)	{
+		j=0;
+		s2: j=j+1;
+		if (j<=16)	{
+			PrStBuf[i,j]=0;
+			goto s2;
+			}
+		goto s1;
+		}
+	}
+////////////////////////////////////////////////////////////////////////////////
+// получим параметры
+//
+getpar
+	Syst			//	Номер профильной системы
+	ProPar		//	массив параметров
+	;
+id=0
+ProPar[1]="";	ProPar[2]="";	ProPar[3]="";	ProPar[4]="";	ProPar[5]="";	ProPar[6]="";
+//
+DbOpen id,ProtoPath+"sisprof.dbf","pcode=="+str(Syst)
+DbMoveFirst id
+DbRead:
+if (DbEOF(id)==0)	{
+	s=DbGetValue(id,"code",0);
+	t=DbGetValue(id,"table","");
+	if ((s<1)||(s>6))	{
+		DbMoveNext id;
+		goto DbRead;
+		}
+	ProPar[s]=trim(t);
+	DbMoveNext id;
+	goto DbRead;
+	}
+DbClose id
+exit

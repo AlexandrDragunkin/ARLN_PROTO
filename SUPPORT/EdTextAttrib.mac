@@ -1,0 +1,62 @@
+//EdTextAttrib.mac
+//        Изменяет значение текста по аттрибуту
+//              Драгункин А.Р.
+//              ГеоС 2008-2014 г.
+//*********************************************
+global DRWZPath;
+getpar
+LogPNT //Условие отбора   "RazrabSp!=0"
+Pl_Pnt //Значение которое надо присвоить
+
+;
+macro DRWZPath+"select_attribute.mac" LogPNT ;
+//selbyattr LogPNT all done;
+SelN=SysVar(61);
+//putmsg(SelN);
+If Seln==0 { exit ; }
+
+defarr ArrRz[SelN] xm[6];
+
+i2=0
+metRz10:
+if i2<SelN {
+i2=i2+1
+ ArrRz[i2]=getselnum(i2) ;
+ goto metRz10 ;
+}
+i2=0
+metRz11:
+if i2<SelN 
+{
+    i2=i2+1
+    if IsVarDef("pl_pnt")==5 
+    { 
+        pl_pnt=str(Pl_pnt) 
+    }
+    if IsVarDef("pl_pnt")!=16    
+    {
+        macro DRWZPath+"EdStrTyp.mac" ByRef pl_pnt;
+		
+        if pl_pnt!=""
+        {
+            text edit ArrRz[i2] Pl_Pnt ;
+            Select last 1 done ;
+        }
+    }
+    if IsVarDef("pl_pnt")==16    
+    {
+        nullout=objgab3(Pl_Pnt,xm);
+        xc1=(xm[4]-xm[1])/2+xm[1];
+        yc1=(xm[5]-xm[2])/2+xm[2];
+        zc1=(xm[6]-xm[3])/2+xm[3];
+        nullout=objgab3(ArrRz[i2],xm);
+        xc=(xm[4]-xm[1])/2+xm[1];
+        yc=(xm[5]-xm[2])/2+xm[2];
+        zc=(xm[6]-xm[3])/2+xm[3];
+        move nocopy pl_pnt done 2points xc1 yc1 zc1 xc yc zc ;
+        delete ArrRz[i2] done ;
+    }
+    goto metRz11 ;
+}
+
+exit;

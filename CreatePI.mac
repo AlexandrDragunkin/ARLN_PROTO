@@ -1,0 +1,32 @@
+//-- Программа переименовывает атрибут $ProtoInfo в записи в атрибут ProtoInfo
+//-- Входные параметры:
+//-- ToPI=0 - копировать из $ProtoInfo в ProtoInfo
+//-- ToPI=1 - копировать из ProtoInfo в $ProtoInfo
+getpar ToPI;
+
+defarr s[256];
+if (!isattrdef("ProtoInfo"))
+{
+  attribute create "ProtoInfo" "Псевдоинформация о прототипе" text 30 80 ;
+}
+if (!isattrdef("PseudoPosit"))
+{
+  attribute create "PseudoPosit" "Псевдономер объекта" real 5 0 ;
+}
+if (ToPI==0)
+{
+  NULLOUT=getattrtext(0,"$ProtoInfo",s);
+  NULLOUT=textbystr(0,"ProtoInfo",NULLOUT,s);
+  pp=getattr(0,"Posit",0);
+  attrobj attach "PseudoPosit" done record pp;
+  attrobj delete record "$ProtoInfo" "Posit" done;
+}
+if (ToPI==1)
+{
+  NULLOUT=getattrtext(0,"ProtoInfo",s);
+  NULLOUT=textbystr(0,"$ProtoInfo",NULLOUT,s);
+  pp=getattr(0,"PseudoPosit",0);
+  attrobj attach  "Posit" done record pp;
+  attrobj delete record "ProtoInfo" "PseudoPosit" done;
+}
+exit;

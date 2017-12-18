@@ -1,0 +1,439 @@
+//-- Создание объекта - ящик мебельный (группа)
+// global MacroSw;   //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global TypKroB;   //-- Умолчание для типов кромки для ящиков
+global PanMater;  //-- Материал панелей
+global ProtoPath;
+global PanDir;    //-- Направление шпона
+
+global  
+    gs_BTypeX,		//-- Типы ящиков
+    gs_IDsec,		//-- Cчетчик обработанных в объекте ящиков
+    gs_FasTyp,		//-- Типы фасадов
+    gs_Kbox,		//-- Количество ящиков из скретча
+    gs_ZFt,			//-- Высота фасадов ящиков из скрейча
+    gs_ZFtS,		//-- Подрез фасадов ящиков из скрейча
+    gs_ZmFt,		//-- Наличие замка на фасаде ящика из скрейча
+    gs_ZmZ,			//-- Сдвиг  замка по высотеа фасаде ящика из скрейча
+    g_zamokBx,		//-- Наличие замка по умолчанию
+    g_grDec,		//-- массив групп отделок
+    g_Dec,			//-- массив материалов отделок
+    gs_ZFtDn,		//-- дельта зазора снизу между дном ящика и корпусом
+	gs_hk,			//-- высота короба ящика	
+	gs_HmFt			//-- Наличие ручки на фасаде скрытого ящика из скрейча
+	gs_LBox			//-- Глубина короба ящика SCR
+	gs_BFasMat		//-- Материал фасада ящика
+;
+
+global g_KorobVar, g_Ykorob;
+global gs_NBoxobj ;        //-- Счетчик числа ящиков в объекте
+gs_NBoxobj=0;
+
+NULLOUT=GetVarInst(2,"U_Fas",U_Fas,0); //-- Увеличение фасада сверху
+
+w=DbVar("w",330);			//-- Ширина ниши
+y=DbVar("D",320);			//-- Глубина фасада
+h=DbVar("H",822);       	//-- Высота ниши
+hbox=DbVar("Hk",h);			//-- Высота корпуса ящика
+
+R_Fas=DbVar("R_Fas",0);		//-- Увеличение фасада справа
+L_Fas=DbVar("L_Fas",0);		//-- Увеличение фасада слева
+U_Fas=DbVar("U_Fas",0);		//-- Увеличение фасада сверху
+D_Fas=DbVar("D_Fas",0);		//-- Увеличение фасада снизу
+
+Nshp=DbVar("Nshp",0);		//-- Направление шпона
+PanDir=Nshp;
+// putmsg(Nshp)
+Z_Sk=DbVar("Z_Sk",0);		//-- Сдвиг корпуса по высоте
+Kbox=DbVar("Kbox",0);		//-- Количество ящиков
+B_Zbox=DbVar("B_Zbox",0);	//-- Зазор
+Выдящ=DbVar("Выдящ",0);		//-- Выдвинутые ящики
+
+PanCKro=DbVar("Face_col",0);   //-- Цвет кромки корпуса
+
+Col_KFas=DbVar("Face_cof",0);	//-- Цвет кромки фасада
+Band_F=DbVar("Band_F",0);		//-- Тип кромки фасада
+
+BoxKType=DbVar("BxType",0);		//-- Тип корпуса ящика
+BxType=BoxKType
+
+PrMater=DbVar("PrMater",0);		//-- Материал корпуса ящика
+PanMater=PrMater;			//-- Материал панелей
+h_dsp=PriceInfo(PrMater,"Thickness",DbVar("HDSP",16));
+TypKroB=DbVar("Band",GetVarInst(2,"TypKroB",TypKroB,0));	//-- Тип кромки корпуса
+
+If TypKroB<10&&TypKroB>0 {
+	// тип кромки привязан к материалу панели
+	bdef=priceinfo(prmater,"BandMater",0)
+	TypKroB=iif(bdef>0,bdef,TypKroB)
+	TypKroB=iif(bdef==-2,0,TypKroB)
+}
+NULLOUT=setVarInst(2,"TypKroB",TypKroB);
+
+BcMater=DbVar("PrMatDv",0);
+FacadMt=DbVar("FsMater",0);
+h_fas=PriceInfo(FacadMt,"Thickness",DbVar("HDSP",16));
+PrMatVs1=DbVar("PrMatVs1",0);  //-- Материал первой вставки
+PrMatVs2=DbVar("PrMatVs2",0);  //-- Материал второй вставки
+
+YkorToGuide=DbVar("YkorToGuide",1);
+DopBoxUp=DbVar("DopBoxUp",1);
+
+NoGuides=DbVar("NoGuides",0);
+NULLOUT=setvarinst(1,"NoGuides",NoGuides);
+
+NULLOUT=setvarinst(1,"YkorToGuide",YkorToGuide);	//-- Глубина зависит от направляющих
+NULLOUT=setvarinst(1,"DopBox",DopBoxUp);			//-- дельта сдвига ящика в верхней секции
+NULLOUT=getvarinst(2,"B_Hmax",B_Hmax,150);
+
+gosub setGS;
+z_Sk=B_Zdown;
+
+ARMX=DbVar("rx",0);   //-- Сдвиг ручки по ширине
+ARMZ=DbVar("rz",70);  //-- Высота ручки
+ARMA=DbVar("ra",0);   //-- Угол установки ручки
+Doub_r=DbVar("Doub_r",0);
+Rpl_r=DbVar("Rpl_r",0);
+
+Handle=DbVar("HanType",0);
+DoorPict=DbVar("Fstype",0);	//-- Рисунок фасада
+bTypDna=PriceInfo(BoxKType,"boxBottom",PriceInfo(baseType,"boxBottom",-99,2),2)
+TypDna=iif(bTypDna==-99,DbVar("dnotype",1),bTypDna);  //-- Тип дна ящика
+Ots=DbVar("ots",0);			//-- Отступ дна от края ящика
+if TypDna==3 {
+  bOts=PriceInfo(BoxKType,"boxBottomOts",PriceInfo(baseType,"boxBottomOts",-99,2),2)
+  
+  Ots=iif(bOts==-99,Ots,bOts);
+}
+else {
+  Ots=0;
+}
+
+//--- Определили в setGS и те же свойства, но в другие переменные
+boxGapUp=PriceInfo(BoxKType,"boxGapUp",PriceInfo(baseType,"boxGapUp",DbVar("boxGapUp",5),2),2);  //-- Миним зазор сверху между коробом и верхней полкой
+
+boxBottm_H=PriceInfo(BoxKType,"boxBottm_H",PriceInfo(baseType,"boxBottm_H",DbVar("boxBottm_H",1),2),2)  ;  //--  Высота установки дна
+
+
+DY=DbVar("DY",0);				//-- Прогиб фасада (для дугообразных фасадов)
+
+// Zamok=DbVar("zamok",0);			//-- Замок на фасад
+
+Ykorob=DbVar("Ykorob",523);		//-- Глубина короба
+KorobVar=DbVar("KorobVar",0);	//-- Вариант расчета глубины короба 0-заданный(свободный) размер  1-автоматически по минимальному зазору сзади
+g_Ykorob=Ykorob;				//-- Глубина короба
+g_KorobVar=KorobVar;			//-- Вариант расчета глубины короба 0-заданный(свободный) размер  1-автоматически по минимальному зазору сзади
+
+gs_Kbox=gs_Kbox+Kbox;
+
+par1=2/3;  //-- Максимальная степень выдвижения (внизу)
+par2=1/3;  //-- Минимальная степень выдвижения (вверху)
+FurnType="310000";
+Namescr="ProtoParams";
+// hZamok=priceinfo(Zamok,"Height",43)
+ik=0;
+//--------------------------------------------------------------------------
+
+macro ProtoPath+"CheckPParFasMat.mac" DoorPict, FacadMt;
+
+macro ProtoPath+"SetBox.mac" BcMater B_Zbox 0 BoxKType;
+macro ProtoPath+"SetFasdN.mac" FacadMt DoorPict Col_KFas Band_F PrMatVs1 PrMatVs2 ;
+macro ProtoPath+"SetArc.mac" DY;
+
+w1=w-B_Zbok*2;
+X_Fas=W+R_Fas+L_Fas;
+nZFt=0;	// число размеров в скрейче
+sZFt=0;	// суммарная высота фасадов в скрейче
+macro protopath+"getdvBoxGr.py" ByRef nZFt,  ByRef sZFt,  ByRef gs_ZFt done; 
+
+//--- ?
+// i=0;
+// lab_H:
+// if i<Kbox {
+  // i=i+1
+  // H=H-gs_ZFtS[i]; // Подрез фасадов
+  // //goto lab_H;
+// }
+//--- ? Только для первой записи
+
+//-- ??? Почему больше 120 ???
+// Z_Fas=int((H+U_Fas+D_Fas-B_Zbox*(Kbox-1)-iif(h-sZFt>120,sZFt,0))/(Kbox-iif(h-sZFt>120,nZFt,0))); //-- Высота фасада ящика расчетная
+
+if (Kbox-nZFt)==0
+{
+	macro protopath+"ShowError.mac" "Невозможно задать через SCR высоту для всех фасадов" "" "Выберите расчет высоты автоматически у хотя бы одного фасада";
+}
+
+Z_Fas=int((H+U_Fas+D_Fas-B_Zbox*(Kbox-1)-sZFt)/(Kbox-nZFt)); //-- Высота фасада ящика расчетная
+// Putmsg(Z_Fas);
+
+xsd=-R_Fas;
+zsd=-D_Fas;
+xn=0;
+yn=0;
+zn=0;
+x_Sk=B_Zbok-xsd;
+Khandl=1;
+
+dops=0
+// if (isvardef("gs_IDsec"))
+// {
+  // IDsec=gs_IDsec;
+// }
+
+xt=xn+xsd;
+yt=yn;
+zt=zn+zsd;
+BoxKTyDF=BoxKType;
+DoorPiDF=DoorPict;
+// ik=ik; //+1;
+i=0;
+dops=0;
+
+Loop1:
+if (i<Kbox) {
+	i=i+1;
+	// putmsg(i)
+	dopHfasPs=0; // Увеличение высоты фасада
+	macro ProtoPath+"SetHand.mac" Doub_r Rpl_r;
+	macro ProtoPath+"SetHandl.mac" Handle ARMX ARMZ ARMA;
+	if (isvardef("gs_IDsec")) {
+		gs_IDsec=gs_IDsec+1;
+		if (gs_BTypeX[gs_IDsec]!=0) {
+			BoxKType=gs_BtypeX[gs_IDsec];
+		}
+		else {
+			BoxKType=BoxKTyDF;
+		}
+		if (gs_FasTyp[gs_IDsec]!=0) {
+			DoorPict=gs_FasTyp[gs_IDsec];
+		}
+		else {
+			DoorPict=DoorPiDF;
+		}
+
+		ips=0;
+		lbps:
+		if ips<10 {
+			ips=ips+1;
+			BoxKTypePs=gs_BtypeX[gs_IDsec+ips];
+			// putmsg(BoxKTypePs)
+			HideTypPs=priceinfo(BoxKTypePs,"BoxTypeHideFas",0,2);
+			// H_FasMinPs=priceinfo(BoxKTypePs,"boxH_FasMin",0,2);
+			
+			if HideTypPs>0 {
+				zazHfas=iif(i!=Kbox,B_Zbox,U_Fas);
+				dopHfas=iif(gs_ZFt[gs_NBoxobj+ips+1]>0,gs_ZFt[gs_NBoxobj+ips+1],Z_Fas);
+				// putmsg(dopHfas)
+				// putmsg(zazHfas)
+				dopHfasPs=dopHfasPs+dopHfas+zazHfas;
+				
+				// dopHfasPs=dopHfasPs+iif(gs_ZFt[gs_NBoxobj+ips+1]>0,gs_ZFt[gs_NBoxobj+ips+1],Z_Fas)+U_Fas;
+				goto lbps;
+			}
+			// putmsg(dopHfasPs)
+		}
+	}
+	if (Kbox!=1)
+	{
+		kc=y*(par1-par2)*ik/(Kbox-1); //-- Вычисляем степень выдвижения конкретного ящика
+	}
+	else
+	{
+		kc=0;
+	}
+	
+	// deltaZamok=0
+	// macro ProtoPath+"SetZamok.mac" 0 R_Fas U_Fas ;
+	// if (gs_ZmFt[i+1]>0&&Zamok>0) {
+	// macro ProtoPath+"SetZamok.mac" Zamok R_Fas U_Fas ;
+	// deltaZamok=iif(gs_ZmFt[i+1]>0&&Zamok>0,hZamok,0)
+	// }
+	
+	deltaZamok=0;
+	macro ProtoPath+"SetZamok.mac" 0 R_Fas U_Fas ;
+	if gs_ZmFt[i]>0
+	{
+		macro ProtoPath+"SetZamok.mac" gs_ZmFt[i] R_Fas U_Fas ;
+		hZamok=priceinfo(gs_ZmFt[i],"Height",43);
+		deltaZamok=iif(gs_ZmFt[i]>0,hZamok,0)
+	}
+	
+	// Уточняем параметры если они предписаны конструкцией ящика
+	gosub setGS;
+	
+	x_Sk=B_Zbok-xsd;
+	w1=w-B_Zbok*2;
+	//---------------------------------------------------------
+    BoxOpen=0;
+	ypol=yt+BoxOpen*(y*par1-Sgn(ik)*kc);
+	gs_NBoxobj=gs_NBoxobj+1;
+	
+	Z_FasC=iif(gs_ZFt[gs_NBoxobj]>0,gs_ZFt[gs_NBoxobj],Z_Fas); // Высота фасада реальная
+	NULLOUT=setvarinst(1,"vZ_Fas",Z_FasC); // Помещаем реальную высоту в стек
+	
+	//Z_FasCn=iif(gs_FasTyp[gs_IDsec+1]>0,1,0);
+    Z_FasCn=iif(gs_ZFt[gs_IDsec]>0&&HideTypPs==0,1,0);			//-- Высота фасадов ящиков из скрейча
+	Z_FasCs=iif(gs_ZFtS[gs_NBoxobj]!=0,gs_ZFtS[gs_NBoxobj],0);	//-- Подрез фасадов ящиков из скрейча
+	ZFtDn=iif(gs_ZFtDn[gs_NBoxobj]!=0,gs_ZFtDn[gs_NBoxobj],0);	//-- Дельта зазора снизу между дном ящика и корпусом
+
+	NULLOUT=setvarinst(1,"BoxHk",gs_Hk[gs_IDsec]);		//-- высота короба ящика
+	NULLOUT=setvarinst(1,"BoxLk",gs_LBox[gs_IDsec]);	//-- Глубина корпуса
+	NULLOUT=setvarinst(1,"BoxHmFt",gs_HmFt[gs_IDsec]);	//-- Наличие ручки на фасаде скрытого ящика из скрейча
+	NULLOUT=setvarinst(2,"vZFtDn",ZFtDn);				//-- Дельта зазора снизу между дном ящика и корпусом
+    NULLOUT=setvarinst(1,"num_box_cin",i);
+    macro ProtoPath+"SetBox.mac" BcMater B_Zbox 0 BoxKType;
+	
+	// putmsg("gs_BFasMat["+str(gs_NBoxobj)+"]="+str(gs_BFasMat[gs_NBoxobj]))
+	FacadMt=iif(gs_BFasMat[gs_NBoxobj]!=0,gs_BFasMat[gs_NBoxobj],FacadMt);
+    macro ProtoPath+"SetFasdN.mac" FacadMt DoorPict Col_KFas Band_F PrMatVs1 PrMatVs2 ;
+
+	// if hbox>Z_FasC-B_Zup-B_Zdown-z_Sk {
+		// putmsg("Высота корпуса больше фасада у "+str(i)+" ящика");
+		// hbox=Z_FasC-B_Zup-B_Zdown-z_Sk;
+	// }
+	HideTypPs=priceinfo(BoxKType,"BoxTypeHideFas",0,2);
+	// putmsg(HideTypPs)
+	NULLOUT=getvarinst(2,"BNUp",BNUp,14);			//-- Нахлест фасада накладного ящика сверху
+	NULLOUT=getvarinst(2,"BUUp",BUUp,2);			//-- Зазор фасада утопленного ящика сверху
+	NULLOUT=getvarinst(2,"BNDown",BNDown,14);		//-- Нахлест фасада накладного ящика снизу
+	NULLOUT=getvarinst(2,"BUDown",BUDown,2);		//-- Зазор фасада утопленного ящика снизу
+		
+	if D_Fas<0&&HideTypPs==0
+	{
+		// B_Zdown=B_Zdown-(BNUp-BUUp);
+		B_Zdown=B_Zdown-(int(U_Fas)-BUUp);
+		NULLOUT=setvarinst(2,"B_Zdown",B_Zdown); // Нужно ли тут?
+	}
+	
+	if HideTypPs>0
+	{
+		// Z_FasT=Z_FasC-(BNUp+BUUp+BNDown+BUDown);
+		Z_FasT=Z_FasC-(int(U_Fas)+BUUp+int(D_Fas)+BUDown);
+		
+		// z_Sk=B_Zdown+(BNDown+BUDown);s
+		z_Sk=B_Zdown+(int(D_Fas)+BUDown);
+	}
+	else
+	{
+		Z_FasT=Z_FasC;
+		z_Sk=B_Zdown;
+	}
+	// putmsg(Z_FasT)
+	// putmsg(B_Zup)
+	// putmsg(z_Sk)
+	// putmsg(B_Zdown)
+	// putmsg(hbox)
+	// Ограничим высоту короба
+	if hbox>Z_FasT-B_Zup-B_Zdown
+	{
+		putmsg("Высота корпуса больше фасада у "+str(i)+" ящика");
+		hbox_n=Z_FasT-B_Zup-B_Zdown;
+	}
+	else
+	{	hbox_n=hbox;	}
+	
+	// Уточняем если ящик скрытый и добавим к высоте фасада еще межфасадный зазор
+	Z_FasC=Z_FasC+dopHfasPs;
+	
+	// putmsg(Z_FasC)
+	// putmsg(hbox_n)
+	
+	macro ProtoPath+"MakeBox1.mac"
+	xt				//-- Правый нижний дальний угол ящика
+	ypol
+	zt+Z_FasCs
+	X_Fas			//-- Размеры фасада
+	Z_FasC
+	w1				//-- Размеры ящика
+	y
+	hbox_n
+	x_Sk			//-- Сдвиг ящика
+	z_Sk
+	Khandl			//-- Количество ручек
+	;
+	zt=zt+iif(Z_FasCn,Z_FasC,Z_Fas)+B_Zbox;
+	ik=ik+1;
+	
+    goto Loop1;
+}
+
+// gs_IDsec=IDsec;
+
+macro ProtoPath+"SetArc.mac" 0;
+macro ProtoPath+"ScrFormRec.mac" gs_BtypeX, gs_FasTyp, kbox;
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"w",w);
+err=AddScratch(ScrMod,FurnType,"D",y);
+err=AddScratch(ScrMod,FurnType,"H",h);
+err=AddScratch(ScrMod,FurnType,"R_Fas",R_Fas);
+err=AddScratch(ScrMod,FurnType,"L_Fas",L_Fas);
+err=AddScratch(ScrMod,FurnType,"U_Fas",U_Fas);
+err=AddScratch(ScrMod,FurnType,"D_Fas",D_Fas);
+err=AddScratch(ScrMod,FurnType,"Nshp",Nshp);
+err=AddScratch(ScrMod,FurnType,"Kbox",Kbox);
+err=AddScratch(ScrMod,FurnType,"Выдящ",Выдящ);
+err=AddScratch(ScrMod,FurnType,"B_Zbox",B_Zbox);
+err=AddScratch(ScrMod,FurnType,"Hk",hbox);
+err=AddScratch(ScrMod,FurnType,"Z_Sk",Z_Sk);
+err=AddScratch(ScrMod,FurnType,"PrMater",PrMater);
+err=AddScratch(ScrMod,FurnType,"PrMatDv",BcMater);
+err=AddScratch(ScrMod,FurnType,"FsMater",FacadMt);
+err=AddScratch(ScrMod,FurnType,"Band",TypKroB);
+err=AddScratch(ScrMod,FurnType,"Face_col",PanCKro);
+err=AddScratch(ScrMod,FurnType,"Face_cof",Col_KFas);
+err=AddScratch(ScrMod,FurnType,"Band_F",Band_F);
+err=AddScratch(ScrMod,FurnType,"Fstype",DoorPict);
+err=AddScratch(ScrMod,FurnType,"BxType",BoxKType);
+err=AddScratch(ScrMod,FurnType,"HanType",Handle);
+err=AddScratch(ScrMod,FurnType,"Doub_r",Doub_r);
+err=AddScratch(ScrMod,FurnType,"Rpl_r",Rpl_r);
+err=AddScratch(ScrMod,FurnType,"rx",ARMX);
+err=AddScratch(ScrMod,FurnType,"rz",ARMZ);
+err=AddScratch(ScrMod,FurnType,"ra",ARMA);
+err=AddScratch(ScrMod,FurnType,"PrMatVs1",PrMatVs1);
+err=AddScratch(ScrMod,FurnType,"PrMatVs2",PrMatVs2);
+err=AddScratch(ScrMod,FurnType,"dnotype",TypDna);
+err=AddScratch(ScrMod,FurnType,"ots",Ots);
+err=AddScratch(ScrMod,FurnType,"DY",DY);
+err=AddScratch(ScrMod,FurnType,"YkorToGuide",YkorToGuide);
+err=AddScratch(ScrMod,FurnType,"DopBoxUp",DopBoxUp);
+err=AddScratch(ScrMod,FurnType,"Ykorob",Ykorob);
+err=AddScratch(ScrMod,FurnType,"KorobVar",KorobVar);
+err=AddScratch(ScrMod,FurnType,"NoGuides",NoGuides);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+exit;
+
+
+setGS:
+	// putmsg(BoxKType)
+	baseType=PriceInfo(BoxKType,"boxType",BoxKType,2);
+	// putmsg(baseType)
+	
+	//-- Зазор с боковой панелью
+	//-- Читаем 'boxGapBack' из основной записи и из ID свойства boxType
+	//-- В случае отсутсвия берем свойство 'B_Zbok' из основной и из ID свойства boxType
+	// B_Zbok=PriceInfo(BoxKType,"boxGapBack",PriceInfo(baseType,"boxGapBack",-99,2),2)
+	// if B_Zbok==-99
+	// {
+		// B_Zbok=PriceInfo(baseType,"B_Zbok",GetVarInst(2,"B_Zbok",B_Zbok,13),2)
+	// }
+	
+	// В этом варианте в случае наличия boxGapBack зазор становится 0
+	B_Zbok=iif(PriceInfo(BoxKType,"boxGapBack",PriceInfo(baseType,"boxGapBack",-99,2),2)==-99,PriceInfo(baseType,"B_Zbok",GetVarInst(2,"B_Zbok",B_Zbok,13),2),0); //iif(PriceInfo(BoxKType,"boxGapBack",0,2)>0,0,B_Zbok);
+	nullout=SetVarInst(2,"B_Zbok",B_Zbok);
+	// putmsg(B_Zbok);
+	
+	//-- Зазор сверху
+	// B_Zup=PriceInfo(BoxKType,"boxGapUp",PriceInfo(baseType,"boxGapUp",PriceInfo(baseType,"B_Zup",GetVarInst(2,"B_Zup",B_Zup,30),2),2),2)-U_Fas;
+	B_Zup=PriceInfo(BoxKType,"boxGapUp",PriceInfo(baseType,"boxGapUp",PriceInfo(baseType,"B_Zup",GetVarInst(2,"B_Zup",B_Zup,30),2),2),2);
+	 // Запомним зазор от фасада сверху для подреза передней царги
+	nullout=SetVarInst(2,"B_Zup",B_Zup);
+	
+	//-- Зазор снизу
+	B_Zdown=iif(PriceInfo(BoxKType,"boxBottm_H",PriceInfo(baseType,"boxBottm_H",DbVar("boxBottm_H",0),2),2)>0,0,PriceInfo(baseType,"B_Zdown",z_Sk,2));
+	nullout=SetVarInst(2,"B_Zdown",B_Zdown);
+	
+	//-- Понять, почему при наличии свойств boxBottm_H B_Zdown обнуляется!!!
+return;
+

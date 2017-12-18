@@ -1,0 +1,5 @@
+//-- Установить код свойств мебельных элементов
+getpar Pc;
+PropCod=Pc;
+NULLOUT=setvarinst(1,"PropCod",PropCod);
+exit;

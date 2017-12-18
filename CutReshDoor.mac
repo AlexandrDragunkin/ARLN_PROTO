@@ -1,0 +1,116 @@
+//-- Макропрограмм формирует группу контуров для решетчатой дверки
+// Вызывать ее следует сразу за MakePan
+//-- Входные параметры:
+//-- xn,yn,zn - координаты правого дальнего нижнего угла рамки
+//-- dx,dz - ширина и высота рамки
+//-- nz - разбиение рамки
+global ProtoPath;
+defarr Arr[6];
+
+getpar xn,yn,zn,dx,dz,nz;
+objident last 1 Panel;
+
+dx1=50;     //-- Отступ от края до дуги
+dz1=50;     //-- Высота дуги
+dd=20;      //-- Ширина планки
+
+dx2=(dx-dd)/2;
+dz2=(dz-(nz-1)*dd)/nz;
+
+if (nz==1)  //-- Одно окошко
+{
+  #L1 line xn+dx2,yn,zn+dz xn+dx2+dd,yn,zn+dz;
+  arc continue xn+dx-dx1,yn,zn+dz-dz1;
+  delete L1 done;
+  line xn+dx-dx1,yn,zn+dz-dz1
+	  	 xn+dx,yn,zn+dz-dz1		
+	  	 xn+dx,yn,zn+dz-dz2
+	  	 xn+dx2+dd,yn,zn+dz-dz2;		
+//  path select last 4 done last 1 create;
+  rotate last 4 done 2points xn+dx/2 yn zn xn+dx/2 yn zn+dz 180 copy 1;
+  line xn+dx2,yn,zn+dz
+      xn+dx2+dd,yn,zn+dz;
+  line xn+dx2+dd,yn,zn+dz-dz2
+  		 xn+dx2,yn,zn+dz-dz2;
+  #Pat  path select last 10 done last 10 create;
+  NULLOUT=ContStatus(Pat,Arr);
+  if (Arr[2]+Arr[3]==2) {    // Контур замкнутый без самопересечений
+    macro ProtoPath+"PutCutr.mac"
+    Panel,
+    Pat     //-- Объект Контур выреза
+    1       //-- Тип выреза: вырез(1), нарост(8), маски (2- симметрия отн.X; 4- симметрия отн.Y)
+    0       //-- Глубина выреза: 0, если вырез сквозной; > 0 - не сквозной со стороны пласти A; < 0 - не сквозной со стороны пласти F
+    5       //-- Секция раскрашивания А
+    ;
+     objident last 1 Panel;
+  }
+  delete pat ;
+}
+else
+{
+  #L1 line xn+dx2, yn, zn+dz xn+dx2+dd, yn, zn+dz;
+  arc continue xn+dx-dx1, yn, zn+dz-dz1;
+  delete L1 done;
+  line xn+dx-dx1,yn,zn+dz-dz1
+		   xn+dx,yn,zn+dz-dz1
+		   xn+dx,yn,zn+dz-dz2
+		   xn+dx2+dd,yn,zn+dz-dz2
+		   xn+dx2+dd,yn,zn+dz;
+#Pat  path select last 5 done last 1 create;
+  NULLOUT=ContStatus(Pat,Arr);
+  if (Arr[2]+Arr[3]==2) {    // Контур замкнутый без самопересечений
+    macro ProtoPath+"PutCutr.mac"
+    Panel,
+    Pat     //-- Объект Контур выреза
+    1       //-- Тип выреза: вырез(1), нарост(8), маски (2- симметрия отн.X; 4- симметрия отн.Y)
+    0       //-- Глубина выреза: 0, если вырез сквозной; > 0 - не сквозной со стороны пласти A; < 0 - не сквозной со стороны пласти F
+    5       //-- Секция раскрашивания А
+    ;
+     objident last 1 Panel;
+     rotate Pat done 2points xn+dx/2 yn zn xn+dx/2 yn zn+dz 180 nocopy;
+    macro ProtoPath+"PutCutr.mac"
+    Panel,
+    Pat     //-- Объект Контур выреза
+    1       //-- Тип выреза: вырез(1), нарост(8), маски (2- симметрия отн.X; 4- симметрия отн.Y)
+    0       //-- Глубина выреза: 0, если вырез сквозной; > 0 - не сквозной со стороны пласти A; < 0 - не сквозной со стороны пласти F
+    5       //-- Секция раскрашивания А
+   ;
+     objident last 1 Panel;
+  }
+  delete pat ;
+  i=1;
+  xn1=xn+dx2+dd;
+  zn1=zn+dz-dz2-dd;
+  met1:
+  if (i<nz) //-- Формируем набор окошек
+  {
+	  line xn1,yn,zn1
+			   xn1+dx2,yn,zn1
+			   xn1+dx2,yn,zn1-dz2
+			   xn1,yn,zn1-dz2
+			   close;
+#Pat	  path select last 4 done last 1 create;
+  macro ProtoPath+"PutCutr.mac"
+  Panel,
+  Pat     //-- Объект Контур выреза
+  1       //-- Тип выреза: вырез(1), нарост(8), маски (2- симметрия отн.X; 4- симметрия отн.Y)
+  0       //-- Глубина выреза: 0, если вырез сквозной; > 0 - не сквозной со стороны пласти A; < 0 - не сквозной со стороны пласти F
+  5       //-- Секция раскрашивания А
+;
+   objident last 1 Panel;
+   rotate Pat done 2points xn+dx/2 yn zn xn+dx/2 yn zn+dz 180 nocopy;
+  macro ProtoPath+"PutCutr.mac"
+  Panel,
+  Pat     //-- Объект Контур выреза
+  1       //-- Тип выреза: вырез(1), нарост(8), маски (2- симметрия отн.X; 4- симметрия отн.Y)
+  0       //-- Глубина выреза: 0, если вырез сквозной; > 0 - не сквозной со стороны пласти A; < 0 - не сквозной со стороны пласти F
+  5       //-- Секция раскрашивания А
+;
+   objident last 1 Panel;
+   delete pat ;
+	  i=i+1;
+	  zn1=zn1-dz2-dd;
+	  goto met1
+  }
+}
+exit;

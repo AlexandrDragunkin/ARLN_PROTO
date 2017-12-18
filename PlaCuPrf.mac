@@ -1,0 +1,118 @@
+////////////////////////////////////////////////////////////////////////////////
+//		К3
+//		ПРОФИЛЬНЫЕ СИСТЕМЫ
+//		Разместить профиль двум точкам и подрезать его
+//
+//////////////////////////////////////////////////////////////////////////
+//		Рабочий массив
+//Defarr Mount;
+Defarr CutB[6];			//	параметры подреза в начале и
+Defarr CutE[6];     //	параметры подреза в конце
+Defarr Param[15];		//	параметры геометрического объекта
+Defarr Norm[3],Cent[3],w1[3],w2[3];
+Defarr gp[16];			//	геометрические параметры
+//////////////////////////////////////////////////////////////////////////
+//		глобальные переменные
+global ProtoPath ;
+//global Debug ;
+//////////////////////////////////////////////////////////////////////////
+//		прием параметров
+getpar
+	Pro		//	Описание профильной системы
+	Obj		//	параметры элемента
+	Elm   //	элемент конструкции
+	Pos   //	положение внутри элемента конструкции
+	Mount //	массив с параметрами установки
+	xn yn zn		//	точка начала и
+	xk yk zk    //  точка конца
+	Beg					//  описание элемента в начале связки
+	End					//  описание элемента в конце связки
+	TypBeg			//	тип соединения в начале
+	TypEnd			//	тип соединения в конце связки
+	;
+
+//////////////////////////////////////////////////////////////////////////
+//Debug=1;
+//if (Debug==1) {	exit;	}
+//////////////////////////////////////////////////////////////////////////
+//
+CutB[1]=0; CutB[2]=0; CutB[3]=0; CutB[4]=0; CutB[5]=0; CutB[6]=0;
+CutE[1]=0; CutE[2]=0; CutE[3]=0; CutE[4]=0; CutE[5]=0; CutE[6]=0;
+//
+Macro ProtoPath+"MountPP.mac"		Pro Obj Elm pos Mount ;
+if (TypBeg>0)	{
+	Macro ProtoPath+"EndCutPP.mac"		Pro Obj Beg TypBeg CutB;
+	}
+if (TypEnd>0)	{
+	Macro ProtoPath+"EndCutPP.mac"		Pro Obj End TypEnd CutE;
+	}
+if (Mount[8]>0.001)	{	goto Duga;	}
+if (Mount[6]==0)	{
+	Macro ProtoPath+"setprof.mac"
+			Obj[3]  (Mount[1]+CutB[2]) (Mount[2]+CutE[2]) Mount[3] Mount[4] Mount[5] ;
+	Macro ProtoPath+"makeprof.mac"	xn yn zn xk yk zk ;
+	}	else	{
+	//	поменяем подрезы начальной и конечной точки
+	Macro ProtoPath+"setprof.mac"
+			Obj[3]  (Mount[2]+CutB[2]) (Mount[1]+CutE[2]) Mount[3] Mount[4] Mount[5] ;
+	Macro ProtoPath+"makeprof.mac"	xk yk zk xn yn zn ;
+	}
+exit
+////////////////////////////////////////////////////////////////////////////////
+//	построение профиля по дуге
+//
+Duga:
+nP=0;
+
+////	xn yn zn		//	точка начала и
+////	xk yk zk    //  точка конца
+//xp1 yp1 zp1		// точка центра
+//Rad An1 An2 Angle Sym		// Радиус угол 1 угол 2 угол_профиля симметрия
+//;
+
+rds=Mount[8]
+DuG1=0;
+DuG2=0;
+radsk=Obj[7];
+sdv=radsk/sqrt(2);
+if (radsk<20) { radsk=20; }
+if (yn>yk) {
+	xp1=xn
+	yp1=yn-rds
+	zp1=zn
+	An1=90
+	An2=180
+	} else {
+	xp1=xk
+	yp1=yk-rds
+	zp1=zk
+	An1=0
+	An2=90
+	}
+Rad=rds
+Angle=Mount[5];			//	угол поворота профиля
+Sym=0
+
+if (Mount[6]==0)	{
+	DuG1=(Mount[1]+CutB[2])/rds;
+	DuG2=(Mount[2]+CutE[2])/rds;
+	DuG1=Grad(Atan(DuG1));
+	DuG2=Grad(Atan(DuG2));
+	Macro ProtoPath+"setprof.mac"
+			Obj[3]  (Mount[1]+CutB[2]) (Mount[2]+CutE[2]) Mount[3] Mount[4] Mount[5] ;
+	Macro ProtoPath+"SetProfS.mac"	0 0 ;
+	Macro ProtoPath+"makeproD.mac"	xp1 yp1 zp1 Rad An1+DuG1 An2-DuG2 Angle ;
+	}	else	{
+	//	поменяем подрезы начальной и конечной точки
+	DuG1=(Mount[2]+CutB[2])/rds;
+	DuG2=(Mount[1]+CutE[2])/rds;
+	DuG1=Grad(Atan(DuG1));
+	DuG2=Grad(Atan(DuG2));
+	Macro ProtoPath+"setprof.mac"
+			Obj[3]  (Mount[2]+CutB[2]) (Mount[1]+CutE[2]) Mount[3] Mount[4] Mount[5] ;
+	Macro ProtoPath+"SetProfS.mac"	0 1 ;
+	Macro ProtoPath+"makeproD.mac"	xp1 yp1 zp1 Rad An1+DuG1 An2-DuG2 Angle ;
+	}
+Exit
+
+

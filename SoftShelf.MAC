@@ -1,0 +1,63 @@
+//-- Макропрограмма устанавливает съемную полку
+defarr basep[3];
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами 
+NULLOUT=getvarinst(2,"Typ_Kro",Typ_Kro,0);          //-- Тип лицевой кромки 
+NULLOUT=getvarinst(2,"PrMater",PrMater,0);          //-- Умолчание для материалов корпуса 
+NULLOUT=getvarinst(2,"FixSoftShelf",DfFixPol,0);    //-- Умолчание для крепежа съемных полок
+NULLOUT=getvarinst(2,"SoftShelfGaps",gap,2);        //-- Зазор для съемной полки
+NULLOUT=getvarinst(2,"SoftShelfColor",col,2);       //-- Цвет съёмной полки
+NULLOUT=getvarinst(2,"IsColorUse",icu,1);           //-- Использовать ли цвета 
+
+NULLOUT=setvarinst(2,"MacroSw",1);                //-- Текущий способ построения
+
+Thick=priceinfo(PrMater,"Thickness",16);
+onerror final;
+NULLOUT=getsnap();
+NULLOUT=pushinst(1);
+mbget "Укажите точку установки съемной полки" shell Thick
+  basep[1] basep[2] basep[3] xgab ygab Numb Shift :
+
+macro ProtoPath+"SetMat.mac" PrMater ;
+macro ProtoPath+"SetKrom.mac" 0 Typ_Kro Typ_Kro Typ_Kro Typ_Kro ;
+macro ProtoPath+"SetFix.mac"  DfFixPol DfFixPol 0 0 ;
+macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0;
+macro ProtoPath+"SetCuts.mac" gap gap 0 0;
+macro ProtoPath+"SetFixOver.mac"  0 ;
+macro ProtoPath+"SetBend.mac"  0 0 0 0 0 0 0 0 ;
+macro ProtoPath+"SetDir.mac" 1 ;
+macro ProtoPath+"SetPropM.mac" " " " " 0 0 0 0 0;
+macro ProtoPath+"SetTrNull.mac" ;
+macro ProtoPath+"SetEnam.mac" "Полка съемная";
+macromode undo off;
+if (icu==1)
+{
+  curcol=sysvar(40);
+  color col;
+}
+macro ProtoPath+"MakePan.mac" basep[1] basep[2] basep[3] xgab ygab 12;
+macro ProtoPath+"SetCuts.mac" 0 0 0 0;
+objident last 1 polka;
+if (Numb>1)
+{
+  move multicopy Numb-1 polka done 0 0 Shift;
+}
+
+//#polka mbpanel byobject shell :
+final:
+offerror;
+if (icu==1)
+{
+  color curcol;
+}
+if (isvardef("polka")==16)
+{
+  macromode undo on "SoftShelf.mac" polka ;
+}
+else
+{
+  macromode undo on;
+}
+NULLOUT=resnap();
+NULLOUT=popinst(1);
+exit;

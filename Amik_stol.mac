@@ -1,0 +1,83 @@
+//-- Макропрограмма устанавливает столешницу Amik
+defarr arr[3], Rad[4];
+defarr basep[3];
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами
+NULLOUT=getvarinst(2,"Typ_Kro",Typ_Kro,0);            //-- Тип лицевой кромки
+NULLOUT=getvarinst(2,"FDMater",PrMater,0);            //-- Умолчание для материалов фигурных столешниц
+NULLOUT=getvarinst(2,"AmikAlAngle",AmikAlAngle,70);   //-- Углы скоса столешницы Amik
+NULLOUT=getvarinst(2,"AmikBendBack",hh,100);          //-- Прогиб сзади столешницы Amik
+NULLOUT=getvarinst(2,"AmikBendFront",hs,60);          //-- Прогиб спереди столешницы Amik
+NULLOUT=getvarinst(2,"AmikAngleRadius",RV,40);        //-- Радиусы углов столешницы Amik
+
+NULLOUT=setvarinst(2,"MacroSw",1);                    //-- Текущий способ построения
+Thick=priceinfo(PrMater,"Thickness",16);
+onerror final;
+NULLOUT=getsnap();
+NULLOUT=pushinst(1);
+defarr arrin[3], arrout[8];
+arrin[1]=Thick;  // Высота резиновой панели
+mbget "Укажите положение панели" shell arrin arrout :
+basep[1]=arrout[1];
+basep[2]=arrout[2];
+basep[3]=arrout[3];
+xgab=arrout[4];
+ygab=arrout[5];
+Numb=arrout[6];
+Shift=arrout[7];
+
+#ok_flag
+setvar
+"Столешница Amik"
+PicturesPath+"StAmik_DL.wmf"
+left
+"Введите значения параметров"
+done
+real default AmikAlAngle "Угол скоса слева:" UgLeft
+real default AmikAlAngle "Угол скоса справа:" UgRight
+real default hh "Прогиб сзади:" hh
+real default hs "Прогиб спереди:" hs
+real default RV "Радиус скругления 1:" Rad[1]
+real default RV "Радиус скругления 2:" Rad[2]
+real default RV "Радиус скругления 3:" Rad[3]
+real default RV "Радиус скругления 4:" Rad[4]
+done;
+if (ok_flag==0)
+{
+  goto final;
+}
+angl=(ygab-iif(hs>0,hs,0)-iif(hh>0,hh,0))/cos(radian(90-UgLeft));
+angr=(ygab-iif(hs>0,hs,0)-iif(hh>0,hh,0))/cos(radian(90-UgRight));
+macro ProtoPath+"SetMat.mac" PrMater ;
+macro ProtoPath+"SetBand.mac" Typ_Kro Typ_Kro Typ_Kro Typ_Kro ;
+macro ProtoPath+"SetTextureAngle.mac" 0;
+macro ProtoPath+"SetBend.mac" 0 0 hh hs 0 0 0 0;
+macro ProtoPath+"SetAmik.mac" UgLeft UgRight Rad[1] Rad[2] Rad[3] Rad[4] ;
+macro ProtoPath+"SetEnam.mac" "Столешница Amik";
+macromode undo off;
+macro ProtoPath+"MakeAmik.mac" basep[1] basep[2]+iif(hh>0,hh,0) basep[3] xgab, angl, angr;
+
+objident last 1 polka;
+
+if (Numb>1)
+{
+  move multicopy Numb-1 polka done 0 0 shift;
+}
+final:
+offerror;
+if (isvardef("polka")==16)
+{
+  macromode undo on "Amik_stol.mac" polka ;
+}
+else
+{
+  macromode undo on;
+}
+NULLOUT=setvarinst(2,"AmikAngleRadius",Rad[1]);   //-- Радиусы углов столешницы Amik
+NULLOUT=setvarinst(2,"AmikBendFront",hs);         //-- Прогиб спереди столешницы Amik
+NULLOUT=setvarinst(2,"AmikBendBack",hh);          //-- Прогиб сзади столешницы Amik
+NULLOUT=setvarinst(2,"AmikAlAngle",UgLeft);       //-- Углы скоса столешницы Amik
+NULLOUT=resnap();
+NULLOUT=popinst(1);
+exit;

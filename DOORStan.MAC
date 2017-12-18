@@ -1,0 +1,35 @@
+//-- Подпрограмма создания сплошной стандартной дверки
+//-- Входные параметры:
+//-- xn,yn,zn - координаты правого нижнего дальнего угла установки двери
+//-- dx,dz - размеры двери по ширине и по высоте
+//-- R_Fas,L_Fas,U_Fas,D_Fas - увеличение фасада спарва, слева, сверху, снизу
+//-- Variant - сторона открывания двери
+
+
+global ProtoPath;
+// global DoorMater;       //-- Материал панелей двери
+// global DoorKonst;       //-- Тип конструкции двери
+// global g_liftR,g_liftL; //-- ID правого и левого подъемника для двери
+global g_FurnType;
+
+getpar xn,yn,zn,dx,dz,R_Fas L_Fas U_Fas D_Fas,Variant;
+
+//------------------------------------------------------------------------------
+//-- Устанавливаем подъемники
+if (variant>2)
+{
+	macro Protopath+"MakeLift.mac" xn,yn,zn+D_Fas,dx,dz-D_Fas-U_Fas,R_Fas,L_Fas,0,0,variant;
+}
+//------------------------------------------------------------------------------
+//-- Устанавливаем петли
+if (variant>=0)
+{
+	macro Protopath+"DoorHing.mac" xn,yn,zn,dx,dz,R_Fas,L_Fas,U_Fas,D_Fas,Variant;
+}
+
+macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+macro ProtoPath+"SetFasdV.mac" abs(Variant);
+macro ProtoPath+"MakeFas.mac" xn,yn,zn,dx,dz;
+
+g_FurnType="230100";
+exit ;

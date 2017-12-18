@@ -1,0 +1,11 @@
+//-- Прототип "Сотовая полка"
+global ProtoPath;
+
+x=DbVar("x",1000);                  //-- Ширина секции
+y=DbVar("y",450);                   //-- Глубина установки
+z=DbVar("z",1870);                  //-- Высота установки
+SotID=DbVar("width",661);           //-- ID сотовой полки в справочнике сборочных единиц
+N_clypse=DbVar("N_clypse",2);       //-- Количество клипс
+
+macro ProtoPath+"MakeSotShelf.mac" SotID, 0, y, z, x, N_clypse;
+exit;

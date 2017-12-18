@@ -1,0 +1,43 @@
+//AddChainVb.mac
+//
+//*********************************************
+// определяет принадлежность объектов к цепочке объектов
+//              Драгункин А.Р.
+//              ГеоС 2008 г.
+//*********************************************
+
+
+getpar
+ObjSt   //массив объектов образующих цепочки
+Obj     //массив объектов-кандидатов в цепочку
+AnObjSt //Размер массива объектов
+AnObj   //Размер массива кандидатов
+;
+
+defarr arr1[3] arr2[3] ;
+
+i=0
+met1:
+if i<AnObjSt {
+   i=i+1
+   pnt=ObjSt[i]
+   Chloc=GetAttr(ObjSt[i],"Chainloc",0);
+   j=0
+   met12:
+   if j<AnObj {
+      j=j+1
+      if !CompareObj(pnt,Obj[j]) {
+         Ds=DistObjToObj(pnt,Obj[j],arr1,arr2) ;
+         eps_n=1.e-6
+         if Ds<=5 { //значит соприкасаются или пересекаются
+         if IsAssign("ChainLoc",Obj[j])==0 {
+            Attrobj Attach  "ChainLoc"  Done Obj[j] chloc ;
+         }
+         else { goto met12 ; }
+         }
+      }
+      goto met12 ;
+   }
+goto met1 ;
+}
+exit ;

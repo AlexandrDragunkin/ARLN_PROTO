@@ -1,0 +1,80 @@
+//-- Макропрограмма создания нестандартной панели
+// Материал панели - по умолчанию
+// Тип кромки - умолчание лицевой, цвет - в типе.
+defarr arr[3];
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами 
+NULLOUT=getvarinst(2,"Typ_Kro",Typ_Kro,0);          //-- Тип лицевой кромки 
+NULLOUT=getvarinst(2,"PrMater",PrMater,0);          //-- Умолчание для материалов корпуса 
+NULLOUT=getvarinst(2,"FreeColor",col,1);            //-- Цвет нестандартной панели
+NULLOUT=getvarinst(2,"IsColorUse",icu,1);           //-- Использовать ли цвета 
+// NULLOUT=getvarinst(2,"N_Kro",N_Kro,1);              //-- Количество материалов кромки
+// defarr S_KrMat[N_Kro], I_KrMat[N_Kro];
+// NULLOUT=getarrinst(2,"I_KrMat",I_KrMat);            //-- ID материалов кромки
+// NULLOUT=getarrinst(2,"S_KrMat",S_KrMat);            //-- Названия материалов кромки
+// NULLOUT=getvarinst(2,"N_KrCol",N_KrCol,1);          //-- Количество цветов кромки
+// defarr Kr_Color[N_KrCol], Kr_IdCol[N_KrCol];
+// NULLOUT=getarrinst(2,"Kr_IdCol",Kr_IdCol);          //-- ID цветов кромки
+// NULLOUT=getarrinst(2,"Kr_Color",Kr_Color);          //-- Названия цветов кромки
+// NULLOUT=getvarinst(2,"N_PrMat",N_PrMat,1);          //-- Количество материалов панели
+
+DefMater=str(getyadsubst(2))+"#"+str(PrMater) ;                    // Формируем строку умолчаний.
+DefKro=str(getyadsubst(8))+"#"+str(Typ_Kro) ;                    // Формируем строку умолчаний.
+
+curcol=sysvar(40);
+onerror final;
+NULLOUT=fltrtype("Path");
+NULLOUT=fltrtype("PolyLine");
+objident prompt "Укажите полилинию панели" : shell ;
+TypO=getobjtypenm(shell);
+if (TypO=="Path")  //-- Контур
+{
+  #shell1 pline path shell;
+  delete shell done;
+  objident shell1 shell;
+}
+
+//===========================================================v
+goto NoCard;
+#ok_flag
+setvar
+"Установка параметров нестандартной панели"
+//ProtoPath+"PalFree.wmf"
+//left
+"Определите значения параметров панели"
+""
+"Внимание! Кромка накладывается по периметру панели."
+done
+string auto button 6 default DefMater "Материал:" NMater
+string auto button 6 default DefKro "Кромка:" NKro
+done;
+
+if (ok_flag==0)
+{
+  goto final;
+}
+splitbydelim(NMater,"#",Arr);
+E_col=Arr[2];
+splitbydelim(NKro,"#",Arr);
+KrTypeE=Arr[2];
+
+KrCol=0;
+NoCard:
+//===========================================================^
+E_col=PrMater;
+KrTypeE=Typ_Kro;
+KrCol=Typ_Kro;
+macro ProtoPath+"SetEnam.mac" "Панель нестандартная";
+if (icu==1)
+{
+  color col;
+}
+
+macro ProtoPath+"NestandAuto.mac" shell E_col KrCol KrTypeE 0;
+final:
+if (icu==1)
+{
+  color curcol;
+}
+NULLOUT=fltrtype("");
+offerror;
+exit;

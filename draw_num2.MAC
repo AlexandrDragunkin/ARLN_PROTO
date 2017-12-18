@@ -1,0 +1,253 @@
+//-- Макропрограмма проставляет номера объектов
+global g_delnum protopath;
+defarr xm[6];
+defarr panels[500];
+defarr arr[20];
+defarr obj[1000];
+defarr asys[13];
+defarr aTPPos[100]; // сив для разных TopParentPos- атрибутов верхих мебельных объектов
+nmac=GetFileTitle(sysvar(7))
+
+getpar NameAtrPos, ParV;
+
+iTPPOS=0; // счетчик разных TopParentPos
+maxs=0;
+nulout=SysArr(43,asys);
+NULLOUT=GetSnap();
+If (!IsAttrdef("NumType"))
+{
+	Attribute Create "NumType" "NumType" Real 5 0 ;
+}
+
+gosub sDimLayer;
+object_2=sysvar(60);
+i=0;
+w1=0;
+w2=0;
+w3=0;
+
+selbyattr "NumType!="+str(-999) all done ;
+g_delnum=iif(isvardef("g_delnum")==0,0,g_delnum);
+if sysvar(61)>0&&g_delnum==0
+{
+	//--  Удаляем старые номера объектов
+	delete previous done;
+}
+//-- Проставляем новые номера объектов
+key=0;
+lbs:
+i=0;
+selbyattr iif(key==0,"(Posit==11||Posit==12||Posit==13||Posit==14)","left(unitcode,3)==\"250\"") partly all done;
+	object_2=sysvar(61);
+	if object_2==0
+	{
+		goto metend;
+	}
+	macro protopath+"arrobj.mac" object_2 obj done;
+
+//object_2=sysvar(60);
+i=0;
+lttps:
+if i<object_2
+{
+	i=i+1
+	OBJ1=obj[i] ;
+	tmpTPos=getattr(OBJ1,"TopParentPos",-1);
+	IsTPPos=FindInarray(aTPPos,tmpTPos);
+	if !IsTPPos&&tmpTPos!=-1
+	{
+		iTPPOS=iTPPOS+1;
+		aTPPos[iTPPOS]=tmpTPos;
+		selbyattr "UnitPos=="+str(tmpTPos) all done;
+		if sysvar(61)>0 {
+		pps=getselnum(1);
+		NULLOUT=objgab3(pps,xm);
+		tmaxs=max(xm[4]-xm[1],xm[6]-xm[3]);
+		maxs=max(tmaxs,maxs);
+		}
+	}
+	goto lttps;
+}
+//----------------------
+
+// grfcoeff 9.6; // теперь это локальный графический коеффициент с  2012-04-07
+//----------------------
+i=0;
+lab_1:
+i=i+1;
+If (i<=object_2) {
+
+  //OBJ1=getobjnum(i);
+  OBJ1=obj[i] ; //getselnum(i);
+
+  Posit=getattr(OBJ1,"Posit",-1);
+
+
+  FPosit=getattr(OBJ1,NameAtrPos,-1);
+  if FPosit!=-1 //Posit==11||Posit==12||Posit==13||Posit==14
+  {
+   If (IsAttrdef(NameAtrPos))
+   {
+    KarkasNumb=getattr(OBJ1,"KarkasNumb",-1);
+        //name=getattr(OBJ1,"PorNumber",-1);
+        name=getattr(OBJ1,NameAtrPos,-1);
+		Fname=getattr(OBJ1,NameAtrPos,-1);
+		UnicID=getattr(OBJ1,"UnitPos",0);
+		FT=getattr(OBJ1,"FurnType","");
+        Dopsim="";
+        Vector=getattr(OBJ1,"PanDir",0);
+        Psim=iif(Vector==2,"=","");
+        PriceID=getattr(OBJ1,"PriceID",0);
+        MATTYPE=PriceInfo(PriceID,"MATTYPE",-1);
+
+//====================================== Присвоение префикса для глянца  2010-09-29
+    err=1;
+    NULLOUT=InitArray(arr,0);
+    arr[1]=OBJ1;
+    err=GetPan6Par(1,arr);
+    if (err==1)
+    {
+     dopsimA="";
+     dopsimF="";
+     arr[1]=0;
+     err=GetPan6Par(24,arr);
+
+     if (err!=0) {                                //-- Присутствует отделка
+      NULLOUT=InitArray(arr,0);
+      arr[1]=5;                                    //-- Проверим по пласти А
+      err=GetPan6Par(24,arr);
+
+     if (err!=0) {
+      if (arr[2]==182) { dopsimA="G"; }
+                 }
+
+      NULLOUT=InitArray(arr,0);
+      arr[1]=6;                                    //-- Проверим по пласти F
+      err=GetPan6Par(24,arr);
+
+     if (err!=0) {
+      if (arr[2]==182) { dopsimF="M"; }
+                 }
+                 }
+     dopsim=dopsimA+dopsimF;                       //-- Увидим, если по ошибке будет глянец двусторонний
+     }
+//======================================
+
+    if (name!=-1) //&&(MATTYPE!=99)
+    {
+		if ParV==1
+		{
+			gosub sDNum;
+		}
+		else
+		{
+			gosub sDNum2;
+		}
+    }
+   }
+  }
+  goto lab_1;
+}
+//-----------------------------
+i1=0;
+        selbyattr "(ElemName==\"Полотно фасада\")&&(Posit=="+str(14)+")" partly all done;
+        dopsim="д"
+        object_3=sysvar(61);
+        //i2=object_2;
+        i=0;
+        object_2=object_2+object_3;
+        lab_113:
+        i=i+1;
+
+	If (i<=object_3)  {
+           OBJ1=getselnum(i);
+           name=getattr(OBJ1,NameAtrPos,-1);  // 2010-02-17
+           PriceID=getattr(OBJ1,"PriceID",0);
+           MATTYPE=PriceInfo(PriceID,"MATTYPE",-1);
+		   
+           if (name!=-1) //&&(MATTYPE!=99)
+           {
+              i1=i1+1
+              panels[i1]=getselnum(i);
+           }
+	   goto lab_113;
+	}
+	//-----------------------------
+	if key==0
+	{
+		//key=1;
+		//goto lbs;
+	}
+metend:
+grfcoeff asys[3];
+NULLOUT=ReSnap();
+exit;
+
+//========================
+
+sDNum:
+            rr=objgab2(OBJ1,xm)
+			xsmin=xm[1];
+			ysmin=xm[2];
+			zsmin=xm[3];
+			xsmax=xm[4];
+			ysmax=xm[5];
+			zsmax=xm[6];
+			setucs gcs;
+			ptranscs(2,1,(xsmax+xsmin)/2,(ysmax+ysmin)/2,(zsmax+zsmin)/2,w1,w2,w3);
+			setucs vcs;
+			Psim=""
+			vTx=Psim+iif(isvardef("Fname")==6,Fname,Str(Fname))+Dopsim;
+			vLen=Len(vTx);
+			lSim=Left(vTx,1);
+			vTx=iif(lSim=="\"",mid(vTx,2,vLen-1),vTx);
+			vLen=Len(vTx);
+			RSim=Right(vTx,1);
+			vTx=iif(RSim=="\"",mid(vTx,1,vLen-1),vTx);
+			//#tnum	text vTx done w1+15,w2,w3+100,w1+17,w2,w3+100;
+			#tnum	note normal 0 0 1 type 1 vTx "" w1+15,w2,w3+100 @60 60 0 @1 0 0 ;
+			Attrobj Attach  "AutoPlace"  Done Last 1 1;
+			Attrobj Attach  "VidDimPlace"  Done Last 1 CurrVi;
+			
+			chprop layer last 1 done CV ;
+
+            if KarkasNumb!=-1 {  Attrobj Attach "KarkasNumb" Done tnum KarkasNumb; }
+			attrobj attach "NumType" "NumHolder" "NmMacNums" "FT_Holder" done last 1 1 UnicID nmac FT;		
+return;
+
+sDNum2:
+            rr=objgab2(OBJ1,xm)
+			xsmin=xm[1];
+			ysmin=xm[2];
+			zsmin=xm[3];
+			xsmax=xm[4];
+			ysmax=xm[5];
+			zsmax=xm[6];
+			setucs gcs;
+			ptranscs(2,1,(xsmax+xsmin)/2,(ysmax+ysmin)/2,(zsmax+zsmin)/2,w1,w2,w3);
+			setucs vcs;
+			Psim=""
+			vTx=Psim+iif(isvardef("Fname")==6,Fname,Str(Fname))+Dopsim;
+			vLen=Len(vTx);
+			lSim=Left(vTx,1);
+			vTx=iif(lSim=="\"",mid(vTx,2,vLen-1),vTx);
+			vLen=Len(vTx);
+			RSim=Right(vTx,1);
+			vTx=iif(RSim=="\"",mid(vTx,1,vLen-1),vTx);
+			#tnum	text vTx done w1+15,w2,w3+1000,w1+17,w2,w3+1000;
+            Attrobj Attach "KarkasNumb" Done tnum KarkasNumb;
+			Attrobj Attach "NumType" Done tnum 1;
+return;
+
+sDimLayer:
+	 If (!IsAttrdef("AutoPlace"))
+	 { Attribute Create "AutoPlace" "Номер вида на котором определен размер" Real 5 0 ; }
+	  If (!IsAttrdef("VidDimPlace"))
+	 { Attribute Create "VidDimPlace" "Номер вида на котором определен размер" Real 5 0 ; }
+	 CurrVi=SysVar(51)   ;
+	 CV="VidDim_"+Str(CurrVi) ;
+	 layers new "VidDim_1" ;
+	 layers new "VidDim_2" ;
+	 layers new "VidDim_3" ;
+	 layers new "VidDim_4" ;
+ return;

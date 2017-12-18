@@ -1,0 +1,83 @@
+//-- Макропрограмма формирует рамку прямого фасада
+//-- Входные параметры:
+//-- xn,yn,zn - коогдинаты правого нижнего дальнего угла рамки
+//-- w,h - ширина и высота рамки
+//-- Prof - ID профиля рамки
+//-- DecProf - Тип отделки профиля рамки
+//-- ColProf - Цвет отделки профиля рамки
+//-- FrName - имя для рамки
+//-- PrName - имя для профилей
+
+global MacroSw; //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global ProtoPath;
+
+getpar xn,yn,zn,w,h,Prof,DecProf,ColProf,FrName,PrName;
+
+nullout=getvarinst(1,"symProf",symProf,0);
+if symProf { macro ProtoPath+"SetProfS.mac" 0 1; }
+else { macro ProtoPath+"SetProfS.mac" 0 0; }
+
+defarr Arr[10];
+NULLOUT=setprof6par(1,Arr);
+Arr[1]=Prof;
+Arr[2]=0;
+NULLOUT=setprof6par(2,Arr);
+
+NULLOUT=getprof6par(6,Arr);
+SdX=Arr[3];
+// Putmsg(SdX)
+SdX=0;
+pW=Arr[1];
+
+// Читаем из свойства цвет профиля для отчета
+ColName=priceinfo(Prof,"ProfColor",0);
+
+// macro ProtoPath+"SetECod.mac" "2501" ;
+// macro ProtoPath+"SetKCod.mac" "ПРОФ" h  0 ;
+macro ProtoPath+"SetEnam.mac" PrName ;
+macro ProtoPath+"SetProfP.mac" Prof 0 0 0 iif(symProf,-pW,0) 180 45 45;
+macro ProtoPath+"SetPrDecor.mac"  DecProf,ColProf,1;
+macro ProtoPath+"MakeProf.mac" xn	yn	zn+SdX xn	yn	zn+h-SdX ;
+attrobj attach "KID" done last 1 ColName; //-- Цвет профиля
+
+// macro ProtoPath+"SetECod.mac" "2502" ;
+// macro ProtoPath+"SetKCod.mac" "ПРОФ" w  0 ;
+macro ProtoPath+"SetEnam.mac" PrName ;
+macro ProtoPath+"SetProfP.mac" Prof 0 0 iif(symProf,pW,0) 0 -90 45 45 ;
+macro ProtoPath+"SetPrDecor.mac"  DecProf,ColProf,1;
+macro ProtoPath+"MakeProf.mac" xn+SdX	yn	zn+h 	xn+w-SdX	yn	zn+h ;
+attrobj attach "KID" done last 1 ColName; //-- Цвет профиля
+
+// macro ProtoPath+"SetECod.mac" "2501" ;
+// macro ProtoPath+"SetKCod.mac" "ПРОФ" h  0 ;
+macro ProtoPath+"SetEnam.mac" PrName ;
+macro ProtoPath+"SetProfP.mac" Prof 0 0 0 iif(symProf,pW,0) 0 45 45 ;
+macro ProtoPath+"SetPrDecor.mac"  DecProf,ColProf,1;
+macro ProtoPath+"MakeProf.mac" xn+w	yn	zn+h-SdX xn+w	yn	zn+SdX ;
+attrobj attach "KID" done last 1 ColName; //-- Цвет профиля
+
+// macro ProtoPath+"SetECod.mac" "2502" ;
+// macro ProtoPath+"SetKCod.mac" "ПРОФ" w  0 ;
+macro ProtoPath+"SetEnam.mac" PrName ;
+macro ProtoPath+"SetProfP.mac" Prof 0 0 iif(symProf,-pW,0) 0 90 45 45 ;
+macro ProtoPath+"SetPrDecor.mac"  DecProf,ColProf,1;
+macro ProtoPath+"MakeProf.mac" xn+w-SdX	yn zn xn+SdX yn zn;
+attrobj attach "KID" done last 1 ColName; //-- Цвет профиля
+
+macro ProtoPath+"SetProfS.mac" 0 0;
+
+//-- Для того, чтобы формировалась группа "Рамка" нужно добавить в макрос создания фасада
+//-- следующие строки:
+// if (MacroSw==0)
+// {
+  // group last 4 done
+  // UnitCode="2100";
+  // GrId=0;                //-- GroupId
+  // PrId=0;                //-- PriceID
+  // KonsCod=" ";
+  // PropCod=" ";
+  // macro ProtoPath+"EndFrame.mac" w h FrName UnitCode GrId PrId KonsCod PropCod;
+// }
+//-- Обнуляем отделку профиля
+macro ProtoPath+"SetPrDecor.mac"  0,0,1;
+exit;

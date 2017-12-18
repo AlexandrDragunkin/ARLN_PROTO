@@ -1,0 +1,25 @@
+//-- Макропрограмма присвоения атрибутов комплектующим
+//-- Входные параметр:
+//-- complect - ID комплектующtuj в прайс-листе
+//-- Numbs - количество комплектующих (Устарело. Необходимо устанавливать равным 1.)
+
+global ProtoPath;
+getpar complect, Numbs ;
+
+objident last 1 Elem;
+NULLOUT=getvarinst(2,"g_FurnType",FurnType,"040000");
+ElemName=priceinfo(complect,"MATNAME"," ");       //-- Имя материала из прайс-листа
+//MatType=priceinfo(complect,"MATTYPE",0);          //-- Тип материала из прайс-листа
+//Unit=priceinfo(complect,"UNITS",0);               //-- Единица измерения
+attrobj attach "ElemName" done Elem ElemName;
+attrobj attach "PKMCount" done Elem Numbs ;       //-- Количество комплектующих
+
+exit;
+
+if (isassign("UnitCode",0))
+{
+  At=getattr(0,"UnitCode","No");
+  attrobj attach "UnitCode" done Elem At;
+}
+
+exit;

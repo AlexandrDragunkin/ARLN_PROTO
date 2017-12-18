@@ -1,0 +1,23 @@
+// Установить тек. Типы и Параметры фасадов и дверей для библиотеки стандартных объектов
+global		// Для фасадов и дверей
+DoorMater , // Материал панелей двери
+DoorBCol ,  // Цвет кромки двери
+DoorPlace, // Сторона открывания
+DoorPict,  // тип рисунка
+DoorDuble, // Двойная/одинарная
+DOUD,     //-- То же самое
+DoorOpen,  // Открытая/закрытая
+DoorType;  // Утопленная0/накладная1/Свободная2
+
+getpar  P1 P2  P3 P4 P5 P6 P7; // 
+ 
+DoorMater=P1;
+DoorBCol=P2;
+DoorPlace=P3;
+DoorPict=P4;
+DoorDuble=P5;
+DoorOpen=P6;
+DoorType=P7; 
+
+DOUD=DoorDuble;
+exit

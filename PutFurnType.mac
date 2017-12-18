@@ -1,0 +1,45 @@
+//-- Макропрограмма определяет и присваивает атрибут FurnType
+//-- комплектующим (а в дальнейшем, возможно и не только)
+//-- в зависимости от содержимого прайс-листа.
+//-- Входные параметры:
+//-- complect - ID комплектующtuj в прайс-листе
+//-- Выходные параметры:
+//-- g_FurnType - строка с атрибутом FurnType
+
+//global g_FurnType;
+getpar complect;
+
+ElemName=priceinfo(complect,"MATNAME"," ");       //-- Имя материала из прайс-листа
+MatType=priceinfo(complect,"MATTYPE",0);          //-- Тип материала из прайс-листа
+Unit=priceinfo(complect,"UNITS",0);               //-- Единица измерения
+
+FurnType="040000";  //-- По умолчанию для комплектующих
+if (MatType==76)    { FurnType="040600"; } //-- Петли
+if (MatType==93)    { FurnType="040100"; } //-- Ручки
+if (MatType==172)   { FurnType="040100"; } //-- Ручки (Тип ручки)
+if (MatType==130)   { FurnType="040900"; } //-- Вешалки
+if (MatType==134)   { FurnType="040200"; } //-- Опоры
+if (MatType==135)   { FurnType="040200"; } //-- Подпятники (опоры)
+if (MatType==136)   { FurnType="040300"; } //-- Направляющие
+if (MatType==167)   { FurnType="040300"; } //-- Направляющие
+if (MatType==138)   { FurnType="041200"; } //-- Заглушки
+if (MatType==139)   { FurnType="041300"; } //-- Замки
+if (MatType==140)   { FurnType="040400"; } //-- Крепеж
+if (MatType==144)   { FurnType="041300"; } //-- Шпингалет (замки)
+if (MatType==141)   { FurnType="040500"; } //-- Крючки
+if (MatType==142)   { FurnType="041400"; } //-- Светильники мебельные
+if (MatType==143)   { FurnType="041500"; } //-- Сушилки штучные
+if (MatType==147)   { FurnType="041600"; } //-- Ролики систем дверей
+if (MatType==169&&Unit==4)   { FurnType="041700"; } //-- Крепления (кронштейны, клипсы и пр.)
+if (MatType==174&&Unit==4)   { FurnType="041700"; } //-- Крепления (кронштейны, клипсы и пр.)
+//-- Этот тип материала - "Комплектующие". Здесь надо извращаться.
+if (MatType==172)
+{
+  if (left(ElemName,5)=="Петля")      { FurnType="040600"; } //-- Петли
+  if (left(ElemName,9)=="Крепление")  { FurnType="041700"; } //-- Крепления (кронштейны, клипсы и пр.)
+  if (left(ElemName,8)=="Заглушка")   { FurnType="041200"; } //-- Заглушки
+}
+//g_FurnType=FurnType;
+NULLOUT=setvarinst(1,"FurnType",FurnType);
+
+exit;

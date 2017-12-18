@@ -1,0 +1,179 @@
+//-- Рассчитать пропил в ящике для дна и фасада
+global ProtoPath;
+
+defarr ct1[6] ct2[6];
+defarr sp1[6] sp2[6];
+defarr Panels[500];
+
+IPan=0;
+DPropW=0.5;
+DPropD=0.6;
+
+getpar pnt;
+
+NULLOUT=getsnap();
+
+object_2=sysvar(60);
+PropB=7; //"B";
+PropA=0 ; //"A";
+PropR=4;
+PropW=6;
+PropD=8;
+PropS=0;
+PropL=0;
+j=0;
+NEXT2:
+j=j+1;
+cutb=0;
+cutc=0;
+cutd=0;
+cute=0;
+if (j<=object_2)
+{
+  pnt2=getobjnum(j);
+  name2=getattr(pnt2,"Posit",-1);
+  name3=getattr(pnt2,"FurnType","");
+  If (!((Left(name3,2)=="01")||name2==11||name2==12||name2==13||name2==14))
+  {
+    goto NEXT2;
+  }
+  sh=getattr(pnt2,"ZUnit",16);
+
+  setucs lcs pnt ;
+  rr=objgab3(pnt,ct1) ;
+  rr=objgab3(pnt2,ct2);
+  err=getprotoval(pnt2,"P_B",cutb);
+  err=getprotoval(pnt2,"P_C",cutc);
+  err=getprotoval(pnt2,"P_D",cutd);
+  err=getprotoval(pnt2,"P_E",cute);
+
+  if (ct1[4]-.5<ct2[1]) { goto NEXT2; } //-- Нет контакта по X
+  if (ct1[1]+.5>ct2[4]) { goto NEXT2; } //-- Нет контакта по X
+  if (ct1[5]-.5<ct2[2]) { goto NEXT2; } //-- Нет контакта по y
+  if (ct1[2]+.5>ct2[5]) { goto NEXT2; } //-- Нет контакта по y
+  if (ct1[6]-.5<ct2[3]) { goto NEXT2; } //-- Нет контакта по z
+  if (ct1[3]+.5>ct2[6]) { goto NEXT2; } //-- Нет контакта по z
+
+  setucs lcs pnt2 ;
+  rr=objgab3(pnt,sp1);
+  rr=objgab3(pnt2,sp2);
+  GabX2=sp2[4]-sp2[1];
+  GabY2=sp2[5]-sp2[2];
+
+  if (sp1[3]<sp2[6])&&(sp1[6]>sp2[6]) //-- Cторона А
+  {
+    PropA=1; //"A";
+    DL=sp1[4]-sp1[1];
+    WD=sp1[5]-sp1[2];
+    PropD=sp2[6]-sp1[3];
+	
+    if (DL>WD) 			//-- Cторона D
+    {
+      PropB=1; //"D";
+      PropR=sp1[2]-cutd;
+      PropW=WD;
+      if (sp2[4]<(sp1[4]+DPropD))&&(sp2[1]>(sp1[1]-DPropD))
+      {
+        PropS=0;
+        PropL=0;
+      }
+      else
+      {
+		PropS=sp2[1]+3
+		PropL=GabX2-6;
+      }
+    }
+    else                            //-- Cторона B
+    {
+      PropB=7; //"B";
+      WD=sp1[4]-sp1[1];
+      DL=sp1[5]-sp1[2];
+      PropR=sp1[1]-cutb;
+      PropW=WD;
+      if (sp2[5]<(sp1[5]+DPropD))&&(sp2[2]>(sp1[2]-DPropD))
+      {
+        PropS=0;
+        PropL=0;
+      }
+      else
+      {
+		PropS=sp2[2]+3
+		PropL=GabY2-6;
+      }
+    }
+
+    macro ProtoPath+"PropSN.mac" PropB PropA PropR ceil(PropW+DPropW) Ceil(PropD+DPropD) PropS PropL pnt2 ;
+	
+    object_2=object_2-1
+    j=j-1;
+    goto NEXT2;
+  }
+  if (sp1[3]<sp2[3])&&(sp1[6]>sp2[3])  //-- Cторона F
+  {
+    PropA=0; //"F";
+    DL=sp1[4]-sp1[1];
+    WD=sp1[5]-sp1[2];
+    PropD=sp1[6]-sp2[3];
+    if (DL>WD)  //-- Cторона D
+    {
+      PropB=1; //"D";
+      PropR=sp1[2]-cutd;
+      PropW=WD;
+      if (sp2[4]<(sp1[4]+DPropD))&&(sp2[1]>(sp1[1]-DPropD))
+      {
+        PropS=0;
+        PropL=0;
+      }
+      else
+      {
+        
+		PropS=sp2[1]+3
+
+		PropL=GabX2-6;
+      }
+    }
+    else        //-- Cторона B
+    {
+      PropB=7; //"B";
+      WD=sp1[4]-sp1[1];
+      DL=sp1[5]-sp1[2];
+      PropR=sp1[1]-cutb;
+      PropW=WD;
+      if (sp2[5]<(sp1[5]+DPropD))&&(sp2[2]>(sp1[2]-DPropD))
+      {
+        PropS=0;
+        PropL=0;
+      }
+      else
+      {
+
+		PropS=sp2[2]+3
+
+		PropL=GabY2-6;
+		
+      }
+    }
+
+
+    macro ProtoPath+"PropSN.mac" PropB PropA PropR ceil(PropW+DPropW) Ceil(PropD+DPropD) PropS PropL pnt2 ;
+
+    object_2=object_2-1
+    j=j-1;
+
+  }
+  goto NEXT2;
+}
+exit;
+select pnt done;
+i=0;
+NEXT3:
+i=i+1;
+if (i<=iPan)
+{
+  protoobj edit list Panels[i];
+  goto NEXT3;
+}
+EndMac:
+select;
+NULLOUT=resnap();
+exit;

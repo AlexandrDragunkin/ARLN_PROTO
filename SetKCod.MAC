@@ -1,0 +1,16 @@
+//-- Установить код мебельных элементов
+global KonsCod; //-- Код мебельных элементов
+getpar Code x y;
+tx=str(x);
+gosub Wrap;
+KonsCod=Code+"_"+tx
+tx=str(y);
+KonsCod=KonsCod+"_"+tx;
+NULLOUT=setvarinst(1,"KonsCode",KonsCod);
+exit;
+Wrap:
+if (len(tx)==0) { tx="0000"+tx; }
+if (len(tx)==1) { tx="000"+tx; }
+if (len(tx)==2) { tx="00"+tx; }
+if (len(tx)==3) { tx="0"+tx; }
+return;

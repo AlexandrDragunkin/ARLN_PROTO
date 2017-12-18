@@ -1,0 +1,17 @@
+//-- Установка ручки на распашную дверь (Арочный фасад)
+//-- Входные параметры:
+//-- dx, G, dz - базовый угол двери
+//-- dwx, dwz - ширина и высота двери соответственно
+//-- Rplace - сторона открывания двери 
+//-- Handle - тип ручки из прайс-листа
+//-- ARMX, ARMZ, ARMA	- сдвиги и угол поворота ручкиglobal ProtoPath  ;
+
+global ProtoPath;
+getpar dx,G,dz,   //-- Базовый угол двери
+dwx,dwz,          //-- Ширина, высота 
+Rplace,           //-- Cторона открывания двери
+Handle,           //-- Тип ручки и параметры положения
+ARMX,ARMZ,ARMA;
+
+macro ProtoPath+"DoorHnd.mac"	dx,G,dz,dwx,dwz,Rplace,Handle,ARMX,ARMZ,ARMA;
+exit;

@@ -1,0 +1,9 @@
+// Присвоение элементу свойства слоя
+global ElemName ; // Имена мебельных элементов
+getpar pnt;
+       if !ExistsLayer(ElemName)
+       {
+         layers new ElemName ;
+       }
+       chprop layer pnt done ElemName;
+exit;

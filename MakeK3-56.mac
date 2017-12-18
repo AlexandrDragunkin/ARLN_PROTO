@@ -1,0 +1,434 @@
+//---------------------- Создание системы дверей К3-56 -----------------------------
+global MacroSw  ; // Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global		        // Для фасадов и дверей
+RDoorMater1 ,     // Материал полотна двери
+RDoorMater2 ,     // Материал полотна двери
+RDoorMater3 ,     // Материал полотна двери
+RDoorMater4 ,     // Материал полотна двери
+RDoorMater5 ,     // Материал полотна двери
+RDoorMater6 ,     // Материал полотна двери
+
+RDoorBCol ,       // Материал обрамления двери
+
+RDoorType,        // Тип створки
+
+RDoorNS  ,        // Количество секций
+
+RDoorH1n ,        //Высота 1 секции
+RDoorH1k ,        //Высота 1 наклона секции
+RDoorH2n ,        //Высота 2 секции
+RDoorH2k ,        //Высота 2 наклона секции
+RDoorH3n ,        //Высота 3 секции
+RDoorH3k ,        //Высота 3 наклона секции
+RDoorH4n ,        //Высота 4 секции
+RDoorH4k ,        //Высота 4 наклона секции
+RDoorH5n ,        //Высота 5 секции
+RDoorH5k ,        //Высота 5 наклона секции
+
+RDoorColor ,      // Цвет профилей  обрамление из прайса
+
+RDoorNshp1,  //-- Направление шпона первой секции
+RDoorNshp2,  //-- Направление шпона второй секции
+RDoorNshp3,  //-- Направление шпона третьей секции
+RDoorNshp4,  //-- Направление шпона четвертой секции
+RDoorNshp5,  //-- Направление шпона пятой секции
+RDoorNshp6,  //-- Направление шпона шестой секции
+
+RDoorRail ,       // Тип направляющих
+RDoorMBok ,       // Материал боковин
+RTrackColor ;     // Цвет профилей направляющих
+
+global g_Syst;
+global g_SlipTop,g_SlipBottom,g_SlipLeft,g_SlipRight,g_SlipDoors;  //-- Зазоры
+global g_move;   //-- Сдвиг створок дверей по глубине
+global g_e_move;  //-- Сдвиг дверей друг от друга
+
+global ProtoPath;
+global g_MoveType;
+global g_DSet;
+
+getpar
+  x,y,z,    //-- Координаты точки  установки
+  xg,zg,yg, //-- Габариты ниши, в которую устанавливается система
+  NDoors;   //-- Количество створок
+
+RLColor=RDoorColor;
+PLColor=RDoorMater1;
+DRS=RDoorType;
+X1=xg;
+Y1=yg;
+Z1=zg;
+
+//--------------------------------------------------------------------------------------------------
+com=sysvar(60);
+macro ProtoPath+"GetMoveType.mac" DRS; //-- Определение типа движения системы дверей
+
+if (NDoors>2&&g_MoveType==2) //--Распашные двери
+{
+  stru="У распашных дверей может быть только одна или две створки"
+  #kkk alternative "Ошибка"
+   msgbox text stru
+   done "OK" done
+}
+if ((NDoors!=2&&NDoors!=4)&&g_MoveType==3) //--Складные двери
+{
+  stru="У складных дверей может быть только две или четыре створки"
+  #kkk alternative "Ошибка"
+   msgbox text stru
+   done "OK" done
+}
+if (g_MoveType==1) //--Раздвижные двери
+{
+  macro ProtoPath+"drwmfmenu1.mac" NDoors 0;
+}
+if (g_MoveType==2) //--Распашные двери
+{
+  g_DSet="+0+1";
+}
+if (g_MoveType==3) //--Складные двери
+{
+  g_DSet="+0+0+1+0";
+}
+
+//--создание дверной системы
+//-- xg, yg, zg - габариты ниши, в которую устанавливается система
+//-- xb, yb, zb - координаты правого дальнего нижнего угла ниши
+
+xb=x;
+yb=y;
+zb=z;
+g_Syst=DRS;           //-- Номер дверной системы (из таблицы System базы данных DoorSys.mdb)
+
+tab_place=ProtoPath+"DoorSys.mdb";
+szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+tab_place;
+Doorscon=adbCon(szSrc);
+
+str_tab="SELECT * FROM System WHERE ID="+str(g_Syst);
+SysRs=adbOpen(Doorscon,str_tab);
+ij=adbRecCount(SysRs);
+
+NULLOUT=adbMoveFirst(SysRs);
+MacroSet=adbGetValue(SysRs,"MacroSet","");
+NULLOUT=getsnap();
+if (MacroSw==0)
+{
+  gosub kark1;
+}
+else
+{
+  gosub New_door;
+}
+New_door:
+if (len(MacroSet)==0)
+{
+  goto kark;
+}
+MacroExtra=adbGetValue(SysRs,"MacroExtra","");
+
+//-- Запускаем макропрограмму установки системы дверей
+
+nob=sysvar(60);
+macro ProtoPath+MacroSet ;
+nob=sysvar(60)-nob;
+if (nob>0)
+{
+  move last nob done 2points 0,0,0 x1,y1,z1 nocopy;
+}
+
+kark:
+//-- Устанавливаем каркас системы дверей
+protoobj create "Shkaf.ptl" 162
+  "x" xg
+  "y" yg
+  "z" zg
+  "ColorRail" RLColor
+  "Syst" g_Syst
+  done
+  xb,yb,zb;
+
+i=1;
+gosub gabs;
+
+LDoors:
+protoobj create "Shkaf.ptl" 163 // Створка
+  "x" x1
+  "y" y1
+  "z" z1
+  "Npart" RDoorNS
+  "ColorKant" RLColor
+  "PrMater1" RDoorMater1
+  "PrMater2" RDoorMater2
+  "PrMater3" RDoorMater3
+  "PrMater4" RDoorMater4
+  "PrMater5" RDoorMater5
+  "PrMater6" RDoorMater6
+  "Syst" g_Syst
+	"H1n" RDoorH1n
+	"H1k" RDoorH1k
+	"H2n" RDoorH2n
+	"H2k" RDoorH2k
+	"H3n" RDoorH3n
+	"H3k" RDoorH3k
+	"H4n" RDoorH4n
+	"H4k" RDoorH4k
+	"H5n" RDoorH5n
+	"H5k" RDoorH5k
+  done
+  x y z;
+if (i<NDoors)
+{
+ i=i+1;
+ gosub gabs1;
+ goto LDoors;
+}
+end:
+NULLOUT=resnap();
+if (SysRs!=0)
+{
+  SysRs=adbClose(SysRs);
+}
+if (Doorscon!=0)
+{
+  Doorscon=adbDisCon(Doorscon); //-- Разрываем соединение
+}
+exit;
+//==============================================================================
+//-- Расчет габаритов и точки установки створки системы дверей
+//-- Входные данные:
+//-- xg,yg,zg - габариты ниши, в которую устанавливаются створки
+//-- xb,yb,zb - координаты правого дльнего нижнего угла ниши
+//-- NDoors - количество створок
+//-- NJoint - количество мест перекрытия
+//-- DRS - ID системы дверей из таблицы System базы данных DoorSys.mdb
+//-- g_SlipTop - зазор сверху
+//-- g_SlipBottom - зазор снизу
+//-- g_SlipDoors - нахлест дверей
+//-- g_SlipLeft - зазор слева
+//-- g_SlipRight - зазор справа
+//-- i - номер створки
+//-- Выходные параметры:
+//-- x1, y1, z1 - габарты створки
+//-- x, y, z - координаты точки установки створки
+gabs:
+if (NDoors==1)
+{
+  x=xb+g_SlipRight;
+  y=yb;
+  z=zb+g_SlipBottom;;
+  x1=int(xg-g_SlipRight-g_SlipLeft);
+  y1=int(yg-0.25*g_move);
+  z1=zg-g_SlipBottom-g_SlipTop;
+  return;
+}
+
+gosub expr;
+nah=0;
+if (left(g_DSet,1)!="+"&&left(g_DSet,1)!="-")
+{
+  nhl=int(g_SlipDoors*NJoint/(NDoors-1));
+  x1=int((xg-g_SlipRight-g_SlipLeft+g_SlipDoors*NJoint)/(NDoors));
+  y1=yg;
+}
+else
+{
+  x1=int((xg-g_SlipRight-g_SlipLeft+g_SlipDoors*NJoint)/(NDoors));
+  far=left(g_DSet,1);
+  if (far=="+")
+  {
+    //y1=int(yg-0.25*g_move);
+    y1=yg-g_move;
+  }
+  else
+  {
+    //y1=int(yg-1.1*g_move);
+    y1=yg-g_move-g_e_move;
+  }
+  nhl=0;
+}
+z1=zg-g_SlipBottom-g_SlipTop;
+
+//-- Потом изменить. Учесть сдвиг створок (если есть ) по рельсе
+//-- Потом ввести диалоговую карточку с выбором расположения дверей.
+//-- Вычислять положение исходя из комбинации дверей
+y=yb;
+z=zb+g_SlipBottom;
+
+gabs1:
+if (left(g_DSet,1)!="+"&&left(g_DSet,1)!="-")
+{
+  if (int(i/2)!=(i/2))  //-- Створки нечетные
+  {
+    //y1=int(yg-1.1*g_move);
+    y1=yg-g_move-g_e_move;
+  }
+  else
+  {
+    //y1=int(yg-0.25*g_move);
+    y1=yg-g_move;
+  }
+  x=(i-1)*(x1-nhl)+g_SlipRight+xb;
+}
+else
+{
+  far=left(g_DSet,1);
+  if (far=="+")
+  {
+    //y1=int(yg-0.25*g_move);
+    y1=yg-g_move;
+  }
+  else
+  {
+    //y1=int(yg-1.1*g_move);
+    y1=yg-g_move-g_e_move;
+  }
+  nah=nah+val(right(left(g_DSet,2),1));
+  x=(i-1)*x1-g_SlipDoors*nah+g_SlipRight+xb;
+  g_DSet=right(g_DSet,len(g_DSet)-2);
+}
+return;
+//------------------------------------------------------------------------------
+expr:
+NJoint=0;
+le=len(g_DSet);
+iii=0;
+loopiii:
+st=right(left(g_DSet,len(g_DSet)-iii),1);
+if (st!="+"&&st!="-")
+{
+  NJoint=NJoint+val(st);
+}
+
+iii=iii+1;
+
+if (iii>=le)
+{
+  return;
+}
+goto loopiii;
+
+kark1:
+//------------------------ Устанавливаем каркас системы дверей ------------------------------------------
+//-- Устанавливаем соединение с базой DoorSys.mdb
+tab_place=ProtoPath+"DoorSys.mdb";
+szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+tab_place;
+Doorscon=adbCon(szSrc);
+
+//-- Находим ID рельс в таблице Rails базы DoorSys.mdb
+str_tab="SELECT Rails.* FROM Rails,System WHERE System.IDRail=Rails.ID AND System.ID="+str(g_Syst);
+RailsRs=adbOpen(Doorscon,str_tab);
+ij=adbRecCount(RailsRs);
+//-- Если количество нужных рельс не равно единице - выходим
+if (ij!=1)
+{
+  errcode="Количество рельс с ID "+str(IDRails)+" равно "+str(ij);
+  gosub err;
+  RailsRs=adbClose(RailsRs);
+}
+NULLOUT=adbMoveFirst(RailsRs);
+//-- Находим зазоры сверху, снизу, слева, справа и нахлест дверей
+IDRails=adbgetvalue(RailsRs,"ID");
+g_SlipTop=adbGetValue(RailsRs,"SlipTop");
+g_SlipBottom=adbGetValue(RailsRs,"SlipBottom");
+g_SlipLeft=adbGetValue(RailsRs,"SlipLeft");
+g_SlipRight=adbGetValue(RailsRs,"SlipRight");
+g_SlipDoors=adbGetValue(RailsRs,"SlipDoors");
+
+g_IDPrice=adbGetValue(RailsRs,"IDPrice"); //-- ID каркаса системы дверей из прайса
+
+MacroSet=adbGetValue(RailsRs,"MacroSet","");
+if (len(MacroSet)==0)
+{
+  errcode="Отсутствует макро установки каркаса";
+  gosub err;
+  RailsRs=adbClose(RailsRs);
+}
+MacroExtra=adbGetValue(RailsRs,"MacroExtra","");
+nob=sysvar(60);
+macro ProtoPath+MacroSet xg,yg,zg,IDRails,RLColor;
+if (len(MacroExtra)!=0)
+{
+  macro ProtoPath+MacroExtra xg,yg,zg,IDRails,RLColor;
+}
+if (SysRs!=0)
+{
+  SysRs=adbClose(SysRs);
+}
+if (Doorscon!=0)
+{
+  Doorscon=adbDisCon(Doorscon); //-- Разрываем соединение
+}
+//----------------------------------------------------------------------------------------------------------------
+nob=sysvar(60)-nob;
+move last nob done xb,yb,zb;
+i=1;
+gosub gabs;
+LDoors1:
+//----------------------------------------------------------------------------------------------------------------------------------------------
+tab_place=ProtoPath+"DoorSys.mdb";
+szSrc="Provider=Microsoft.Jet.OLEDB.4.0;Data Source="+tab_place;
+Doorscon=adbCon(szSrc);
+//str_tab="SELECT * FROM System WHERE ID="+str(g_Syst);
+//SysRs=adbOpen(Doorscon,str_tab);
+//NULLOUT=adbMoveFirst(SysRs);
+//-- Находим ID створки в таблице Flap базы DoorSys.mdb
+str_tab="SELECT Flap.* FROM Flap,System WHERE System.IDFlap=Flap.ID AND System.ID="+str(g_Syst);
+FlapRs=adbOpen(Doorscon,str_tab);
+ij=adbRecCount(FlapRs);
+//-- Если количество нужных створок не равно единице - выходим
+if (ij!=1)
+{
+  errcode="Количество створок с ID "+str(IDflap)+" равно "+str(ij);
+  gosub err;
+  FlapRs=adbClose(FlapRs);
+}
+NULLOUT=adbMoveFirst(FlapRs);
+IDFlap=adbGetValue(FlapRs,"ID");
+g_IDPrice=adbGetValue(FlapRs,"IDPrice"); //-- ID каркаса системы дверей из прайса
+MacroSet=adbGetValue(FlapRs,"MacroSet","");
+if (len(MacroSet)==0)
+{
+  errcode="Отсутствует макро установки створки";
+  gosub err;
+  FlapRs=adbClose(FlapRs);
+}
+nob=sysvar(60);
+MacroExtra=adbGetValue(FlapRs,"MacroExtra","");
+
+macro ProtoPath+MacroSet x1,y1,z1,RDoorMater1,RDoorNshp1,RDoorMater2,RDoorNshp2,RDoorMater3,RDoorNshp3,RDoorMater4,RDoorNshp4,RDoorMater5,RDoorNshp5,
+RDoorMater6,RDoorNshp6,RDoorNS,RDoorH1n,RDoorH1k,RDoorH2n,RDoorH2k,RDoorH3n,RDoorH3k,RDoorH4n,RDoorH4k,RDoorH5n,RDoorH5k,
+RLColor,IDFlap;
+
+if (len(MacroExtra)!=0)
+{
+  macro ProtoPath+MacroExtra x1,y1,z1,RDoorMater1,RDoorNshp1,RDoorMater2,RDoorNshp2,RDoorMater3,RDoorNshp3,RDoorMater4,RDoorNshp4,RDoorMater5,RDoorNshp5,
+RDoorMater6,RDoorNshp6,RDoorNS,RDoorH1n,RDoorH1k,RDoorH2n,RDoorH2k,RDoorH3n,RDoorH3k,RDoorH4n,RDoorH4k,RDoorH5n,RDoorH5k,
+  RLColor,IDFlap;
+}
+nob=sysvar(60)-nob;
+//SysRs=adbClose(SysRs);
+if (Doorscon!=0)
+{
+  Doorscon=adbDisCon(Doorscon); //-- Разрываем соединение
+}
+//-------------------------------------------------------------------------------------------------------------------------------------------------
+move last nob done x,y,z;
+if (i<NDoors)
+{
+  i=i+1;
+  gosub gabs1;
+  goto LDoors1;
+}
+goto end;
+exit;
+//----------------------------------------------------------------
+err:
+//-- ShowSmartError
+#ok_flag
+     alternative "Ошибка базы данных"
+     msgbox text "Некорректно заполнена база данных систем дверей"
+     " "
+     errcode
+     done
+     "  OK  "
+     done;
+return;

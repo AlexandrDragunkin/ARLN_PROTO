@@ -1,0 +1,28 @@
+//-- Добавить крепление для профилей рамочного фасада
+//-- Входные параметры:
+//-- xn,yn,zn - координаты правого дальнего нижнего угла рамки
+//-- w,h - ширина и высота рамки
+//-- Acce - материал крепления
+
+global ProtoPath;
+getpar xn,yn,zn,w,h,Acce;
+
+//===============
+sd=1.5 // Сдвиг крепления внутрь
+Macro ProtoPath+"SetAccPLace.mac"   0;
+macro ProtoPath+"SetECod.mac" "9105" ;
+// macro ProtoPath+"SetKCod.mac" "КРЕП" 0  0 ;
+Macro ProtoPath+"MakeAcce.mac" Acce,0,xn+sd,yn+sd,zn+sd,0,0,90;
+
+macro ProtoPath+"SetECod.mac" "9106" ;
+// macro ProtoPath+"SetKCod.mac" "КРЕП" 0  0 ;
+Macro ProtoPath+"MakeAcce.mac" Acce,0,xn+w-sd,yn+sd,zn+sd,0,90,90;
+
+macro ProtoPath+"SetECod.mac" "9107" ;
+// macro ProtoPath+"SetKCod.mac" "КРЕП" 0  0 ;
+Macro ProtoPath+"MakeAcce.mac" Acce,0,xn+w-sd,yn+sd,zn+h-sd,0,180,90;
+
+macro ProtoPath+"SetECod.mac" "9108" ;
+// macro ProtoPath+"SetKCod.mac" "КРЕП" 0  0 ;
+Macro ProtoPath+"MakeAcce.mac" Acce,0,xn+sd,yn+sd,zn+h-sd,0,270,90;
+exit ;

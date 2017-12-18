@@ -1,0 +1,45 @@
+//-- Создание объекта - столешница Amik
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами
+
+L=DbVar("L",1200); 		          //-- Длина
+Bl=DbVar("Bl",500); 		        //-- Левая сторона
+Br=DbVar("Br",500); 		        //-- Правая сторона
+Al=DbVar("Al",70); 		          //-- Угол скоса слева
+Ar=DbVar("Ar",70); 		          //-- Угол скоса справа
+hh=DbVar("hh",100); 		        //-- Прогиб сзади
+hs=DbVar("hs",70); 		          //-- Прогиб спереди
+rc1=DbVar("rc1",40);            //-- Первый радиус скругления
+rc2=DbVar("rc2",40);            //-- Второй радиус скругления
+rc3=DbVar("rc3",40);            //-- Третий радиус скругления
+rc4=DbVar("rc4",40);            //-- Четвёртый радиус скругления
+PrMater=DbVar("PrMater",0); 		//-- Материал панели
+Nshp=DbVar("Nshp",0);		        //-- Направление шпона
+Band=DbVar("Band",0); 			    //-- Материал кромки
+Face_col=DbVar("Face_col",0);   //-- Цвет кромки
+//--------------------------------------------------------------------------
+FurnType="011000";
+Namescr="ProtoParams";
+NULLOUT=setvarinst(1,"FurnType",FurnType);
+//--------------------------------------------------------------------------
+macro ProtoPath+"StAmikForm.mac" L,Bl,Br,Al,Ar,hh,hs,rc1,rc2,rc3,rc4,PrMater,Nshp,Band,Face_col;
+
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"L",L);
+err=AddScratch(ScrMod,FurnType,"Bl",Bl);
+err=AddScratch(ScrMod,FurnType,"Br",Br);
+err=AddScratch(ScrMod,FurnType,"Al",Al);
+err=AddScratch(ScrMod,FurnType,"Ar",Ar);
+err=AddScratch(ScrMod,FurnType,"hh",hh);
+err=AddScratch(ScrMod,FurnType,"hs",hs);
+err=AddScratch(ScrMod,FurnType,"rc1",rc1);
+err=AddScratch(ScrMod,FurnType,"rc2",rc2);
+err=AddScratch(ScrMod,FurnType,"rc3",rc3);
+err=AddScratch(ScrMod,FurnType,"rc4",rc4);
+err=AddScratch(ScrMod,FurnType,"PrMater",PrMater);
+err=AddScratch(ScrMod,FurnType,"Nshp",Nshp);
+err=AddScratch(ScrMod,FurnType,"Face_col",Face_col);
+err=AddScratch(ScrMod,FurnType,"Band",Band);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+exit;

@@ -1,0 +1,14 @@
+//-- Макропрограмма формирования узора для фасада
+getpar xn,yn,zn,w,h,wr,hp,ots;
+
+line	xn+wr	yn+ots	zn+wr
+	xn+wr	yn+ots	zn+h-wr;
+arc	xn+wr	yn+ots	zn+h-wr
+	xn+w-wr	yn+ots	zn+h-wr
+	xn+w/2	yn+ots	zn+h-wr+hp;
+line	xn+w-wr	yn+ots	zn+h-wr
+	xn+w-wr	yn+ots	zn+wr;
+arc	xn+w-wr	yn+ots	zn+wr
+	xn+wr	yn+ots	zn+wr
+	xn+w/2	yn+ots	zn+wr-hp;
+exit;

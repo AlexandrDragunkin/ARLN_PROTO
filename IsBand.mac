@@ -1,0 +1,32 @@
+//-- Макрос проверяет, включена ли кромка.
+
+if (getyadedging(2)==0)
+{
+  NULLOUT=setyadedging(2,1);
+}
+if (getyadedging(1)==0)
+{
+  NULLOUT=setyadedging(1,1);
+  #ok_flag
+  alternative "Режим отображения кромок"
+  msgbox picture 3 beep 3 text "В заказе выключен режим отображения кромок."
+  "Отчеты и чертежи будут содержать неверные данные."
+  ""
+  "Включить отображение кромок?"
+  done
+  "  Да " " Нет " "Отмена"
+  done;
+  if (ok_flag==3)
+  {
+    cancel;
+  }
+  if (ok_flag==2)
+  {
+    exit;
+  }
+  if (ok_flag==1)
+  {
+    mbpanel band on;
+  }
+}
+exit;

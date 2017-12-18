@@ -1,0 +1,62 @@
+//-- Макропрограмма Запроса дополнительных параметров перед установкой распашной двери
+defarr arr[10];
+NULLOUT=initarray(arr,0);
+
+DrHandPlace=DbVar("Rpl_r",0);
+DefHPlace=str(getyadsubst(35))+"#"+str(DrHandPlace) ;                    // Формируем строку умолчаний.
+
+
+DNRight=DbVar("R_Fas",0);
+DNLeft=DbVar("L_Fas",0);
+DNUp=DbVar("U_Fas",0);
+DNDown=DbVar("D_Fas",0);
+Dou=DbVar("Double",0);
+Door_Zw=DbVar("Door_Zw",0);
+DrHandDouble=DbVar("Doub_r",0);
+DrHandX=DbVar("rx",0);
+DrHandZ=DbVar("rz",0);
+DrHandAngle=DbVar("ra",0);
+
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+
+
+#ok_flag
+setvar
+"Распашная дверь"
+PicturesPath+"Door_ras.wmf"
+left
+"Введите значения параметров"
+done
+real default DNUp "Нахлест сверху" DNUp
+real default DNDown "Нахлест снизу" DNDown
+real default DNLeft "Нахлест слева" DNLeft
+real default DNRight "Нахлест справа" DNRight
+logical default 0 "Двойная дверь" Dou
+real default Door_Zw "Зазор между двойными дверьми" Door_Zw
+
+string auto button 6 default DefHPlace     "Расположение ручки:" NHPlace
+logical default DrHandDouble "Две ручки" DrHandDouble
+real default DrHandX "Сдвиг ручки" DrHandX
+real default DrHandZ "Высота установки ручки" DrHandZ
+real default DrHandAngle "Угол установки ручки" DrHandAngle
+done;
+if (ok_flag!=0)
+{
+	splitbydelim(NHPlace,"#",Arr);
+	DrHandPlace=Arr[2];
+
+	dummy=DbSetVar("R_Fas",DNRight);
+  dummy=DbSetVar("L_Fas",DNLeft);
+  dummy=DbSetVar("U_Fas",DNUp);
+  dummy=DbSetVar("D_Fas",DNDown);
+  dummy=DbSetVar("Double",Dou);
+  dummy=DbSetVar("Rpl_r",DrHandPlace);
+	dummy=DbSetVar("Doub_r",DrHandDouble);
+  dummy=DbSetVar("rx",DrHandX);
+  dummy=DbSetVar("rz",DrHandZ);
+  dummy=DbSetVar("ra",DrHandAngle);
+  dummy=DbSetVar("Door_Zw",Door_Zw);
+}
+
+
+exit;

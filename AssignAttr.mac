@@ -1,0 +1,10 @@
+//-- Макропрограмма назначает атрибуты изделия объекту
+global ProtoPath;
+loo:
+objident prompt "Укажите объект" : obj;
+if (getobjtype(obj)!=7)
+{
+	#obj group obj done;
+}
+macro ProtoPath+"ChangeAttr.mac" obj ;
+exit;

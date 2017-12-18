@@ -1,0 +1,170 @@
+//-- Построение сотовой корзины
+global ProtoPath;
+global MacroSw ; // Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+MacroSw=1
+//=============================================================
+global xsek1, xsek2, ysek1, ysek2, zsek1, zsek2 ; // Габариты ниши
+global ysek2P, ysek2S ysek2PM, ysek2SM; // Глубина для полок и стоек минимум и максимум
+NULLOUT=GetVarInst(2,"PrMater",PrMater,0); // Умолчание для материалов каркаса
+NULLOUT=getvarinst(2,"Typ_Kro",Typ_Kro,0); //-- Тип лицевой кромки // Тип кромки
+NULLOUT=getvarinst(2,"DfFixPol",DfFixPol,0);
+NULLOUT=getvarinst(2,"DfFixSt",DfFixSt,0);
+
+defarr  xm[6] arr[3];
+global  ZZAOtst, ZZAZagl ;
+
+global  Kor_Typ;
+
+if (!isvardef("ZZAOtst"))  { ZZAOtst=300 }
+if (!isvardef("ZZAZagl"))  { ZZAZagl=2 }
+if (!isvardef("Kor_Typ")) {
+  NULLOUT=getvarinst(2,"g_Korz",Kor_Typ,0);      //-- Умолчание для корзин
+}
+DefAcce=str(getyadsubst(48))+"#"+str(Kor_Typ) ;                    // Формируем строку умолчаний.
+//-- 48 - зашитая в коде подстановка для корзин
+
+macro ProtoPath+"setmat.mac" PrMater;
+
+macro ProtoPath+"NishaP.mac" ;
+
+h_dsp=PriceInfo(PrMater,"Thickness",16) ;
+XNewNish=h_dsp*1.5
+ZDown=50  // Зазор под корзиной
+ZUp=30     // Зазор над корзиной
+ZK=zsek1
+
+NextSt:
+
+#ok_flag
+setvar
+"Сотовая корзина"
+""
+"Введите необходимые параметры" done
+real default  ZZAZagl   "Заглубление"  ZZAZagl
+str 	listonly
+        current "Строить справа налево"
+	        "Строить слева направо"
+	done
+	            "Способ построения" Method
+string auto button 6 default DefAcce //"67#578"
+     "Корзина:" NAcce
+real default 1 "Количество корзин" NKorz
+logical default 0 "Поставить полку над корзиной"         Polk
+
+done ;
+
+if (ok_flag==0) { exit }
+
+ysek2=ysek2p;
+
+splitbydelim(NAcce,"#",Arr);
+Kor_Typ=Arr[2];
+
+macro ProtoPath+"SetEnam.mac" "Корзина сотовая" ;
+macromode undo off;
+
+//---------------------------------------
+protoobj create "Shkaf.ptl" 151
+"complect"  Kor_Typ
+done
+xsek1 ysek2-ZZAZagl ZK
+//---------------------------------------
+
+//Macro ProtoPath+"MakeKorz.mac"  Kor_Typ 1 xsek1 ysek2-ZZAZagl ZK 0 0 0;
+  Objident last 1 pnt ;
+      rr=objgab3(pnt,xm)  // В ПСК
+  XKor=xm[4]-xm[1];
+  ZKor=xm[6]-xm[3];
+
+macro ProtoPath+"SetFilet.mac" 0 0 0 0 0 0 0 0 0 0 0 0 ;
+
+if (Method=="Строить справа налево") {
+  move pnt done -xm[1]+xsek1 -(xm[5]-xm[2]) ZDown nocopy ;
+}
+else {
+  move pnt done -xm[4]+xsek2 -(xm[5]-xm[2]) ZDown nocopy ;
+}
+if (NKorz>1)
+{
+  move pnt done 0,0, xm[6]-xm[3]+ZUp copy NKorz-1;
+}
+if (Xkor>Xsek2-Xsek1+1) {
+    delete pnt;
+    //-- ShowSmartError
+    alternative "Сообщение об ошибке!" msgbox text "Данная корзина в нишу не убирается!!!" done
+       "Повторить" done
+    macromode undo on;
+    goto  NextSt;
+}
+macromode undo on "ZapKorz.mac" pnt ;
+
+if (Xkor<Xsek2-Xsek1-XNewNish) {
+    macro ProtoPath+"setmat.mac" PrMater;
+    macro ProtoPath+"SetFix.mac"  DfFixSt DfFixSt 0 0 ;
+    macro ProtoPath+"SetKrom.mac" 0 0 0 0 Typ_Kro ;
+    macro ProtoPath+"SetEnam.mac" "Стойка" ;
+	macro ProtoPath+"SetECod.mac" "1105" ;
+	// macro ProtoPath+"SetKCod.mac"	"DBKXX"	zsek2-zsek1	ysek2-ysek1-ZZAZagl;
+  if (Method=="Строить справа налево") {
+    Macro ProtoPath+"MakePan.mac" xsek1+Xkor ysek1 zsek1
+                    zsek2-zsek1 ysek2-ysek1-ZZAZagl 11 ;//стойкa
+     xsek2=xsek1+Xkor;
+  }
+  else {
+    Macro ProtoPath+"MakePan.mac" xsek2-Xkor-h_dsp ysek1 zsek1
+                    zsek2-zsek1 ysek2-ysek1-ZZAZagl 11 ;//стойка
+  }
+}
+ else {
+    if ((Xkor-(Xsek2-Xsek1))>2) {
+//-- ShowSmartError
+    alternative "Предупреждение!" msgbox text "Невозможно поставить стойку для корзины!!!" done
+       "Продолжить" done
+    }
+    Xkor=Xsek2-Xsek1;
+}
+    ZKor1=ZKor+ZUp+ZDown+h_dsp*Polk;
+    if (ZKor1>(zsek2-ZK)+2) {
+    delete pnt;
+    //-- ShowSmartError
+    alternative "Предупреждение!" msgbox text "Заполнение закончено!" done
+       "Ок!" done
+     exit
+       }
+
+if (Polk==1) {
+    macro ProtoPath+"setmat.mac" PrMater;
+    macro ProtoPath+"SetFix.mac"  DfFixPol DfFixPol 0 0 ;
+    macro ProtoPath+"SetKrom.mac" 0 0 0 0 Typ_Kro ;
+    macro ProtoPath+"SetEnam.mac" "Полка" ;
+	macro ProtoPath+"SetECod.mac" "1107" ;
+	// macro ProtoPath+"SetKCod.mac"	"DPPXX"	zsek2-zsek1	ysek2-ysek1-ZZAZagl;
+  if (Method=="Строить справа налево")
+  {
+    Macro ProtoPath+"MakePan.mac" xsek1 ysek1 ZK+ZDown+xm[6]-xm[3]+Zup
+                    Xkor ysek2-ysek1-ZZAZagl 12 ;//полка
+  }
+  else
+  {
+    Macro ProtoPath+"MakePan.mac" xsek2-Xkor ysek1 zsek1+ZDown+xm[6]-xm[3]+Zup
+                    Xkor ysek2-ysek1-ZZAZagl 12 ;//полка
+  }
+  if (NKorz>1)
+  {
+    move last 1 done 0,0, (xm[6]-xm[3]+ZUp)*(NKorz-1) nocopy;
+  }
+
+}
+
+//#ok_flag
+//alternative
+//"Сотовые корзины"
+//msgbox picture 2 beep 2
+//text
+//"Установить еще корзину?"
+//done
+//"Да" "Нет"  done
+//if ok_flag==2 { exit }
+//ZK=ZK+ZKor+ZUp+(h_dsp+ZDown)*Polk;
+//goto  NextSt;
+exit;

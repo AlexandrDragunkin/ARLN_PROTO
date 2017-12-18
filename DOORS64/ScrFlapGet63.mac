@@ -1,0 +1,755 @@
+//-- Макропрограмма извлекает из scratch атрибута точки средних профилей для систем дверей 63
+//-- в глобальные массивы gs_XmidS (размер 10) gs_ZmidS (размер 10) gs_XmidE (размер 10) gs_ZmidE (размер 10)
+//-- Материалы вставок gs_FlMater (размер 20) направление шпона gs_FlNshp (размер 20)
+
+//-- Если в атрибуте будет 0, то будет установлено умолчание
+
+// putmsg("ScrFlapGet63.mac")
+//-- Входные параметры:
+
+//-- IsNull - если ноль - обнуляем число профилей. Это необходимо при перестроении
+global ProtoPath;
+global g_NTrack;
+global
+       gs_IdMid  g_CLMid g_DRMid g_CLMid  // -- Id Разделительных профилей
+       gs_MidHV             // -- Массив с парметрами эквидистанты для расчета вставок в районе средних профилей
+       gs_XmidS  gs_ZmidS   // -- координаты начальных точек разделительных профилей в створке
+       gs_XmidE  gs_ZmidE   // -- координаты конечных  точек разделительных профилей в створке
+       gs_AngS   gs_AngE    // -- Углы подрезки профиля вначале и в конце разделительного профиля
+       gs_FlMater           // -- материалы вставок
+	   gs_FlOtdel
+	   gs_FlOtdelN
+	   gs_FlOtdelA			// -- материалы отделок A
+	   gs_FlOtdelAN			// -- количество отделок A
+	   gs_FlOtdGrA			// -- группы отделок A
+	   gs_FlOtdelF			// -- материалы отделок F
+	   gs_FlOtdelFN			// -- количество отделок F
+	   gs_FlOtdGrF			// -- группы отделок F
+       gs_FlNshp            // -- направление текстуры шпона вставок
+       gs_IdFl              // -- Cчетчик обработанных в объекте вставок
+       gs_Iotd              // -- Cчетчик обработанных в объекте отделок
+       gs_IdMpr             // -- Cчетчик обработанных в объекте средних профилей
+       gs_KFL               // -- Количество вставок из скретча
+       gs_KMpr              // -- Количество средних профилей из скретча
+       ;
+global
+	   gs_FlMater2			// -- материал 2-й вставки
+	   gs_FlOtdel2A			// -- материалы отделок A 2-й вставки
+	   gs_FlOtd2AN			// -- количество отделок A 2-й вставки
+	   gs_FlOtdGr2A			// -- группы отделок A 2-й вставки
+	   gs_FlOtdel2F			// -- материалы отделок A 2-й вставки тыл
+	   gs_FlOtd2FN			// -- количество отделок A 2-й вставки тыл
+	   gs_FlOtdGr2F			// -- группы отделок A 2-й вставки тыл
+	   ;
+global
+       gs_ProfX1               //-- массив с координатами X начала толстых профилей
+       gs_ProfZ1               //-- массив с координатами Z начала толстых профилей
+       gs_ProfX2               //-- массив с координатами X конца толстых профилей
+       gs_ProfZ2               //-- массив с координатами Z конца толстых профилей
+       gs_ProfHM               //-- Массив с парметрами эквидистанты для расчета средних профилей
+       gs_ProfHV               //-- Массив с парметрами эквидистанты для расчета вставок
+       gs_NProf                //-- число толстых профилей, участвующих в построении максимально их может быть 8. 4-е стороны+4-е вставки
+       ;
+global
+       gs_TlinX1               //-- массив с координатами X начала теоретических линий(осей)
+       gs_TlinZ1               //-- массив с координатами Z начала теоретических линий(осей)
+       gs_TlinX2               //-- массив с координатами X конца теоретических линий(осей)
+       gs_TlinZ2               //-- массив с координатами Z конца теоретических линий(осей)
+       gs_TlinHM               //-- Массив с парметрами эквидистанты для расчета средних профилей
+       gs_TlinHV               //-- Массив с парметрами эквидистанты для расчета вставок
+       gs_NTLin                //-- число теоретических линий(осей)
+       ;
+global
+      gs_matVst
+      ;
+
+maxprof=8;
+maxlin=20;
+maxvst=50;
+defarr gs_ProfX1[maxprof]
+       gs_ProfZ1[maxprof]
+       gs_ProfX2[maxprof]
+       gs_ProfZ2[maxprof]
+       gs_ProfHM[maxprof]
+       gs_ProfHV[maxprof]
+       gs_TlinX1[maxlin]
+       gs_TlinZ1[maxlin]
+       gs_TlinX2[maxlin]
+       gs_TlinZ2[maxlin]
+       gs_TlinHM[maxlin]
+       gs_TlinHV[maxlin]
+       gs_IdMid[30]
+       gs_XmidS[30]
+       gs_ZmidS[30]
+       gs_XmidE[30]
+       gs_ZmidE[30]
+       gs_AngS[30]
+       gs_AngE[30]
+       gs_FlMater[100]
+	   gs_FlOtdel[100]
+	   gs_FlOtdelN[100]
+       gs_FlOtdelA[100]
+       gs_FlOtdelAN[100]
+	   gs_FlOtdGrA[100]
+       gs_FlOtdelF[100]
+       gs_FlOtdelFN[100]
+	   gs_FlOtdGrF[100]
+       gs_FlNshp[100]
+	   gs_FlMater2[100]
+	   gs_FlOtdel2A[100]
+	   gs_FlOtd2AN[100]
+	   gs_FlOtdGr2A[100]
+	   gs_FlOtdel2F[100]
+	   gs_FlOtd2FN[100]
+	   gs_FlOtdGr2F[100]
+       ;
+defarr NamesGr[200] namesub[200];
+getpar IsNull;            //-- Если ноль, обнуляем число профилей
+
+gs_IdFl=0;
+gs_Iotd=0;
+gs_kfl=0;
+err=0;
+
+Namescr="ScrFlat";
+nullout=getvarinst(1,"iDoorSys",iDoorSys,0);
+// putmsg(iDoorSys)
+if iDoorSys>0
+{
+	Namescr="ScrFlat"+str(iDoorSys);
+	// attrcopy(Namescr,"ScrFlat"+str(iDoorSys))
+}
+
+ScrMod=0;
+err=isassign(Namescr,0);
+// putmsg("ScrFlapGet Ищем запись scrmod err="+str(err),0)
+if err
+{
+  ScrMod=readscratch(Namescr,0);   //-- Читаем из записи
+  // putmsg("ScrFlapGet "+str(Namescr)+" определен",0);
+}
+else
+{
+  // ScrMod=filetoscrtch(ProtoPath+Namescr+".scr");
+  // putmsg("ScrFlapGet "+str(Namescr)+" не определен",0);
+}
+ //NULLOUT=InitArray(gs_FlMater,0);
+if (ScrMod==0)
+{
+// putmsg("scrmod=0",1);
+ NULLOUT=InitArray(gs_IDmid,0);
+ NULLOUT=InitArray(gs_XmidS,0);
+ NULLOUT=InitArray(gs_ZmidS,0);
+ NULLOUT=InitArray(gs_XmidE,0);
+ NULLOUT=InitArray(gs_ZmidE,0);
+ NULLOUT=InitArray(gs_AngS,0);
+ NULLOUT=InitArray(gs_AngE,0);
+ NULLOUT=InitArray(gs_FlMater,0);
+ NULLOUT=InitArray(gs_FlOtdelA,0);
+ NULLOUT=InitArray(gs_FlOtdGrA,0);
+ NULLOUT=InitArray(gs_FlOtdelF,0);
+ NULLOUT=InitArray(gs_FlOtdGrF,0);
+ NULLOUT=InitArray(gs_FlNshp,0);
+ NULLOUT=InitArray(gs_ProfX1,0);
+ NULLOUT=InitArray(gs_ProfZ1,0);
+ NULLOUT=InitArray(gs_ProfX2,0);
+ NULLOUT=InitArray(gs_ProfZ2,0);
+ NULLOUT=InitArray(gs_ProfHM,0);
+ NULLOUT=InitArray(gs_ProfHV,0);
+ NULLOUT=InitArray(gs_TlinX1,0);
+ NULLOUT=InitArray(gs_TlinZ1,0);
+ NULLOUT=InitArray(gs_TlinX2,0);
+ NULLOUT=InitArray(gs_TlinZ2,0);
+ NULLOUT=InitArray(gs_TlinHM,0);
+ NULLOUT=InitArray(gs_TlinHV,0);
+
+ // Это в том случае если предыдущие попытки не увенчались успехом и скрейча нет
+  ScrMod=InitScratch();
+  err=AddScratch(ScrMod,"Профиль","Колво",0); 	//-- Количество профилей по умолчанию
+  err=AddScratch(ScrMod,"Трек","Ручей",iif(isvardef("g_NTrack")!=0,g_NTrack,0)); 	//-- номер ручья трека
+  err=AddScratch(ScrMod,"ID профиля ","IDmidG",iif(isvardef("g_CLMid")!=0,g_CLMid,268));
+  i=1;
+  LoopS:
+  if (i<=4)
+  {
+    err=AddScratch(ScrMod,"ID профиля ","IDmid"+str(i),0); // ID конкретных разделительных профилей в створке
+    err=AddScratch(ScrMod,"X начала","Xn"+str(i),0); // начальных точек разделительных профилей в створке
+    err=AddScratch(ScrMod,"Z начала","Zn"+str(i),0);
+    err=AddScratch(ScrMod,"X конца","Xk"+str(i),0);
+    err=AddScratch(ScrMod,"Z конца","Zk"+str(i),0);
+    err=AddScratch(ScrMod,"Угол начала","An"+str(i),0);
+    err=AddScratch(ScrMod,"Угол конца","Ak"+str(i),0);
+    i=i+1;
+    goto LoopS;
+  }
+  err=AddScratch(ScrMod,"Вставка","Колво",0); 	//-- Количество вставок по умолчанию
+     // Может быть несколько слоев вставок и при этом для каждого слоя будут свои  параметры для построения графов
+  i=0;
+  iot=0
+  LoopS1:
+  if (i<1)
+  { 
+	i=i+1;
+    err=AddScratch(ScrMod,"ВставкаМ","Материал"+str(i),0); //Материал вставки на слое
+    err=AddScratch(ScrMod,"Текстура","Направ"+str(i),0); //Текстура вставки на слое
+	
+	err=AddScratch(ScrMod,"ОтделкаВс","КлвОтдЛ"+str(i),0); // Отделка вставки на слое
+	err=AddScratch(ScrMod,"ОтделкаВс","КлвОтдТ"+str(i),0); // Отделка вставки на слое
+
+	gs_FlOtdelA[i]=0;
+	gs_FlOtdGrA[i]=0;
+	gs_FlOtdelF[i]=0;
+	gs_FlOtdGrF[i]=0;
+	
+    err=AddScratch(ScrMod,"Вставка2М","Материал"+str(i),0); //Материал вставки на слое
+    // err=AddScratch(ScrMod,"Текстура","Направ"+str(i),0); //Текстура вставки на слое
+	
+	err=AddScratch(ScrMod,"Отделка2Вс","КлвОтдЛ"+str(i),0); // Отделка вставки на слое
+	err=AddScratch(ScrMod,"Отделка2Вс","КлвОтдТ"+str(i),0); // Отделка вставки на слое
+
+	gs_FlOtdel2A[i]=0;
+	gs_FlOtdGr2A[i]=0;
+	// gs_FlOtdel2F[i]=0;
+	// gs_FlOtdGr2F[i]=0;
+
+	goto LoopS1;
+  }
+	  
+  err=AddScratch(ScrMod,"Т-Пофиль","Колво",0); 	//-- Количество толстых профилей по умолчанию
+  i=1;
+  LoopS2:
+  if (i<=maxprof)
+  {
+    err=AddScratch(ScrMod,"Xt начала","Xtn"+str(i),0); // начальных точек толстых профилей в створке
+    err=AddScratch(ScrMod,"Zt начала","Ztn"+str(i),0); // начальных точек толстых профилей в створке
+    err=AddScratch(ScrMod,"Xt конца","Xtk"+str(i),0);  // конечных точек толстых профилей в створке
+    err=AddScratch(ScrMod,"Zt конца","Ztk"+str(i),0);  // конечных точек толстых профилей в створке
+    err=AddScratch(ScrMod,"Экв проф","Hm"+str(i),0);  // парметрами эквидистанты для расчета профиля
+    err=AddScratch(ScrMod,"Экв вст","Hv"+str(i),0);  // парметрами эквидистанты для расчета вставок
+
+    i=i+1;
+    goto LoopS2;
+  }
+  err=AddScratch(ScrMod,"ТеорЛинии","Колво",0); 	//-- Количество теоретических линий(осей) делительных профилей по умолчанию
+  i=1;
+  LoopS3:
+  if (i<=maxlin)
+  {
+    err=AddScratch(ScrMod,"Xl начала","Xln"+str(i),0); // начальных точек теоретических линий(осей) в створке
+    err=AddScratch(ScrMod,"Zl начала","Zln"+str(i),0); // начальных точек теоретических линий(осей) в створке
+    err=AddScratch(ScrMod,"Xl конца","Xlk"+str(i),0);  // конечных точек теоретических линий(осей) в створке
+    err=AddScratch(ScrMod,"Zl конца","Zlk"+str(i),0);  // конечных точек теоретических линий(осей) в створке
+    err=AddScratch(ScrMod,"Экв проф","Hlm"+str(i),0);   // Иначе  пустая строка
+    err=AddScratch(ScrMod,"Экв вст","Hlv"+str(i),0);
+
+    i=i+1;
+    goto LoopS3;
+  }
+}
+//putmsg("g_CLMid="+str(g_CLMid),0);
+
+// Считываем парметры из скрейча
+SubstName="";
+Kpar1=CntVarScr(ScrMod,"X начала");         //возвращает  количество  параметров  в  группе  набора
+Kpar2=CntVarScr(ScrMod,"ВставкаМ");         //или подстановке с номером ScrMod  и именем X начала
+Kpar3=CntVarScr(ScrMod,"Xt начала");
+Kpar4=CntVarScr(ScrMod,"Xl начала");
+NameParG="ID профиля ";
+NameParS="IDmidG";
+gosub revScr;
+err=iif(ValParS!=0,GetScratch(ScrMod,"ID профиля ","IDmidG",g_CLMid,SubstName),0);
+	// Может быть несколько слоев вставок и при этом для каждого слоя будут свои
+	// параметры для построения графов
+if (IsNull==0)
+{
+  gs_KFL=0
+  gs_KMpr=0
+  gs_NProf=0
+  gs_NTLin=0
+  // putmsg("get63_gs_NTLin_обнуление")
+  g_NslVst=1
+  //g_CLMid=268
+}
+else
+{
+  err=GetScratch(ScrMod,"Профиль","Колво",gs_KMpr,SubstName);
+  err=GetScratch(ScrMod,"Вставка","Колво",gs_KFL,SubstName);
+  err=GetScratch(ScrMod,"Т-Пофиль","Колво",gs_NProf,SubstName);
+  err=GetScratch(ScrMod,"ТеорЛинии","Колво",gs_NTLin,SubstName);
+  // putmsg("get63_gs_NTLin_чтение")
+  // putmsg(gs_NTLin)
+  NameParG="Трек";
+  NameParS="Ручей";
+  gosub revScr;
+  //-- Количество профилей по умолчанию
+  err=iif(ValParS!=0,GetScratch(ScrMod,"Трек","Ручей",g_NTrack,SubstName),0);
+
+  //err=GetScratch(ScrMod,"Слои","Колво",g_NslVst,SubstName); 	//-- Количество слоев
+
+}
+
+//putmsg("gs_Kmpr="+str(gs_Kmpr),1);
+//putmsg("IsNull="+str(IsNull),1);
+if (Kpar1<1)
+{
+
+  ValPar7=0;
+  err7=GetScratch(ScrMod,"ID профиля ","IDmidG",ValPar7,SubstName);
+  if (err7==0) { gs_IdMid[1]=0; }
+  gs_IdMid[1]=ValPar7;
+  g_CLMid=iif(gs_IdMid[1]!=0,gs_IdMid[1],268);
+
+  goto ENDM;
+}
+// профили
+
+i=0;
+Loop1:
+i=i+1;
+if (i<=Kpar1)
+{
+  ValPar1=0;  ValPar2=0; ValPar3=0;  ValPar4=0;
+  ValPar5=0;  ValPar6=0; ValPar7=0;  ValPar8=0;
+  err1=GetScratch(ScrMod,"X начала","Xn"+str(i),ValPar1,SubstName);  // получить  значение  параметра  из  набора  с  индексом ScrMod
+  err2=GetScratch(ScrMod,"Z начала","Zn"+str(i),ValPar2,SubstName);  // и именем  "X начала" "Xn"+str(i) содержит строку с именем параметра
+  err3=GetScratch(ScrMod,"X конца","Xk"+str(i),ValPar3,SubstName);   // ValPar1   получает значение извлеченного параметра
+  err4=GetScratch(ScrMod,"Z конца","Zk"+str(i),ValPar4,SubstName);   // Если набор является  подстановкой,  то  в SubstName заносится  имя  подстановки.
+  err5=GetScratch(ScrMod,"Угол начала","An"+str(i),ValPar5,SubstName);   // Иначе  пустая строка
+  err6=GetScratch(ScrMod,"Угол конца","Ak"+str(i),ValPar6,SubstName);
+  NameParG="ID профиля ";
+  NameParS="IDmid"+str(i);
+  gosub revScr;
+  err7=iif(ValParS!=0,GetScratch(ScrMod,"ID профиля ","IDmid"+str(i),ValPar7,SubstName),0);
+
+  if (err1==0)
+  {
+    gs_XmidS[i]=0
+  }
+  gs_XmidS[i]=ValPar1;
+
+  if (err2==0)
+  {
+    gs_ZmidS[i]=0
+  }
+  gs_ZmidS[i]=ValPar2;
+
+  if (err3==0)
+  {
+    gs_XmidS[i]=0
+  }
+  gs_XmidE[i]=ValPar3;
+
+  if (err4==0)
+  {
+    gs_ZmidE[i]=0
+  }
+  gs_ZmidE[i]=ValPar4;
+
+  if (err5==0)
+  {
+    gs_AngS[i]=0
+  }
+  gs_AngS[i]=ValPar5;
+
+  if (err6==0)
+  {
+    gs_AngE[i]=0
+  }
+  gs_AngE[i]=ValPar6;
+
+  if (err7==0)
+  {
+    gs_IdMid[i]=0
+  }
+  gs_IdMid[i]=ValPar7;
+
+  g_CLMid=iif(isvardef("g_CLMid")!=0,g_CLMid,268);
+  goto Loop1;
+}
+ENDM:
+// Вставки
+// putmsg(Kpar2)
+if (Kpar2<1)
+{
+  goto ENDM2;
+}
+i=0;
+// iotd=0;
+Loop2:
+i=i+1;
+if (i<=Kpar2)
+{
+  ValPar1=0;  ValPar2=90;
+  err1=GetScratch(ScrMod,"ВставкаМ","Материал"+str(i),ValPar1,SubstName);
+  err2=GetScratch(ScrMod,"Текстура","Направ"+str(i),ValPar2,SubstName);
+  if (err1==0)
+  {
+    gs_FlMater[i]=0
+  }
+  gs_FlMater[i]=ValPar1;
+
+  if (err2==0)
+  {
+    gs_FlNshp[i]=0;
+  }
+  gs_FlNshp[i]=ValPar2;
+  // Putmsg("sfg_gs_FlNshp[i]="+str(gs_FlNshp[i]),0);
+  NameParG="ОтделкаВс";
+  NameParS="КлвОтдЛ"+str(i);
+  gosub revScr;
+  err=iif(ValParS!=0,GetScratch(ScrMod,"ОтделкаВс","КлвОтдЛ"+str(i),gs_FlOtdelAN[i],SubstName),0); //
+  Notd=gs_FlOtdelAN[i];
+  gs_FlOtdelA[i]=0;
+  gs_FlOtdGrA[i]=0;
+  //Putmsg("Notd = "+str(Notd),0);
+  j=0
+  lOtd21:
+  if (j<Notd)
+  {
+        ValParo1=0; ValParo2=0;
+        j=j+1;
+
+        erro1=GetScratch(ScrMod,"ОтделкаМЛ","Отд_"+str(i)+"_"+str(j),ValParo1,SubstName);
+		erro1=GetScratch(ScrMod,"ОтделкаМЛ","Отд_гр_"+str(i)+"_"+str(j),ValParo2,SubstName);
+        if (erro1==0)
+        {
+           //gs_FlOtdel[iotd]=0
+        }
+        else
+        {
+			// iotd=iotd+1;
+			gs_FlOtdelA[i]=gs_FlOtdelA[i]+str(ValParo1)+";";
+			gs_FlOtdGrA[i]=gs_FlOtdGrA[i]+str(ValParo2)+";";
+        }
+        goto lOtd21;
+  }
+  
+	//------------------------------------------------------------------------------------------------
+  NameParG="ОтделкаВс";
+  NameParS="КлвОтдТ"+str(i);
+  gosub revScr;
+  err=iif(ValParS!=0,GetScratch(ScrMod,"ОтделкаВс","КлвОтдТ"+str(i),gs_FlOtdelFN[i],SubstName),0);
+  Notd=gs_FlOtdelFN[i];
+  gs_FlOtdel2F[i]=0;
+  gs_FlOtdGr2F[i]=0;
+  //Putmsg("Notd = "+str(Notd),0);
+  j=0
+  lOtd22:
+  if (j<Notd)
+  {
+        ValParo1=0; ValParo2=0;
+        j=j+1;
+
+        erro1=GetScratch(ScrMod,"ОтделкаМТ","Отд_"+str(i)+"_"+str(j),ValParo1,SubstName);
+		erro1=GetScratch(ScrMod,"ОтделкаМТ","Отд_гр_"+str(i)+"_"+str(j),ValParo2,SubstName);
+        // Putmsg("ОтделкаМТ Отд_"+str(i)+"_"+str(j),0);
+        // Putmsg("ValParo1 = "+str(ValParo1),0);
+		// Putmsg("ValParo2 = "+str(ValParo2),0);
+
+        if (erro1==0)
+        {
+           //gs_FlOtdel[iotd]=0
+        }
+        else
+        {
+			// iotd=iotd+1;
+			// gs_FlOtdelF[j]=ValParo1;
+			// gs_FlOtdGrF[j]=ValParo2;
+			gs_FlOtdelF[i]=gs_FlOtdelF[i]+str(ValParo1)+";";
+			gs_FlOtdGrF[i]=gs_FlOtdGrF[i]+str(ValParo2)+";";
+			// Putmsg("gs_FlOtdGrF["+str(iotd)+"]= "+str(gs_FlOtdGrF[iotd]),0);
+			// Putmsg("gs_FlOtdelF["+str(j)+"]= "+str(ValParo1),0);
+        }
+        goto lOtd22;
+  }
+  
+  //-- Двойная вставка
+  // iotd2=0;
+  ValPar1=0;
+  err1=GetScratch(ScrMod,"Вставка2М","Материал"+str(i),ValPar1,SubstName);
+  if (err1==0)
+  {
+    gs_FlMater2[i]=0
+  }
+  gs_FlMater2[i]=ValPar1;
+  
+  NameParG="Отделка2Вс";
+  NameParS="КлвОтдЛ"+str(i);
+  gosub revScr;
+  err=iif(ValParS!=0,GetScratch(ScrMod,"Отделка2Вс","КлвОтдЛ"+str(i),gs_FlOtd2AN[i],SubstName),0);
+  Notd2=gs_FlOtd2AN[i];
+  gs_FlOtdel2A[i]=0;
+  gs_FlOtdGr2A[i]=0;
+  j=0
+  dlOtd21:
+  if (j<Notd2)
+  {
+	ValParo1=0; ValParo2=0;
+	j=j+1;
+
+	erro1=GetScratch(ScrMod,"Отделка2МЛ","Отд_"+str(i)+"_"+str(j),ValParo1,SubstName);
+	erro1=GetScratch(ScrMod,"Отделка2МЛ","Отд_гр_"+str(i)+"_"+str(j),ValParo2,SubstName);
+	if erro1
+	{
+		gs_FlOtdel2A[i]=gs_FlOtdel2A[i]+str(ValParo1)+";";
+		gs_FlOtdGr2A[i]=gs_FlOtdGr2A[i]+str(ValParo2)+";";
+	}
+	goto dlOtd21;
+  }
+  
+  NameParG="Отделка2Вс";
+  NameParS="КлвОтдТ"+str(i);
+  gosub revScr;
+  err=iif(ValParS!=0,GetScratch(ScrMod,"Отделка2Вс","КлвОтдТ"+str(i),gs_FlOtd2FN[i],SubstName),0);
+  Notd2=gs_FlOtd2FN[i];
+  gs_FlOtdel2F[i]=0;
+  gs_FlOtdGr2F[i]=0;
+  j=0
+  dlOtd23:
+  if (j<Notd2)
+  {
+	ValParo1=0; ValParo2=0;
+	j=j+1;
+
+	erro1=GetScratch(ScrMod,"Отделка2МТ","Отд_"+str(i)+"_"+str(j),ValParo1,SubstName);
+	erro1=GetScratch(ScrMod,"Отделка2МТ","Отд_гр_"+str(i)+"_"+str(j),ValParo2,SubstName);
+	if erro1
+	{
+		gs_FlOtdel2F[i]=gs_FlOtdel2F[i]+str(ValParo1)+";";
+		gs_FlOtdGr2F[i]=gs_FlOtdGr2F[i]+str(ValParo2)+";";
+	}
+	goto dlOtd23;
+  }
+  
+  goto Loop2;
+}
+// else
+// {
+ // if i<91
+ // {
+  // NameParG="ОтделкаВс";
+  // NameParS="КлвОтдЛ"+str(i);
+  // gosub revScr;
+  // err=iif(ValParS!=0,GetScratch(ScrMod,"ОтделкаВс","КлвОтдЛ"+str(i),gs_FlOtdelN[i],SubstName),0); // кол-во отд и-й вставки
+  // //Putmsg("Notd = "+str(Notd),0);
+  // j=0
+  // lOtd3:
+  // if (j<Notd)
+  // {
+        // ValParo1=0; ValParo2=0;
+        // j=j+1;
+
+        // NameParG="ОтделкаМЛ";
+        // NameParS="Отд_"+str(i);
+        // gosub revScr;
+		
+        // NameParG="ОтделкаМЛ";
+        // NameParS="Отд_гр_"+str(i);
+        // gosub revScr;
+		
+        // err=iif(ValParS!=0,GetScratch(ScrMod,"ОтделкаМЛ","Отд_"+str(i)+"_"+str(j),ValParo1,SubstName),0);
+		// err=iif(ValParS!=0,GetScratch(ScrMod,"ОтделкаМЛ","Отд_гр_"+str(i)+"_"+str(j),ValParo2,SubstName),0);
+        // //Putmsg("erro1348 = "+str(erro1),0);
+        // if (erro1==0)
+        // {
+           // //gs_FlOtdel[iotd]=0
+        // }
+        // else
+        // {
+			// iotd=iotd+1;
+			// gs_FlOtdel[iotd]=ValParo1;
+			// gs_FlOtdGr[iotd]=ValParo2;
+        // }
+        // goto lOtd3;
+  // }
+  // NameParG="ОтделкаВс";
+  // NameParS="КлвОтдЛ"+str(i);
+  // gosub revScr;
+  // err=iif(ValParS!=0,GetScratch(ScrMod,"ОтделкаВс","КлвОтдЛ"+str(i),gs_FlOtdelN[i],SubstName),0); // кол-во отд и-й вставки
+  // //Putmsg("Notd = "+str(Notd),0);
+  // j=0
+  // lOtd4:
+  // if (j<Notd)
+  // {
+        // ValParo1=0; ValParo2=0;
+        // j=j+1;
+
+        // NameParG="ОтделкаМЛ";
+        // NameParS="Отд_"+str(i);
+        // gosub revScr;
+		
+        // NameParG="ОтделкаМЛ";
+        // NameParS="Отд_гр_"+str(i);
+        // gosub revScr;
+		
+        // err=iif(ValParS!=0,GetScratch(ScrMod,"ОтделкаМЛ","Отд_"+str(i)+"_"+str(j),ValParo1,SubstName),0);
+		// err=iif(ValParS!=0,GetScratch(ScrMod,"ОтделкаМЛ","Отд_гр_"+str(i)+"_"+str(j),ValParo2,SubstName),0);
+        // //Putmsg("erro1348 = "+str(erro1),0);
+        // if (erro1==0)
+        // {
+           // //gs_FlOtdel[iotd]=0
+        // }
+        // else
+        // {
+			// iotd=iotd+1;
+			// gs_FlOtdel[iotd]=ValParo1;
+			// gs_FlOtdGr[iotd]=ValParo2;
+        // }
+        // goto lOtd4;
+  // }
+  
+ // }
+// }
+ENDM2:
+//Толстые профили
+
+if (Kpar3<1)
+{
+  goto ENDM3;
+}
+i=0;
+Loop3:
+i=i+1;
+if (i<=Kpar3)
+{
+  ValPar1=0;  ValPar2=0; ValPar3=0;  ValPar4=0;
+  ValPar5=0;  ValPar6=0; ValPar7=0;  ValPar8=0;
+  err1=GetScratch(ScrMod,"Xt начала","Xtn"+str(i),ValPar1,SubstName);  // получить  значение  параметра  из  набора  с  индексом ScrMod
+  err2=GetScratch(ScrMod,"Zt начала","Ztn"+str(i),ValPar2,SubstName);  // и именем  "X начала" "Xn"+str(i) содержит строку с именем параметра
+  err3=GetScratch(ScrMod,"Xt конца","Xtk"+str(i),ValPar3,SubstName);   // ValPar1   получает значение извлеченного параметра
+  err4=GetScratch(ScrMod,"Zt конца","Ztk"+str(i),ValPar4,SubstName);   // Если набор является  подстановкой,  то  в SubstName заносится  имя  подстановки.
+  err5=GetScratch(ScrMod,"Экв проф","Hm"+str(i),ValPar5,SubstName);   // Иначе  пустая строка
+  err6=GetScratch(ScrMod,"Экв вст","Hv"+str(i),ValPar6,SubstName);
+  if (err1==0)
+  {
+    gs_ProfX1[i]=0
+  }
+  gs_ProfX1[i]=ValPar1;
+
+  if (err2==0)
+  {
+    gs_ProfZ1[i]=0
+  }
+  gs_ProfZ1[i]=ValPar2;
+
+  if (err3==0)
+  {
+    gs_ProfX2[i]=0
+  }
+  gs_ProfX2[i]=ValPar3;
+
+  if (err4==0)
+  {
+    gs_ProfZ2[i]=0
+  }
+  gs_ProfZ2[i]=ValPar4;
+
+  if (err5==0)
+  {
+    gs_ProfHM[i]=0
+  }
+  gs_ProfHM[i]=ValPar5;
+
+  if (err6==0)
+  {
+    gs_ProfHV[i]=0
+  }
+  gs_ProfHV[i]=ValPar6;
+
+ goto Loop3;
+}
+ENDM3:
+
+//теоретические линии(оси)
+if (Kpar4<1)
+{
+  goto ENDM4;
+}
+i=0;
+Loop4:
+i=i+1;
+if (i<=Kpar4)
+{
+  ValPar1=0;  ValPar2=0; ValPar3=0;  ValPar4=0;
+  ValPar5=0;  ValPar6=0; ValPar7=0;  ValPar8=0;
+  err1=GetScratch(ScrMod,"Xl начала","Xln"+str(i),ValPar1,SubstName);  // получить  значение  параметра  из  набора  с  индексом ScrMod
+  err2=GetScratch(ScrMod,"Zl начала","Zln"+str(i),ValPar2,SubstName);  // и именем  "X начала" "Xn"+str(i) содержит строку с именем параметра
+  err3=GetScratch(ScrMod,"Xl конца","Xlk"+str(i),ValPar3,SubstName);   // ValPar1   получает значение извлеченного параметра
+  err4=GetScratch(ScrMod,"Zl конца","Zlk"+str(i),ValPar4,SubstName);   // Если набор является  подстановкой,  то  в SubstName заносится  имя  подстановки.
+  err5=GetScratch(ScrMod,"Экв проф","Hlm"+str(i),ValPar5,SubstName);   // Иначе  пустая строка
+  err6=GetScratch(ScrMod,"Экв вст","Hlv"+str(i),ValPar6,SubstName);
+  if (err1==0)
+  {
+    gs_TLinX1[i]=0
+  }
+  gs_TLinX1[i]=ValPar1;
+
+  if (err2==0)
+  {
+    gs_TLinZ1[i]=0
+  }
+  gs_TLinZ1[i]=ValPar2;
+
+  if (err3==0)
+  {
+    gs_TLinX2[i]=0
+  }
+  gs_TLinX2[i]=ValPar3;
+
+  if (err4==0)
+  {
+    gs_TLinZ2[i]=0
+  }
+  gs_TLinZ2[i]=ValPar4;
+
+    if (err5==0)
+  {
+    gs_TLinHM[i]=0
+  }
+  gs_TLinHM[i]=ValPar5;
+
+  if (err6==0)
+  {
+    gs_TLinHV[i]=0
+  }
+  gs_TLinHV[i]=ValPar6;
+  //----------------------------------
+
+  //----------------------------------
+ goto Loop4;
+}
+ENDM4:
+if (!isattrdef(Namescr))
+{
+  Attribute Create Namescr "Параметры вставок 63" text 30 80 ;
+}
+writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+
+// nullout=getvarinst(1,"iDoorSys",iDoorSys,0);
+// if iDoorSys>0
+// {
+	// attrcopy("ScrFlat","ScrFlat"+str(iDoorSys)) // 1 значение во 2
+// }
+// attrinfo info record
+exit;
+//--------------------
+revScr:
+
+        ValParS=0;
+           Nsub=CntVarScr(ScrMod,NameParG);
+           if Nsub<1 { goto endrs; }
+           Nsub=NameVarScr(ScrMod,NameParG,Namesub);
+           isub=0;
+           labrev1:
+           if isub<Nsub
+           {
+              isub=isub+1;
+              ValParS=iif(NameParS==Namesub[isub],1,0);
+              //putmsg("ValParS="+str(ValParS),0);
+              if ValParS==1 { goto endrs; }
+              goto labrev1;
+           }
+
+        endrS:
+return;

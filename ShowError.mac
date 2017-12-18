@@ -1,0 +1,21 @@
+//-- Вывод окна сообщения об ошибке
+//-- Входные параметры:
+//-- errname - название ошибки
+//-- errcode - код ошибки
+//-- error - сообщение об ошибке
+
+getpar errname,errcode,error;
+#ok_flag
+     alternative "Ошибка"
+     msgbox picture 1 beep 1 text errname
+     " "
+     if (len(str(errcode))>0)
+     {
+       errcode
+       " "
+     }
+     error
+     done
+     "  OK  "
+     done;
+cancel;

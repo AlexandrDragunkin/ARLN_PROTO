@@ -1,0 +1,81 @@
+//ProfRevisia.mac
+//*********************************************
+//проверка сцены профильных длинномеров на предмет правильного положения
+//              Драгункин А.Р.
+//              ГеоС 2008-2014 гг.
+//*********************************************
+
+global
+Xpop
+Xlkn Ylkn Zlkn   // Лицевое конец  в гск
+Xlkg Ylkg Zlkg   // Лицевое начало в гск
+Xlkgl Ylkgl Zlkgl   // Лицевое начало обекта
+Ygab  //высота профиля
+L_SUPPORT
+ProtoPath
+;
+//----------------------------
+getpar Ltype n;
+//Ltype=4;
+defarr
+arr1[4]
+obj[100]   //Указатель на кусок
+;
+i_recrus=0
+macro L_support+"mselbyattrW.mac" "getattr(pt,\"LongsType\",0)=="+str(Ltype)  obj ByRef n ;
+defarr error[5];
+
+nohmal:
+keyzam=0
+onerror meterr;
+i=0
+met1:
+if i<n {
+	i=i+1
+	j=0
+	met2:
+	if (j<n) {
+		j=j+1
+		if (i==j) { 
+			goto met2 ;
+		}
+		ds=0
+		ds1=0
+		ds2=0
+		setucs save "=$$1=" ;
+		setucs lcs obj[i] ;
+		#ds dist  object obj[i] obj[j] done ;
+		#ln1 cylinder 0 0 0 0 0 100 1  ;
+		#ds1 dist  object ln1 obj[j] done ;
+
+		setucs lcs obj[j] ;
+		#ln2 cylinder 0 0 0 0 0 100 1  ;
+		#ds2 dist  object obj[i] ln2 done ;
+		if (ds1==ds2)&&(ds<20) {
+			macro L_support+"MirrorPrLn.mac" obj[j] ;
+			Objident last 1 obj[j] ;
+			Keyzam=1
+		}
+		setucs restore "=$$1=" ;
+		setucs delete "=$$1=" ;
+		delete ln1 ln2 done ;
+		goto met2;
+	}
+	goto met1 ;
+}
+meterr:
+offerror;
+if keyzam==1 {
+   //i_recrus=i_recrus+1;
+   
+	error[1]="Программа встретила расстановку длинномера, которую несмогла обработать." 
+	error[2]="Возможно, в сцене содержаться направленные на встречу друг другу или пересекающиеся профильные длинномеры."
+	
+	macro protopath+"showsmartinfo.mac" "Необрабатываемые расстановки длинномеров!" 2 error;
+	n=0
+   //if i_recrus<2 {
+	   //macro L_support+"mselbyattrW.mac" "getattr(pt,\"LongsType\",0)=="+str(Ltype)  obj ByRef n ;
+	   //goto nohmal ;
+   //}
+}
+exit ;

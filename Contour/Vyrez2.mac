@@ -1,0 +1,81 @@
+//-- Полилайн фаски со скруглением
+
+defarr Ps[9];
+defarr Ps1[9];
+
+x=dbvar("x",300);   //-- Размер по Х
+y=dbvar("y",200);   //-- Размер по Y
+r=dbvar("R",50);    //-- Радиусы скругления
+
+//-- Определение точек сопряжения дуг и фаски
+gosub ParamsLine;
+
+//-- Находим точки сопряжения дугой двух отрезков (фаски и X)
+a=Fillet(l1,l2,R,Ps);
+//-- Находим точки сопряжения дугой двух отрезков (фаски и Y)
+a=Fillet(l3,l1,R,Ps1);
+//-- Удалил эти отрезки
+delete l1,l2,l3 done;
+//-- Построение контура фаски со скруглением по углу
+//-- Построение новых отрезков со скруглением
+arc
+ps[4] ps[5] ps[6]
+ps[1] ps[2] ps[3]
+ps[7] ps[8] ps[9];
+
+line  ps[1] ps[2] ps[3]
+      ps1[4] ps1[5] ps1[6];
+
+arc
+ps1[4] ps1[5] ps1[6]
+ps1[1] ps1[2] ps1[3]
+ps1[7] ps1[8] ps1[9];
+
+gosub ParamsKontur;
+//-- Создаем контур
+#Pat1 Path select last 5 done last 1 create;
+Pline Path Pat1;    //-- Преобразование контура в полилайн
+delete Pat1 done;
+exit;
+//--------------------------------------
+ParamsLine:
+Zln1=0;
+Zlk1=0;
+Zln2=0;
+Zlk2=0;
+Zln3=0;
+Zlk3=0;
+
+//------фаска
+Xln1=x;
+Yln1=0;
+Xlk1=0;
+Ylk1=y;
+//------ X
+Xln2=x;
+Yln2=0;
+Xlk2=x+x;
+Ylk2=0;
+//-----Y
+Xln3=0;
+Yln3=y;
+Xlk3=0;
+Ylk3=y+y;
+gosub MakeLine;
+return;
+//---------------------------
+ParamsKontur:
+//-- Замыкаем двумя отрезками
+line ps1[1] ps1[2] ps1[3]
+     0 0 0
+     ps[4] ps[5] ps[6];
+return;
+//-----------------------------------------
+MakeLine:
+#l1 line Xln1 Yln1 Zln1
+         Xlk1 Ylk1 Zlk1;
+#l2 line Xln2 Yln2 Zln2
+         Xlk2 Ylk2 Zlk2;
+#l3 line Xln3 Yln3 Zln3
+         Xlk3 Ylk3 Zlk3;
+return;

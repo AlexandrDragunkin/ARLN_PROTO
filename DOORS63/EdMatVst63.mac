@@ -1,0 +1,570 @@
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+//-- Редактируем материал вставки
+global ProtoPath ;
+
+defarr Avst[20] AvalVst[20] aFlap[20];
+defarr Arr[2];
+
+N_Vstav=getmplsubst(25,"I_Vstav","S_Vstav");
+
+//========================================================================================================
+// Из умолчаний читаем соответствия
+nullout=getVarinst(2,"n_scrFas",n_scrFas,0);
+if n_scrFas>0
+{
+	defarr SrcFasGroup[n_scrFas];
+	nullout=getArrinst(2,"SrcFasGroup",SrcFasGroup);
+	defarr SrcFasName[n_scrFas];
+	nullout=getArrinst(2,"SrcFasName",SrcFasName);
+}
+
+defarr aDecor[n_scrFas], fDecor[n_scrFas];
+defarr aDecor2[n_scrFas];
+initarray(aDecor,0);
+initarray(fDecor,0);
+initarray(aDecor2,0);
+// +1 на подложку
+defarr DecGroupsA[n_scrFas+1], DecItemsA[n_scrFas+1], DecGroupsF[n_scrFas+1], DecItemsF[n_scrFas+1];
+defarr DecGroups2A[n_scrFas+1], DecItems2A[n_scrFas+1];
+defarr DecGroups2F[n_scrFas+1], DecItems2F[n_scrFas+1];
+
+labStart:
+Namescr="ScrFlat";
+Na=0;
+selbyattr "NumbVstav>"+str(0) partly :
+Nb=sysvar(61);
+i=0
+labNb:
+If i<Nb
+{
+	i=i+1
+	AVst[i]=getselnum(i);
+	AvalVst[i]=getAttr(AVst[i],"NumbVstav",-99);
+	err=GetObjHold(AVst[i],aFlap[i]);
+	// select stayblink partly aFlap[i] done :
+	if err==0
+	{
+		ErrCod="Это не вставка!  Счетчик обнулен. Укажите еще раз.";
+		gosub sErr ErrCod;
+		goto labStart;
+	}
+	if i>1
+	{
+		if CompareObj(aFlap[i],aFlap[1])
+		{
+		}
+		else
+		{
+			ErrCod="Выбираемые вставки должны принадлежать одной створке! Счетчик обнулен. Укажите еще раз.";
+			gosub sErr ErrCod;
+			goto labStart;
+		}
+	}
+	goto labNb;
+}
+auto=0
+if auto==0
+{
+	Beg:
+
+	if (isattrdef("ScrFlat"))    //-- Если определен ScrFlat
+	{
+		if (isassign("ScrFlat",aFlap[1])) //-- Если он есть в объекте - копируем в "запись"
+		{
+			// attrinfo info aFlap[1]
+			attrobj copy partly aFlap[1] "ScrFlat" done record done ;
+		}
+		else
+		{
+			goto Beg;
+		}
+	}
+	else
+	{
+		exit;
+	}
+}
+
+//smart edit list aFlap[1] ;
+//objident last 1 aFlap[1] ;
+//================================== Определяем и Редактируем
+// vst=Avst[1];
+ValAt=AvalVst[1];
+NameScr="ScrFlat"
+ScrMod=0;
+if (isassign(Namescr,aFlap[1]))
+{
+	ScrMod=readscratch(Namescr,aFlap[1]);
+}
+if (ScrMod==0) { exit }
+
+nullout=getvarinst(2,"Doors63",Doors63,"Doors63.zmc|");
+g_keyDS63=iif(isvardef("g_keyDS63")==0,0,g_keyDS63);
+if g_keyDS63!=1
+{
+   macro ProtoPath+Doors63+"CrtSysDoor63.mac" ;
+}
+
+IDGrMatVst=0;
+falseDecor=0;
+global g_Doorscon;
+IDGR=36;
+syst=getattr(aFlap[1],"NSysDoor",-1);
+strq="SELECT IDGrMatVst FROM DSNameSystem INNER JOIN DSSystemFlap ON DSNameSystem.ID=DSSystemFlap.Name WHERE DSSystemFlap.ID="+str(syst);
+Rs=adbOpen(g_Doorscon,strq);
+ij=adbRecCount(Rs);
+if (ij<1)
+{
+  Rs=adbClose(Rs);
+}
+else
+{
+	NULLOUT=adbMoveFirst(Rs);
+	IDGrMatVst=adbGetValue(Rs,"IDGrMatVst");
+	if IDGrMatVst>0
+	{
+		IDGR=IDGrMatVst;
+		falseDecor=1;
+	}
+	Rs=adbClose(Rs);
+}
+
+#res CalcVarScr  ScrMod  "ВставкаМ";
+Nulout=res
+NamV="Материал"+str(ValAt)
+NamT="Направ"+str(ValAt)
+Notd=0;
+err=GetScratch(ScrMod,"ВставкаМ",NamV,CurIDM,Suname);
+err=GetScratch(ScrMod,"Текстура",NamT,CurNSHP,Suname);
+err=GetScratch(ScrMod,"ОтделкаВс","КлвОтдЛ"+str(ValAt),Notd,SubstName);
+j=0;
+iotdA=0;
+lOtd2:
+if (j<Notd)
+{
+	ValParo1=0; ValParo2=0;
+	j=j+1;
+
+	erro1=GetScratch(ScrMod,"ОтделкаМЛ","Отд_"+str(ValAt)+"_"+str(j),ValParo1,SubstName);
+	erro1=GetScratch(ScrMod,"ОтделкаМЛ","Отд_гр_"+str(ValAt)+"_"+str(j),ValParo2,SubstName);
+
+	if (erro1==0)
+	{
+	}
+	else
+	{
+		iotdA=iotdA+1;
+		DecItemsA[iotdA]=ValParo1;
+		DecGroupsA[iotdA]=ValParo2;
+	}
+	goto lOtd2;
+}
+
+
+err=GetScratch(ScrMod,"ОтделкаВс","КлвОтдТ"+str(ValAt),Notd,SubstName);
+j=0;
+iotdF=0;
+lOtd3:
+if (j<Notd)
+{
+	ValParo1=0; ValParo2=0;
+	j=j+1;
+	erro1=GetScratch(ScrMod,"ОтделкаМТ","Отд_"+str(ValAt)+"_"+str(j),ValParo1,SubstName);
+	erro1=GetScratch(ScrMod,"ОтделкаМТ","Отд_гр_"+str(ValAt)+"_"+str(j),ValParo2,SubstName);
+
+	if (erro1==0)
+	{
+	}
+	else
+	{
+		iotdF=iotdF+1;
+		DecItemsF[iotdF]=ValParo1;
+		DecGroupsF[iotdF]=ValParo2;
+	}
+	goto lOtd3;
+}
+
+T_MembrF="";
+
+#ok_flag
+ setvar
+ "Редактирование параметров заполнения"
+ ""
+ left
+ "Измените параметры и нажмите ОК"
+ done
+
+string button 6 auto default str(IDGR)+"#"+str(CurIDM) 
+"Материал вставки:" NameVst
+
+real auto listonly
+current iif(CurNSHP==90,90,0)
+		iif(CurNSHP==90,0,90)
+		done
+		"Угол поворота текстуры" AngTVst
+
+if !falseDecor
+{
+	let i=0
+	nexti3:
+	let i=i+1
+	if i<=n_scrFas
+	{
+		let varelem=0
+		let j=0
+		nextj11:
+		let j=j+1
+		if j<=iotdF
+		{
+			if DecGroupsF[j]==103
+			{
+				let varelem=DecItemsF[j]
+			}
+			goto nextj11
+		}
+		goto nexti3
+	}
+	
+	string button 6 size 30 default "103#"+str(varelem) 
+	"Материал пленки на подложку:" T_MembrF
+
+	button " " var
+
+	let i=0
+	nexti:
+	let i=i+1
+	if i<=n_scrFas
+	{
+		let j=0
+		let varelem=0
+		nextj:
+		let j=j+1
+		if j<=iotdA
+		{
+			if DecGroupsA[j]==SrcFasGroup[i]
+			{
+				let varelem=DecItemsA[j]
+			}
+			goto nextj
+		}
+		string button 6 size 30 default str(SrcFasGroup[i])+"#"+str(varelem) 
+		str(SrcFasName[i])+" лицо:" aDecor[i]
+		goto nexti
+	}
+
+	button " " var
+
+	let i=0
+	nexti2:
+	let i=i+1
+	if i<=n_scrFas
+	{
+		let j=0
+		let varelem=0
+		nextj3:
+		let j=j+1
+		if j<=iotdF
+		{
+			if DecGroupsF[j]==SrcFasGroup[i]
+			{
+				let varelem=DecItemsF[j]
+			}
+			goto nextj3
+		}
+		string button 6 size 30 default str(SrcFasGroup[i])+"#"+str(varelem) 
+		str(SrcFasName[i])+" тыл:" fDecor[i]
+		goto nexti2
+	}
+}
+done
+ 
+if ok_flag==0 { TermScratch(ScrMod); cancel }
+
+initarray(DecItemsA,0);
+initarray(DecGroupsA,0);
+
+n_otdA=0;
+
+i=0;
+inext:
+i=i+1;
+if i<=n_scrFas
+{
+	if InStr(1,str(aDecor[i]),"#",1)
+	{
+		nullout=splitbydelim(aDecor[i],"#",Arr);
+		if Arr[2]>0
+		{
+			n_otdA=n_otdA+1;
+			DecItemsA[n_otdA]=Arr[2];
+			DecGroupsA[n_otdA]=SrcFasGroup[i];
+		}
+	}
+	goto inext;
+}
+
+i=0;
+n_otdF=0;
+if InStr(1,str(T_MembrF),"#",1)
+{
+	nullout=splitbydelim(T_MembrF,"#",Arr);
+	if Arr[2]>0
+	{
+		n_otdF=n_otdF+1;
+		DecItemsF[n_otdF]=Arr[2];
+		DecGroupsF[n_otdF]=103;
+	}
+}
+inext2:
+i=i+1;
+if i<=n_scrFas
+{
+	if InStr(1,str(fDecor[i]),"#",1)
+	{
+		nullout=splitbydelim(fDecor[i],"#",Arr);
+		if Arr[2]>0
+		{
+			n_otdF=n_otdF+1;
+			DecItemsF[n_otdF]=Arr[2];
+			DecGroupsF[n_otdF]=SrcFasGroup[i];
+		}
+	}
+	goto inext2;
+}
+
+nullout=splitbydelim(NameVst,"#",Arr);
+MatVst=Arr[2];
+
+// i=0;
+// labNbS:
+// If i<Nb
+// {
+	// i=i+1
+	err=AddScratch(ScrMod,"ВставкаМ","Материал"+str(ValAt),MatVst);
+	err=AddScratch(ScrMod,"Текстура","Направ"+str(ValAt),AngTVst); // направление шпона i-й вставки в створке
+	err=AddScratch(ScrMod,"ОтделкаВс","КлвОтдЛ"+str(ValAt),n_otdA); // Отделка вставки на слое
+	j=0;
+	lOtd11:
+	if j<n_otdA
+	{
+		j=j+1;
+		err=AddScratch(ScrMod,"ОтделкаМЛ","Отд_"+str(ValAt)+"_"+str(j),DecItemsA[j]);
+		err=AddScratch(ScrMod,"ОтделкаМЛ","Отд_гр_"+str(ValAt)+"_"+str(j),DecGroupsA[j]);
+		goto lOtd11;
+	}
+	err=AddScratch(ScrMod,"ОтделкаВс","КлвОтдТ"+str(ValAt),n_otdF); // Отделка вставки на слое
+	j=0;
+	lOtd12:
+	if j<n_otdF
+	{
+		j=j+1;
+		err=AddScratch(ScrMod,"ОтделкаМТ","Отд_"+str(ValAt)+"_"+str(j),DecItemsF[j]);
+		err=AddScratch(ScrMod,"ОтделкаМТ","Отд_гр_"+str(ValAt)+"_"+str(j),DecGroupsF[j]);
+		goto lOtd12;
+	}
+	// goto LabNBS;
+// }
+
+#res CalcVarScr  ScrMod  "Вставка2М";
+Nulout=res
+NamV="Материал"+str(ValAt)
+// NamT="Направ"+str(ValAt)
+Notd=0;
+err=GetScratch(ScrMod,"Вставка2М",NamV,CurID2Vst,Suname);
+// err=GetScratch(ScrMod,"Текстура",NamT,CurNSHP,Suname);
+err=GetScratch(ScrMod,"Отделка2Вс","КлвОтдЛ"+str(ValAt),Notd,SubstName);
+j=0;
+iotd2A=0;
+
+lOtd4:
+if (j<Notd)
+{
+	ValParo1=0; ValParo2=0;
+	j=j+1;
+
+	erro1=GetScratch(ScrMod,"Отделка2МЛ","Отд_"+str(ValAt)+"_"+str(j),ValParo1,SubstName);
+	erro1=GetScratch(ScrMod,"Отделка2МЛ","Отд_гр_"+str(ValAt)+"_"+str(j),ValParo2,SubstName);
+	if erro1
+	{
+		iotd2A=iotd2A+1;
+		DecItems2A[iotd2A]=ValParo1;
+		DecGroups2A[iotd2A]=ValParo2;
+	}
+	goto lOtd4;
+}
+
+err=GetScratch(ScrMod,"Отделка2Вс","КлвОтдТ"+str(ValAt),Notd,SubstName);
+j=0;
+iotd2F=0;
+
+lOtd5:
+if (j<Notd)
+{
+	ValParo1=0; ValParo2=0;
+	j=j+1;
+
+	erro1=GetScratch(ScrMod,"Отделка2МТ","Отд_"+str(ValAt)+"_"+str(j),ValParo1,SubstName);
+	erro1=GetScratch(ScrMod,"Отделка2МТ","Отд_гр_"+str(ValAt)+"_"+str(j),ValParo2,SubstName);
+	if erro1
+	{
+		iotd2F=iotd2F+1;
+		DecItems2F[iotd2F]=ValParo1;
+		DecGroups2F[iotd2F]=ValParo2;
+	}
+	goto lOtd5;
+}
+
+decgrenamel=335; // Только покраска
+// Карточка для второй вставки из мдф
+ismdf=PriceInfo(MatVst,"IsDmdfVst",0,1)
+
+if ismdf&&ValAt==1&&IDGrMatVst>0
+{
+	#ok_flag
+	 setvar
+	 "Редактирование параметров заполнения"
+	 ""
+	 left
+	 "Вставка Валенсия"
+	 done
+
+	string button 6 auto default "353#"+str(CurID2Vst) 
+	"Материал МДФ над основной вставкой:" Name2Vst
+
+	button " " var
+	
+	let i=0
+	nexti5:
+	let i=i+1
+	if i<=n_scrFas
+	{
+		let j=0
+		let var2elem=0
+		nextj2:
+		let j=j+1
+		if j<=iotd2A
+		{
+			// if DecGroupsF[j]==SrcFasGroup[i]
+			if DecGroups2A[j]==SrcFasGroup[i]
+			{
+				let var2elem=DecItems2A[j]
+			}
+			goto nextj2
+		}
+		if SrcFasGroup[i]==decgrenamel
+		{
+			string button 6 size 30 default str(SrcFasGroup[i])+"#"+str(var2elem) 
+			str(SrcFasName[i])+" лицо+тыл:" aDecor2[i]
+		}
+		goto nexti5
+	}
+	
+	// string button 6 size 30 default str(decgrenamel)+"#"+str(var2elem) 
+	// "Покраска лицо:" Tmp2Decor
+
+	done
+
+	nullout=splitbydelim(Name2Vst,"#",Arr);
+	Mat2Vst=Arr[2];
+
+	initarray(DecItems2A,0);
+	initarray(DecGroups2A,0);
+	n_otd2A=0;
+	i=0;
+	inext5:
+	i=i+1;
+	if i<=n_scrFas
+	{
+		if InStr(1,str(aDecor2[i]),"#",1)
+		{
+			nullout=splitbydelim(aDecor2[i],"#",Arr);
+			if Arr[2]>0
+			{
+				n_otd2A=n_otd2A+1;
+				DecItems2A[n_otd2A]=Arr[2];
+				DecGroups2A[n_otd2A]=SrcFasGroup[i];
+			}
+		}
+		goto inext5;
+	}
+	err=AddScratch(ScrMod,"Вставка2М","Материал"+str(ValAt),Mat2Vst);
+	// err=AddScratch(ScrMod,"Текстура","Направ"+str(ValAt),AngTVst);
+	err=AddScratch(ScrMod,"Отделка2Вс","КлвОтдЛ"+str(ValAt),n_otd2A); // Отделка вставки на слое
+	j=0;
+	lOtd21:
+	if j<n_otd2A
+	{
+		j=j+1;
+		err=AddScratch(ScrMod,"Отделка2МЛ","Отд_"+str(ValAt)+"_"+str(j),DecItems2A[j]);
+		err=AddScratch(ScrMod,"Отделка2МЛ","Отд_гр_"+str(ValAt)+"_"+str(j),DecGroups2A[j]);
+		goto lOtd21;
+	}
+	
+	initarray(DecItems2F,0);
+	initarray(DecGroups2F,0);
+	n_otd2F=0;
+	i=0;
+	inext6:
+	i=i+1;
+	if i<=n_scrFas
+	{
+		if InStr(1,str(aDecor2[i]),"#",1)
+		{
+			nullout=splitbydelim(aDecor2[i],"#",Arr);
+			if Arr[2]>0
+			{
+				n_otd2F=n_otd2F+1;
+				DecItems2F[n_otd2F]=Arr[2];
+				DecGroups2F[n_otd2F]=SrcFasGroup[i];
+			}
+		}
+		goto inext6;
+	}
+
+	err=AddScratch(ScrMod,"Отделка2Вс","КлвОтдТ"+str(ValAt),n_otd2F); // Отделка вставки на слое
+	j=0;
+	lOtd22:
+	if j<n_otd2F
+	{
+		j=j+1;
+		err=AddScratch(ScrMod,"Отделка2МТ","Отд_"+str(ValAt)+"_"+str(j),DecItems2F[j]);
+		err=AddScratch(ScrMod,"Отделка2МТ","Отд_гр_"+str(ValAt)+"_"+str(j),DecGroups2F[j]);
+		goto lOtd22;
+	}
+}	
+//------------------------------------------------------------------------------
+res=writescratch(ScrMod,Namescr,aFlap[1]);
+// attrinfo info partly aFlap[1]
+// res=writescratch(ScrMod,Namescr,0);
+// attrobj copy partly aFlap[1] "ScrFlat" done record done ;
+
+// Определяем принадлежность к резиновому шкафу
+if GetObjHold(aFlap[1],RubA)
+{
+	attrobj copy partly aFlap[1] "ScrFlat" done RubA done ;
+	// attrinfo info RubA
+	NUnit=GetAttr(aFlap[1],"NUnit",aFlap[1]);
+	attrcopy("ScrFlat","ScrFlat"+str(NUnit))
+	res=writescratch(ScrMod,"ScrFlat"+str(NUnit),RubA);
+	// attrinfo info RubA
+}
+
+// attrinfo info record
+NULLOUT=TermScratch(ScrMod);
+
+   smart edit list aFlap[1] ;
+   // protoobj edit list aFlap[1] done;
+   objident last 1 aFlap[1] ;
+   
+exit;
+
+sErr:
+     Putmsg(ErrCod,0) ;
+return;
+   
+   

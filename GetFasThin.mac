@@ -1,0 +1,50 @@
+//-- Вычислить толщину фасада
+//-- Входные параметры:
+//-- Thin - толщина фасада (по ссылке)
+//-- FasadType - тип фасада
+//-- ARMX, ARMZ - положение ручки по осям Xи Z
+//-- Выходные параметры:
+//-- Thin - толщина фасада (по ссылке)
+global ProtoPath;
+global
+DoorMater,              //-- Материал панелей двери
+DoorMatVS1;             //-- Материал вставки в фасад
+
+getpar Thin,FasadType,ARMX,ARMZ;
+
+//-- Тощина фасада
+h_fas=PriceInfo(FasadType,"Thickness",-1,2);
+//-- Если толщина фасада явно не определена,
+//-- определяем ее, исходя из конструкции фасада
+if (h_fas<0)
+{
+  NULLOUT=getvarinst(1,"FrameFasadThin",th,-1);       //-- Толщина рамки фасада
+  NULLOUT=getvarinst(1,"FrameFasadWidth",wr,-1);      //-- Ширина рамки фасада
+  NULLOUT=getvarinst(1,"FrameFasGorWidth",wrg,-1);    //-- Ширина горизонтальной части рамки
+  if (wrg<0)
+  {
+    wrg=wr;
+  }
+  NULLOUT=getvarinst(1,"FrameFasadPlase",yn,-1);      //-- Положение ручки на вставке в фасад
+  //-- Если толщина рамки фасада не определена, смотрим толщину материала фасада
+  if (th<0)
+  {
+    h_fas=PriceInfo(DoorMater,"Thickness",16);
+  }
+  else
+  {
+    //-- Иначе, определяем по положению ручки
+    h_fas=yn;
+    //-- Если ручка установлена на рамке фасада
+    if (ARMX<wr)||(ARMZ<wrg)
+    {
+      h_fas=th; //-- Толщина фасада равна толщине рамки фасада
+    }
+    if (h_fas<0) //-- Если так или иначе толщину определить не удалось
+    {
+      h_fas=PriceInfo(DoorMatVS1,"Thickness",16); //-- Толщина фасада равна толщине вставки в фасад
+    }
+  }
+}
+Thin=h_fas;
+exit;

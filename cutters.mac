@@ -1,0 +1,613 @@
+// Для фигурных фасадов
+global ProtoPath;
+global cutter1, cutter2, cutter3, chisel;
+// Резцы, возвращаемые основной программе
+// последовательно рамка и путь внутреннего выреза оболочки,
+// Рамка и путь внешнего выреза оболочки,
+// Рамка и путь выреза вставки
+// Зубило, ковыряющее дыру в оболочке фасада
+defarr error[10];
+NULLOUT=initarray(error,"");
+
+getpar
+w,                        // Высота и ширина фасада
+h,
+h_fas,                    // Толщина фасада
+h_fill,                   // Толщина вставки
+dw,                       // Отступ от края фасада по ширине
+ds,                       // Ширина израсцов вставки
+df,                       // Сдвиг вставки от задней грани к передней
+dp,                       // Дальность врезка вставки
+dv,                       // Толщина врезки вставки
+p1,                       // Параметры необходимых резцов - первого, второго и третьего
+p2,
+p3
+;
+
+// Параметры p1, p2, p3 - форма рамки, умноженная на 100 плюс путь рамки
+p11=int(p1/100);
+p12=p1-p11*100;
+p21=int(p2/100);
+p22=p2-p21*100;
+p31=int(p3/100);
+p32=p3-p31*100;
+
+edg=h_fas-df-dv
+if (h_fill<9) { p31=1 }
+edgs=h_fill-dv
+dwp=dw-dp
+
+//-----------------------------------------------------------------------------
+label0:
+
+gosub label1;
+gosub label2;
+
+#in1 pipe pat1 fram1 0,0,0 ang1;
+
+delete fram1 done;
+move pat1 done 2points 0,0,0 dw/2,-10,dw/2 nocopy  /////////
+
+if (p12!=1&&p12!=4&&p12!=5)
+{
+   #patt1 epath pat1 dw/2
+   amm=sysvar(60);
+   #patt11 arcs_path TolArc 0.5 patt1;
+   if (sysvar(60)!=amm)
+   {delete patt1 done;
+   objident last 1 pat11;}
+   else
+   {objident patt11 pat11;}
+}
+else
+{
+   #pat11 epath pat1 dw/2
+}
+delete pat1 done
+
+#pat21 extrusion pat11 done 2points 0,-h_fas-10,0 0,h_fas+10,0
+
+mirror in1 done 3points 0,0,0 10,0,0 0,0,10 nocopy
+
+move in1 done 2points 0,0,0 dw/2,h_fas,dw/2 nocopy;
+
+// out - pat21, in1, pat11
+// pat21 - выдалбливалка дыры в оболочке фасада
+// in1 - резец внутренней части оболочки фасада
+// pat11 - рамка для последующего пути выреза вставки
+
+//-----------------------------------------------------------------------------
+label5:
+gosub label3;
+gosub label4;
+#ino pipe pato framo 0,0,0 -90 ;
+move ino done 2points 0,0,0 0,h_fas,0 nocopy    // out - ino
+delete pato framo done;
+
+label7:
+
+if (p12!=1&&p12!=4&&p12!=5)
+{
+
+   #patt2 epath pat11 -dp
+   amm=sysvar(60);
+   #patt22 arcs_path TolArc 0.5 patt2;
+	 if (sysvar(60)!=amm)
+   {delete patt2 done;
+   objident last 1 pat2;}
+   else
+   {objident patt22 pat2;}
+}
+else
+{
+   #pat2 epath pat11 -dp
+}
+gosub label6;
+
+move pat2 done 2points 0,0,0 -dw+dp,10,-dw+dp nocopy
+#in2 pipe pat2 fram2 0,0,0 ang ;
+
+mirror in2 done 3points 0,0,0 10,0,0 0,0,10 nocopy
+
+delete pat11 fram2 pat2 done;
+
+//-----------------------------------------------------------------------------
+objident in1 cutter1;
+objident ino cutter2;
+objident in2 cutter3;
+objident pat21 chisel;
+exit ;
+//====================================================================
+bt1=-1;
+bt2=-1;
+bt3=-1;
+bt4=-1;
+NULLOUT=getobjtype(cutter1,bt1);
+NULLOUT=getobjtype(cutter2,bt2);
+NULLOUT=getobjtype(cutter3,bt3);
+NULLOUT=getobjtype(chisel,bt4);
+if ((bt1+bt2+bt3+bt4)!=0)
+{
+  delete cutter1,cutter2,cutter3,chisel done;
+// Резцы, возвращаемые основной программе
+// последовательно рамка и путь внутреннего выреза оболочки,
+// Рамка и путь внешнего выреза оболочки,
+// Рамка и путь выреза вставки
+// Зубило, ковыряющее дыру в оболочке фасада
+//if (bt1
+  error[1]="Возможно, рисунок фасада не соответствует его размерам.";
+  error[2]=" "+str(bt1)+" "+str(bt2)+" "+str(bt3)+" "+str(bt4);
+  error[3]="Попробуйте изменить параметры формы рисунка фасада."
+  error[4]="Попробуйте изменить размеры фасада.";
+  error[5]="Выберите другой тип фасада.";
+  macro Protopath+"ShowSmartError.mac" "Фасад данной формы построить невозможно."
+  5 error;
+  cancel;
+}
+exit;
+
+//-----------------------------------------------------------------------------
+label1:
+// И начинается геморрой вычислений...
+if (p11==1)
+{
+line 0,0,0
+     0,5,0
+     dw/2+10,5,0
+     dw/2+10,-h_fas-5,0
+     dw/2+1,-h_fas-5,0
+     dw/2+1,-edg/2,0
+     dw/4,-edg/2,0
+     dw/4,0,0
+     0,0,0 done
+#fram1 path select last 8 done last 1 create
+return;
+}
+
+if (p11==2)
+{
+line 0,0,0
+     0,5,0
+     dw/2+10,5,0
+     dw/2+10,-h_fas-5,0
+     dw/2+1,-h_fas-5,0
+     dw/2+1,-edg/2,0
+     dw/4,0,0
+     0,0,0 done
+#fram1 path select last 7 done last 1 create
+return;
+}
+
+if (p11==3)
+{
+line 0,0,0
+     0,5,0
+     dw/2+10,5,0
+     dw/2+10,-h_fas-5,0
+     dw/2+2,-h_fas-5,0
+     dw/2+2,-edg/2,0 done
+spline  dw/2+2,-edg/2,0
+        12*dw/25,-edg/35,0
+	dw/4,0,0 done
+line dw/4,0,0
+     0,0,0 done
+#fram1 path select last 7 done last 1 create
+return;
+}
+
+if (p11==4)
+{
+line 0,0,0
+     0,5,0
+     dw/2+10,5,0
+     dw/2+10,-h_fas-5,0
+     dw/2+2,-h_fas-5,0
+     dw/2+2,-edg/2,0 done
+spline  dw/2+2,-edg/2,0
+        5*dw/16,-edg/2
+        dw/4,0,0 done
+line dw/4,0,0
+     0,0,0 done
+#fram1 path select last 7 done last 1 create
+return;
+}
+
+if (p11==5)
+{
+line 0,0,0
+     0,5,0
+     dw/2+10,5,0
+     dw/2+10,-h_fas-5,0
+     dw/2+1,-h_fas-5,0
+     dw/2+1,-edg/2,0
+     5*dw/12,-edg/2,0
+     5*dw/12,-edg/3,0
+     dw/3,-edg/3,0
+     dw/3,-edg/6,0
+     dw/4,-edg/6,0
+     dw/4,0,0
+     0,0,0 done
+#fram1 path select last 12 done last 1 create
+return;
+}
+goto error;
+
+//-----------------------------------------------------------------------------
+label2:
+if (p12==1)
+{
+line 0,0,0
+     0,0,h-dw
+     w-dw,0,h-dw
+     w-dw,0,0
+     0,0,0 done
+#pat1 path select last 4 done last 1 create
+ang=90;
+ang1=-90;
+return;
+}
+
+if (p12==2)
+{
+line 0,0,0
+     0,0,h-3*dw done
+arc  0,0,h-3*dw
+     w-dw,0,h-3*dw
+     (w-dw)/2,0,h-dw
+line w-dw,0,h-3*dw
+     w-dw,0,0
+     0,0,0 done
+#pat1 path select last 4 done last 1 create
+ang=90;
+ang1=-90;
+return;
+}
+
+if (p12==3)
+{
+line 0,0,2*dw
+     0,0,h-3*dw done
+arc  0,0,h-3*dw
+     w-dw,0,h-3*dw
+     (w-dw)/2,0,h-dw
+line w-dw,0,h-3*dw
+     w-dw,0,2*dw done
+arc  w-dw,0,2*dw
+     0,0,2*dw
+     (w-dw)/2,0,0
+#pat1 path select last 4 done last 1 create
+ang=-90;
+ang1=-90;
+return;
+}
+
+if (p12==4)
+{
+line 0,0,0
+     0,0,h-3*dw
+     (w-dw)/2,0,h-dw
+     w-dw,0,h-3*dw
+     w-dw,0,0
+     0,0,0 done
+#pat1 path select last 5 done last 1 create
+ang=0;
+ang1=-90;
+return;
+}
+
+if (p12==5)
+{
+line 0,0,2*dw
+     0,0,h-3*dw
+     (w-dw)/2,0,h-dw
+     w-dw,0,h-3*dw
+     w-dw,0,2*dw
+     (w-dw)/2,0,0
+     0,0,2*dw done
+#pat1 path select last 6 done last 1 create
+ang=-90;
+ang1=-90;
+return;
+}
+
+if (p12==6)
+{
+line 0,0,0
+     0,0,h-3*dw
+     dw,0,h-3*dw done
+arc  dw,0,h-3*dw
+     w-2*dw,0,h-3*dw
+     (w-dw)/2,0,h-dw
+line w-2*dw,0,h-3*dw
+     w-dw,0,h-3*dw
+     w-dw,0,0
+     0,0,0 done
+#pat1 path select last 6 done last 1 create
+ang=90;
+ang1=-90
+return;
+}
+
+if (p12==7)
+{
+line 0,0,0
+     0,0,dw done
+arc  0,0,dw
+     0,0,h-2*dw
+     dw,0,(h-dw)/2
+line 0,0,h-2*dw
+     0,0,h-dw
+     dw,0,h-dw done
+arc  dw,0,h-dw
+     w-2*dw,0,h-dw
+     (w-dw)/2,0,h-2*dw
+line w-2*dw,0,h-dw
+     w-dw,0,h-dw
+     w-dw,0,h-2*dw done
+arc  w-dw,0,h-2*dw
+     w-dw,0,dw
+     w-2*dw,0,(h-dw)/2
+line w-dw,0,dw
+     w-dw,0,0
+     w-2*dw,0,0 done
+arc  w-2*dw,0,0
+     dw,0,0
+     (w-dw)/2,0,dw
+line dw,0,0
+     0,0,0 done
+#pat1 path select last 12 done last 12 create
+ang=90;
+ang1=0;
+return;
+}
+
+if (p12==8)
+{
+line 0,0,dw
+     0,0,2*dw done
+arc  0,0,2*dw
+     0,0,h-3*dw
+     dw,0,(h-dw)/2
+line 0,0,h-3*dw
+     0,0,h-2*dw
+     dw,0,h-2*dw done
+arc  dw,0,h-2*dw
+     w-2*dw,0,h-2*dw
+     (w-dw)/2,0,h-dw
+line w-2*dw,0,h-2*dw
+     w-dw,0,h-2*dw
+     w-dw,0,h-3*dw done
+arc  w-dw,0,h-3*dw
+     w-dw,0,2*dw
+     w-2*dw,0,(h-dw)/2
+line w-dw,0,2*dw
+     w-dw,0,dw
+     w-2*dw,0,dw done
+arc  w-2*dw,0,dw
+     dw,0,dw
+     (w-dw)/2,0,0
+line dw,0,dw
+     0,0,dw done
+#pat1 path select last 12 done last 1 create
+ang=90;
+ang1=-90;
+return;
+}
+
+if (p12==9)
+{
+line 0,0,2*dw
+     0,0,h-3*dw
+     dw,0,h-3*dw done
+arc  dw,0,h-3*dw
+     w-2*dw,0,h-3*dw
+     (w-dw)/2,0,h-dw
+line w-2*dw,0,h-3*dw
+     w-dw,0,h-3*dw
+     w-dw,0,2*dw
+     w-2*dw,0,2*dw done
+arc  w-2*dw,0,2*dw
+     dw,0,2*dw
+     (w-dw)/2,0,0
+line dw,0,2*dw
+     0,0,2*dw done
+#pat1 path select last 8 done last 1 create
+ang=90;
+ang1=-90;
+return;
+}
+goto error;
+
+//-----------------------------------------------------------------------------
+label3:
+if (p21==1)
+{
+line dw/2,0,0
+     dw/2,5,0
+     -5,5,0
+     -5,-h_fas,0
+     0,-h_fas,0
+     0,-edg/2,0
+     dw/4,-edg/2,0
+     dw/4,0,0
+     dw/2,0,0 done
+#framo path select last 8 done last 1 create
+return;
+}
+
+if (p21==2)
+{
+line dw/2,0,0
+     dw/2,5,0
+     -5,5,0
+     -5,-h_fas,0
+     0,-h_fas,0
+     0,-edg/2,0
+     dw/4,0,0
+     dw/2,0,0 done
+#framo path select last 7 done last 1 create
+return;
+}
+
+if (p21==3)
+{
+line dw/2,0,0
+     dw/2,5,0
+     -5,5,0
+     -5,-h_fas,0
+     0,-h_fas,0
+     0,-edg/2,0 done
+spline  0,-edg/2,0
+        0,0,0
+	dw/4,0,0 done
+line dw/4,0,0
+     dw/2,0,0 done
+#framo path select last 7 done last 1 create
+return;
+}
+
+if (p21==4)
+{
+line dw/2,0,0
+     dw/2,5,0
+     -5,5,0
+     -5,-h_fas,0
+     0,-h_fas,0
+     0,-edg/2,0 done
+spline  0,-edg/2,0
+        dw/4,-edg/2,0
+	dw/4,0,0 done
+line dw/4,0,0
+     dw/2,0,0 done
+#framo path select last 7 done last 1 create
+return;
+}
+
+if (p21==5)
+{
+line dw/2,0,0
+     dw/2,5,0
+     -5,5,0
+     -5,-h_fas,0
+     0,-h_fas,0
+     0,-edg/2,0
+     dw/12,-edg/2,0
+     dw/12,-edg/3,0
+     dw/6,-edg/3,0
+     dw/6,-edg/6,0
+     dw/4,-edg/6,0
+     dw/4,0,0
+     dw/2,0,0 done
+#framo path select last 12 done last 1 create
+return;
+}
+goto error;
+
+//-----------------------------------------------------------------------------
+label4:
+
+if (p22==1)
+{
+line 0,0,0
+     0,0,h
+     w,0,h
+     w,0,0
+     0,0,0 done
+#pato path select last 4 done last 1 create
+return;
+}
+goto error;
+
+//-----------------------------------------------------------------------------
+label6:
+if (p31==1)
+{
+line -4*dw,5,0
+     dp+ds+dv,5,0
+     dp+ds+dv,-edgs/2,0
+     dp+dv,-edgs/2,0
+     dp+dv,-edgs,0
+     0,-edgs,0
+     0,-h_fill-2,0
+     -4*dw,-h_fill-2,0
+     -4*dw,5,0 done
+#fram2 path select last 8 done last 1 create
+return;
+}
+
+if (p31==2)
+{
+line -3*dw,5,0
+     dp+ds+dv,5,0
+     dp+ds+dv,-edgs/2,0
+     dp+dv,-edgs,0
+     0,-edgs,0
+     0,-h_fill-2,0
+     -3*dw,-h_fill-2,0
+     -3*dw,5,0 done
+#fram2 path select last 7 done last 1 create
+return;
+}
+
+if (p31==3)
+{
+line -4*dw,5,0
+     dp+ds+dv,5,0
+     dp+ds+dv,-edgs/2,0 done
+spline dp+ds+dv,-edgs/2,0
+       dp+dv,-edgs/2,0
+       dp+dv,-edgs,0 done
+line dp+dv,-edgs,0
+     0,-edgs,0
+     0,-h_fill-2,0
+     -4*dw,-h_fill-2,0
+     -4*dw,5,0 done
+#fram2 path select last 7 done last 1 create
+return;
+}
+
+if (p31==4)
+{
+line -4*dw,5,0
+     dp+ds+dv,5,0
+     dp+ds+dv,-edgs/2,0 done
+spline dp+ds+dv,-edgs/2,0
+       dp+dv+ds,-edgs,0
+       dp+dv,-edgs,0 done
+line dp+dv,-edgs,0
+     0,-edgs,0
+     0,-h_fill-2,0
+     -4*dw,-h_fill-2,0
+     -4*dw,5,0 done
+#fram2 path select last 7 done last 1 create
+return;
+}
+
+if (p31==5)
+{
+line -4*dw,5,0
+     dp+ds+dv,5,0
+     dp+ds+dv,-edgs/2,0
+     dp+ds/2+dv,-edgs/2,0
+     dp+ds/2+dv,-0.75*edgs,0
+     dp+dv,-0.75*edgs,0
+     dp+dv,-edgs,0
+     0,-edgs,0
+     0,-h_fill-2,0
+     -4*dw,-h_fill-2,0
+     -4*dw,5,0 done
+#fram2 path select last 10 done last 1 create
+return;
+}
+goto error
+
+//-----------------------------------------------------------------------------
+
+error:
+//-- ShowSmartError
+#ok_flag
+alternative "Сообщение об ошибке!" msgbox text "Неверно введенные параметры!!!" done
+       "Закрыть" done
+exit;
+
+

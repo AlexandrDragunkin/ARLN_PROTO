@@ -1,0 +1,11 @@
+//-- Установить текущие типы кромки по сторонам панели
+global g_BandPan;  //-- Тип кромки по сторонам в порядке B C D E
+defarr g_BandPan[8];
+
+getpar BandB BandC BandD BandE;
+g_BandPan[1]=BandD;
+g_BandPan[3]=BandC;
+g_BandPan[5]=BandE;
+g_BandPan[7]=BandB;
+NULLOUT=setarrinst(1,"g_BandPan",g_BandPan);
+exit;

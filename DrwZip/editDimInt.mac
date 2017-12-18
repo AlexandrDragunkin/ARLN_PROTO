@@ -1,0 +1,63 @@
+// Интелектуальная система корректировки размера
+
+// Входные данные
+// pnt указатель на размер
+
+
+global ProtoPath;
+
+defarr aDimInf[100] xm[6] sysinf[100];;
+
+getpar pnt;
+//objident : pnt
+setucs save "tempdimln";
+setucs lcs pnt;
+Err=GetDimInfo(pnt,aDimInf);
+Err=SysArr(43,sysinf);
+ptransCS(3,2,aDimInf[3],aDimInf[4],aDimInf[5],xg1,yg1,zg1); //Координата в ПСК точки начала размерной линии (на левой выноске)
+ptransCS(3,2,aDimInf[6],aDimInf[7],aDimInf[8],xg2,yg2,zg2);	//Координата в ПСК точки конца размерной  линии (на правой выноске)
+ptransCS(3,2,aDimInf[9],aDimInf[10],aDimInf[11],x1,y1,z1);	//Координата в ПСК левой измеряемой точки
+ptransCS(3,2,aDimInf[12],aDimInf[13],aDimInf[14],x2,y2,z2); //Координата в ПСК правой измеряемой точки
+if abs(xg2-xg1)<sysvar(32)
+{
+	// размер вертикальный
+	x2=x1
+}
+if abs(yg2-yg1)<sysvar(32)
+{
+	y2=y1 // размер горизонтальный
+}
+
+setucs x1 y1 z1 x2 y2 z2 xg2 yg2 zg2 ;
+ptransCS(3,2,aDimInf[3],aDimInf[4],aDimInf[5],xg1,yg1,zg1); //Координата в ПСК точки начала размерной линии (на левой выноске)
+ptransCS(3,2,aDimInf[6],aDimInf[7],aDimInf[8],xg2,yg2,zg2);	//Координата в ПСК точки конца размерной  линии (на правой выноске)
+ptransCS(3,2,aDimInf[9],aDimInf[10],aDimInf[11],x1,y1,z1);	//Координата в ПСК левой измеряемой точки
+ptransCS(3,2,aDimInf[12],aDimInf[13],aDimInf[14],x2,y2,z2); //Координата в ПСК правой измеряемой точки
+Err=objGab3(pnt,xm);
+ds=x2-x1; // Измеряемое расстояние
+gx=xm[4]-xm[1]; // Габаритный размер по Х
+gy=xm[5]-xm[2]; // Габаритный размер по Y
+hsz=aDimInf[23]*sysinf[3]*sysvar(76)*(aDimInf[27]/100+1); // высота символа с зазорами
+
+//putmsg(str(2*aDimInf[35]),1);
+
+		
+if abs(ds-gx)>sysvar(32)
+{
+	if (yg2+aDimInf[32]*sysinf[3]*sysvar(76))<gy
+	{
+		dimedit wholly pnt place leader 0.5 xg2 yg2+hsz zg2 xg2+gx-2*(aDimInf[35]+aDimInf[36])*sysvar(76) yg2+hsz zg2 done;
+
+	}
+	else
+	{
+		dimedit wholly pnt place leader 0.5 xg2 yg2+hsz zg2 xg2+gx-2*(aDimInf[35]+aDimInf[36])*sysvar(76) yg2+hsz zg2 done;
+
+		
+	}
+}
+
+setucs restore "tempdimln";
+setucs delete "tempdimln";
+
+exit;

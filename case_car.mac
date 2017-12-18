@@ -1,0 +1,54 @@
+//-------------------------
+// Подпрограмма Каркас книжного шкафа
+global ProtoPath WMFPath ;
+
+getpar x, y, z, n, cokflag, hcok, PrMater, BDMater, Col_Kro, Band ;
+
+h_dsp=PriceInfo(PrMater,"Thickness",16);
+
+MaterName=PriceInfo(BDMater,"MATTYPENAM","");
+if (MaterName=="ДСП") {	// задняя стенка врезная
+  shBack=PriceInfo(BDMater,"Thickness",16)
+  tback=0
+} else {		// задняя стенка накладная
+  shBack=0
+  tback=1
+}
+
+// задняя панель
+macro ProtoPath+"SetMat.mac" BDMater ;
+if (tback==1) { 
+  macro ProtoPath+"SetOfSet.mac"  14 0 14 14;
+  Macro ProtoPath+"MakePan.mac" h_dsp 0 hcok+h_dsp z-hcok-h_dsp x-2*h_dsp 13 ;
+  macro ProtoPath+"SetOfSet.mac" 0,0,0,0; // Занулим
+} else {
+  macro ProtoPath+"SetKrom.mac" Col_Kro 0 0 0 0 ;
+  macro ProtoPath+"SetFix.mac"  3 3 3 3 ;
+  macro ProtoPath+"MakePan.mac" h_dsp 0 hcok+h_dsp z-hcok-2*h_dsp x-2*h_dsp 14;
+}
+macro ProtoPath+"SetMat.mac" PrMater ;
+
+// стойки
+macro ProtoPath+"SetKrom.mac" Col_Kro 0 Band Band 0;
+macro ProtoPath+"SetFix.mac"  0 0 0 0 ;
+Macro ProtoPath+"MakePan.mac" 0 0 0 z y 11 ; // боковина
+move last 1 done x-h_dsp 0 0 copy 1 ;
+if (n==2) {	// шкаф двухсекционный
+  Macro ProtoPath+"MakePan.mac" (x-h_dsp)/2 shBack hcok+h_dsp 
+				z-hcok-2*h_dsp y-shBack 11 ; 
+}
+
+// низ и верх
+macro ProtoPath+"SetKrom.mac" Col_Kro 0 0 0 Band ;
+macro ProtoPath+"SetFix.mac"  3 3 0 0 ;
+Macro ProtoPath+"MakePan.mac" h_dsp 0 hcok x-2*h_dsp y 12 ; 
+move last 1 done 0 0 z-hcok-h_dsp copy 1 ;
+
+
+
+if (cokflag==1) {	// Цоколь
+  macro ProtoPath+"SetKrom.mac" Col_Kro Band 0 0 0 ;
+  macro ProtoPath+"SetFix.mac"  0 0 3 3 ;
+  macro ProtoPath+"MakePan.mac" h_dsp y-2*h_dsp 0 hcok x-2*h_dsp 14;
+}
+exit;

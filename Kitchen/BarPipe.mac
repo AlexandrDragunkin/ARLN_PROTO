@@ -1,0 +1,47 @@
+//-- Шкаф односекционный верхний
+global ProtoPath;		//-- Путь к папке с макропрограммами общей библиотеке прототипов
+
+Length=DbVar("Length",330);			        //-- Длина
+TypeBp=DbVar("TypeBp",0);								//-- Тип профиля
+UpFix=DbVar("UpFix",0);									//-- Тип верхнего крепления
+DownFix=DbVar("DownFix",0);							//-- Тип нижнего крепления
+
+Acc1=DbVar("Acc1",0);										//-- Тип первого аксессуара
+Acc1H=DbVar("Acc1H",0);									//-- Положение первого аксессуара
+Acc1Ang=DbVar("Acc1Ang",0);							//-- Угол поворота первого аксессуара
+
+Acc2=DbVar("Acc2",0);										//-- Тип второго аксессуара
+Acc2H=DbVar("Acc2H",0);									//-- Положение второго аксессуара
+Acc2Ang=DbVar("Acc2Ang",0);							//-- Угол поворота второго аксессуара
+
+Acc3=DbVar("Acc3",0);										//-- Тип третьего аксессуара
+Acc3H=DbVar("Acc3H",0);									//-- Положение третьего аксессуара
+Acc3Ang=DbVar("Acc3Ang",0);							//-- Угол поворота третьего аксессуара
+
+//--Названия элементов
+NameProf=priceinfo(TypeBp,"MatName","");
+NameUp=priceinfo(UpFix,"MatName","");
+NameDown=priceinfo(DownFix,"MatName","");
+NameAcc1=priceinfo(Acc1,"MatName","");
+NameAcc2=priceinfo(Acc2,"MatName","");
+NameAcc3=priceinfo(Acc3,"MatName","");
+//--Создаем профиль
+macro ProtoPath+"SetENam.mac" NameProf;
+macro ProtoPath+"SetProf.mac" TypeBp 0 0 0 0 0;
+macro ProtoPath+"MakeProf.mac" 0 0 0 0 0 Length;
+//--Создаем нижнее крепление
+macro ProtoPath+"SetENam.mac" NameDown;
+macro ProtoPath+"MakeAcce.mac" DownFix "040700" 0 0 0 0 90 90;
+//--Создаем верхнее крепление
+macro ProtoPath+"SetENam.mac" NameUp;
+macro ProtoPath+"MakeAcce.mac" UpFix "040700" 0 0 Length 0 -90 90;
+//--Создаем аксессуар 1
+macro ProtoPath+"SetENam.mac" NameAcc1;
+macro ProtoPath+"MakeAcce.mac" Acc1 "040700" 0 0 Acc1H 0 -Acc1Ang 0;
+//--Создаем аксессуар 2
+macro ProtoPath+"SetENam.mac" NameAcc2;
+macro ProtoPath+"MakeAcce.mac" Acc2 "040700" 0 0 Acc2H 0 -Acc2Ang 0;
+//--Создаем аксессуар 3
+macro ProtoPath+"SetENam.mac" NameAcc3;
+macro ProtoPath+"MakeAcce.mac" Acc3 "040700" 0 0 Acc3H 0 -Acc3Ang 0;
+exit;

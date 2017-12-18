@@ -1,0 +1,29 @@
+//-- Создание объекта - овальная столешница
+
+NULLOUT=getvarinst(2,"ProtoPath",ProtoPath,getprotomac("Shkaf"));      //-- Путь к папке с макропрограммами 
+
+x=DbVar("x",1200); 		          //-- Длина
+y=DbVar("y",600); 		          //-- Ширина
+r=DbVar("r",100); 		          //-- Радиус скругления
+PrMater=DbVar("PrMater",0); 		//-- Материал панели
+Nshp=DbVar("Nshp",0);		        //-- Направление шпона
+Band=DbVar("Band",0); 			    //-- Материал кромки
+Face_col=DbVar("Face_col",0);   //-- Цвет кромки
+//--------------------------------------------------------------------------
+FurnType="011000";
+Namescr="ProtoParams";
+NULLOUT=setvarinst(1,"FurnType",FurnType);
+//--------------------------------------------------------------------------
+macro ProtoPath+"StOvalForm.mac" x,y,r,PrMater,Nshp,Band,Face_col;
+
+ScrMod=InitScratch();
+err=AddScratch(ScrMod,FurnType,"x",x);
+err=AddScratch(ScrMod,FurnType,"y",y);
+err=AddScratch(ScrMod,FurnType,"r",r);
+err=AddScratch(ScrMod,FurnType,"PrMater",PrMater);
+err=AddScratch(ScrMod,FurnType,"Nshp",Nshp);
+err=AddScratch(ScrMod,FurnType,"Band",Band);
+err=AddScratch(ScrMod,FurnType,"Face_col",Face_col);
+NULLOUT=writescratch(ScrMod,Namescr,0);
+NULLOUT=TermScratch(ScrMod);
+exit;

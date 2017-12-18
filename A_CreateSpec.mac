@@ -1,0 +1,176 @@
+global ProtoPath;
+defarr xm[6];
+
+nullout=getvarinst(2,"ProtoArl",ProtoArl,"A__A.ar|");
+
+getpar TypeSpec;
+
+nullout=renumerate()
+onError Finish;
+
+macro protopath+"LengthTest.mac";
+macro protopath+"addFolderToSysPath.py" ;
+
+pref1="Reports\\";							//-- Имя папки внутри папки проекта для создания отчетов
+ProjPath=getfilepath(sysvar(2));	//-- Возвращает путь до проекта
+NameBase="BaseAR.mdb";
+FullPathBase=ProjPath+NameBase;
+
+MyConnect=0;
+result=0;
+macro ProtoPath+"A_CreateBase.mac" ByRef MyConnect, ByRef result;
+putmsg(result)
+if result==1 { putmsg("База успешно создана"); }
+
+macro ProtoPath+"addFolderToSysPath.py"; // Расширяет список sys.path для поиска модулей Питон
+
+// if result==1&&TypeSpec==1
+// {
+	// resEX=0;
+	// PathExcel="";
+	// name_xl="Производственное задание №1.xls";
+	// macro ProtoPath+ProtoArl+"A_ProductionSpec.py" ProjPath, ByRef MyConnect, ByRef resEX, name_xl;
+	// if resEX==1 { putmsg("Производственное задание №1 успешно создано"); }
+	
+	// object_2=sysvar(62);
+	// // putmsg(object_2)
+	// i=0;
+	// j=1;
+
+	// NEXT1:
+	// i=i+1
+	// If (i<=object_2) {
+		// point=getobjnums(i);
+		// Posit=getattr(point,"Posit",0);
+		// // putmsg(Posit)
+		// if Posit==200 // Двери-купе
+		// {
+			// pnt=point;
+			// Unit=getattr(pnt,"UnitPos",0);
+			// gosub DVR;
+			// macro ProtoPath+"A_DoorSpec.py" ProjPath, ByRef MyConnect, int(Unit), ByRef resEX, j, name_xl;
+			// j=j+1;
+		// } 
+		// goto NEXT1;
+	// }
+// }
+
+if result==1&&TypeSpec==2
+{
+	
+	// view save "view";
+	// i=0; 
+	// loop:
+	// i=i+1;
+	// vi[1]=0;
+	// vi[2]=0;
+	// vi[3]=1;
+	// pnt=obj[i];
+	// UnPos[i]=getattr(pnt,"UnitPos",0);
+	// CommonPos[i]=getattr(pnt,"CommonPos",0);
+	// ElName[i]=getattr(pnt,"ElemName","");
+	// fnam=ProjPath+"WMF_Sketches\\"+Project+"_"+Str(UnPos[i])+".wmf";
+	// obj1[1]=pnt;
+	// setucs lcs pnt;
+	// view user cartesian none ucs 0.33, 0.87, 0.38 done;
+	// zoom byobject pnt done;
+	// vtranscs(1,3,vi[1],vi[2],vi[3],vi[1],vi[2],vi[3]);
+	// NULLOUT=exportvi(obj1,1,vi,fnam,1,4,1,1);
+	// zoom previous;
+	// szSrc="INSERT INTO TDrawings (UnitPos, DrawingName, SizeX, SizeY) ";
+	// szSrc=szSrc+"VALUES ("+str(UnPos[i])+", \""+pref1+"WMF_Sketches\\"+Project+"_"+str(UnPos[i])+".wmf\", 1000, 1000)";
+	// idRS=adbModify(Condcon,szSrc);
+	// if (i<numun)
+	// {
+	  // goto loop;
+	// }
+	// view restore "view";
+
+	title="PictureReport";
+	numWmf=ProjPath+title+".wmf";
+	F2000=DbVar("F2000",0);
+
+	nullout=GetSnap();
+	view save "TEMP";
+	setucs save "@@@@TEMP@@@@@";
+	//zoom viewall all ;
+	zoom all ;
+	'Rendmode,,1;
+	// 'dview switch;
+
+	If F2000
+	{ 
+		exp2d wmf yes mono yes optimized no inscribe no height 200 width 300 numWmf [ overwrite ] 
+	}   
+	else
+	{ 
+		exp2d wmf no mono yes optimized no inscribe no height 2000 width 3000 numWmf [ overwrite ]
+	}
+
+	nullout=ReSnap();
+	regen all;
+	view restore "TEMP";
+	setucs restore "@@@@TEMP@@@@@";
+	setucs delete "@@@@TEMP@@@@@" ;
+	
+	resEX=0;
+	
+	macro ProtoPath+"A_Scetch.py" ProjPath, numWmf, ByRef MyConnect, ByRef resEX;
+
+	if resEX==1 { putmsg("Эскиз успешно создан"); }
+	
+	// colorpicture new format 1 vp4 wholescene filename numWmf;
+}
+
+// ПЗ раскроя
+if result==1&&TypeSpec==3
+{
+	resEX=0;
+	PathExcel="";
+	macro ProtoPath+"A_RaskroySpec.py" ProjPath, ByRef MyConnect, ByRef resEX, ByRef PathExcel;
+	if resEX==1 { putmsg("ПЗ раскроя успешно создан в "+str(PathExcel)); }
+}
+
+
+Finish:
+if MyConnect!=0
+{
+	// MyConn=adbDisCon(MyConnect);
+}
+exit;
+
+DVR:
+
+//vport 1;
+nullout=GetSnap();
+view save "TEMP";
+setucs save "@@@@TEMP@@@@@";
+	
+invisible allvport all remove pnt done;
+;setucs lcs pnt;
+;view user none 0,1,0 done;
+nullout=ObjGab3(pnt,xm);
+ //setucs xm[1] xm[5] xm[3] ;
+;hide
+#metka point xm[1]-100 0 xm[3]-100;
+zoom all;
+// zoom ByObject pnt done; //viewall all  ;
+//;Rendmode,,1;
+;Rendmode,,0;
+wmfpath=ProjPath+"Dv"+Str(Unit)+".wmf"
+//;exp2d wmf yes inscribe yes ProtoPath+"Dv"+Str(Unit)+".wmf" [ overwrite ] height 2970 width 2100;
+;exp2d wmf yes inscribe yes optimized yes mono yes frame no wmfpath [ overwrite ];
+//;exp2d jpeg mono inscribe no ProtoPath+"Dv"+Str(Unit)+".jpg" [ overwrite ];
+;Rendmode,,0;
+;visible all
+;setucs gcs;
+// ;view none .33,.87,.38 done;
+
+nullout=ReSnap();
+regen all;
+view restore "TEMP";
+setucs restore "@@@@TEMP@@@@@";
+setucs delete "@@@@TEMP@@@@@" ;
+delete metka done;
+
+return;

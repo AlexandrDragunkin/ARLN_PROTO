@@ -1,0 +1,58 @@
+//-- Прототип "Ниша прямая дугообразная"
+global ProtoPath;
+global g_FurnType;    //-- Тип мебельного объекта
+KarkasNumb=getcarcnumb();  //-- Порядковый номер каркаса в сцене
+global MacroSw;       //-- Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+MacroSw=0;
+
+w=DbVar("w",600);
+d=DbVar("d",600);
+h=DbVar("h",600);
+macro ProtoPath+"ScrBoxGet.mac" 0; //-- Создание Scratch атрибута ящика
+numobj=sysvar(60)
+macro ProtoPath+"NicheArc.mac";
+
+//-- Если ниша пустая - выходим
+if (sysvar(60)-numobj==0)
+{
+  exit;
+}
+group all done;
+//-- Присваиваем атрибуты
+position=250
+Namescr="ProtoParams";
+
+attrobj attach "Posit" done last 1 position;
+//-- Присваиваем объекту атрибут с порядковым номером каркаса
+if (isassign("KarkasNumb",0))
+{
+  attrobj copy record "KarkasNumb" done last 1 done;
+}
+else
+{
+  attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+}
+
+if (isassign("ElemName",0))
+{
+  attrobj copy record "ElemName" done last 1 done;
+}
+else
+{
+  attrobj attach "ElemName" done last 1 "Ниша прямая дугообразная";
+}
+if (isassign("HoldName",0))
+{
+  attrobj copy record "HoldName" done last 1 done;
+}
+if (isassign("UnitName",0))
+{
+  attrobj copy record "UnitName" done last 1 done;
+}
+attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 w d h; //-- Размеры ниши
+
+attrobj attach "Assembly" done last 1 1;   //-- Добавим атрибут сборочной единицы
+attrobj attach "FurnType" done last 1 g_FurnType;
+attrobj copy record Namescr done last 1 done;
+macro ProtoPath+"Scrcopatr.mac" ; //-- Запись в объект Scratch атрибута
+exit;

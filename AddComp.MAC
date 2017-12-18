@@ -1,0 +1,246 @@
+//-- Добавление комплектующих в сцену
+ProtoPath=GetProtoMac("Shkaf.ptl");
+PicturesPath=mpathexpand("<Pictures>\\");   //-- Папка с картинками
+
+defarr altxt[15], altfl[15];
+karkas_kol=GetMCarcNumb();
+karkas_num=GetCarcNumb();
+if (karkas_kol==0)
+{
+ putmsg("Сначала надо создать мебельный каркас",0);
+ exit;
+}
+if (karkas_kol==1)
+{
+ #karkas MBCarcase set yes;
+}
+if (karkas_kol>1&&karkas_num==0)
+{
+ #karkas MBCarcase set no yes :
+}
+
+altfl[1]=PicturesPath+"sotkorz.jpg"
+altfl[2]=PicturesPath+"RackPic.jpg"
+altfl[3]=PicturesPath+"LegPic.jpg"
+altfl[4]=PicturesPath+"svet.jpg"
+altfl[5]=PicturesPath+"motframe.jpg"
+altfl[6]=PicturesPath+"AccesPic.jpg"
+// altfl[6]=PicturesPath+"VeshPick.jpg"
+// altfl[7]=PicturesPath+"LegPic.jpg"
+// altfl[8]=PicturesPath+"AccesPic.jpg"
+// altfl[9]=PicturesPath+"Pantograf.jpg"
+// altfl[10]=PicturesPath+"motframe.jpg"
+// altfl[11]=PicturesPath+"elemframe.jpg"
+// altfl[12]=PicturesPath+"MotFlas.jpg"
+// altfl[13]=PicturesPath+"MotHang.jpg"
+putmsg(PicturesPath)
+defarr Ptype[20];
+//-----------------------------------------------------------------------
+Ptype[1]="Корзины/Полки";
+defarr PArr1[4], APic1[4];
+PArr1[1]="Корзины сотовые";	APic1[1]=PicturesPath+"sotkorz.jpg";
+PArr1[2]="Полки сотовые";	APic1[2]=PicturesPath+"sotshelf1.jpg";
+PArr1[3]="Полки обувные";	APic1[3]=PicturesPath+"shshelf.jpg";
+PArr1[4]="Полки выдвижные";	APic1[4]=PicturesPath+"CompShelfPick.jpg";
+//-----------------------------------------------------------------------
+Ptype[2]="Вешалки";
+defarr PArr2[4], APic2[4];
+PArr2[1]="Вешалки продольные";	APic2[1]=PicturesPath+"RackPic.jpg";
+PArr2[2]="Вешалки поперечные";	APic2[2]=PicturesPath+"VeshPick.jpg";
+PArr2[3]="Joker и Uno";			APic2[3]=PicturesPath+"joker.jpg";
+PArr2[4]="Пантографы";			APic2[4]=PicturesPath+"Pantograf.jpg";
+//-----------------------------------------------------------------------
+Ptype[3]="Опоры/держатели";
+Ptype[4]="Освещение";
+Ptype[5]="VIBO";
+defarr PArr3[4], APic3[4];
+PArr3[1]="Выдвижные рамки";				APic3[1]=PicturesPath+"motframe.jpg";
+PArr3[2]="Наполнение рамки";			APic3[2]=PicturesPath+"elemframe.jpg";
+PArr3[3]="Выдвижные корзинки/полки";	APic3[3]=PicturesPath+"MotFlas.jpg";
+PArr3[4]="Выдвижные вешала";			APic3[4]=PicturesPath+"MotHang.jpg";
+
+Ptype[6]="Комплектующие";
+
+// // defarr PArr3[1], APic3[1];
+// Ptype[8]="Комплектующие";
+// // Ptype[9]="Пантографы";
+// Ptype[10]="Выдвижные рамки";
+// Ptype[11]="Наполнение рамки";
+// Ptype[12]="Выдвижные корзинки/полки";
+// Ptype[13]="Выдвижные вешала";
+// Ktypes=5;
+
+#altnum
+  alternative
+  "Установка аксессуаров"
+  picbox
+  text
+  center
+  "Выберите нужный"
+  done
+  default 1
+  Ptype[1]  altfl[1]
+  Ptype[2]  altfl[2]
+  Ptype[3]  altfl[3]
+  Ptype[4]  altfl[4]
+  Ptype[5]  altfl[5]
+  Ptype[6]  altfl[6]
+  // Ptype[7]  altfl[7]
+  // Ptype[8]  altfl[8]
+  // Ptype[9]  altfl[9]
+  // Ptype[10]  altfl[10]
+	// Ptype[11]  altfl[11]
+	// Ptype[12]  altfl[12]
+  // Ptype[13]  altfl[13]
+done;
+
+if altnum==0
+{
+  cancel;
+}
+NULLOUT=GetSnap();
+
+
+if (altnum==1) {
+	#altnum2
+	  alternative
+	  "Установка Корзины/Полки"
+	  picbox
+	  text
+	  center
+	  "Выберите нужный"
+	  done
+	  default 1
+	  PArr1[1]  APic1[1]
+	  PArr1[2]  APic1[2]
+	  PArr1[3]  APic1[3]
+	  PArr1[4]  APic1[4]
+	done;
+
+	if altnum2==0
+	{
+	  cancel;
+	}
+	if (altnum2==1) {
+	  macro ProtoPath+"ZapKorz.mac";
+	}
+	if (altnum2==2) {
+	  macro ProtoPath+"Sushilka.mac";
+	}
+	if (altnum2==3) {
+	  macro ProtoPath+"Obuvalka.mac" ;
+	}
+	if (altnum2==4) {
+	  macro ProtoPath+"CompPol.mac" ;
+	}
+}
+
+if (altnum==2) {
+	#altnum2
+	  alternative
+	  "Установка Корзины/Полки"
+	  picbox
+	  text
+	  center
+	  "Выберите нужный"
+	  done
+	  default 1
+	  PArr2[1]  APic2[1]
+	  PArr2[2]  APic2[2]
+	  PArr2[3]  APic2[3]
+	  PArr2[4]  APic2[4]
+	done;
+
+	if altnum2==0
+	{
+	  cancel;
+	}
+	if (altnum2==1) {
+	  macro ProtoPath+"Rackon.mac";
+	}
+	if (altnum2==2) {
+	  macro ProtoPath+"Vesh.mac";
+	}
+	if (altnum2==3) {
+	  macro ProtoPath+"AddAcceNoYad.mac" 80 , "040000";
+	}
+	if (altnum2==4) {
+	  macro ProtoPath+"AddPantograf.mac" ;
+	}
+}
+
+if (altnum==3) {
+	macro ProtoPath+"AddLeg.mac" ;
+}
+
+if (altnum==4) {
+	macro ProtoPath+"AddAcceNoYad.mac" 348 , "040000";
+}
+
+if (altnum==5) {
+	#altnum2
+	  alternative
+	  "Установка Корзины/Полки"
+	  picbox
+	  text
+	  center
+	  "Выберите нужный"
+	  done
+	  default 1
+	  PArr3[1]  APic3[1]
+	  PArr3[2]  APic3[2]
+	  PArr3[3]  APic3[3]
+	  PArr3[4]  APic3[4]
+	done;
+
+	if altnum2==0
+	{
+	  cancel;
+	}
+	if (altnum2==1) {
+	  macro ProtoPath+"AddMotFrame.mac" ;
+	}
+	if (altnum2==2) {
+	  macro ProtoPath+"AddMotElems.mac" ;
+	}
+	if (altnum2==3) {
+	  macro ProtoPath+"AddMotFlas.mac" ;
+	}
+	if (altnum2==4) {
+	  macro ProtoPath+"AddMotHang.mac" ;
+	}
+}
+
+if (altnum==6) {
+	macro ProtoPath+"AddFich.mac" ;
+}
+
+// if (altnum==5) {
+  // macro ProtoPath+"Rackon.mac" ;
+// }
+// if (altnum==6) {
+  // macro ProtoPath+"Vesh.mac" ;
+// }
+// if (altnum==7) {
+  // macro ProtoPath+"AddLeg.mac" ;
+// }
+// if (altnum==8) {
+  // macro ProtoPath+"AddFich.mac" ;
+// }
+// if (altnum==9) {
+  // macro ProtoPath+"AddPantograf.mac" ;
+// }
+// if (altnum==10) {
+  // macro ProtoPath+"AddMotFrame.mac" ;
+// }
+// if (altnum==11) {
+  // macro ProtoPath+"AddMotElems.mac" ;
+// }
+// if (altnum==12) {
+  // macro ProtoPath+"AddMotFlas.mac" ;
+// }
+// if (altnum==13) {
+  // macro ProtoPath+"AddMotHang.mac" ;
+// }
+NULLOUT=ReSnap();
+exit;

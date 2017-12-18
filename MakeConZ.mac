@@ -1,0 +1,25 @@
+// Группа контакта
+global MacroSw  ; // Переключатель режимов работы 0 - в пар.макро 1 - разбор.
+global ProtoPath ;
+getpar 
+ xn yn zn 	// положение 0 локальной системы координат
+ AZ              // Угол поворота вокруг Z
+;	
+
+if (MacroSw==1) { exit ; }
+
+If (!IsAttrdef("Fixer"))
+ { Attribute Create "Fixer" "Закрепление" String 40 15 ; }
+ 
+Line  xn yn zn xn+50 yn zn ;
+    Attrobj Attach "Fixer" Done last 1 "1,0" ;
+Line  xn yn zn xn yn+60 zn ;
+    Attrobj Attach "Fixer" Done last 1 "2,0" ;
+Line  xn yn zn xn yn zn+40 ;
+    Attrobj Attach "Fixer" Done last 1 "3,0" ;
+group last 3 ;
+If (IsAttrdef("Contact")) {
+    Attrobj Attach "Contact" Done last 1 0 ;
+}
+rotate last 1 done 2points xn yn zn xn yn zn+1 az nocopy ;
+exit

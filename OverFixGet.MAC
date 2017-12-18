@@ -1,0 +1,9 @@
+//-- Возвращает атрибут ориентации крепежа панели
+global OverFixType;
+getpar pnt;
+If (!IsAttrdef("FixOver"))
+{ 
+	Attribute Create "FixOver" "Ориентация крепежа" Real 5 0 ; 
+}
+OverFixType=getattr(pnt,"FixOver",0);
+exit;

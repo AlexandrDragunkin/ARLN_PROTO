@@ -1,0 +1,266 @@
+//InitDesignPrOz63.mac
+//Системы дверей для задачи 6.3
+//***************************************************
+//
+//             (с)ГеоС 2009  Александр Драгункин
+//
+//****************************************************
+//Инициализация дизайна остальных профилей створки
+global ProtoPath g_nameSf, g_namePs;
+global g_DRSysN,g_DRSysI,g_DRNumb,g_Ndors,g_DRS;
+global g_DRDesN,g_DRDesI,g_DRDesNumb,g_DRP;
+
+global g_DRTopD,g_DRTopN,g_DRTopI,g_DRTopNumb,g_DRTop;
+global g_DRDownD,g_DRDownN,g_DRDownI,g_DRDownNumb,g_DRDown;
+global g_DRMidD,g_DRMidN,g_DRMidI,g_DRMidNumb,g_DRMid;
+global g_DRDerD,g_DRDerN,g_DRDerI,g_DRDerNumb,g_DRDer;
+global g_DRVerD,g_DRVerN,g_DRVerI,g_DRVerNumb,g_DRVer;
+global g_k3fPath;
+
+getpar g_key_prev;
+
+DRS_top=g_DRTopN[1];
+DRS_Down=g_DRDownN[1];
+DRS_Mid=g_DRMidN[1];
+DRS_Der=g_DRDerN[1];
+DRS_Ver=g_DRVerN[1];
+
+vardialog=2
+defarr ArrName[50]  ArrDraw[50] ;
+g_DRMidNumb=iif(isvardef("g_DRMidNumb")==0,0,g_DRMidNumb);
+g_DRDerNumb=iif(isvardef("g_DRDerNumb")==0,0,g_DRDerNumb);
+if (g_DRTopNumb>1)||(g_DRDownNumb>1)||(g_DRMidNumb>1)||(g_DRDerNumb>1)||(g_DRVerNumb>1)
+{
+ if vardialog==1 { gosub Dialog1; }
+ if vardialog==2 { gosub Dialog2; }
+ if ok_flag==0
+ {
+  g_key_prev=0;
+  exit;
+  }
+}
+
+// putmsg(DRS_top)
+// putmsg(g_DRtopNumb)
+
+g_DRTop=g_DRTopI[findinarray(g_DRTopN,DRS_top,1,g_DRtopNumb)];       //--Определение ID группы верхнего профиля
+g_DRDown=g_DRDownI[findinarray(g_DRDownN,DRS_Down,1,g_DRDownNumb)];  //--Определение ID группы нижнего профиля
+g_DRMid=iif(g_DRMidNumb>0,g_DRMidI[findinarray(g_DRMidN,DRS_Mid,1,g_DRMidNumb)],0);       //--Определение ID группы разделительного профиля
+g_DRDer=iif(g_DRDerNumb>0,g_DRDerI[findinarray(g_DRDerN,DRS_Der,1,g_DRDerNumb)],0);;       //--Определение ID группы декоративного профиля
+g_DRVer=g_DRVerI[findinarray(g_DRVerN,DRS_Ver,1,g_DRVerNumb)];       //--Определение ID группы Вертикального профиля
+// putmsg(g_DRTop)
+
+// nullout=setvarinst(1,"g_DRTop",g_DRTop);
+// nullout=setvarinst(1,"g_DRDown",g_DRDown);
+// nullout=setvarinst(1,"g_DRMid",g_DRMid);
+// nullout=setvarinst(1,"g_DRDer",g_DRDer);
+// nullout=setvarinst(1,"g_DRVer",g_DRVer);
+
+g_key_prev=1
+exit;
+
+Dialog1:
+#ok_flag
+setvar
+"Установка систем дверей "+g_nameSf+" в нишу"
+""
+left
+"Остальные профиля створки "+g_namePs
+  if g_DRVerNumb==1
+  {
+  "Вертикальный профиль "+DRS_Ver
+  }
+  if g_DRTopNumb==1
+  {
+  "Верхний горизонтальный профиль "+DRS_top
+  }
+  if g_DRDownNumb==1
+  {
+  "Нижний горизонтальный профиль "+DRS_Down
+  }
+  if g_DRMidNumb==1
+  {
+  "Разделительный профиль "+DRS_Mid
+  }
+  if g_DRDerNumb==1
+  {
+  "Декоративный профиль "+DRS_Der
+  }
+
+done
+if g_DRTopNumb>1
+{
+str 	listonly
+	let j=1
+	LoopJ1:
+	 if J==1 {
+	  current
+	 }
+	 g_DRTopN[j]
+	 if (j<g_DRTopNumb) { Let j=j+1 goto LoopJ1 }
+	done
+	"Тип верхнего профиля створки:"    DRS_top
+}
+
+if g_DRDownNumb>1
+{
+str 	listonly
+	let j=1
+	LoopJ2:
+	 if J==1 {
+	  current
+	 }
+	 g_DRDownN[j]
+	 if (j<g_DRDownNumb) { Let j=j+1 goto LoopJ2 }
+	done
+	"Тип нижнего профиля створки:"    DRS_down
+}
+if g_DRMidNumb>1
+{
+str 	listonly
+	let j=1
+	LoopJ3:
+	 if J==1 {
+	  current
+	 }
+	 g_DRMidN[j]
+	 if (j<g_DRMidNumb) { Let j=j+1 goto LoopJ3 }
+	done
+	"Тип разделительного профиля створки:"    DRS_Mid
+}
+if g_DRDerNumb>1
+{
+str 	listonly
+	let j=1
+	LoopJ4:
+	 if J==1 {
+	  current
+	 }
+	 g_DRderN[j]
+	 if (j<g_DRDerNumb) { Let j=j+1 goto LoopJ4 }
+	done
+	"Тип накладного профиля створки:"    DRS_Der
+}
+if g_DRVerNumb>1
+{
+str 	listonly
+	let j=1
+	LoopJ5:
+	 if J==1 {
+	  current
+	 }
+	 g_DRVerN[j]
+	 if (j<g_DRVerNumb) { Let j=j+1 goto LoopJ5 }
+	done
+	"Тип вертикального профиля створки:"    DRS_Ver
+}
+done;
+return;
+
+Dialog2:
+if g_DrTopNumb>1
+{
+ TitleN="Тип верхнего профиля створки  "
+ N_Numb=g_DrTopNumb
+ Err=CopyArray(ArrDraw,1,g_drTopD,1,N_Numb)
+ Err=CopyArray(ArrName,1,g_DrTopN,1,N_Numb)
+ Gosub Karta;
+ if (ok_flag!=0)  {  DRS_Top=g_DrTopN[ok_flag];  }
+ if ok_flag==0
+ {
+  g_key_prev=0;
+  exit;
+  }
+}
+
+if g_DrDownNumb>1
+{
+ TitleN="Тип нижнего профиля створки  "
+ N_Numb=g_DrDownNumb
+ Err=CopyArray(ArrDraw,1,g_DrDownD,1,N_Numb)
+ Err=CopyArray(ArrName,1,g_DrDownN,1,N_Numb)
+ Gosub Karta;
+ if (ok_flag!=0)
+ {
+  DRS_Down=g_DrDownN[ok_flag];
+ }
+ if ok_flag==0
+ {
+  g_key_prev=0;
+  exit;
+ }
+}
+
+if g_DRMidNumb>1
+{
+ TitleN="Тип разделительного профиля створки  "
+ N_Numb=g_DrMidNumb
+ Err=CopyArray(ArrDraw,1,g_DrMidD,1,N_Numb)
+ Err=CopyArray(ArrName,1,g_DrMidN,1,N_Numb)
+ Gosub Karta;
+ if (ok_flag!=0)
+ {
+  DRS_Mid=g_DrMidN[ok_flag];
+ }
+ if ok_flag==0
+ {
+  g_key_prev=0;
+  exit;
+ }
+}
+
+if g_DrDerNumb>1
+{
+ TitleN="Тип накладного профиля створки  "
+ N_Numb=g_DrDerNumb
+ Err=CopyArray(ArrDraw,1,g_DrDerD,1,N_Numb)
+ Err=CopyArray(ArrName,1,g_DrDerN,1,N_Numb)
+ Gosub Karta;
+ if (ok_flag!=0)
+ {
+  DRS_Der=g_DrDerN[ok_flag];
+ }
+ if ok_flag==0
+ {
+  g_key_prev=0;
+  exit;
+ }
+}
+
+if g_DrVerNumb>1
+{
+ TitleN="Тип вертикального профиля створки  "
+ N_Numb=g_DrVerNumb
+ Err=CopyArray(ArrDraw,1,g_DrVerD,1,N_Numb)
+ Err=CopyArray(ArrName,1,g_DrVerN,1,N_Numb)
+ Gosub Karta;
+ if (ok_flag!=0)
+ {
+  DRS_Ver=g_DrVerN[ok_flag];
+ }
+ if ok_flag==0
+{
+  g_key_prev=0;
+  exit;
+}
+}
+
+return;
+
+Karta:
+
+#ok_flag
+  alternative
+  "Установка систем дверей в нишу"
+  picbox
+  text
+  center
+  TitleN+g_nameSf
+  done
+  default 1
+  let j=1
+  DLoopJ3:
+        ArrName[j]  g_k3fPath+ArrDraw[j]
+  if (j<N_Numb) { Let j=j+1 goto DLoopJ3 }
+done;
+return;

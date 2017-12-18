@@ -1,0 +1,20 @@
+//-- Начать новое изделие
+global ProtoPath;
+global GrouPan;   //-- Групповой код для панелей
+global FasPropC;  //-- PropCode для фасадов
+global ElemCode;  //-- Код мебельных элементов
+global UnitCode;  //-- Код изделия (текст)
+getpar Code;
+ElemCode="";
+FasPropC=" " ;
+GrouPan=17;
+UnitCode=Code;
+NULLOUT=setvarinst(1,"ElemCode",ElemCode);
+NULLOUT=setvarinst(1,"UnitCode",UnitCode);
+NULLOUT=setvarinst(1,"GroupID",getsubstyad(GrouPan));
+
+NULLOUT=setvarinst(1,"g_scrinit",0);
+macro ProtoPath+"ScrFasInit.mac" ;  //-- Обнуление Scratch-параметров фасадов
+macro ProtoPath+"ScrBoxGet.mac" 0 ; //-- Обнуление Scratch-параметров ящиков
+SetPosition off;
+exit;

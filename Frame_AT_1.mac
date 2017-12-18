@@ -1,0 +1,138 @@
+//--Макро рамки АТ для подвесных корзин, направляющие полного выдвижения
+global ProtoPath;
+KarkasNumb=getcarcnumb();
+getpar x y z w d IDframe BL BR	//-- координаты, ширина, глубина, ID рамки, кронштейн слева, кронштейн справа
+;
+defarr arr[10];
+H_Frame=priceinfo(IDframe,"Height",0);			//-- Высота рамки
+D_Frame=priceinfo(IDframe,"Dept",0);			//-- Глубина рамки
+Ots_F=priceinfo(IDframe,"ShiftY",0);			//-- Отступ
+K3FilePath=mpathexpand("<K3Files>\\");			//-- Папка K3File
+PantPath="VIBO\\Frame\\";
+textura="Lb.pkm7_1_iml.#350";
+
+//-- Умолчания на К3 файлы для создания рамки
+
+L_boxP="AT_ALGS_L.k3";
+R_boxP="AT_ALGS_R.k3";
+ProfP="AT_ALGS_Prof.k3";
+sdv=486;
+shagfix=240;
+z=z+10;
+otRec=90;					//-- рекомендуемая отступ для расчета полезной ширины
+if (D_Frame<=360)	//--если рамка на 360
+{
+ L_boxP="AT_ALGS_L_360.k3";
+ R_boxP="AT_ALGS_R_360.k3";
+ sdv=486-167;
+ shagfix=186;
+}
+otR=0;
+otL=0;
+//-- Если справа стоит кронштейн
+if (BR==1)
+{
+ typKrR=priceinfo(IDframe,"NomID1",0);
+ otR=priceinfo(typKrR,"Width",0);	
+ accessory "041700" typKrR 0 yes ;
+ move  last 1 done x+otR d-Ots_F 10 nocopy;
+ x=x+otR;
+ w=w-otR;
+}
+//-- Если слева стоит кронштейн
+if (BL==1)
+{
+ typKrL=priceinfo(IDframe,"NomID1",0);	
+ otL=priceinfo(typKrL,"Width",0);	
+ accessory "041700" typKrL 0 yes ;
+ move  last 1 done X d-Ots_F 10 nocopy;
+ w=w-otL;
+ rotate last 1 done 2points x+w/2, y+d-Ots_F-shagfix/2, z, x+w/2, y+d-Ots_F-shagfix/2, z+1, 180 nocopy;
+ 
+}
+//-- Если справа стоит расширитель
+if (BR==2)
+{
+ typKrR=priceinfo(IDframe,"NomID2",0);
+ otR=priceinfo(typKrR,"Width",0);	
+ macroR_R=priceinfo(typKrR,"MacroFile","");	
+ macro ProtoPath+macroR_R shagfix typKrR;
+ move  last 1 done otR d-Ots_F 10 nocopy;
+ x=x+otR;
+ w=w-otR;
+}
+//-- Если слева стоит расширитель
+if (BL==2)
+{
+ typKrL=priceinfo(IDframe,"NomID2",0);	
+ otL=priceinfo(typKrL,"Width",0);	
+ macroR_L=priceinfo(typKrL,"MacroFile","");	
+ macro ProtoPath+macroR_L shagfix typKrL;
+ move  last 1 done otL+otR d-Ots_F 10 nocopy;
+ rotate last 1 done 2points x+w/2, y+d-Ots_F-shagfix/2, z, x+w/2, y+d-Ots_F-shagfix/2, z+1, 180 nocopy; 
+ w=w-otL;
+}
+objDo=sysvar(60);	
+//-- Добавляем элементы 
+objDo1=sysvar(60);
+#L_box append K3FilePath+PantPath+L_boxP x y z;
+objPosle1=sysvar(60)-ObjDo1;
+move last objPosle1 done w 0 0;
+
+objDo1=sysvar(60);
+#R_box append K3FilePath+PantPath+R_boxP x y z;
+objPosle1=sysvar(60)-ObjDo1;
+
+objDo1=sysvar(60);
+#Prof append K3FilePath+PantPath+ProfP x y z;
+objident last 1 kontur;
+extrusion Prof done w-105-105;
+move  last 1 done 105 0 0 nocopy;
+move  last 1 done 0 -sdv 0 copy 1;
+delete kontur;
+chprop mapbypars last 2 done
+0, -1
+1, textura
+14, 1
+15, 1
+done;
+objPosle1=sysvar(60)-ObjDo1;
+//-- Создаем сетку "gridlock"
+if (D_Frame>360)
+{  
+	arr[1]=0;		// 0 - mother, 1 - father
+	arr[2]=(w-otRec)/5;		// Размерность сетки по Х
+	arr[3]=2;		// Размерность сетки по Y
+	arr[4]=1;		// Кол-во учитываемых контактов
+	arr[5]=5;	// Шаг сетки по Х
+	arr[6]=486;	// Шаг сетки по Y
+	arr[7]=5;		// Размер элемента по Х
+	arr[8]=6;		// Размер элемента по Y
+}
+if (D_Frame<=360)
+{  
+	arr[1]=0;		// 0 - mother, 1 - father
+	arr[2]=(w-otRec)/5;		// Размерность сетки по Х
+	arr[3]=2;		// Размерность сетки по Y
+	arr[4]=1;		// Кол-во учитываемых контактов
+	arr[5]=5;	// Шаг сетки по Х
+	arr[6]=316;	// Шаг сетки по Y
+	arr[7]=5;		// Размер элемента по Х
+	arr[8]=6;		// Размер элемента по Y
+}
+gridlock add arr ;
+move last 1 done x+otRec/2, y+Ots_F-10, z+53 nocopy;
+rotate last 1 done 2points x+w/2, y+Ots_F-8, z, x+w/2, y+Ots_F-8, z+1, 180 nocopy; 
+objident last 1 gridlock_m;
+objPosle=sysvar(60)-objDo;
+move  last objPosle done 0 d-Ots_F 0 nocopy;
+group last objPosle done;
+invisible partly gridlock_m done;
+//--Присваиваем атрибуты
+macro ProtoPath+"CompAttr.mac" IDframe 1;
+attrobj attach "PriceID" done last 1 IDframe; 
+attrobj attach "KarkasNumb" done last 1 KarkasNumb;
+attrobj attach "XUnit" "YUnit" "ZUnit" done last 1 w D_Frame H_Frame ;
+attrobj attach "FurnType" done last 1 "042100";
+attrobj attach "GroupID" done last 1 33;
+exit;

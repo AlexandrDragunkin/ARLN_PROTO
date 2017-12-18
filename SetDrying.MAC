@@ -1,0 +1,4 @@
+//-- Установить текущий тип посудосушителя
+getpar Drying;
+NULLOUT=setvarinst(1,"Drying",Drying);
+exit;

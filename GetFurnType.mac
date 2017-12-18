@@ -1,0 +1,224 @@
+//-- Макропрограмма заполняет массивы значением и описанием атрибута FurnType
+//-- Выходные параметры:
+//-- g_SFurnType - массив описаний FurnType
+//-- g_IFurnType - массив идентификаторов FurnType
+//-- Размерность массива определяется по количеству FurnType;
+
+global g_SFurnType,g_IFurnType;
+
+//-- Величина размерности массива. При добавлении новых FurnType ее надо увеличить
+FuDim=175;
+defarr g_SFurnType[FuDim],g_IFurnType[FuDim];
+
+
+g_IFurnType[1]="100000"; g_SFurnType[1]="Изделие";
+g_IFurnType[2]="100100"; g_SFurnType[2]="Изделие корпусное";
+g_IFurnType[3]="100101"; g_SFurnType[3]="Изделие корпусное прямое";
+g_IFurnType[4]="100102"; g_SFurnType[4]="Изделие корпусное гнутое";
+g_IFurnType[5]="100103"; g_SFurnType[5]="Изделие корпусное трапецеидальное";
+g_IFurnType[6]="100104"; g_SFurnType[6]="Изделие корпусное наклонное";
+
+g_IFurnType[7]="110100"; g_SFurnType[7]="Корпус ДСП";
+g_IFurnType[8]="110101"; g_SFurnType[8]="Корпус ДСП прямой";
+g_IFurnType[9]="110102"; g_SFurnType[9]="Корпус ДСП гнутый";
+g_IFurnType[10]="110103"; g_SFurnType[10]="Корпус ДСП трапецеидальный";
+g_IFurnType[11]="110104"; g_SFurnType[11]="Корпус ДСП наклонный";
+
+g_IFurnType[12]="120100"; g_SFurnType[12]="Профильный каркас";
+g_IFurnType[13]="120101"; g_SFurnType[13]="Профильный каркас прямой";
+g_IFurnType[14]="120102"; g_SFurnType[14]="Профильный каркас гнутый";
+g_IFurnType[15]="120103"; g_SFurnType[15]="Профильный каркас трапецеидальный";
+g_IFurnType[16]="120104"; g_SFurnType[16]="Профильный каркас наклонный";
+
+g_IFurnType[17]="130100"; g_SFurnType[17]="Корпус массив";
+g_IFurnType[18]="130101"; g_SFurnType[18]="Корпус массив прямой";
+g_IFurnType[19]="130102"; g_SFurnType[19]="Корпус массив гнутый";
+g_IFurnType[20]="130103"; g_SFurnType[20]="Корпус массив трапецеидальный";
+g_IFurnType[21]="130104"; g_SFurnType[21]="Корпус массив наклонный";
+
+g_IFurnType[22]="100200"; g_SFurnType[22]="Составной каркас";
+
+g_IFurnType[23]="100300"; g_SFurnType[23]="Мягкая мебель";
+g_IFurnType[24]="100301"; g_SFurnType[24]="Мягкая мебель прямая";
+g_IFurnType[25]="100302"; g_SFurnType[25]="Мягкая мебелье гнутая";
+g_IFurnType[26]="100303"; g_SFurnType[26]="Мягкая мебель трапецеидальная";
+g_IFurnType[27]="100304"; g_SFurnType[27]="Мягкая мебель наклонная";
+
+g_IFurnType[28]="101300"; g_SFurnType[28]="Диван";
+g_IFurnType[29]="101301"; g_SFurnType[29]="Диван прямой";
+g_IFurnType[30]="101302"; g_SFurnType[30]="Диван гнутый";
+g_IFurnType[31]="101303"; g_SFurnType[31]="ДиванП трапецеидальный";
+g_IFurnType[32]="101304"; g_SFurnType[32]="Диван наклонный";
+
+g_IFurnType[33]="102300"; g_SFurnType[33]="Стул";
+g_IFurnType[34]="102301"; g_SFurnType[34]="Стул прямой";
+g_IFurnType[35]="102302"; g_SFurnType[35]="Стул гнутый";
+g_IFurnType[36]="102303"; g_SFurnType[36]="Стул трапецеидальный";
+g_IFurnType[37]="102304"; g_SFurnType[37]="Стул наклонный";
+
+g_IFurnType[38]="103300"; g_SFurnType[38]="Кресло";
+g_IFurnType[39]="103301"; g_SFurnType[39]="Кресло прямой";
+g_IFurnType[40]="103302"; g_SFurnType[40]="Кресло гнутый";
+g_IFurnType[41]="103303"; g_SFurnType[41]="Кресло трапецеидальный";
+g_IFurnType[42]="103304"; g_SFurnType[42]="Кресло наклонный";
+
+g_IFurnType[43]="100400"; g_SFurnType[43]="Техника кухонная";
+g_IFurnType[44]="101400"; g_SFurnType[44]="Мойки";
+g_IFurnType[45]="102400"; g_SFurnType[45]="Плиты";
+g_IFurnType[46]="103400"; g_SFurnType[46]="Вытяжки";
+g_IFurnType[47]="104400"; g_SFurnType[47]="Холодильники";
+g_IFurnType[48]="105400"; g_SFurnType[48]="Микроволновки";
+g_IFurnType[49]="106400"; g_SFurnType[49]="Варочные поверхности";
+g_IFurnType[50]="100500"; g_SFurnType[50]="Сантехника";
+g_IFurnType[51]="101500"; g_SFurnType[51]="Посудомоечные машины";
+g_IFurnType[52]="102500"; g_SFurnType[52]="Стиральные машины";
+g_IFurnType[53]="100600"; g_SFurnType[53]="Гостинная";
+g_IFurnType[54]="101600"; g_SFurnType[54]="Телевизоры";
+g_IFurnType[55]="102600"; g_SFurnType[55]="Музыкальные центры";
+g_IFurnType[56]="103600"; g_SFurnType[56]="Компьютеры";
+g_IFurnType[57]="200000"; g_SFurnType[57]="Система дверей";
+
+g_IFurnType[58]="210000"; g_SFurnType[58]="Раздвижные двери";
+g_IFurnType[59]="210001"; g_SFurnType[59]="Раздвижные двери прямые";
+g_IFurnType[60]="210002"; g_SFurnType[60]="Раздвижные двери гнутые";
+g_IFurnType[61]="210003"; g_SFurnType[61]="Раздвижные двери трапецеидальные";
+g_IFurnType[62]="210004"; g_SFurnType[62]="Раздвижные двери наклонные";
+
+g_IFurnType[63]="220000"; g_SFurnType[63]="Складные двери";
+g_IFurnType[64]="220001"; g_SFurnType[64]="Складные двери прямые";
+g_IFurnType[65]="220002"; g_SFurnType[65]="Складные двери гнутые";
+g_IFurnType[66]="220003"; g_SFurnType[66]="Складные двери трапецеидальные";
+g_IFurnType[67]="220004"; g_SFurnType[67]="Складные двери наклонные";
+
+g_IFurnType[68]="230000"; g_SFurnType[68]="Распашные двери";
+g_IFurnType[69]="230001"; g_SFurnType[69]="Распашные двери прямые";
+g_IFurnType[70]="230002"; g_SFurnType[70]="Распашные двери гнутые";
+g_IFurnType[71]="230003"; g_SFurnType[71]="Распашные двери трапецеидальные";
+g_IFurnType[72]="230004"; g_SFurnType[72]="Распашные двери наклонные";
+
+g_IFurnType[73]="230100"; g_SFurnType[73]="Дверь распашная стандартная";
+g_IFurnType[74]="230101"; g_SFurnType[74]="Дверь распашная стандартная прямая";
+g_IFurnType[75]="230102"; g_SFurnType[75]="Дверь распашная стандартная гнутая";
+g_IFurnType[76]="230103"; g_SFurnType[76]="Дверь распашная стандартная трапецеидальная";
+g_IFurnType[77]="230104"; g_SFurnType[77]="Дверь распашная стандартная наклонная";
+
+g_IFurnType[78]="230200"; g_SFurnType[78]="Дверь распашная поворотная";
+g_IFurnType[79]="230201"; g_SFurnType[79]="Дверь распашная поворотная прямая";
+g_IFurnType[80]="230202"; g_SFurnType[80]="Дверь распашная поворотная гнутая";
+g_IFurnType[81]="230203"; g_SFurnType[81]="Дверь распашная поворотная трапецеидальная";
+g_IFurnType[82]="230204"; g_SFurnType[82]="Дверь распашная поворотная наклонная";
+
+g_IFurnType[83]="300000"; g_SFurnType[83]="Системы выдвижения";
+g_IFurnType[84]="300100"; g_SFurnType[84]="Рельсы для систем дверей";
+g_IFurnType[85]="310000"; g_SFurnType[85]="Ящики";
+g_IFurnType[86]="310100"; g_SFurnType[86]="Столярный";
+g_IFurnType[87]="310200"; g_SFurnType[87]="Метабокс";
+g_IFurnType[88]="310300"; g_SFurnType[88]="Тандембокс";
+g_IFurnType[89]="310400"; g_SFurnType[89]="Полного выдвижения";
+g_IFurnType[90]="310500"; g_SFurnType[90]="Выкатной";
+g_IFurnType[91]="320000"; g_SFurnType[91]="Выдвижные полки";
+g_IFurnType[92]="330000"; g_SFurnType[92]="Сетки длинные";
+g_IFurnType[93]="340000"; g_SFurnType[93]="Сотовые корзины";
+g_IFurnType[94]="340100"; g_SFurnType[94]="Прямые";
+g_IFurnType[95]="340400"; g_SFurnType[95]="Наклонные";
+g_IFurnType[96]="400000"; g_SFurnType[96]="Рейлинговые системы";
+g_IFurnType[97]="500000"; g_SFurnType[97]="Фасады";
+
+g_IFurnType[98]="500100"; g_SFurnType[98]="Глухой";
+g_IFurnType[99]="500101"; g_SFurnType[99]="Глухой прямой";
+g_IFurnType[100]="500102"; g_SFurnType[100]="Глухой гнутый";
+g_IFurnType[101]="500103"; g_SFurnType[101]="Глухой трапецеидальный";
+
+g_IFurnType[102]="500200"; g_SFurnType[102]="Витрина";
+g_IFurnType[103]="500201"; g_SFurnType[103]="Витрина прямая";
+g_IFurnType[104]="500202"; g_SFurnType[104]="Витрина гнутая";
+g_IFurnType[105]="500203"; g_SFurnType[105]="Витрина трапецеидальная";
+
+g_IFurnType[106]="500300"; g_SFurnType[106]="Комплексный";
+
+g_IFurnType[107]="600000"; g_SFurnType[107]="Состав фасада";
+
+g_IFurnType[108]="610000"; g_SFurnType[108]="Рамочная часть панельного фасада";
+g_IFurnType[109]="610001"; g_SFurnType[109]="Рамочная часть прямая";
+g_IFurnType[110]="610002"; g_SFurnType[110]="Рамочная часть гнутая";
+g_IFurnType[111]="610003"; g_SFurnType[111]="Рамочная часть трапецеидальная";
+
+//g_IFurnType[112]="620000"; g_SFurnType[112]="Фигарея";
+//g_IFurnType[113]="620001"; g_SFurnType[113]="Фигарея прямая";
+//g_IFurnType[114]="620002"; g_SFurnType[114]="Фигарея гнутая";
+//g_IFurnType[115]="620003"; g_SFurnType[115]="Фигарея трапецеидальная";
+
+g_IFurnType[112]="630000"; g_SFurnType[112]="Рамка";
+g_IFurnType[113]="630001"; g_SFurnType[113]="Рамка прямой";
+g_IFurnType[114]="630002"; g_SFurnType[114]="Рамка гнутый";
+g_IFurnType[115]="630003"; g_SFurnType[115]="Рамка трапецеидальный";
+
+g_IFurnType[116]="640000"; g_SFurnType[116]="Вставка";
+g_IFurnType[117]="640001"; g_SFurnType[117]="Вставка прямая";
+g_IFurnType[118]="640002"; g_SFurnType[118]="Вставка гнутая";
+g_IFurnType[119]="640003"; g_SFurnType[119]="Вставка трапецеидальная";
+
+g_IFurnType[120]="700000"; g_SFurnType[120]="Система \"колонна\"";
+
+g_IFurnType[121]="800000"; g_SFurnType[121]="Обработка";
+g_IFurnType[122]="800100"; g_SFurnType[122]="Фрезеровка торца";
+g_IFurnType[123]="800200"; g_SFurnType[123]="Пропилы";
+g_IFurnType[124]="800300"; g_SFurnType[124]="Фрезеровка пласти";
+g_IFurnType[125]="800400"; g_SFurnType[125]="Линия крепежа торца";
+g_IFurnType[126]="800500"; g_SFurnType[126]="Линия крепежа пласти";
+g_IFurnType[127]="800600"; g_SFurnType[127]="Отверстие";
+
+g_IFurnType[128]="010000"; g_SFurnType[128]="Панель (полотно панели)";
+g_IFurnType[129]="010100"; g_SFurnType[129]="Полка";
+g_IFurnType[130]="010101"; g_SFurnType[130]="Полка - нижнее основание";
+g_IFurnType[131]="010102"; g_SFurnType[131]="Полка - верхнее основание";
+g_IFurnType[132]="010200"; g_SFurnType[132]="Стойка";
+g_IFurnType[133]="010201"; g_SFurnType[133]="Стойка - левая боковая";
+g_IFurnType[134]="010202"; g_SFurnType[134]="Стойка - правая боковая";
+
+g_IFurnType[135]="010300"; g_SFurnType[135]="Стенка";
+g_IFurnType[136]="010301"; g_SFurnType[136]="Стенка прямая";
+g_IFurnType[137]="010302"; g_SFurnType[137]="Стенка гнутая";
+g_IFurnType[138]="010303"; g_SFurnType[138]="Стенка трапецеидальная";
+g_IFurnType[139]="010304"; g_SFurnType[139]="Стенка наклонная";
+
+g_IFurnType[140]="010400"; g_SFurnType[140]="Стенка задняя";
+g_IFurnType[141]="011000"; g_SFurnType[141]="Фигурные столешницы";
+
+g_IFurnType[142]="020000"; g_SFurnType[142]="Профиль";
+
+g_IFurnType[143]="030000"; g_SFurnType[143]="Длинномер кухонный";
+g_IFurnType[144]="030100"; g_SFurnType[144]="Столешница";
+g_IFurnType[145]="030200"; g_SFurnType[145]="Карниз";
+g_IFurnType[146]="030300"; g_SFurnType[146]="Стеновая панель";
+g_IFurnType[147]="030400"; g_SFurnType[147]="Водоотбойник";
+g_IFurnType[148]="030500"; g_SFurnType[148]="Проф. Карниз";
+g_IFurnType[149]="030600"; g_SFurnType[149]="Нижн. Профиль";
+g_IFurnType[150]="030700"; g_SFurnType[150]="Балюстрада";
+g_IFurnType[151]="030800"; g_SFurnType[151]="Цоколь";
+g_IFurnType[152]="030900"; g_SFurnType[152]="Перила";
+
+g_IFurnType[153]="040000"; g_SFurnType[153]="Комплектующий";
+g_IFurnType[154]="040100"; g_SFurnType[154]="Ручки";
+g_IFurnType[155]="040200"; g_SFurnType[155]="Опоры";
+g_IFurnType[156]="040300"; g_SFurnType[156]="Направляющие";
+g_IFurnType[157]="040400"; g_SFurnType[157]="Крепеж";
+
+g_IFurnType[158]="040500"; g_SFurnType[158]="Крючки";
+g_IFurnType[159]="040600"; g_SFurnType[159]="Петли";
+g_IFurnType[160]="040700"; g_SFurnType[160]="Барные крепления";
+g_IFurnType[161]="040800"; g_SFurnType[161]="Подъемники";
+g_IFurnType[162]="040900"; g_SFurnType[162]="Вешалки";
+
+g_IFurnType[163]="041000"; g_SFurnType[163]="Комплектующий для длинномеров - заглушки";
+g_IFurnType[164]="041100"; g_SFurnType[164]="Комплектующий для длинномеров - соединения";
+g_IFurnType[165]="041200"; g_SFurnType[165]="Заглушки";
+g_IFurnType[166]="041300"; g_SFurnType[166]="Замки";
+g_IFurnType[167]="041400"; g_SFurnType[167]="Светильники мебельные";
+
+g_IFurnType[168]="041500"; g_SFurnType[168]="Сушилки штучные";
+g_IFurnType[169]="041600"; g_SFurnType[169]="Ролики систем дверей";
+g_IFurnType[170]="041700"; g_SFurnType[170]="Крепление (клипсы, кронштейны)";
+
+g_IFurnType[171]="050000"; g_SFurnType[171]="Кромка";
+exit;
